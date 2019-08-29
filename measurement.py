@@ -146,8 +146,11 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
                         key_uncertainty_type='UTYPE', **kwd):
     _id = kwd.pop('identifier', 'unknown')
     z = CCDData.read(filename,hdu,unit,hdu_uncertainty,hdu_mask,key_uncertainty_type, **kwd)
+    #print("Got FITS file with header meta:",z.header)
+    # @TODO header values get stuffed into WCS, others may be dropped by CCDData._generate_wcs_and_update_header
     try:
        z = Measurement(z)
+       #print("Measurement has header:",z.header)
     except Exception:
        raise TypeError('could not convert fits_measurement_reader output to Measurement')
     z.identifier(_id)

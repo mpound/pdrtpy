@@ -43,8 +43,8 @@ class PDRutils:
         self._set_modelfilesUsed()
         self._observedratios = None
         self._chisq = None
-        self._deltaSq = None
-        self._reduceChisq = None
+        self._deltasq = None
+        self._reducedChisq = None
     
     def _init_measurements(self,m):
         self._measurements = dict()
@@ -241,7 +241,7 @@ class PDRutils:
         """Given a list of measurement IDs, find and open the FITS files that have matching ratios
            and populate the _modelratios dictionary
         """
-        d = "/n/lupus/mpound/WITS/Docs/pdrt/"
+        d = "models/"
         self._modelratios = dict()
         for (k,p) in self.find_files(m):
             self._modelratios[k] = fits.open(d+p)
@@ -253,7 +253,7 @@ class PDRutils:
                  m - list of measurement IDS (string)
                  unit - units of the data (string)
         """
-        d = "/n/lupus/mpound/WITS/Docs/pdrt/"
+        d = "models/"
         self._modelratios = dict()
         for (k,p) in self.find_files(self.measurementIDs):
             self._modelratios[k] = CCDData.read(d+p,unit=unit)
@@ -264,7 +264,7 @@ class PDRutils:
         self.computeValidRatios()
         self.computeDeltaSq()
         self.computeChisq()
-        #self.plotChisq()
+        self.writeChisq()
       
     def computeValidRatios(self):
         if not self.check_measurement_shapes():
@@ -292,12 +292,35 @@ class PDRutils:
             _z._data = _z._data + self._observedratios[r].flux
             _q = _z.divide(self._observedratios[r].error)
             self._deltasq[r] = _q.multiply(_q)
+
+    def computeDeltaSqMap(self):
+        #@todo perhaps don't store _modelratios but have them be a return value of read_fits.
+        # reasoning is that if we use the same PDRUtils object to make multiple computations, we
+        # have to be careful to clear _modelratios each time.
+        
+        if not self._modelratios: # empty list or None
+            raise Exception("No model data ready.  You need to call read_fits")
+        
+        self._deltasq = dict()
+        for r in self._observedratios:
+            sz = self._modelratios[r].size
+            _z = np.reshape(self._modelratios[r],sz)
+
+            ff = list()
+            for pix in _z:
+                _q = (self._observedratios[r].flux - pix)/self._observedratios[r].error
+                ff.append(_q*_q)
+
+            newshape = np.hstack((self._modelratios[r].shape,self._observedratios[r].shape))
+            #newshape = np.hstack((self._observedratios[r].shape,self._modelratios[r].shape))
+            _qq = np.reshape(ff,newshape)
+            self._deltasq[r] = CCDData(_qq,unit="adu",wcs=self._observedratios[r].wcs,meta=self._observedratios[r].meta)
         
     def computeChisq(self):
         sumary = sum((self._deltasq[r]._data for r in self._deltasq))
         self._dof = len(self._deltasq) - 1
         k = list(self._deltasq.keys())[0]
-        self._chisq = CCDData(sumary,unit='adu',wcs=self._deltasq[k].wcs)
+        self._chisq = CCDData(sumary,unit='adu',wcs=self._deltasq[k].wcs,meta=self._deltasq[k].meta)
         self._reducedChisq =  self._chisq.divide(self._dof)
     
     def _zscale(self,image):
@@ -306,15 +329,15 @@ class PDRutils:
     
     def plotReducedChisq(self,cmap='plasma',image=True, contours=True,
                          levels=None,measurements=None):
-        file="rchisq.fits"
-        self._reducedChisq.write(file,overwrite=True)
         self._plot(file,cmap,image, contours,levels,measurements)
         
     def plotChisq(self,cmap='plasma',image=True, contours=True, 
                   levels=None, measurements=None):
-        file="chisq.fits"
-        self._chisq.write(file,overwrite=True)
         self._plot(file,cmap,image, contours,levels,measurements)
+        
+    def writeChisq(self,file="chisq.fits",rfile="rchisq.fits"):
+        self._chisq.write(file,overwrite=True)
+        self._reducedChisq.write(rfile,overwrite=True)
        
     def _plot(self,file,cmap, image, contours, levels, measurements):
         # todo: use stored fits file data rather than re-read everytime
@@ -390,9 +413,10 @@ class PDRutils:
         if self._chisq is None: return [None,None]
         min_ary = np.flip(divmod(self._reducedChisq.data.argmin(),self._chisq.data.shape[1]))+1
         print("min indices (n,G0) = ",min_ary)
-        h = fits.open("chisq.fits")[0].header
-        logn = h['crval1']+(min_ary[0]-h['crpix1'])*h['cdelt1']
-        logg0 = h['crval2']+(min_ary[1]-h['crpix2'])*h['cdelt2']
+        #h = fits.open("chisq.fits")[0].header
+        #logn = h['crval1']+(min_ary[0]-h['crpix1'])*h['cdelt1']
+        #logg0 = h['crval2']+(min_ary[1]-h['crpix2'])*h['cdelt2']
+        logn,logg0 = self._chisq.wcs.all_pix2world(min_ary,0)
         g0 = 10.0**logg0
         n  = 10.0**logn
         return [n,g0]
