@@ -341,7 +341,7 @@ class PDRutils:
        
     def _plot(self,datasource,cmap, image, contours, levels, measurements):
         if type(datasource) == str:
-            k = fits.open(file)[0]
+            k = fits.open(datasource)[0]
         else:
             k=datasource.to_hdu()[0]
         min_ = k.data.min()
