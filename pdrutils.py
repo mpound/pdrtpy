@@ -329,19 +329,21 @@ class PDRutils:
     
     def plotReducedChisq(self,cmap='plasma',image=True, contours=True,
                          levels=None,measurements=None):
-        self._plot(file,cmap,image, contours,levels,measurements)
+        self._plot(self_reducedChisq,cmap,image, contours,levels,measurements)
         
     def plotChisq(self,cmap='plasma',image=True, contours=True, 
                   levels=None, measurements=None):
-        self._plot(file,cmap,image, contours,levels,measurements)
+        self._plot(self._chisq,cmap,image, contours,levels,measurements)
         
     def writeChisq(self,file="chisq.fits",rfile="rchisq.fits"):
         self._chisq.write(file,overwrite=True)
         self._reducedChisq.write(rfile,overwrite=True)
        
-    def _plot(self,file,cmap, image, contours, levels, measurements):
-        # todo: use stored fits file data rather than re-read everytime
-        k = fits.open(file)[0]
+    def _plot(self,datasource,cmap, image, contours, levels, measurements):
+        if type(datasource) == str:
+            k = fits.open(file)[0]
+        else:
+            k=datasource.to_hdu()[0]
         min_ = k.data.min()
         max_ = k.data.max()
         ax=plt.subplot(111)
