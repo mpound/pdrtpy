@@ -1,14 +1,13 @@
 #!/usr/bin/env python
-# coding: utf-8
-
-# In[192]:
 
 
 #todo: Look into seaborn https://seaborn.pydata.org
+# Also https://docs.bokeh.org/en
 # especially for coloring and style
 import itertools
 import collections
 from copy import deepcopy
+import datetime
 
 import numpy as np
 import scipy.stats as stats
@@ -27,6 +26,10 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mpcolors
 from matplotlib import ticker
 from matplotlib.lines import Line2D
+
+VERSION = "2.0-Beta"
+NLABEL  = "Log(n) [cm^-2]"
+GLABEL  = "Log(G0) [Habing]"
 
 class PDRutils:
     def __init__(self,models,measurements=None):
@@ -186,6 +189,22 @@ class PDRutils:
                    "denominator":self._modelTable.loc[s]["denominator"]}
                 yield(z)
                 
+    def _get_oi_cii_fir(self,m,k):
+        # handle ([O I] 63 µm + [C II] 158 µm)/IFIR
+        if "CII_158" in m and "FIR" in m:
+            if "OI_63" in m:
+                num = "OI_63+CII_158"
+                den = "FIR"
+                l="OI_63+CII_158/FIR"
+                z = {"numerator":num,"denominator":den}
+                k.append(z)
+            if "OI_145" in m:
+                num = "OI_145+CII_158"
+                den = "FIR"
+                ll="OI_145+CII_158/FIR"
+                z = {"numerator":num,"denominator":den}
+                k.append(z)
+    
     def get_ratio_elements(self,m):   
         """Return a list of valid numerator,denominator pairs in dict format for the 
         given list of measurement IDs
@@ -198,7 +217,8 @@ class PDRutils:
             if s in self._modelTable["label"]:
                 z={"numerator":self._modelTable.loc[s]["numerator"],
                    "denominator":self._modelTable.loc[s]["denominator"]}
-                k.append(z)        
+                k.append(z)
+        self._get_oi_cii_fir(m,k)
         return k
                  
     def find_pairs(self,m):
@@ -207,7 +227,11 @@ class PDRutils:
             raise Exception("m must be an array of strings")
             
         for q in itertools.product(m,m):
-            s = q[0]+"/"+q[1]
+            #print(q)
+            if q[0] == "FIR" and (q[1] == "OI_145" or q[1] == "OI_63") and "CII_158" in m:
+                s = q[1] + "+CII_158/" + q[0]
+            else:
+                s = q[0]+"/"+q[1]
             if s in self._modelTable["label"]:
                 yield(s)
     
@@ -216,11 +240,18 @@ class PDRutils:
         if not isinstance(m, collections.abc.Iterable) or isinstance(m, (str, bytes)):
             raise Exception("m must be an array of strings")
         for q in itertools.product(m,m):
-            s = q[0]+"/"+q[1]
+            # must deal with OI+CII/FIR models. Note we must check for FIR first, since
+            # if you check q has OI,CII and m has FIR order you'll miss OI/CII.
+            if q[0] == "FIR" and (q[1] == "OI_145" or q[1] == "OI_63") and "CII_158" in m:
+                s = q[1] + "+CII_158/" + q[0]
+            else:
+                s = q[0]+"/"+q[1]
             if s in self._modelTable["label"]:
                 tup = (s,self._modelTable.loc[s]["filename"]+"."+ext)
                 #yield(self._modelTable.loc[s]["filename"]+"."+ext)
                 yield(tup)
+            
+                
            
     def _set_modelfilesUsed(self):
         self._modelfilesUsed = dict()
@@ -237,18 +268,18 @@ class PDRutils:
         # See https://stackoverflow.com/questions/393053/length-of-generator-output
         return(sum(1 for _ in self.find_files(m)))
                 
-    def read_fits(self,m):
-        """Given a list of measurement IDs, find and open the FITS files that have matching ratios
-           and populate the _modelratios dictionary
-        """
-        d = "models/"
-        self._modelratios = dict()
-        for (k,p) in self.find_files(m):
-            self._modelratios[k] = fits.open(d+p)
+    #def read_fits(self,m):
+    #    """Given a list of measurement IDs, find and open the FITS files that have matching ratios
+    #       and populate the _modelratios dictionary
+    #    """
+    #    d = "models/"
+    #   self._modelratios = dict()
+    #   for (k,p) in self.find_files(m):
+    #       self._modelratios[k] = fits.open(d+p)
             
-    def read_ccd(self,unit):
-        """Test method to use astropy's CCDdata as a storage mechanism for our model 
-           ratio or observer data FITS files.
+    def read_models(self,unit):
+        """Given a list of measurement IDs, find and open the FITS files that have matching ratios
+           and populate the _modelratios dictionary.  Use astropy's CCDdata as a storage mechanism. 
             Parameters: 
                  m - list of measurement IDS (string)
                  unit - units of the data (string)
@@ -258,14 +289,14 @@ class PDRutils:
         for (k,p) in self.find_files(self.measurementIDs):
             self._modelratios[k] = CCDData.read(d+p,unit=unit)
     
-    def doit(self):
-        #self.read_fits(mids)
-        self.read_ccd(unit='adu')
+    def run(self):
+        self.read_models(unit='adu')
         self.computeValidRatios()
         self.computeDeltaSq()
         self.computeChisq()
         self.writeChisq()
-      
+
+        
     def computeValidRatios(self):
         if not self.check_measurement_shapes():
             raise TypeError("Measurement maps have different dimensions")
@@ -276,8 +307,29 @@ class PDRutils:
             label = p["numerator"]+"/"+p["denominator"]
             # deepcopy workaround for bug: https://github.com/astropy/astropy/issues/9006
             self._observedratios[label] = deepcopy(self._measurements[p["numerator"]])/deepcopy(self._measurements[p["denominator"]])
-        
-    
+            #@TODO create a meaningful header for the ratio map
+            self._ratioHeader(p["numerator"],p["denominator"],label)
+        self._add_oi_cii_fir()
+
+    def _add_oi_cii_fir(self):
+        m = self.measurementIDs
+        # handle ([O I] 63 µm + [C II] 158 µm)/IFIR
+        if "CII_158" in m and "FIR" in m:
+            if "OI_63" in m:
+                l="OI_63+CII_158/FIR"
+                print(l)
+                a = deepcopy(self._measurements["OI_63"])+deepcopy(self._measurements["CII_158"])
+                b = deepcopy(self._measurements["FIR"])
+                self._observedratios[l] = a/b
+                self._ratioHeader("OI_63+CII_158","FIR",l)
+            if "OI_145" in m:
+                ll="OI_145+CII_158/FIR"
+                print(ll)
+                aa = deepcopy(self._measurements["OI_145"])+deepcopy(self._measurements["CII_158"])
+                bb = deepcopy(self._measurements["FIR"])
+                self._observedratios[ll] = aa/bb
+                self._ratioHeader("OI_145+CII_158","FIR",ll)
+                    
     def computeDeltaSq(self):
         #@todo perhaps don't store _modelratios but have them be a return value of read_fits.
         # reasoning is that if we use the same PDRUtils object to make multiple computations, we
@@ -285,7 +337,8 @@ class PDRutils:
         
         if not self._modelratios: # empty list or None
             raise Exception("No model data ready.  You need to call read_fits")
-        
+        if self.ratiocount < 2 :
+            raise Exception("Not enough ratios to compute deltasq.  Need 2, got %d"%self.ratiocount)
         self._deltasq = dict()
         for r in self._observedratios:
             _z = self._modelratios[r].multiply(-1.0)
@@ -300,7 +353,9 @@ class PDRutils:
         
         if not self._modelratios: # empty list or None
             raise Exception("No model data ready.  You need to call read_fits")
-        
+            
+        if self.ratiocount < 2 :
+            raise Exception("Not enough ratios to compute deltasq.  Need 2, got %d"%self.ratiocount)
         self._deltasq = dict()
         for r in self._observedratios:
             sz = self._modelratios[r].size
@@ -314,17 +369,152 @@ class PDRutils:
             newshape = np.hstack((self._modelratios[r].shape,self._observedratios[r].shape))
             #newshape = np.hstack((self._observedratios[r].shape,self._modelratios[r].shape))
             _qq = np.reshape(ff,newshape)
-            self._deltasq[r] = CCDData(_qq,unit="adu",wcs=self._observedratios[r].wcs,meta=self._observedratios[r].meta)
-        
+            _wcs = self._observedratios[r].wcs.deepcopy()
+            _meta= deepcopy(self._observedratios[r].meta)
+            self._deltasq[r] = CCDData(_qq,unit="adu",wcs=_wcs,meta=_meta)
+           
     def computeChisq(self):
+        if self.ratiocount < 2 :
+            raise Exception("Not enough ratios to compute chisq.  Need 2, got %d"%self.ratiocount)
         sumary = sum((self._deltasq[r]._data for r in self._deltasq))
         self._dof = len(self._deltasq) - 1
-        k = list(self._deltasq.keys())[0]
+        k = self._firstkey(self._deltasq)
         self._chisq = CCDData(sumary,unit='adu',wcs=self._deltasq[k].wcs,meta=self._deltasq[k].meta)
         self._reducedChisq =  self._chisq.divide(self._dof)
+        self._fixheader(self._chisq)
+        self._fixheader(self._reducedChisq)
+        self.setkey("BUNIT","Chi-squared",self._chisq)
+        self.setkey("BUNIT",("Reduced Chi-squared (DOF=%d)"%self._dof),self._reducedChisq)
+        self._makehistory(self._chisq)
+        self._makehistory(self._reducedChisq)
+        
+    def writeChisq(self,file="chisq.fits",rfile="rchisq.fits"):
+        self._chisq.write(file,overwrite=True)
+        self._reducedChisq.write(rfile,overwrite=True)  
+        
+    def computeBestnG0Maps(self):
+        if self._chisq is None or self._reducedChisq is None: return
+        
+        # get the chisq minima of each pixel along the g,n axes
+        z=np.amin(self._reducedChisq,(0,1))
+        #qq=np.transpose(np.vstack(np.where(self._reducedChisq==z)))
+        gi,ni,yi,xi=np.where(self._reducedChisq==z)
+        #print(gi)
+        #print(len(gi),len(ni),len(xi),len(yi))
+        spatial_idx = [yi,xi]
+        model_idx   = np.transpose(np.array([ni,gi]))
+        # qq[:,:2] takes the first two columns of qq
+        # [:,[1,0]] swaps those columns
+        # np.flip would also swap them.
+        #print(qq[:,:2][:,[1,0]])
+        #print(np.flip(qq[:,:2]))
+        fk = self._firstkey(self._modelratios)
+        fk2 = self._firstkey(self._observedratios)
+        newshape = self._observedratios[fk2].shape
+        # figure out which G0,n the minimum refer to, and reshape into the RA-DEC map
+        #g0=10**(self._modelratios[fk].wcs.wcs_pix2world(np.flip(qq[:,:2]),0))[:,1].reshape(newshape)
+        #n =10**(self._modelratios[fk].wcs.wcs_pix2world(np.flip(qq[:,:2]),0))[:,0].reshape(newshape)
+        g0=10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,1]
+        n =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,0]
+        print("G0 shape ",g0.shape)
+        print("N shape ",n.shape)
+        self.g0_map=self._observedratios[fk2].copy()
+        self.g0_map.data[spatial_idx]=g0
+        self.n_map=self._observedratios[fk2].copy()      
+        self.n_map.data[spatial_idx]=n
+        #fix the headers
+        self._nG0header()   
+        
+    def comment(self,value,image):
+        self.addkey("COMMENT",value,image)
+        
+    def history(self,value,image):
+        self.addkey("HISTORY",value,image)
+        
+    def addkey(self,key,value,image):
+        if key in image.header and type(value) == str:    
+            image.header[key] = image.header[key]+" "+value
+        else:
+            image.header[key]=value
+
+    def setkey(self,key,value,image):
+        image.header[key]=value
+        
+    def _now(self):
+        return datetime.datetime.now().isoformat()
     
+    def _dataminmax(self,image):
+        self.setkey("DATAMIN",image.data.min(),image)
+        self.setkey("DATAMAX",image.data.max(),image)
+            
+    def _signature(self,image):
+        self.setkey("AUTHOR","PDR Toolbox "+VERSION,image)
+        self.setkey("DATE",self._now(),image)
+                 
+    def _makehistory(self,image):
+        s = "Measurements provided: "
+        for k in self._measurements.keys():
+            s = s + k + ", "
+        self.addkey("HISTORY",s,image)
+        s = "Ratios used: "
+        for k in self._deltasq.keys():
+            s = s + k + ", "
+        self.addkey("HISTORY",s,image)
+        self._signature(image)
+        self._dataminmax(image)
+
+    def _ratioHeader(self,numerator,denominator,label):
+        self.addkey("RATIO",label,self._observedratios[label])
+        self._dataminmax(self._observedratios[label])
+        self._signature(self._observedratios[label])
+        
+    def _fixheader(self,image):
+        """Put axis 3 and 4 header values into chisq maps"""
+        self.setkey("CTYPE3",NLABEL,image)
+        self.setkey("CTYPE4",GLABEL,image)
+        self.setkey("CDELT3",0.25,image)
+        self.setkey("CDELT4",0.25,image)
+        self.setkey("CRVAL4",-0.5,image)
+        self.setkey("CRVAL3",1.0,image)
+        self.setkey("CRPIX3",1.0,image)
+        self.setkey("CRPIX4",1.0,image)
+        
+    #def getBestnG0(self):
+    # ONLY WORKS FOR SINGLE PIXEL CASe
+    #    if self._chisq is None: return [None,None]
+    #    if self._reducedChisq is None: return [None,None]
+    #    f_ary=np.unravel_index(self._reducedChisq.data.argmin(),self._reducedChisq.data.shape)
+    #    print("full indices (n,G0) = ",f_ary)
+    #    min_ary = f_ary[0:2]
+     #   #min_ary = np.flip(divmod(self._reducedChisq.data.argmin(),self._chisq.data.shape[1]))+1
+     #   print("min indices (n,G0) = ",min_ary)
+        #h = fits.open("chisq.fits")[0].header
+        #logn = h['crval1']+(min_ary[0]-h['crpix1'])*h['cdelt1']
+        #logg0 = h['crval2']+(min_ary[1]-h['crpix2'])*h['cdelt2']
+     #   logn,logg0 = self._chisq.wcs.all_pix2world(min_ary,0)      
+     #   g0 = 10.0**logg0
+     #   n  = 10.0**logn
+     #   return [n,g0]
+    
+    def _firstkey(self,d):
+        """Return the 'first' key in a dictionary
+           Parameters:
+               d - the dictionary
+        """
+        return list(d)[0]
+         
+    def _nG0header(self):
+        self.n_map.header.pop('RATIO')
+        self.g0_map.header.pop('RATIO')
+        self.setkey("BUNIT",NLABEL,self.n_map)
+        self.comment("Best-fit H2 volume density",self.n_map)
+        self.setkey("BUNIT",GLABEL,self.g0_map)
+        self.comment("Best-fit interstellar radiation field",self.g0_map)
+        self._makehistory(self.n_map)
+        self._makehistory(self.g0_map)
+              
     def _zscale(self,image):
-        norm= ImageNormalize(image.data,ZscaleInterval(),stretch=LinearStretch())
+        norm= ImageNormalize(image.data,ZScaleInterval(),stretch=LinearStretch())
         return norm
     
     def plotReducedChisq(self,cmap='plasma',image=True, contours=True,
@@ -334,10 +524,6 @@ class PDRutils:
     def plotChisq(self,cmap='plasma',image=True, contours=True, 
                   levels=None, measurements=None):
         self._plot(self._chisq,cmap,image, contours,levels,measurements)
-        
-    def writeChisq(self,file="chisq.fits",rfile="rchisq.fits"):
-        self._chisq.write(file,overwrite=True)
-        self._reducedChisq.write(rfile,overwrite=True)
        
     def _plot(self,datasource,cmap, image, contours, levels, measurements):
         if type(datasource) == str:
@@ -411,18 +597,7 @@ class PDRutils:
                     cset = ax.contour(x,y,k.data,levels=m.levels,
                            linestyles=lstyles, colors=colors)
                 
-    def getBestnG0(self):
-        if self._chisq is None: return [None,None]
-        min_ary = np.flip(divmod(self._reducedChisq.data.argmin(),self._chisq.data.shape[1]))+1
-        print("min indices (n,G0) = ",min_ary)
-        #h = fits.open("chisq.fits")[0].header
-        #logn = h['crval1']+(min_ary[0]-h['crpix1'])*h['cdelt1']
-        #logg0 = h['crval2']+(min_ary[1]-h['crpix2'])*h['cdelt2']
-        logn,logg0 = self._chisq.wcs.all_pix2world(min_ary,0)
-        g0 = 10.0**logg0
-        n  = 10.0**logn
-        return [n,g0]
-        
+
     def plotConfidenceIntervals(self,image=True, cmap='plasma',contours=True,levels=None,reduced=False):
         if reduced:  chi2_stat = stats.distributions.chi2.cdf(self._reducedChisq.data,self._dof)
         else:       chi2_stat = stats.distributions.chi2.cdf(self._chisq.data,self._dof)
@@ -529,7 +704,7 @@ if __name__ == "__main__":
     p = PDRutils("current_models.tab",measurements = [m1,m2,m3,m4])
     print("num ratios:", p.ratiocount)
     print("modelfiles used: ", p._modelfilesUsed)
-    p.doit()
+    p.run()
     p.get_ratio_elements(p.measurements)
     p.makeRatioOverlays(cmap='gray')
     p.plotRatiosOnModels()

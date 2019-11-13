@@ -14,7 +14,9 @@ class Measurement(CCDData):
        uncertainty array, units, and a string identifier It is based
        on `~astropy.nddata.CCDData`.  It can represent a single pixel
        observation or an image.   Mathematical operations using Measurements
-       will correctly propagate errors.
+       will correctly propagate errors.  
+       
+       See also the read method for instantiating from a FITS file.
        
     Parameters
     -----------
@@ -42,7 +44,8 @@ class Measurement(CCDData):
     read(\\*args, \\**kwargs)
         ``Classmethod`` to create an Measurement instance based on a ``FITS`` file.
         This method uses :func:`fits_measurement_reader` with the provided
-        parameters.
+        parameters.  Example usage:
+            my_obs = Measurement.read("file.fits",identifier="CII_158")
 
     '''
     def __init__(self,*args, **kwargs):
@@ -62,6 +65,42 @@ class Measurement(CCDData):
 
         super().__init__(*args, **kwargs)#, unit=_unit)
         
+    def makemeasurement(fluxfile,error,outfile,rms=None):
+        _flux = fits.open(fluxfile)
+        # possible values for error are:
+        # 1. a filename with the same shape as fluxfile containing the error values per pixel
+        # 2. a percentage value 'XX%' must have the "%" symbol in it
+        # 3. 'rms' meaning use the rms parameter if given, otherwise look for the RMS keyword in the FITS header of the fluxfile
+            
+        if error == 'rms':
+            _error = deepcopy(_flux)
+            if rms is None:
+                _rms = _flux[0].header.get("RMS",None)
+                if _rms is None:
+                    raise Exception("rms not given as parameter and RMS keyword not present in flux header")
+                _error[0].data = np.full(_error[0].data.shape,rms)
+        elif "%" in error:
+            percent = float(error.strip('%')) / 100.0
+            _error = deepcopy(_flux)
+            _error[0].data = _flux[0].data*percent
+        else:
+            _error = fits.open(error)
+        print(_error[0].data.shape)
+ 
+        fb = _flux[0].header.get('bunit','adu')
+        eb = _error[0].header.get('bunit','adu')
+        if fb != eb:
+            raise Exception("BUNIT must be the same in both flux (%s) and error (%s) maps"%(fb,eb))
+        _out = fits.open(name=outfile,mode="append")
+        _out.append(_flux[0])
+        _out[0].header['bunit'] = fb
+        _out.append(_error[0])
+        _out[1].header['extname']='UNCERT'
+        _out[1].header['bunit'] = eb
+        _out[1].header['utype'] = 'StdDevUncertainty'
+        _out.writeto(outfile,overwrite=True)
+        
+            
     @property
     def flux(self):
         '''Return the underlying flux data array'''
@@ -71,6 +110,11 @@ class Measurement(CCDData):
     def error(self):
         '''Return the underlying error array'''
         return self.uncertainty._array
+    
+    @property
+    def SN(self):
+        '''Return the signal to noise ratio (flux/error)'''
+        return self.flux/self.error
     
     @property
     def id(self):
@@ -83,6 +127,8 @@ class Measurement(CCDData):
 
     @property
     def levels(self):
+        if self.flux.size != 1:
+            raise Exception("This only works for Measurements with a single pixel")
         return np.array([np.float(self.flux-self.error),np.float(self.flux),np.float(self.flux+self.error)])
 
     
@@ -146,6 +192,7 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
                         key_uncertainty_type='UTYPE', **kwd):
     _id = kwd.pop('identifier', 'unknown')
     z = CCDData.read(filename,hdu,unit,hdu_uncertainty,hdu_mask,key_uncertainty_type, **kwd)
+    # @TODO if uncertainty plane not present, look for RMS keyword
     #print("Got FITS file with header meta:",z.header)
     # @TODO header values get stuffed into WCS, others may be dropped by CCDData._generate_wcs_and_update_header
     try:
