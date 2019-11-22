@@ -10,6 +10,7 @@ from copy import deepcopy
 import datetime
 
 import numpy as np
+import numpy.ma as ma
 import scipy.stats as stats
 
 from astropy.io import fits
@@ -20,8 +21,6 @@ from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertaint
 from astropy.visualization import simple_norm, ZScaleInterval , ImageNormalize
 from astropy.visualization.stretch import SinhStretch,  LinearStretch
 
-#from skimage import data, exposure
-
 import matplotlib.pyplot as plt
 import matplotlib.colors as mpcolors
 from matplotlib import ticker
@@ -30,7 +29,10 @@ from matplotlib.lines import Line2D
 VERSION = "2.0-Beta"
 NLABEL  = "Log(n) [cm^-2]"
 GLABEL  = "Log(G0) [Habing]"
-
+# potential new structure
+# PDR
+#   utils
+#   toolbox
 class PDRutils:
     def __init__(self,models,measurements=None):
         if type(models) == str:
@@ -93,6 +95,7 @@ class PDRutils:
         return self._measurements.keys()
     
     def _make_default_table(self):
+    #@todo add reference e.g. "Wolfire" so we can allow comparison between model bases.
         ratiodict = {
         "OI_145/OI_63"   : "oioi",
         "OI_145/CII_158" : "o145cii",
@@ -295,8 +298,7 @@ class PDRutils:
         self.computeDeltaSq()
         self.computeChisq()
         self.writeChisq()
-
-        
+     
     def computeValidRatios(self):
         if not self.check_measurement_shapes():
             raise TypeError("Measurement maps have different dimensions")
@@ -356,6 +358,7 @@ class PDRutils:
             
         if self.ratiocount < 2 :
             raise Exception("Not enough ratios to compute deltasq.  Need 2, got %d"%self.ratiocount)
+            
         self._deltasq = dict()
         for r in self._observedratios:
             sz = self._modelratios[r].size
@@ -363,10 +366,14 @@ class PDRutils:
 
             ff = list()
             for pix in _z:
-                _q = (self._observedratios[r].flux - pix)/self._observedratios[r].error
+                mf = ma.masked_invalid(self._observedratios[r].flux)
+                me = ma.masked_invalid(self._observedratios[r].error)
+                #_q = (self._observedratios[r].flux - pix)/self._observedratios[r].error
+                _q = (mf - pix)/me
                 ff.append(_q*_q)
-
+            # result order is g0,n,y,x
             newshape = np.hstack((self._modelratios[r].shape,self._observedratios[r].shape))
+            # result order is y,x,g0,n
             #newshape = np.hstack((self._observedratios[r].shape,self._modelratios[r].shape))
             _qq = np.reshape(ff,newshape)
             _wcs = self._observedratios[r].wcs.deepcopy()
@@ -423,8 +430,14 @@ class PDRutils:
         self.n_map=self._observedratios[fk2].copy()      
         self.n_map.data[spatial_idx]=n
         #fix the headers
-        self._nG0header()   
+        self._nG0header() 
         
+    def plotchisq(self,xaxis,xpix,ypix):
+        """Make a line plot of chisq as a function of G0 or n for a given pixel"""
+        axes = {"G0":0,"n":1}
+        axis = axes[xaxis] #yep key error if you do it wrong
+        
+            
     def comment(self,value,image):
         self.addkey("COMMENT",value,image)
         
@@ -444,8 +457,8 @@ class PDRutils:
         return datetime.datetime.now().isoformat()
     
     def _dataminmax(self,image):
-        self.setkey("DATAMIN",image.data.min(),image)
-        self.setkey("DATAMAX",image.data.max(),image)
+        self.setkey("DATAMIN",np.nanmin(image.data),image)
+        self.setkey("DATAMAX",np.nanmax(image.data),image)
             
     def _signature(self,image):
         self.setkey("AUTHOR","PDR Toolbox "+VERSION,image)

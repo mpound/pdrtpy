@@ -54,6 +54,7 @@ class Measurement(CCDData):
             print("args=",*args)
             print("kwargs=",*kwargs)
         self._identifier = kwargs.pop('identifier', 'unknown')
+        self._filename = None
         #print('calling init')
 
         #On arithmetic operations, this raises the exception. 
@@ -124,7 +125,12 @@ class Measurement(CCDData):
     def identifier(self,id):
         '''Set the string ID of this measurement, e.g. "CO(1-0)""'''
         self._identifier = id
-
+    
+    @property
+    def filename(self):
+        '''Return the FITS file that created this measurement, or None if it didn't originate from a file'''
+        return self._filename
+    
     @property
     def levels(self):
         if self.flux.size != 1:
@@ -182,15 +188,21 @@ class Measurement(CCDData):
     def __repr__(self):
         m = "%s +/- %s %s" % (self.data,self.error,self.unit)
         return m
+    
     def __str__(self):
         m = "%s +/- %s %s" % (self.data,self.error,self.unit)
         return m
-
+    
+    def __getitem__(self,index):
+        '''Allows us to use [] to index into the data array'''
+        return self._data[index]
+    
 def fits_measurement_reader(filename, hdu=0, unit=None, 
                         hdu_uncertainty='UNCERT',
                         hdu_mask='MASK', hdu_flags=None,
                         key_uncertainty_type='UTYPE', **kwd):
     _id = kwd.pop('identifier', 'unknown')
+    #print("Reading ",type(filename))
     z = CCDData.read(filename,hdu,unit,hdu_uncertainty,hdu_mask,key_uncertainty_type, **kwd)
     # @TODO if uncertainty plane not present, look for RMS keyword
     #print("Got FITS file with header meta:",z.header)
@@ -201,6 +213,9 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
     except Exception:
        raise TypeError('could not convert fits_measurement_reader output to Measurement')
     z.identifier(_id)
+    # astropy.io.registry.read creates a FileIO object before calling the registered
+    # reader (this method), so the filename is FileIO.name. 
+    z._filename=filename.name
     return z
 
 with registry.delay_doc_updates(Measurement):
