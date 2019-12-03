@@ -55,9 +55,8 @@ class Measurement(CCDData):
             print("kwargs=",*kwargs)
         self._identifier = kwargs.pop('identifier', 'unknown')
         self._filename = None
-        #print('calling init')
 
-        #On arithmetic operations, this raises the exception. 
+        #Won't work: On arithmetic operations, this raises the exception. 
         #if self._identifier is None:
         #    raise ValueError("an identifier for Measurement must be specified.")
         #On arithmetic operations, this causes an annoying 
@@ -67,11 +66,20 @@ class Measurement(CCDData):
         super().__init__(*args, **kwargs)#, unit=_unit)
         
     def makemeasurement(fluxfile,error,outfile,rms=None):
+        '''Create a FITS files with 2 HDUS, the first being the flux and the 2nd being 
+        the flux uncertainty. This format makes it to read into the underlying CCDData class
+        Parameters:
+            fluxfile - the FITS file containing the flux data as a function of spatial coordinates
+            error - The errors on the flux data
+                Possible values for error are:
+                 1. a filename with the same shape as fluxfile containing the error values per pixel
+                 2. a percentage value 'XX%' must have the "%" symbol in it
+                 3. 'rms' meaning use the rms parameter if given, otherwise look for the RMS keyword 
+                     in the FITS header of the fluxfile
+            outfile - The output file to write the result in (FITS format)
+            rms   -  If error == 'rms', this value may give the rms in same units as flux.
+        '''           
         _flux = fits.open(fluxfile)
-        # possible values for error are:
-        # 1. a filename with the same shape as fluxfile containing the error values per pixel
-        # 2. a percentage value 'XX%' must have the "%" symbol in it
-        # 3. 'rms' meaning use the rms parameter if given, otherwise look for the RMS keyword in the FITS header of the fluxfile
             
         if error == 'rms':
             _error = deepcopy(_flux)
@@ -131,6 +139,19 @@ class Measurement(CCDData):
         '''Return the FITS file that created this measurement, or None if it didn't originate from a file'''
         return self._filename
     
+    def write(self,filename,**kwd):
+        '''Write this Measurement to a FITS file with flux in 1st HDU and error in 2nd HDU. See `astropy.nddata.CCDData.write
+        
+            Parameters
+            ----------
+            filename : str
+                Name of file.
+            kwd :
+                All additional keywords are passed to :py:mod:`astropy.io.fits`
+        '''
+        hdu = self.to_hdu()
+        hdu.writeto(filename,**kwd)
+        
     @property
     def levels(self):
         if self.flux.size != 1:
@@ -201,15 +222,54 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
                         hdu_uncertainty='UNCERT',
                         hdu_mask='MASK', hdu_flags=None,
                         key_uncertainty_type='UTYPE', **kwd):
+    '''Reader for Measurement class, which will be called by Measurement.read.
+    
+        Parameters
+        ----------
+        filename : str
+            Name of fits file.
+
+        hdu : int, optional
+            FITS extension from which Measurement should be initialized. If zero and
+            and no data in the primary extension, it will search for the first
+            extension with data. The header will be added to the primary header.
+            Default is ``0``.
+
+        unit : `~astropy.units.Unit`, optional
+            Units of the image data. If this argument is provided and there is a
+            unit for the image in the FITS header (the keyword ``BUNIT`` is used
+            as the unit, if present), this argument is used for the unit.
+            Default is ``None``.
+
+        hdu_uncertainty : str or None, optional
+            FITS extension from which the uncertainty should be initialized. If the
+            extension does not exist the uncertainty of the Measurement is ``None``.
+            Default is ``'UNCERT'``.
+
+        hdu_mask : str or None, optional
+            FITS extension from which the mask should be initialized. If the
+            extension does not exist the mask of the Measurement is ``None``.
+            Default is ``'MASK'``.
+
+        hdu_flags : str or None, optional
+            Currently not implemented.
+            Default is ``None``.
+
+        key_uncertainty_type : str, optional
+            The header key name where the class name of the uncertainty  is stored
+            in the hdu of the uncertainty (if any).
+            Default is ``UTYPE``.
+        kwd :
+            Any additional keyword parameters are passed through to the FITS reader
+            in :mod:`astropy.io.fits`; see Notes for additional discussion.
+    '''
+   
     _id = kwd.pop('identifier', 'unknown')
-    #print("Reading ",type(filename))
     z = CCDData.read(filename,hdu,unit,hdu_uncertainty,hdu_mask,key_uncertainty_type, **kwd)
     # @TODO if uncertainty plane not present, look for RMS keyword
-    #print("Got FITS file with header meta:",z.header)
     # @TODO header values get stuffed into WCS, others may be dropped by CCDData._generate_wcs_and_update_header
     try:
        z = Measurement(z)
-       #print("Measurement has header:",z.header)
     except Exception:
        raise TypeError('could not convert fits_measurement_reader output to Measurement')
     z.identifier(_id)
@@ -218,6 +278,7 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
     z._filename=filename.name
     return z
 
+    
 with registry.delay_doc_updates(Measurement):
     registry.register_reader('fits', Measurement, fits_measurement_reader)
     
