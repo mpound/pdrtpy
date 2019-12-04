@@ -1,0 +1,6 @@
+|     numerator|denominator|              label|         filename|   z|
+|          char|       char|               char|             char|long|
+|              |           |                   |                 |    |
+|          null|       null|               null|             null|null|
+          OI_63     CII_158       OI_63/CII_158     oicpsmcwebcut    1 
+  OI_63+CII_158         FIR   OI_63+CII_158/FIR ciioifirwebsmccut    1 
