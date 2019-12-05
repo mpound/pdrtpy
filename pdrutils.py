@@ -10,6 +10,17 @@ import astropy.units as u
 from astropy.table import Table
 
 _VERSION_ = "2.0-Beta"
+
+# Radiation Field Strength units in cgs
+_RFS_UNIT_ = u.erg/(u.second*u.cm*u.cm)
+
+# ISRF in other units
+habing_unit = u.def_unit('Habing',1.6E-3*_RFS_UNIT_)
+u.add_enabled_units(habing_unit)
+draine_unit = u.def_unit('Draine',2.704E-3*_RFS_UNIT_)
+u.add_enabled_units(draine_unit)
+mathis_unit = u.def_unit('Mathis',2.028E-3*_RFS_UNIT_)
+u.add_enabled_units(mathis_unit)
     
 #See https://stackoverflow.com/questions/880530/can-modules-have-properties-the-same-way-that-objects-can
 # only works python 3.8+??
@@ -71,58 +82,63 @@ def kosmatau():
 def smcmodels():
     return model_table("smc_models.tab")
 
-#########################################################
-# Conversions between various units of ISRF
+################################################################
+# Conversions between various units of Radiation Field Strength
 # See table on page 18 of 
 # https://ism.obspm.fr/files/PDRDocumentation/PDRDoc.pdf
-#########################################################
+################################################################
+
+def to(unit,image):
+  '''Convert the image values to another unit.
+     While generally this is intended for converting radiation field
+     strength maps between Habing, Draine, cgs, etc, it will work for
+     any image that has a unit member variable. So, e.g., it would work
+     to convert density from cm^-3 to m^-3.
+
+     Parameters:
+        unit - the string or `astropy.units.Unit` identifying the unit to
+        convert to 
+
+        image - the image to convert. It must have a `numpy.ndarray`
+        data member and `astropy.units.Unit` unit member.
+
+     Returns:
+        an image with converted values and units
+  '''
+  value = image.unit.to(unit)
+  newmap = image.copy()
+  newmap.data = newmap.data * value
+  newmap.unit = u.Unit(unit)
+  return newmap
 
 def toHabing(image):
-  try:
-    habing_unit = u.def_unit('Habing',1.6E-3*u.erg/(u.second*u.cm*u.cm))
-    u.add_enabled_units(habing_unit)
-  except ValueError:
-    # already added. I don't know of any other way to check for this
-    pass
-  value = image.unit.to('Habing')
-  newmap = image.copy()
-  newmap.data = newmap.data * value
-  newmap.unit = u.Unit('Habing')
-  return newmap
+  '''Convert a radiation field strength image to Habing units (G_0).
+     1 Habing = 1.6E-3 erg/s/cm^2
+     See table on page 18 of 
+     https://ism.obspm.fr/files/PDRDocumentation/PDRDoc.pdf
+  '''
+  return to('Habing',image)
    
 def toDraine(image):
+  '''Convert a radiation field strength image to Draine units (\chi).
+     1 Draine = 2.704E-3 erg/s/cm^2
+     See table on page 18 of 
+     https://ism.obspm.fr/files/PDRDocumentation/PDRDoc.pdf
+  '''
 # 1 Draine = 1.69 G0 (Habing)\n",
-  try:
-    draine_unit = u.def_unit('Draine',2.704E-3*u.erg/(u.second*u.cm*u.cm))
-    u.add_enabled_units(draine_unit)
-  except ValueError:
-    # already added. I don't know of any other way to check for this
-    pass
-  value = image.unit.to('Draine')
-  newmap = image.copy()
-  newmap.data = newmap.data * value
-  newmap.unit = u.Unit('Draine')
-  return newmap
+  return to('Draine',image)
 
 def toMathis(image):
-# 1 Mathis = 0.75*Draine
-  try:
-    mathis_unit = u.def_unit('Mathis',2.028E-3*u.erg/(u.second*u.cm*u.cm))
-    u.add_enabled_units(mathis_unit)
-  except ValueError:
-    # already added. I don't know of any other way to check for this
-    pass
-  value = image.unit.to('Mathis')
-  newmap = image.copy()
-  newmap.data = newmap.data * value
-  newmap.unit = u.Unit('Mathis')
-  return newmap
+  '''Convert a radiation field strength image to Mathis units
+     1 Mathis = 2.028E-3 erg/s/cm^2
+     See table on page 18 of 
+     https://ism.obspm.fr/files/PDRDocumentation/PDRDoc.pdf
+  '''
+  return to('Mathis',image)
 
 def tocgs(image):
-  value = image.unit.to(u.erg/(u.second*u.cm*u.cm))
-  newmap = image.copy()
-  newmap = newmap * value
-  newmap.unit = u.Unit(u.erg/(u.second*u.cm*u.cm))
+  '''Convert a radiation field strength image to erg/s/cm^2'''
+  return to(_RFS_UNIT_,image)
 
 # use if current_models.tab is unavailable
 def _make_default_table():
