@@ -21,6 +21,7 @@ from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertaint
 from astropy.visualization import simple_norm, ZScaleInterval , ImageNormalize
 from astropy.visualization.stretch import SinhStretch,  LinearStretch
 
+import pdrutils as utils
 
 class PDRPlot:
     def __init__(self,toolbox):
@@ -36,6 +37,27 @@ class PDRPlot:
         norm= ImageNormalize(image.data,ZScaleInterval(),stretch=LinearStretch())
         return norm
     
+    def plotG0(self,datasource,units='Habing',cmap='plasma',image=True, contours=False,levels=None,projection=None):
+        plt.subplot(projection=
+        if type(datasource) == str:
+            k = fits.open(datasource)[0]
+        else:
+            k=datasource
+
+        k = utils.to(units,k)
+        title = dict()
+        title{'Habing'} = 'r$G_0$'
+        title{'Draine'} = 'r$\chi$'
+        title{'Mathis'} = 'r$ISRF_{Mathis}$
+
+
+
+        min_ = k.data.min()
+        max_ = k.data.max()
+        ax=plt.subplot(111,project=k.wcs,aspect='equal')
+        normalizer = simple_norm(k.data, min_cut=min_,max_cut=max_, stretch='log', clip=False)
+        ax.imshow(k,
+        
     def plotReducedChisq(self,cmap='plasma',image=True, contours=True,
                          levels=None,measurements=None):
         self._plot(self_reducedChisq,cmap,image, contours,levels,measurements)
@@ -44,6 +66,7 @@ class PDRPlot:
                   levels=None, measurements=None):
         self._plot(self._chisq,cmap,image, contours,levels,measurements)
        
+    # only works for single pixe mapsx
     def _plot(self,datasource,cmap, image, contours, levels, measurements):
         if type(datasource) == str:
             k = fits.open(datasource)[0]
