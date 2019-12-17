@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-
-
 #todo: Look into seaborn https://seaborn.pydata.org
 # Also https://docs.bokeh.org/en
 # especially for coloring and style
@@ -9,8 +6,9 @@ import numpy as np
 import numpy.ma as ma
 import scipy.stats as stats
 
-import matplotlib.pyplot as plt
+import matplotlib.figure
 import matplotlib.colors as mpcolors
+import matplotlib.cm as mcm
 from matplotlib import ticker
 from matplotlib.lines import Line2D
 
@@ -23,51 +21,126 @@ from astropy.visualization.stretch import SinhStretch,  LinearStretch
 
 import pdrutils as utils
 
-class PDRPlot:
-    def __init__(self,toolbox):
+rad_title = dict()
+rad_title['Habing'] = '$G_0$'
+rad_title['Draine'] = '$\chi$'
+rad_title['Mathis'] = 'ISRF$_{Mathis}$'
+
+class PDRPlot(object):
+    """ Class to plot various results from PDR Toolbox model fitting """
+    def __init__(self,toolbox,**kwargs):
+        import matplotlib.pyplot as plt
+        self._plt = matplotlib.pyplot
+
         self._toolbox=toolbox
+        self.figure = None
+        self.axis = None
+        self._xlim = [None,None]
+        self._ylim = [None,None]
+        self._plotkwargs = kwargs
+
+    def _autolevels(self,data,steps='log',numlevels=None):
+        # tip of the hat to the WIP autolevels code lev.
+        # http://admit.astro.umd.edu/wip ,  wip/src/plot/levels.c
+        # CVS at http://www.astro.umd.edu/~teuben/miriad/install.html
+        print(type(data))
+        max_ =data.max()
+        min_ = data.min()
+        print("autolev min %f max %f"%(min_,max_))
+        if numlevels is None:
+            numlevels = int(0.5+3*(np.log(max_)-np.log(min_))/np.log(10))
+        #print("levels start %d levels"%numlevels)
+        # force number of levels to be between 5 and 15
+        numlevels = max(numlevels,5)
+        numlevels = min(numlevels,15)
     
-    def plotchisq(self,xaxis,xpix,ypix):
+        if steps[0:3] == 'lin':
+            slope = (max_ - min_)/(numlevels-1)
+            levels = np.array([min_+slope*j for j in range(0,numlevels)])
+        elif steps[0:3] == 'log':
+            # if data minimum is non-positive (shouldn't happen for models),
+            #, min_cut=min_,max_cut=max_, stretch='log', clip=False) start log contours at lgo10(1) = 0
+            if min_ <= 0: min_=1
+            slope = np.log10(max_/min_)/(numlevels - 1)
+            levels = np.array([min_ * np.power(10,slope*j) for j in range(0,numlevels)])
+        else:
+           raise Exception("steps must be 'lin' or 'log'")
+        print("Autolevels got %d levels %s"%(numlevels,levels))
+        return levels
+        
+    def _zscale(self,image):
+        norm= ImageNormalize(image,ZScaleInterval(contrast=0.5),stretch=LinearStretch())
+        return norm
+    
+    def chisq(self,xaxis,xpix,ypix):
         """Make a line plot of chisq as a function of G0 or n for a given pixel"""
         axes = {"G0":0,"n":1}
         axis = axes[xaxis] #yep key error if you do it wrong
             
-              
-    def _zscale(self,image):
-        norm= ImageNormalize(image.data,ZScaleInterval(),stretch=LinearStretch())
-        return norm
-    
-    def plotG0(self,datasource,units='Habing',cmap='plasma',image=True, contours=False,levels=None,projection=None):
-        plt.subplot(projection=
-        if type(datasource) == str:
-            k = fits.open(datasource)[0]
+    def modelratio(self,identifier,**kwargs):
+        self._plot(self._toolbox._modelratios[identifier],kwargs)
+
+    def observedratio(self,identifier,**kwargs):
+        self._plot(self._toolbox._observedratios[identifier],kwargs)
+
+    def density(self,units='cm^-3',cmap='plasma',image=True, contours=False,levels=None,norm=None):
+        #fancyunits=self._toolbox.n_map.unit.to_string('latex')
+        fancyunits=u.Unit(units).to_string('latex')
+        _title = 'n ('+fancyunits+')'
+        self._plot(self._toolbox.n_map,units,cmap,image,contours,levels,norm,title=_title)
+
+    def radiationField(self,units='Habing',cmap='plasma',image=True, contours=False,levels=None,norm=None):
+        #fancyunits=self._toolbox.g0_map.unit.to_string('latex')
+        if units not in rad_title:
+            fancyunits=u.Unit(units).to_string('latex')
+            _title='Radiation Field ('+fancyunits+')'
         else:
-            k=datasource
+            _title=rad_title[units]
+        self._plot(self._toolbox.g0_map,units,cmap,image,contours,levels,norm,title=_title)
 
-        k = utils.to(units,k)
-        title = dict()
-        title{'Habing'} = 'r$G_0$'
-        title{'Draine'} = 'r$\chi$'
-        title{'Mathis'} = 'r$ISRF_{Mathis}$
-
-
-
-        min_ = k.data.min()
-        max_ = k.data.max()
-        ax=plt.subplot(111,project=k.wcs,aspect='equal')
-        normalizer = simple_norm(k.data, min_cut=min_,max_cut=max_, stretch='log', clip=False)
-        ax.imshow(k,
+    def _plot(self,data,units,cmap,image,contours,levels,norm,title=None):
+        k=utils.to(units,data)
+        km = ma.masked_invalid(k)
+        min_ = km.min()
+        max_ = km.max()
+        ax=self._plt.subplot(111,projection=k.wcs,aspect='equal')
+        if norm == 'simple':
+            normalizer = simple_norm(km, min_cut=min_,max_cut=max_, stretch='log', clip=False)
+        elif norm == 'zscale':
+            normalizer = self._zscale(km)
+        else: 
+            normalizer = norm
         
-    def plotReducedChisq(self,cmap='plasma',image=True, contours=True,
+        if image: 
+            current_cmap = mcm.get_cmap(cmap)
+            current_cmap.set_bad(color='white',alpha=1)
+            self._plt.imshow(km,cmap=current_cmap,origin='lower',norm=normalizer)
+            self._plt.colorbar()
+        if contours:
+            if image==False: colors='black'
+            else: colors='white'
+            if levels is None:
+                # Figure out some autolevels 
+                steps='log'
+                contourset = ax.contour(km, levels=self._autolevels(km,steps),colors=colors)
+            else:
+                contourset = ax.contour(km, levels=levels, colors=colors)
+                # todo: add contour level labelling
+                # See https://matplotlib.org/3.1.1/gallery/images_contours_and_fields/contour_label_demo.html
+        if title is not None: self._plt.title(title)
+        self._plt.xlabel(k.wcs.wcs.lngtyp)
+        self._plt.ylabel(k.wcs.wcs.lattyp)
+        
+    def reducedChisq(self,cmap='plasma',image=True, contours=True,
                          levels=None,measurements=None):
         self._plot(self_reducedChisq,cmap,image, contours,levels,measurements)
         
-    def plotChisq(self,cmap='plasma',image=True, contours=True, 
+    def oldplotChisq(self,cmap='plasma',image=True, contours=True, 
                   levels=None, measurements=None):
         self._plot(self._chisq,cmap,image, contours,levels,measurements)
        
     # only works for single pixe mapsx
-    def _plot(self,datasource,cmap, image, contours, levels, measurements):
+    def _oldplot(self,datasource,cmap, image, contours, levels, measurements):
         if type(datasource) == str:
             k = fits.open(datasource)[0]
         else:
@@ -140,7 +213,7 @@ class PDRPlot:
                            linestyles=lstyles, colors=colors)
                 
 
-    def plotConfidenceIntervals(self,image=True, cmap='plasma',contours=True,levels=None,reduced=False):
+    def confidenceIntervals(self,image=True, cmap='plasma',contours=True,levels=None,reduced=False):
         if reduced:  chi2_stat = stats.distributions.chi2.cdf(self._reducedChisq.data,self._dof)
         else:       chi2_stat = stats.distributions.chi2.cdf(self._chisq.data,self._dof)
         normalizer = simple_norm(chi2_stat, stretch='log', clip=False)
@@ -177,33 +250,5 @@ class PDRPlot:
             plt.show()
             plt.clf()
             
-    def _autolevels(self,data,steps='log',numlevels=None):
-        # tip of the hat to the WIP autolevels code lev.
-        # http://admit.astro.umd.edu/wip ,  wip/src/plot/levels.c
-        # CVS at http://www.astro.umd.edu/~teuben/miriad/install.html
-        max_ =data.max()
-        min_ = data.min()
-        if numlevels is None:
-            numlevels = int(0.5+3*(np.log(max_)-np.log(min_))/np.log(10))
-        #print("levels start %d levels"%numlevels)
-        # force number of levels to be between 5 and 15
-        numlevels = max(numlevels,5)
-        numlevels = min(numlevels,15)
-    
-        #print("Autolevels got %d levels"%numlevels)
-        if steps[0:3] == 'lin':
-            slope = (max_ - min_)/(numlevels-1)
-            levels = np.array([min_+slope*j for j in range(0,numlevels)])
-        elif steps[0:3] == 'log':
-            # if data minimum is non-positive (shouldn't happen for models),
-            # start log contours at lgo10(1) = 0
-            if min_ <= 0: min_=1
-            slope = np.log10(max_/min_)/(numlevels - 1)
-            levels = np.array([min_ * np.power(10,slope*j) for j in range(0,numlevels)])
-        else:
-           raise Exception("steps must be 'lin' or 'log'")
-        return levels
-        
-    
 if __name__ == "__main__":
    print("foo")
