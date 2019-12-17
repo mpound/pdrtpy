@@ -234,6 +234,9 @@ class PDRToolbox:
         self.writeChisq()
         self.computeBestnG0Maps()
      
+    def observedratios(self):
+        return list(self._observedratios.keys())
+
     def computeValidRatios(self):
         '''Compute the valid observed ratio maps for the available model data'''
         if not self._check_measurement_shapes():
