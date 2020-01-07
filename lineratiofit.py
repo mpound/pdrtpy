@@ -19,14 +19,20 @@ import astropy.units as u
 from astropy.table import Table
 from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
 
+from tool import Tool
 import pdrutils as utils
 
 # potential new structure
-# PDR
+# PDRToolbox
 #   utils
-#   toolbox
+#   tool.py
+#    class Tool(object)
+#      self._plotter = None
+#      def run(self) { return;} // all subclass tools must implement run
+#   lineratiofit(Tool)
+#   h2excitation(Tool)
 #   plot
-class PDRToolbox:
+class LineRatioFit(Tool):
     def __init__(self,models=utils.wolfire(),measurements=None):
         if type(models) == str:
             self._initialize_modelTable(models)
@@ -79,7 +85,11 @@ class PDRToolbox:
        return self._check_shapes(self._observedratios)
             
     def addMeasurement(self,m):
-        '''Add a Measurement to internal dictionary used to compute ratios'''
+        '''Add a Measurement to internal dictionary used to compute ratios
+
+           Parameters:
+              m - a Measurement instance
+        '''
         if self._measurements:
             self._measurements[m.id] = m
         else:
@@ -462,13 +472,12 @@ class PDRToolbox:
 if __name__ == "__main__":
     from measurement import Measurement 
     import pdrutils as utils
-    m1 = Measurement(data=[30],uncertainty = StdDevUncertainty([5.]),identifier="OI_145",unit="adu")
+    m1 = Measurement(data=30,uncertainty = StdDevUncertainty([5.]),identifier="OI_145",unit="adu")
     m2 = Measurement(data=10.,uncertainty = StdDevUncertainty(2.),identifier="CI_609",unit="adu")
     m3 = Measurement(data=10.,uncertainty = StdDevUncertainty(1.5),identifier="CO_21",unit="adu")
     m4 = Measurement(data=100.,uncertainty = StdDevUncertainty(10.),identifier="CII_158",unit="adu")
 
-    #p = PDRutils("current_models.tab",measurements = [m1,m2,m3,m4])
-    p = PDRtoolbox(utils.wolfire(),measurements = [m1,m2,m3,m4])
+    p = LineRatioFit(utils.wolfire(),measurements = [m1,m2,m3,m4])
     print("num ratios:", p.ratiocount)
     print("modelfiles used: ", p._modelfilesUsed)
     p.run()
