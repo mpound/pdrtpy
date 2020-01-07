@@ -68,19 +68,65 @@ def model_dir():
     '''Project model directory, including trailing slash'''
     return os.path.join(root_dir(),'models/')
 
-def model_table(filename):
-    return root_dir()+filename
+def table_dir():
+    '''Project ancillary tables directory, including trailing slash'''
+    return os.path.join(root_dir(),'tables/')
+
+def _tablename(filename):
+    '''Return fully qualified path of the input table.
+       Parameters:
+          filename - input table file name
+    '''
+    return table_dir()+filename
+
+def get_table(filename,format='ipac'):
+    '''Return an astropy Table read from the input filename.  
+       is 'ipac'
+       Parameters:
+          filename - input filename, no path
+          format - file format, Default: ipac
+    '''
+    return Table.read(_tablename(filename),format=format)
 
 #@module_property
 #def _wolfire():
 def wolfire():
-    return model_table("current_models.tab")
+    '''Wolfire/Kaufman models'''
+    return model_table("wolfire_models.tab")
 
 def kosmatau():
+    '''KOSMA TAU models'''
     return model_table("kosmatau_models.tab")
 
 def smcmodels():
+    '''Wolfire models for Small Magellanic Cloud'''
     return model_table("smc_models.tab")
+
+def check_units(input_unit,compare_to):
+    '''Return True if the input unit is equivalent to compare unit 
+       
+       Parameters:
+          input_unit - astropy.Unit, astropy.Quanitity or string describing the unit to check.
+          compare_to - astropy.Unit, astropy.Quanitity or string describing the unit to check against.
+
+       Returns:
+          True if units are equivalent, False otherwise
+    '''
+    if isinstance(input_unit,u.Unit):
+        test_unit = input_unit
+    if isinstance(input_unit,u.Quantity):
+        test_unit = input_unit.unit
+    else: # assume it is a string
+        test_unit = u.Unit(input_unit)
+
+    if isinstance(compare_to,u.Unit):
+        compare_unit = compare_to
+    if isinstance(compare_to,u.Quantity):
+        compare_unit = compare_to.unit
+    else: # assume it is a string
+        compare_unit = u.Unit(compare_to)
+
+    return test_unit.is_equivalent(compare_unit)
 
 ################################################################
 # Conversions between various units of Radiation Field Strength
