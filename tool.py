@@ -1,5 +1,5 @@
 
-class Tool(object)
+class Tool(object):
     """ Base class object for PDRToolbox tools.  This class implements a simple 
         interface with a run method.  Tools will generally do some set up
         such as reading in observational data before run() can be invoked.
@@ -8,7 +8,7 @@ class Tool(object)
         # most tools will have their own plotter
         self._plotter = None
 
-    def run(self) 
+    def run(self):
         """ Runs the tool. Each subclass Tool must implement its own run() method.
 
             Returns: None
