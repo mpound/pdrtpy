@@ -177,14 +177,14 @@ class Measurement(CCDData):
         '''Multiply this Measurement by another, propagating errors, units,  and updating identifiers'''
         z=super().multiply(other)
         z._identifier = self.id + '*' + other.id
-        z._unit = self.unit*self.unit
+        z._unit = self.unit*other.unit
         return z
         
     def divide(self,other):
         '''Divide this Measurement by another, propagating errors, units,  and updating identifiers'''
         z=super().divide(other)
         z._identifier = self.id + '/' + other.id
-        z._unit = self.unit/self.unit
+        z._unit = self.unit/other.unit
         return z
     
     def __add__(self,other):
