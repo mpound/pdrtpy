@@ -20,7 +20,9 @@ from astropy.table import Table
 from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
 
 from tool import Tool
+from plot import LineRatioPlot
 import pdrutils as utils
+
 
 # potential new structure
 # PDRToolbox
@@ -38,13 +40,13 @@ class LineRatioFit(Tool):
             self._initialize_modelTable(models)
         else:
             self._modelTable = models
-        if measurements is not None:
-            if type(measurements) == dict:
-                self._measurements = measurements
-            else:
-                self._init_measurements(measurements)
+        self._modelTable.add_index("label")
+
+        if type(measurements) == dict or measurements is None:
+            self._measurements = measurements
         else:
-            self._measurements = None
+            self._init_measurements(measurements)
+
         self._modelratios = None
         self._set_modelfilesUsed()
         self._observedratios = None
@@ -53,6 +55,7 @@ class LineRatioFit(Tool):
         self._reducedChisq = None
         self.isrf_unit = None
         self.density_unit = None
+        self._plotter = LineRatioPlot(self)
     
     def _init_measurements(self,m):
         self._measurements = dict()
@@ -63,7 +66,6 @@ class LineRatioFit(Tool):
         """initialize models from an IPAC format ASCII file"""
         # Todo: add LaTeX labels as a column for more stylish plotting
         self._modelTable=Table.read(filename,format="ascii.ipac")
-        self._modelTable.add_index("label")
 
     def _set_modelfilesUsed(self):
         self._modelfilesUsed = dict()
@@ -337,7 +339,7 @@ class LineRatioFit(Tool):
             raise Exception("Not enough ratios to compute chisq.  Need 2, got %d"%self.ratiocount)
         sumary = sum((self._deltasq[r]._data for r in self._deltasq))
         self._dof = len(self._deltasq) - 1
-        k = self._firstkey(self._deltasq)
+        k = utils.firstkey(self._deltasq)
         self._chisq = CCDData(sumary,unit='adu',wcs=self._deltasq[k].wcs,meta=self._deltasq[k].meta)
         self._reducedChisq =  self._chisq.divide(self._dof)
         self._fixheader(self._chisq)
@@ -369,8 +371,8 @@ class LineRatioFit(Tool):
         # np.flip would also swap them.
         #print(qq[:,:2][:,[1,0]])
         #print(np.flip(qq[:,:2]))
-        fk = self._firstkey(self._modelratios)
-        fk2 = self._firstkey(self._observedratios)
+        fk = utils.firstkey(self._modelratios)
+        fk2 = utils.firstkey(self._observedratios)
         newshape = self._observedratios[fk2].shape
         # figure out which G0,n the minimum refer to, and reshape into the RA-DEC map
         #g0=10**(self._modelratios[fk].wcs.wcs_pix2world(np.flip(qq[:,:2]),0))[:,1].reshape(newshape)
@@ -450,12 +452,6 @@ class LineRatioFit(Tool):
         self.setkey("CRPIX3",1.0,image)
         self.setkey("CRPIX4",1.0,image)
         
-    def _firstkey(self,d):
-        """Return the 'first' key in a dictionary
-           Parameters:
-               d - the dictionary
-        """
-        return list(d)[0]
          
     def _nG0header(self):
         '''Common header items in the n and G0 FITS files'''

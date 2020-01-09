@@ -12,6 +12,7 @@ import matplotlib.cm as mcm
 from matplotlib import ticker
 from matplotlib.lines import Line2D
 
+from astropy.nddata.utils import Cutout2D
 from astropy.io import fits
 import astropy.wcs as wcs
 import astropy.units as u
@@ -26,18 +27,12 @@ rad_title['Habing'] = '$G_0$'
 rad_title['Draine'] = '$\chi$'
 rad_title['Mathis'] = 'ISRF$_{Mathis}$'
 
-class PDRPlot(object):
-    """ Class to plot various results from PDR Toolbox model fitting """
-    def __init__(self,toolbox,**kwargs):
+class PlotBase:
+    def __init__(self,tool):
         import matplotlib.pyplot as plt
         self._plt = matplotlib.pyplot
-
-        self._toolbox=toolbox
-        self.figure = None
-        self.axis = None
-        self._xlim = [None,None]
-        self._ylim = [None,None]
-        self._plotkwargs = kwargs
+        self._tool = tool
+        #print("Done PlotBase")
 
     def _autolevels(self,data,steps='log',numlevels=None):
         # tip of the hat to the WIP autolevels code lev.
@@ -72,33 +67,43 @@ class PDRPlot(object):
         norm= ImageNormalize(image,ZScaleInterval(contrast=0.5),stretch=LinearStretch())
         return norm
     
+class LineRatioPlot(PlotBase):
+    """ Class to plot various results from PDR Toolbox model fitting """
+    def __init__(self,tool,**kwargs):
+        super().__init__(tool)
+        self.figure = None
+        self.axis = None
+        self._xlim = [None,None]
+        self._ylim = [None,None]
+        self._plotkwargs = kwargs
+
     def chisq(self,xaxis,xpix,ypix):
         """Make a line plot of chisq as a function of G0 or n for a given pixel"""
         axes = {"G0":0,"n":1}
         axis = axes[xaxis] #yep key error if you do it wrong
             
     def modelratio(self,identifier,**kwargs):
-        self._plot(self._toolbox._modelratios[identifier],kwargs)
+        self._plot(self._tool._modelratios[identifier],kwargs)
 
-    def observedratio(self,identifier,**kwargs):
-        self._plot(self._toolbox._observedratios[identifier],kwargs)
+    def observedratio(self,identifier,image=True,contours=False,levels=None):
+        self._plot(data=self._tool._observedratios[identifier],units=u.dimensionless_unscaled,cmap='viridis',image=image,contours=contours,levels=levels,norm=None,title=identifier)
 
     def density(self,units='cm^-3',cmap='plasma',image=True, contours=False,levels=None,norm=None):
-        #fancyunits=self._toolbox.n_map.unit.to_string('latex')
+        #fancyunits=self._tool.n_map.unit.to_string('latex')
         fancyunits=u.Unit(units).to_string('latex')
         _title = 'n ('+fancyunits+')'
-        self._plot(self._toolbox.n_map,units,cmap,image,contours,levels,norm,title=_title)
+        self._plot(self._tool.n_map,units,cmap,image,contours,levels,norm,title=_title)
 
     def radiationField(self,units='Habing',cmap='plasma',image=True, contours=False,levels=None,norm=None):
-        #fancyunits=self._toolbox.g0_map.unit.to_string('latex')
+        #fancyunits=self._tool.g0_map.unit.to_string('latex')
         if units not in rad_title:
             fancyunits=u.Unit(units).to_string('latex')
             _title='Radiation Field ('+fancyunits+')'
         else:
             _title=rad_title[units]
-        self._plot(self._toolbox.g0_map,units,cmap,image,contours,levels,norm,title=_title)
+        self._plot(self._tool.g0_map,units,cmap,image,contours,levels,norm,title=_title)
 
-    def _plot(self,data,units,cmap,image,contours,levels,norm,title=None):
+    def _plot(self,data,units,cmap,image,contours,levels,norm,title,**kwargs):
         k=utils.to(units,data)
         km = ma.masked_invalid(k)
         min_ = km.min()
@@ -111,10 +116,10 @@ class PDRPlot(object):
         else: 
             normalizer = norm
         
-        if image: 
+        if image:
             current_cmap = mcm.get_cmap(cmap)
             current_cmap.set_bad(color='white',alpha=1)
-            self._plt.imshow(km,cmap=current_cmap,origin='lower',norm=normalizer)
+            self._plt.imshow(km,origin='lower',norm=normalizer,cmap=cmap)
             self._plt.colorbar()
         if contours:
             if image==False: colors='black'
@@ -131,11 +136,14 @@ class PDRPlot(object):
         self._plt.xlabel(k.wcs.wcs.lngtyp)
         self._plt.ylabel(k.wcs.wcs.lattyp)
         
+######################################################3
+## FROM HERE DOWN NEEDS WORK FOR MULTIPIXEL MAPS
+######################################################3
     def reducedChisq(self,cmap='plasma',image=True, contours=True,
                          levels=None,measurements=None):
-        self._plot(self_reducedChisq,cmap,image, contours,levels,measurements)
+        self._plot(self._tool._reducedChisq,cmap,image, contours,levels,measurements)
         
-    def oldplotChisq(self,cmap='plasma',image=True, contours=True, 
+    def _oldplotChisq(self,cmap='plasma',image=True, contours=True, 
                   levels=None, measurements=None):
         self._plot(self._chisq,cmap,image, contours,levels,measurements)
        
@@ -250,5 +258,55 @@ class PDRPlot(object):
             plt.show()
             plt.clf()
             
-if __name__ == "__main__":
-   print("foo")
+
+##############################################################################
+class H2ExcitationPlot(PlotBase):
+    def __init__(self,tool,**kwargs):
+        super().__init__(tool)
+        self.figure = None
+        self.axis = None
+        self._xlim = [None,None]
+        self._ylim = [None,None]
+        self._plotkwargs = kwargs
+
+    def _plotimage(self,data,units,cmap,image,contours,levels,norm):
+        k=utils.to(units,data)
+        km = ma.masked_invalid(k)
+        min_ = km.min()
+        max_ = km.max()
+        ax=self._plt.subplot(111,projection=k.wcs,aspect='equal')
+        if norm == 'simple':
+            normalizer = simple_norm(km, min_cut=min_,max_cut=max_, stretch='log', clip=false)
+        elif norm == 'zscale':
+            normalizer = self._zscale(km)
+        else: 
+            normalizer = norm
+        
+        if image: 
+            current_cmap = mcm.get_cmap(cmap)
+            current_cmap.set_bad(color='white',alpha=1)
+            self._plt.imshow(km,cmap=current_cmap,origin='lower',norm=normalizer)
+            self._plt.colorbar()
+        if contours:
+            if image==false: colors='black'
+            else: colors='white'
+            if levels is none:
+                # figure out some autolevels 
+                steps='log'
+                contourset = ax.contour(km, levels=self._autolevels(km,steps),colors=colors)
+            else:
+                contourset = ax.contour(km, levels=levels, colors=colors)
+                # todo: add contour level labelling
+                # See https://matplotlib.org/3.1.1/gallery/images_contours_and_fields/contour_label_demo.html
+        if title is not None: self._plt.title(title)
+        self._plt.xlabel(k.wcs.wcs.lngtyp)
+        self._plt.ylabel(k.wcs.wcs.lattyp)
+
+    def plot_diagram(self,x,y,xsize,ysize,norm=True):
+        cdavg = self._tool.average_column_density(norm,x,y,xsize,ysize,line=False)
+        cdval = list(cdavg.values())*self._tool._cd_units
+        energies = list(self._tool.energies(line=False).values())*u.K
+        ax=self._plt.subplot(111)
+        ax.scatter(x=energies,y=cdavg)
+        
+

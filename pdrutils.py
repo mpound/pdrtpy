@@ -79,6 +79,7 @@ def _tablename(filename):
     '''
     return table_dir()+filename
 
+
 def get_table(filename,format='ipac'):
     '''Return an astropy Table read from the input filename.  
        is 'ipac'
@@ -88,19 +89,26 @@ def get_table(filename,format='ipac'):
     '''
     return Table.read(_tablename(filename),format=format)
 
+def firstkey(d):
+    """Return the 'first' key in a dictionary
+       Parameters:
+           d - the dictionary
+    """
+    return list(d)[0]
+
 #@module_property
 #def _wolfire():
 def wolfire():
     '''Wolfire/Kaufman models'''
-    return model_table("wolfire_models.tab")
+    return get_table("wolfire_models.tab")
 
 def kosmatau():
     '''KOSMA TAU models'''
-    return model_table("kosmatau_models.tab")
+    return get_table("kosmatau_models.tab")
 
 def smcmodels():
     '''Wolfire models for Small Magellanic Cloud'''
-    return model_table("smc_models.tab")
+    return get_table("smc_models.tab")
 
 def check_units(input_unit,compare_to):
     '''Return True if the input unit is equivalent to compare unit 
