@@ -41,6 +41,7 @@ def module_property(func):
         else:
             return old_getattr(name)
 
+
     module.__getattr__ = new_getattr
     return func
 
@@ -80,14 +81,18 @@ def _tablename(filename):
     return table_dir()+filename
 
 
-def get_table(filename,format='ipac'):
+def get_table(filename,format='ipac',path=None):
     '''Return an astropy Table read from the input filename.  
        is 'ipac'
        Parameters:
           filename - input filename, no path
           format - file format, Default: ipac
+          path - path to filename relative to models directory.  Default of None means look in "tables" directory 
     '''
-    return Table.read(_tablename(filename),format=format)
+    if path is None:
+        return Table.read(_tablename(filename),format=format)
+    else:
+        return Table.read(model_dir()+path+filename,format=format)
 
 def firstkey(d):
     """Return the 'first' key in a dictionary
