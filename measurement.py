@@ -94,7 +94,7 @@ class Measurement(CCDData):
             _error[0].data = _flux[0].data*percent
         else:
             _error = fits.open(error)
-        print(_error[0].data.shape)
+        #print(_error[0].data.shape)
  
         fb = _flux[0].header.get('bunit','adu')
         eb = _error[0].header.get('bunit','adu')
