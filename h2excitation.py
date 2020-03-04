@@ -6,6 +6,7 @@ from measurement import Measurement
 import math
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy import curve_fit
 
 from tool import Tool
 import pdrutils as utils
@@ -158,12 +159,21 @@ class H2Excitation(Tool):
         cdunit = cdnorm[utils.firstkey(cdnorm)].unit
         cdavg = dict()
         for cd in cdnorm:
-            weights = cdnorm[cd].uncertainty.array[y:y+ysize,x:x+xsize]
+            w = cdnorm[cd].uncertainty.array[y:y+ysize,x:x+xsize]
+            weights = np.ma.masked_array(w,np.isnan(w))
+            #print("weights[%s]: %s"%(cd,weights))
             if line:
                 index = cd
             else:
                 index = self._ac.loc[cd]["J_u"]
-            cdavg[index] = np.average(a=cdnorm[cd].data[y:y+ysize,x:x+xsize],weights=weights)
+            if norm:
+                d = cdnorm[cd].data[y:y+ysize,x:x+xsize]
+                data =  np.ma.masked_array(d,np.isnan(d))
+                cdavg[index] = np.average(data,weights=weights)/self._ac.loc[cd]["g_u"]
+                #print("dividing %s by %.1f"%(cd,self._ac.loc[cd]["g_u"]))
+            else:
+                cdavg[index] = np.average(a=cdnorm[cd].data[y:y+ysize,x:x+xsize],weights=weights)
+             
         return cdavg
 
     def plot_intensities(self,**kwargs):
@@ -175,5 +185,58 @@ class H2Excitation(Tool):
         pass
 
     def fit_excitation(self,**kwargs):
-        pass
+        # do first pass guess using data partitioning and two linear fits
+        fit_param, pcov = curve_fit(two_lin, x, y,sigma=sigma)
+        tcold=-np.log10(math.e)/m1
+        thot=-np.log10(math.e)/m2
+        print("First guess at excitation temperatures: T_cold = %.1f, T_hot = %.1f"%(tcold,thot))
+        #if m1 != m2:
+        #    x_intersect = (n2 - n1) / (m1 - m2)
+        #    print(x_intersect)
+        #else:
+        #    print("did not find two linear components")
 
+        # Now do second pass fit to full curve using first pass as initial guess
+        fit_par2,pcov2 = curve_fit(x_lin,x,y,p0=fit_param,sigma=sigma)
+        ma1, na1, ma2, na2 = fit_par2
+        tcolda=-np.log10(math.e)/ma1
+        thota=-np.log10(math.e)/ma2
+        print("Fitted excitation temperatures: T_cold = %.1f, T_hot = %.1f"%(tcolda,thota))
+        r = y - x_lin(x, *fit_par2)
+        print("Residuals: ",np.sum(np.square(r)))
+        return [fit_param, pcov, fit_par2, pcov2]
+
+    def _two_lines(x, m1, n1, m2, n2):
+        '''This function is used to partition a fit to data using two lines and 
+           an inflection point.  Second slope is steeper because slopes are 
+           negative in excitation diagram.
+
+            Parameters:
+               x - array of x values
+               m1 - slope of first line
+               n1 - intercept of first line
+               m2 - slope of second line
+               n2 - intercept of second line
+
+            See https://stackoverflow.com/questions/48674558/how-to-implement-automatic-model-determination-and-two-state-model-fitting-in-py
+        ''' 
+        return np.max([m1 * x + n1, m2 * x + n2], axis = 0)
+
+    def _one_line(x,m1,n1):
+       '''Return a line.
+
+          Parameters:
+               x - array of x values
+               m1 - slope of line
+               n1 - intercept of line
+        '''
+        return m1*x+n1
+
+    def x_exp(x,m1,n1,m2,m2):
+        return n1*np.exp(x*m1)+n2*np.exp(x*m2)
+
+    def x_lin(x, m1, n1, m2, n2):
+        zz1 = 10**(x*m1+n1)
+        zz2 = 10**(x*m2+n2)
+        retval = np.log10(zz1+zz2)
+        return retval
