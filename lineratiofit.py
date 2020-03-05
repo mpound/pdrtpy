@@ -108,7 +108,7 @@ class LineRatioFit(Tool):
        if self._observedratios == None: return False
        return self._check_shapes(self._observedratios)
             
-    def addMeasurement(self,m):
+    def add_measurement(self,m):
         '''Add a Measurement to internal dictionary used to compute ratios
 
            Parameters:
@@ -120,7 +120,7 @@ class LineRatioFit(Tool):
             self._init_measurements(m)
         self._set_modelfilesUsed()
         
-    def removeMeasurement(self,id):
+    def remove_measurement(self,id):
         '''Delete a measurement from the internal dictionary used to compute ratios.
            raises KeyError if id not in existing Measurements
         '''
@@ -163,9 +163,9 @@ class LineRatioFit(Tool):
         self.read_models(unit='adu')
         self.computeValidRatios()
         self.computeDeltaSqMap()
-        self.computeChisq()
-        self.writeChisq()
-        self.computeBest_density_radiation_field_Maps()
+        self.compute_chisq()
+        self.write_chisq()
+        self.compute_density_radiation_field_maps()
      
     def observedratios(self):
         '''Returns a list of the observed line ratios that have been input so far'''
@@ -235,10 +235,6 @@ class LineRatioFit(Tool):
                     For log-likelihood calculation f is positive and less than 1.
                     See, e.g. https://emcee.readthedocs.io/en/stable/tutorials/line/#maximum-likelihood-estimation
         '''
-        #@todo perhaps don't store _modelratios but have them be a return value of read_fits.
-        # reasoning is that if we use the same PDRUtils object to make multiple computations, we
-        # have to be careful to clear _modelratios each time.
-        
         if not self._modelratios: # empty list or None
             raise Exception("No model data ready.  You need to call read_fits")
             
@@ -297,7 +293,7 @@ class LineRatioFit(Tool):
 #       sumary = -0.5* sum((self._likelihood[r]._data for r in self._likelihood))
 #       return sumary
 
-    def computeChisq(self):
+    def compute_chisq(self):
         '''Compute the chi-squared values from observed ratios and models'''
         if self.ratiocount < 2 :
             raise Exception("Not enough ratios to compute chisq.  Need 2, got %d"%self.ratiocount)
@@ -313,13 +309,13 @@ class LineRatioFit(Tool):
         self._makehistory(self._chisq)
         self._makehistory(self._reducedChisq)
         
-    def writeChisq(self,file="chisq.fits",rfile="rchisq.fits"):
+    def write_chisq(self,file="chisq.fits",rfile="rchisq.fits"):
         '''Write the chisq and reduced-chisq data to a file'''
         self._chisq.write(file,overwrite=True,hdu_mask='MASK')
         self._reducedChisq.write(rfile,overwrite=True,hdu_mask='MASK')  
 
-    def computeLikeliest_density_radiation_field_Maps(self):
-        '''Compute the best-fit density n and radiation field G0 spatial maps by searching for the minimum chisq at each spatial pixel.'''
+    def compute_likeliest(self):
+        '''Compute the likeliest density n and radiation field spatial maps by searching for the minimum chisq at each spatial pixel.'''
         if self._likelihood is None: return
         
         # get the likelihood maxima of each pixel along the g,n axes
@@ -337,13 +333,8 @@ class LineRatioFit(Tool):
         fk = utils.firstkey(self._modelratios)
         fk2 = utils.firstkey(self._observedratios)
         newshape = self._observedratios[fk2].shape
-        # figure out which G0,n the minimum refer to, and reshape into the RA-DEC map
-        #g0=10**(self._modelratios[fk].wcs.wcs_pix2world(np.flip(qq[:,:2]),0))[:,1].reshape(newshape)
-        #n =10**(self._modelratios[fk].wcs.wcs_pix2world(np.flip(qq[:,:2]),0))[:,0].reshape(newshape)
         g0=10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,1]
         n =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,0]
-        #print("G0 shape ",g0.shape)
-        #print("N shape ",n.shape)
         self.L_radiation_field=self._observedratios[fk2].copy()
         self.L_radiation_field.data[spatial_idx]=g0
         self.L_radiation_field.unit = self.radiation_field_unit
@@ -355,16 +346,14 @@ class LineRatioFit(Tool):
         #fix the headers
         #self._density_radiation_field_header() 
         
-    def computeBest_density_radiation_field_Maps(self):
-        '''Compute the best-fit density n and radiation field G0 spatial maps by searching for the minimum chisq at each spatial pixel.'''
+    def compute_density_radiation_field_maps(self):
+        '''Compute the best-fit density n and radiation field spatial maps 
+           by searching for the minimum chisq at each spatial pixel.'''
         if self._chisq is None or self._reducedChisq is None: return
         
         # get the chisq minima of each pixel along the g,n axes
         z=np.amin(self._reducedChisq,(0,1))
-        #qq=np.transpose(np.vstack(np.where(self._reducedChisq==z)))
         gi,ni,yi,xi=np.where(self._reducedChisq==z)
-        #print(gi)
-        #print(len(gi),len(ni),len(xi),len(yi))
         spatial_idx = (yi,xi)
         model_idx   = np.transpose(np.array([ni,gi]))
         # qq[:,:2] takes the first two columns of qq
@@ -375,13 +364,8 @@ class LineRatioFit(Tool):
         fk = utils.firstkey(self._modelratios)
         fk2 = utils.firstkey(self._observedratios)
         newshape = self._observedratios[fk2].shape
-        # figure out which G0,n the minimum refer to, and reshape into the RA-DEC map
-        #g0=10**(self._modelratios[fk].wcs.wcs_pix2world(np.flip(qq[:,:2]),0))[:,1].reshape(newshape)
-        #n =10**(self._modelratios[fk].wcs.wcs_pix2world(np.flip(qq[:,:2]),0))[:,0].reshape(newshape)
         g0=10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,1]
         n =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,0]
-        #print("G0 shape ",g0.shape)
-        #print("N shape ",n.shape)
 
         # note this will reshape g0 in radiation_field for us!
         self._radiation_field=self._observedratios[fk2].copy()
@@ -391,7 +375,6 @@ class LineRatioFit(Tool):
         # MaskedArrays to a file. Will get a not implemented error.
         # Therefore just copy the nans over from the input observations.
         self._radiation_field.data[np.isnan(self._observedratios[fk2])] = np.nan
-
         self._radiation_field.unit = self.radiation_field_unit
         self._radiation_field.uncertainty.unit = self.radiation_field_unit
 
