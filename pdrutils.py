@@ -102,18 +102,6 @@ def firstkey(d):
     return list(d)[0]
 
 #@module_property
-#def _wolfire():
-def wolfire():
-    '''Wolfire/Kaufman models'''
-    return get_table("wolfire_models.tab")
-
-def kosmatau():
-    '''KOSMA TAU models'''
-    return get_table("kosmatau_models.tab")
-
-def smcmodels():
-    '''Wolfire models for Small Magellanic Cloud'''
-    return get_table("smc_models.tab")
 
 def check_units(input_unit,compare_to):
     '''Return True if the input unit is equivalent to compare unit 
