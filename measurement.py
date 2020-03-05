@@ -65,7 +65,8 @@ class Measurement(CCDData):
 
         super().__init__(*args, **kwargs)#, unit=_unit)
         
-    def makemeasurement(fluxfile,error,outfile,rms=None):
+    @staticmethod
+    def make_measurement(fluxfile,error,outfile,rms=None):
         '''Create a FITS files with 2 HDUS, the first being the flux and the 2nd being 
         the flux uncertainty. This format makes it to read into the underlying CCDData class
         Parameters:
