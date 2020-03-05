@@ -1,0 +1,54 @@
+|     numerator|denominator|              label|         filename|   z| title                                                                    |
+|          char|       char|               char|             char|long| char                                                                     |
+|              |           |                   |                 |    | null                                                                     |
+|          null|       null|               null|             null|null| null                                                                     |
+         OI_145       OI_63        OI_145/OI_63           oioiweb    1  r'[O I] 145 $\mu$m / [O I] 63 $\mu$m'                                    
+         OI_145     CII_158      OI_145/CII_158        o145ciiweb    1  r'[O I] 145 $\mu$m / [C II] 158 $\mu$m'
+          OI_63     CII_158       OI_63/CII_158           oicpweb    1  r'[O I] 63 $\mu$m / [C II] 158 $\mu$m'
+        CII_158      CI_609      CII_158/CI_609       ciici609web    1  r'[C II] 158 $\mu$m / [C I] 609 $\mu$m'
+         CI_370      CI_609       CI_370/CI_609           ciciweb    1  r'[C I] 370 $\mu$m / [C I] 609 $\mu$m'
+        CII_158       CO_10       CII_158/CO_10          ciicoweb    1  r'[C II] 158 $\mu$m / CO(J=1-0)'
+         CI_609       CO_10        CI_609/CO_10           cicoweb    1  r'[C I] 609 $\mu$m / CO(J=1-0)'
+         CI_609       CO_21        CI_609/CO_21         cico21web    1  r'[C I] 609 $\mu$m / CO(J=2-1)'
+         CI_609       CO_32        CI_609/CO_32         cico32web    1  r'[C I] 609 $\mu$m / CO(J=3-2)'
+         CI_609       CO_43        CI_609/CO_43         cico43web    1  r'[C I] 609 $\mu$m / CO(J=4-3)'
+         CI_609       CO_54        CI_609/CO_54         cico54web    1  r'[C I] 609 $\mu$m / CO(J=5-4)'
+         CI_609       CO_65        CI_609/CO_65         cico65web    1  r'[C I] 609 $\mu$m / CO(J=6-5)'
+          CO_21       CO_10         CO_21/CO_10         co2110web    1  CO(J=2-1) / CO(J=1-0)
+          CO_32       CO_10         CO_32/CO_10         co3210web    1  CO(J=3-2) / CO(J=1-0)
+          CO_32       CO_21         CO_32/CO_21         co3221web    1  CO(J=3-2) / CO(J=2-1)
+          CO_43       CO_21         CO_43/CO_21         co4321web    1  CO(J=4-3) / CO(J=2-1)
+          CO_65       CO_10         CO_65/CO_10         co6510web    1  CO(J=6-5) / CO(J=1-0)
+          CO_65       CO_21         CO_65/CO_21         co6521web    1  CO(J=6-5) / CO(J=2-1)
+          CO_65       CO_54         CO_65/CO_54         co6554web    1  CO(J=6-5) / CO(J=5-4)
+          CO_76       CO_10         CO_76/CO_10         co7610web    1  CO(J=7-6) / CO(J=1-0)
+          CO_76       CO_21         CO_76/CO_21         co7621web    1  CO(J=7-6) / CO(J=2-1)
+          CO_76       CO_43         CO_76/CO_43         co7643web    1  CO(J=7-6) / CO(J=4-3)
+          CO_76       CO_54         CO_76/CO_54         co7654web    1  CO(J=7-6) / CO(J=5-4)
+          CO_76       CO_65         CO_76/CO_65         co7665web    1  CO(J=7-6) / CO(J=6-5)
+          CO_87       CO_54         CO_87/CO_54         co8754web    1  CO(J=8-7) / CO(J=5-4)
+          CO_87       CO_65         CO_87/CO_65         co8765web    1  CO(J=8-7) / CO(J=6-5)
+          CO_98       CO_54         CO_98/CO_54         co9854web    1  CO(J=9-8) / CO(J=5-4)
+          CO_98       CO_65         CO_98/CO_65         co9865web    1  CO(J=9-8) / CO(J=6-5)
+         CO_109       CO_54        CO_109/CO_54        co10954web    1  CO(J=10-9) / CO(J=5-4)
+         CO_109       CO_65        CO_109/CO_65        co10965web    1  CO(J=10-9) / CO(J=6-5)
+         CO_109       CO_76        CO_109/CO_76        co10976web    1  CO(J=10-9) / CO(J=7-6)
+        CO_1110       CO_54       CO_1110/CO_54       co111054web    1  CO(J=11-10) / CO(J=5-4)
+        CO_1110       CO_65       CO_1110/CO_65       co111065web    1  CO(J=11-10) / CO(J=6-5)
+        CO_1211       CO_54       CO_1211/CO_54       co121154web    1  CO(J=12-11) / CO(J=5-4)
+        CO_1211       CO_65       CO_1211/CO_65       co121165web    1  CO(J=12-11) / CO(J=6-5)
+        CO_1312       CO_54       CO_1312/CO_54       co131254web    1  CO(J=13-12) / CO(J=5-4)
+        CO_1312       CO_65       CO_1312/CO_65       co131265web    1  CO(J=13-12) / CO(J=6-5)
+        CO_1413       CO_54       CO_1413/CO_54       co141354web    1  CO(J=14-13) / CO(J=5-4)
+        CO_1413       CO_65       CO_1413/CO_65       co141365web    1  CO(J=14-13) / CO(J=6-5)
+        CI_609          FIR          CI_609/FIR       ci609firweb    1  r'[C I] 609 $\mu$m / I$_{FIR}$'
+  OI_63+CII_158         FIR   OI_63+CII_158/FIR            firweb    1  r'([O I] 63 $\mu$m + [C II] 158 $\mu$m) / I$_{FIR}$'
+ OI_145+CII_158         FIR  OI_145+CII_158/FIR       firoi145web    1  r'([O I] 145 $\mu$m + [C II] 158 $\mu$m) / I$_{FIR}$'
+        SIII_Z1     FEII_Z1     SIII_Z1/FEII_Z1 siii35feii26z1web    1  r'[S III] 35 $\mu$m / [Fe II] 25 $\mu$m'
+      H200S1_Z1   H200S0_Z1 H200S1_Z1/H200S0_Z1     h200s1s0z1web    1  r'H$_2$0-0S(1) 17 $\mu$m / H$_2$0-0S(0) 28.2$ \mu$m'
+      H200S2_Z1   H200S0_Z1 H200S2_Z1/H200S0_Z1     h200s2s0z1web    1  r'H$_2$0-0S(2) 12.3 $\mu$m / H$_2$0-0S(0) 28.2$ \mu$m'
+      H200S2_Z1   H200S1_Z1 H200S2_Z1/H200S1_Z1     h200s2s1z1web    1  r'H$_2$0-0S(2) 12.3 $\mu$m / H$_2$0-0S(1) 17$ \mu$m'
+      H200S3_Z1   H200S1_Z1 H200S3_Z1/H200S1_Z1     h200s3s1z1web    1  r'H$_2$0-0S(3) 9.7 $\mu$m / H$_2$0-0S(1) 17$ \mu$m'
+      H200S1_Z1     SIII_Z1   H200S1_Z1/SIII_Z1   h200s1siiiz1web    1  r'H$_2$0-0S(1) 17 $\mu$m / [S III] 35 $\mu$m'
+      H200S2_Z1     SIII_Z1   H200S2_Z1/SIII_Z1   h200s2siiiz1web    1  r'H$_2$0-0S(2) 12.3 $\mu$m / [S III] 35 $\mu$m'
+      H264Q1_Z1   H210S1_Z1 H264Q1_Z1/H210S1_Z1   h264q110s1z1web    1  4'H$_2$6-5Q(1) 1.6 $\mu$m / H$_2$1-0S(1) 2.12 $\mu$m'
