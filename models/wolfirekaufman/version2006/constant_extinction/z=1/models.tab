@@ -1,4 +1,4 @@
-|     numerator|denominator|              label|         filename|   z| title                                                                    |
+|     numerator|denominator|              ratio|         filename|   z| title                                                                    |
 |          char|       char|               char|             char|long| char                                                                     |
 |              |           |                   |                 |    | null                                                                     |
 |          null|       null|               null|             null|null| null                                                                     |
