@@ -40,9 +40,7 @@ class LineRatioFit(Tool):
         if type(modelset) == str:
             # may need to disable this
             self._initialize_modelTable(modelset)
-        else:
-            self._modelTable = modelset.table
-        self._modelTable.add_index("label")
+        self._modelset = modelset
 
         if type(measurements) == dict or measurements is None:
             self._measurements = measurements
@@ -60,20 +58,41 @@ class LineRatioFit(Tool):
         self.density_unit = None
         self._plotter = LineRatioPlot(self)
     
+    @property
+    def modelset(self):
+        return self._modelset
+
+    @property
+    def measurements(self):
+        '''return stored measurements as dictionary with Measurement IDs as keys'''
+        return self._measurements
+    
+    @property
+    def measurementIDs(self):
+        '''Return stored measurement IDs as `dict_keys` iterator'''
+        if self._measurements is None: return None
+        return self._measurements.keys()
+
+    @property
+    def ratiocount(self):
+        '''Return number of ratios that match models available in the 
+           current ModelSet given the current set of measurements'''
+        return self._modelset.ratiocount(self.measurementIDs)
+
     def _init_measurements(self,m):
         self._measurements = dict()
         for mm in m:
             self._measurements[mm.id] = mm
 
+    #@deprecated
     def _initialize_modelTable(self,filename):
         """initialize models from an IPAC format ASCII file"""
-        # Todo: add LaTeX labels as a column for more stylish plotting
         self._modelTable=Table.read(filename,format="ascii.ipac")
 
     def _set_modelfilesUsed(self):
         self._modelfilesUsed = dict()
         if self._measurements is None: return
-        for x in self.find_files(self.measurementIDs):
+        for x in self._modelset.find_files(self.measurementIDs):
             self._modelfilesUsed[x[0]]=x[1]
 
     def _check_shapes(self,d):
@@ -108,111 +127,8 @@ class LineRatioFit(Tool):
         del self._measurements[id]
         self._set_modelfilesUsed()
    
-    @property
-    def measurements(self):
-        '''return stored measurements as dictionary with Measurement IDs as keys'''
-        return self._measurements
-    
-    @property
-    def measurementIDs(self):
-        '''Return stored measurement IDs as `dict_keys` iterator'''
-        if self._measurements is None: return None
-        return self._measurements.keys()
 
-    @property
-    def ratiocount(self):
-        '''Return number of ratios that match models available given the current set of measurements'''
-        return self._ratiocount(self.measurementIDs)
-
-    def _ratiocount(self,m):
-        """Return the number of model ratios found for the given list of measurement IDs"""
-        # since find_files is a generator, we can't use len(), so do this sum.
-        # See https://stackoverflow.com/questions/393053/length-of-generator-output
-        return(sum(1 for _ in self.find_files(m)))
     
-    #TODO move this to modelset
-    def find_ratio_elements(self,m):
-        """Return an iterator of valid numerator,denominator pairs in 
-        dict format for the given list of measurement IDs
-        """
-        if not isinstance(m, collections.abc.Iterable) or isinstance(m, (str, bytes)) :
-            raise Exception("m must be an array of strings")
-            
-        for q in itertools.product(m,m):
-            s = q[0]+"/"+q[1]
-            z = dict()
-            if s in self._modelTable["label"]:
-                z={"numerator":self._modelTable.loc[s]["numerator"],
-                   "denominator":self._modelTable.loc[s]["denominator"]}
-                yield(z)
-                
-    
-    #TODO move this to modelset
-    def get_ratio_elements(self,m):   
-        """Return a list of valid numerator,denominator pairs in dict format for the 
-        given list of measurement IDs
-        """
-        if not isinstance(m, collections.abc.Iterable) or isinstance(m, (str, bytes)) :
-            raise Exception("m must be an array of strings")
-        k = list()   
-        for q in itertools.product(m,m):
-            s = q[0]+"/"+q[1]
-            if s in self._modelTable["label"]:
-                z={"numerator":self._modelTable.loc[s]["numerator"],
-                   "denominator":self._modelTable.loc[s]["denominator"]}
-                k.append(z)
-        self._get_oi_cii_fir(m,k)
-        return k
-
-    #TODO move this to modelset
-    def _get_oi_cii_fir(self,m,k):
-        '''For determining ratio elements, handle special case of ([O I] 63 micron + [C II] 158 micron)/I_FIR'''
-        if "CII_158" in m and "FIR" in m:
-            if "OI_63" in m:
-                num = "OI_63+CII_158"
-                den = "FIR"
-                l="OI_63+CII_158/FIR"
-                z = {"numerator":num,"denominator":den}
-                k.append(z)
-            if "OI_145" in m:
-                num = "OI_145+CII_158"
-                den = "FIR"
-                ll="OI_145+CII_158/FIR"
-                z = {"numerator":num,"denominator":den}
-                k.append(z)
-                 
-    #TODO move this to modelset
-    def find_pairs(self,m):
-        """Return an iterator of model ratios labels for the given list of measurement IDs"""
-        if not isinstance(m, collections.abc.Iterable) or isinstance(m, (str, bytes)) :
-            raise Exception("m must be an array of strings")
-            
-        for q in itertools.product(m,m):
-            #print(q)
-            if q[0] == "FIR" and (q[1] == "OI_145" or q[1] == "OI_63") and "CII_158" in m:
-                s = q[1] + "+CII_158/" + q[0]
-            else:
-                s = q[0]+"/"+q[1]
-            if s in self._modelTable["label"]:
-                yield(s)
-    
-    #TODO move this to modelset
-    def find_files(self,m,ext="fits"):
-        """Return an iterator of model ratio files for the given list of measurement IDs"""
-        if not isinstance(m, collections.abc.Iterable) or isinstance(m, (str, bytes)):
-            raise Exception("m must be an array of strings")
-        for q in itertools.product(m,m):
-            # must deal with OI+CII/FIR models. Note we must check for FIR first, since
-            # if you check q has OI,CII and m has FIR order you'll miss OI/CII.
-            if q[0] == "FIR" and (q[1] == "OI_145" or q[1] == "OI_63") and "CII_158" in m:
-                s = q[1] + "+CII_158/" + q[0]
-            else:
-                s = q[0]+"/"+q[1]
-            if s in self._modelTable["label"]:
-                tup = (s,self._modelTable.loc[s]["filename"]+"."+ext)
-                #yield(self._modelTable.loc[s]["filename"]+"."+ext)
-                yield(tup)
-            
     #TODO fix this after moving find_files to ModelSet.  models directory will be a function of ModelSet instance.
     def read_models(self,unit):
         """Given a list of measurement IDs, find and open the FITS files that have matching ratios
@@ -224,7 +140,7 @@ class LineRatioFit(Tool):
         d = utils.model_dir()
 
         self._modelratios = dict()
-        for (k,p) in self.find_files(self.measurementIDs):
+        for (k,p) in self._modelset.find_files(self.measurementIDs):
             thefile = d+p
             self._modelratios[k] = CCDData.read(thefile,unit=unit)
             if True:
@@ -260,7 +176,9 @@ class LineRatioFit(Tool):
         if not self._check_measurement_shapes():
             raise TypeError("Measurement maps have different dimensions")
 
-        z = self.find_ratio_elements(self.measurementIDs)
+        # Note find_ratio_elemets does not handle case of OI+CII/FIR so 
+        # we have to deal with that separately below.
+        z = self._modelset._find_ratio_elements(self.measurementIDs)
         self._observedratios = dict()
         for p in z:
             label = p["numerator"]+"/"+p["denominator"]
@@ -582,11 +500,11 @@ if __name__ == "__main__":
     m3 = Measurement(data=10.,uncertainty = StdDevUncertainty(1.5),identifier="CO_21",unit="adu")
     m4 = Measurement(data=100.,uncertainty = StdDevUncertainty(10.),identifier="CII_158",unit="adu")
 
-    p = LineRatioFit(utils.wolfire(),measurements = [m1,m2,m3,m4])
+    p = LineRatioFit(measurements = [m1,m2,m3,m4])
     print("num ratios:", p.ratiocount)
     print("modelfiles used: ", p._modelfilesUsed)
     p.run()
-    p.get_ratio_elements(p.measurements)
+    p._modelset.get_ratio_elements(p.measurements)
     p.makeRatioOverlays(cmap='gray')
     p.plotRatiosOnModels()
     p._observedratios

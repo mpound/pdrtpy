@@ -1,3 +1,5 @@
+import itertools
+import collections
 import pdrutils as utils
 import numpy as np
 
@@ -23,6 +25,7 @@ class ModelSet(object):
         self._row = self._row[0][0]
         self._tabrow = self._all_models[self._row]
         self._table = utils.get_table(path=self._tabrow["path"],filename=self._tabrow["filename"])
+        self._table.add_index("ratio")
 
     @property
     def description(self):
@@ -68,7 +71,114 @@ class ModelSet(object):
     def supported_ratios(self):
        '''Return the emission ratios that are covered by this model'''
        #TODO: keep as Table column or as something else. Should be consistent with return type of supported_lines
-       return self.table["label"]
+       return self.table["ratio"]
+
+    def ratiocount(self,m):
+        """Return the number of model ratios found for the given list 
+           of measurement IDs
+           Parameters:
+               m - list of string Measurement IDs, e.g. ["CII_158","OI_145","FIR"]
+        """
+        return len(self._get_ratio_elements(m))
+        # Cute, but no longer needed:
+        # Since find_files is a generator, we can't use len(), so do this sum.
+        # See https://stackoverflow.com/questions/393053/length-of-generator-output
+        #return(sum(1 for _ in self.find_files(m)))
+
+    def find_pairs(self,m):
+        """Return an iterator of model ratios labels for the given list 
+           of measurement IDs
+           Parameters:
+               m - list of string Measurement IDs, e.g. ["CII_158","OI_145","FIR"]
+        """
+        if not isinstance(m, collections.abc.Iterable) or isinstance(m, (str, bytes)) :
+            raise Exception("m must be an array of strings")
+            
+        for q in itertools.product(m,m):
+            if q[0] == "FIR" and (q[1] == "OI_145" or q[1] == "OI_63") and "CII_158" in m:
+                s = q[1] + "+CII_158/" + q[0]
+            else:
+                s = q[0]+"/"+q[1]
+            if s in self.table["ratio"]:
+                yield(s)
+
+    def find_files(self,m,ext="fits"):
+        """Return an iterator of model ratio files for the given list of 
+           Measurement IDs
+           Parameters:
+               m - list of string Measurement IDs, e.g. ["CII_158","OI_145","FIR"]
+               ext - file extension, Default: "fits"
+        """
+        if not isinstance(m, collections.abc.Iterable) or isinstance(m, (str, bytes)):
+            raise Exception("m must be an array of strings")
+        for q in itertools.product(m,m):
+            # must deal with OI+CII/FIR models. Note we must check for FIR first, since
+            # if you check q has OI,CII and m has FIR order you'll miss OI/CII.
+            if q[0] == "FIR" and (q[1] == "OI_145" or q[1] == "OI_63") and "CII_158" in m:
+                s = q[1] + "+CII_158/" + q[0]
+            else:
+                s = q[0]+"/"+q[1]
+            if s in self.table["ratio"]:
+                fullpath = self._tabrow["path"]+self.table.loc[s]["filename"]+"."+ext
+                tup = (s,fullpath)
+                yield(tup)
+            
+    
+    def _find_ratio_elements(self,m):
+        # TODO handle case of OI+CII/FIR so it is not special cased in lineratiofit.py
+        """Return an iterator of valid numerator,denominator pairs in 
+           dict format for the given list of measurement IDs
+           Parameters:
+               m - list of string Measurement IDs, e.g. ["CII_158","OI_145","FIR"]
+        """
+        if not isinstance(m, collections.abc.Iterable) or isinstance(m, (str, bytes)) :
+            raise Exception("m must be an array of strings")
+            
+        for q in itertools.product(m,m):
+            s = q[0]+"/"+q[1]
+            z = dict()
+            if s in self.table["ratio"]:
+                z={"numerator":self.table.loc[s]["numerator"],
+                   "denominator":self.table.loc[s]["denominator"]}
+                yield(z)
+
+    def _get_ratio_elements(self,m):   
+        """Return a list of valid numerator,denominator pairs in dict 
+           format for the given list of measurement IDs
+               m - list of string Measurement IDs, e.g. ["CII_158","OI_145","FIR"]
+        """
+        if not isinstance(m, collections.abc.Iterable) or isinstance(m, (str, bytes)) :
+            raise Exception("m must be an array of strings")
+        k = list()   
+        for q in itertools.product(m,m):
+            s = q[0]+"/"+q[1]
+            if s in self.table["ratio"]:
+                z={"numerator":self.table.loc[s]["numerator"],
+                   "denominator":self.table.loc[s]["denominator"]}
+                k.append(z)
+        self._get_oi_cii_fir(m,k)
+        return k
+
+    def _get_oi_cii_fir(self,m,k):
+        '''Utility method for determining ratio elements, to handle special 
+           case of ([O I] 63 micron + [C II] 158 micron)/I_FIR
+           Parameters:
+               m - list of string Measurement IDs, e.g. ["CII_158","OI_145","FIR"]
+               k - list of existing ratios to append to  
+        '''
+        if "CII_158" in m and "FIR" in m:
+            if "OI_63" in m:
+                num = "OI_63+CII_158"
+                den = "FIR"
+                l="OI_63+CII_158/FIR"
+                z = {"numerator":num,"denominator":den}
+                k.append(z)
+            if "OI_145" in m:
+                num = "OI_145+CII_158"
+                den = "FIR"
+                ll="OI_145+CII_158/FIR"
+                z = {"numerator":num,"denominator":den}
+                k.append(z)
 
     # ============= Static Methods =============
     @staticmethod
