@@ -22,6 +22,7 @@ from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertaint
 from tool import Tool
 from plot import LineRatioPlot
 import pdrutils as utils
+from modelset import ModelSet
 
 
 # potential new structure
@@ -35,11 +36,12 @@ import pdrutils as utils
 #   h2excitation(Tool)
 #   plot
 class LineRatioFit(Tool):
-    def __init__(self,models=utils.wolfire(),measurements=None):
-        if type(models) == str:
-            self._initialize_modelTable(models)
+    def __init__(self,modelset=ModelSet.WolfireKaufman(),measurements=None):
+        if type(modelset) == str:
+            # may need to disable this
+            self._initialize_modelTable(modelset)
         else:
-            self._modelTable = models
+            self._modelTable = modelset.table
         self._modelTable.add_index("label")
 
         if type(measurements) == dict or measurements is None:
@@ -128,11 +130,7 @@ class LineRatioFit(Tool):
         # See https://stackoverflow.com/questions/393053/length-of-generator-output
         return(sum(1 for _ in self.find_files(m)))
     
-    @property
-    def supportedLines(self):
-        '''Return a `set` of lines and continuum recognized by this class (i.e., that have been modeled by us)'''
-        return set(np.append(self._modelTable["numerator"].data,self._modelTable["denominator"].data))
-
+    #TODO move this to modelset
     def find_ratio_elements(self,m):
         """Return an iterator of valid numerator,denominator pairs in 
         dict format for the given list of measurement IDs
@@ -149,6 +147,7 @@ class LineRatioFit(Tool):
                 yield(z)
                 
     
+    #TODO move this to modelset
     def get_ratio_elements(self,m):   
         """Return a list of valid numerator,denominator pairs in dict format for the 
         given list of measurement IDs
@@ -165,6 +164,7 @@ class LineRatioFit(Tool):
         self._get_oi_cii_fir(m,k)
         return k
 
+    #TODO move this to modelset
     def _get_oi_cii_fir(self,m,k):
         '''For determining ratio elements, handle special case of ([O I] 63 micron + [C II] 158 micron)/I_FIR'''
         if "CII_158" in m and "FIR" in m:
@@ -181,6 +181,7 @@ class LineRatioFit(Tool):
                 z = {"numerator":num,"denominator":den}
                 k.append(z)
                  
+    #TODO move this to modelset
     def find_pairs(self,m):
         """Return an iterator of model ratios labels for the given list of measurement IDs"""
         if not isinstance(m, collections.abc.Iterable) or isinstance(m, (str, bytes)) :
@@ -195,6 +196,7 @@ class LineRatioFit(Tool):
             if s in self._modelTable["label"]:
                 yield(s)
     
+    #TODO move this to modelset
     def find_files(self,m,ext="fits"):
         """Return an iterator of model ratio files for the given list of measurement IDs"""
         if not isinstance(m, collections.abc.Iterable) or isinstance(m, (str, bytes)):
@@ -211,6 +213,7 @@ class LineRatioFit(Tool):
                 #yield(self._modelTable.loc[s]["filename"]+"."+ext)
                 yield(tup)
             
+    #TODO fix this after moving find_files to ModelSet.  models directory will be a function of ModelSet instance.
     def read_models(self,unit):
         """Given a list of measurement IDs, find and open the FITS files that have matching ratios
            and populate the _modelratios dictionary.  Use astropy's CCDdata as a storage mechanism. 
