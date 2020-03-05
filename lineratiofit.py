@@ -97,9 +97,22 @@ class LineRatioFit(Tool):
 
     def _check_shapes(self,d):
        #ugly
-       s1 = d[list(d.keys())[0]].shape
+       s1 = d[utils.firstkey(d)].shape
        return np.all([m.shape == s1 for m in d.values()])
 
+    def _check_header(self,kw):
+       """Check to see if any of the given keyword values differ for 
+          the input measurements.  
+          Parameter:
+             kw - string, the keyword to check
+       """
+       try:
+           s1 = d[utils.firstkey(d)].header[kw]
+           return np.all([m.header[kw] == s1 for m in d.values()])
+       except KeyError:
+           print("WARNING: %s keyword not present in all Measurements")
+           return False
+       
     def _check_measurement_shapes(self):
        if self._measurements == None: return False
        return self._check_shapes(self._measurements)
@@ -129,7 +142,6 @@ class LineRatioFit(Tool):
    
 
     
-    #TODO fix this after moving find_files to ModelSet.  models directory will be a function of ModelSet instance.
     def read_models(self,unit):
         """Given a list of measurement IDs, find and open the FITS files that have matching ratios
            and populate the _modelratios dictionary.  Use astropy's CCDdata as a storage mechanism. 
@@ -161,22 +173,27 @@ class LineRatioFit(Tool):
     def run(self):
         '''Run the full computation'''
         self.read_models(unit='adu')
-        self.computeValidRatios()
-        self.computeDeltaSqMap()
-        self.compute_chisq()
-        self.write_chisq()
-        self.compute_density_radiation_field_maps()
+        self._compute_valid_ratios()
+        #if not self._check_header("BEAM") ...
+        #if not self._check_header("CTYPE1") ...
+        #if not self._check_header("CTYPE2") ...
+        #if not self._check_header("BUNIT") ...
+        # eventually need to check that the maps overlap in real space.
+        self._compute_delta_sq()
+        self._compute_chisq()
+        self._write_chisq()
+        self.compute_density_radiation_field()
      
     def observedratios(self):
         '''Returns a list of the observed line ratios that have been input so far'''
         return list(self._observedratios.keys())
 
-    def computeValidRatios(self):
+    def _compute_valid_ratios(self):
         '''Compute the valid observed ratio maps for the available model data'''
         if not self._check_measurement_shapes():
             raise TypeError("Measurement maps have different dimensions")
 
-        # Note find_ratio_elemets does not handle case of OI+CII/FIR so 
+        # Note _find_ratio_elements does not handle case of OI+CII/FIR so 
         # we have to deal with that separately below.
         z = self._modelset._find_ratio_elements(self.measurementIDs)
         self._observedratios = dict()
@@ -193,19 +210,19 @@ class LineRatioFit(Tool):
         m = self.measurementIDs
         if "CII_158" in m and "FIR" in m:
             if "OI_63" in m:
-                l="OI_63+CII_158/FIR"
+                lab="OI_63+CII_158/FIR"
                 #print(l)
                 a = deepcopy(self._measurements["OI_63"])+deepcopy(self._measurements["CII_158"])
                 b = deepcopy(self._measurements["FIR"])
-                self._observedratios[l] = a/b
-                self._ratioHeader("OI_63+CII_158","FIR",l)
+                self._observedratios[lab] = a/b
+                self._ratioHeader("OI_63+CII_158","FIR",lab)
             if "OI_145" in m:
-                ll="OI_145+CII_158/FIR"
+                lab="OI_145+CII_158/FIR"
                 #print(ll)
                 aa = deepcopy(self._measurements["OI_145"])+deepcopy(self._measurements["CII_158"])
                 bb = deepcopy(self._measurements["FIR"])
-                self._observedratios[ll] = aa/bb
-                self._ratioHeader("OI_145+CII_158","FIR",ll)
+                self._observedratios[lab] = aa/bb
+                self._ratioHeader("OI_145+CII_158","FIR",lab)
                     
     ##deprecated
     def __computeDeltaSq(self):
@@ -221,7 +238,7 @@ class LineRatioFit(Tool):
             _q = _z.divide(self._observedratios[r].error)
             self._deltasq[r] = _q.multiply(_q)
 
-    def computeDeltaSqMap(self):
+    def _compute_delta_sq(self):
         '''Compute the difference-squared values from the observed ratios 
            and models - multi-pixel version and store in _deltasq member'''
         self._deltasq = self._computeDelta(f=0)
@@ -278,7 +295,7 @@ class LineRatioFit(Tool):
     
         return returnval
 
-    def computeLogLikelihood(self,f):
+    def compute_log_likelihood(self,f):
         l = self._computeDelta(f)
         sumary = -0.5* sum((l[r]._data for r in l))
         k = utils.firstkey(self._deltasq)
@@ -293,7 +310,7 @@ class LineRatioFit(Tool):
 #       sumary = -0.5* sum((self._likelihood[r]._data for r in self._likelihood))
 #       return sumary
 
-    def compute_chisq(self):
+    def _compute_chisq(self):
         '''Compute the chi-squared values from observed ratios and models'''
         if self.ratiocount < 2 :
             raise Exception("Not enough ratios to compute chisq.  Need 2, got %d"%self.ratiocount)
@@ -304,12 +321,12 @@ class LineRatioFit(Tool):
         self._reducedChisq =  self._chisq.divide(self._dof)
         self._fixheader(self._chisq)
         self._fixheader(self._reducedChisq)
-        self.setkey("BUNIT","Chi-squared",self._chisq)
-        self.setkey("BUNIT",("Reduced Chi-squared (DOF=%d)"%self._dof),self._reducedChisq)
+        utils.setkey("BUNIT","Chi-squared",self._chisq)
+        utils.setkey("BUNIT",("Reduced Chi-squared (DOF=%d)"%self._dof),self._reducedChisq)
         self._makehistory(self._chisq)
         self._makehistory(self._reducedChisq)
         
-    def write_chisq(self,file="chisq.fits",rfile="rchisq.fits"):
+    def _write_chisq(self,file="chisq.fits",rfile="rchisq.fits"):
         '''Write the chisq and reduced-chisq data to a file'''
         self._chisq.write(file,overwrite=True,hdu_mask='MASK')
         self._reducedChisq.write(rfile,overwrite=True,hdu_mask='MASK')  
@@ -346,7 +363,7 @@ class LineRatioFit(Tool):
         #fix the headers
         #self._density_radiation_field_header() 
         
-    def compute_density_radiation_field_maps(self):
+    def compute_density_radiation_field(self):
         '''Compute the best-fit density n and radiation field spatial maps 
            by searching for the minimum chisq at each spatial pixel.'''
         if self._chisq is None or self._reducedChisq is None: return
@@ -354,7 +371,9 @@ class LineRatioFit(Tool):
         # get the chisq minima of each pixel along the g,n axes
         z=np.amin(self._reducedChisq,(0,1))
         gi,ni,yi,xi=np.where(self._reducedChisq==z)
+        # astronomical spatial indices
         spatial_idx = (yi,xi)
+        # model n,g0 indices
         model_idx   = np.transpose(np.array([ni,gi]))
         # qq[:,:2] takes the first two columns of qq
         # [:,[1,0]] swaps those columns
@@ -387,47 +406,19 @@ class LineRatioFit(Tool):
         #fix the headers
         self._density_radiation_field_header() 
             
-    def comment(self,value,image):
-        '''Add a comment to the image header'''
-        self.addkey("COMMENT",value,image)
-        
-    def history(self,value,image):
-        '''Add a history to the image header'''
-        self.addkey("HISTORY",value,image)
-        
-    def addkey(self,key,value,image):
-        '''Add a keyword,value pair to the image header'''
-        if key in image.header and type(value) == str:    
-            image.header[key] = image.header[key]+" "+value
-        else:
-            image.header[key]=value
-
-    def setkey(self,key,value,image):
-        '''Set the value of an existing keyword in the image header'''
-        image.header[key]=value
-        
-    def _dataminmax(self,image):
-        '''Set the data maximum and minimum in image header'''
-        self.setkey("DATAMIN",np.nanmin(image.data),image)
-        self.setkey("DATAMAX",np.nanmax(image.data),image)
-            
-    def _signature(self,image):
-        '''Add AUTHOR and DATE keywords to the image header'''
-        self.setkey("AUTHOR","PDR Toolbox "+utils.version(),image)
-        self.setkey("DATE",utils.now(),image)
                  
     def _makehistory(self,image):
         '''Add information to HISTORY keyword indicating how the n,G0 were computed (measurements give, ratios used)'''
         s = "Measurements provided: "
         for k in self._measurements.keys():
             s = s + k + ", "
-        self.addkey("HISTORY",s,image)
+        utils.addkey("HISTORY",s,image)
         s = "Ratios used: "
         for k in self._deltasq.keys():
             s = s + k + ", "
-        self.addkey("HISTORY",s,image)
-        self._signature(image)
-        self._dataminmax(image)
+        utils.addkey("HISTORY",s,image)
+        utils.signature(image)
+        utils.dataminmax(image)
 
     def _ratioHeader(self,numerator,denominator,label):
         '''Add the RATIO identifier to the appropriate image
@@ -436,9 +427,9 @@ class LineRatioFit(Tool):
                 denominator - denominator string key of the line ratio
                 label - ratio label
         '''
-        self.addkey("RATIO",label,self._observedratios[label])
-        self._dataminmax(self._observedratios[label])
-        self._signature(self._observedratios[label])
+        utils.addkey("RATIO",label,self._observedratios[label])
+        utils.dataminmax(self._observedratios[label])
+        utils.signature(self._observedratios[label])
         
     def _fixheader(self,image):
         '''Put axis 3 and 4 header values into chisq maps
@@ -446,17 +437,17 @@ class LineRatioFit(Tool):
                 image - the image to which to add the header values
         '''
         # @TODO make these headers compliant with inputs (e.g. requested units)
-        self.setkey("CTYPE3","Log(Volume Density)",image)
-        self.setkey("CTYPE4","Log(Radiation Field)",image)
-        self.setkey("CUNIT3",str(self.density_unit),image)
-        self.setkey("CUNIT4",str(self.radiation_field_unit),image)
+        utils.setkey("CTYPE3","Log(Volume Density)",image)
+        utils.setkey("CTYPE4","Log(Radiation Field)",image)
+        utils.setkey("CUNIT3",str(self.density_unit),image)
+        utils.setkey("CUNIT4",str(self.radiation_field_unit),image)
         #@TODO this cdelts will change with new models.  make this flexible
-        self.setkey("CDELT3",0.25,image)
-        self.setkey("CDELT4",0.25,image)
-        self.setkey("CRVAL4",-0.5,image)
-        self.setkey("CRVAL3",1.0,image)
-        self.setkey("CRPIX3",1.0,image)
-        self.setkey("CRPIX4",1.0,image)
+        utils.setkey("CDELT3",0.25,image)
+        utils.setkey("CDELT4",0.25,image)
+        utils.setkey("CRVAL4",-0.5,image)
+        utils.setkey("CRVAL3",1.0,image)
+        utils.setkey("CRPIX3",1.0,image)
+        utils.setkey("CRPIX4",1.0,image)
         
          
     def _density_radiation_field_header(self):
@@ -466,10 +457,10 @@ class LineRatioFit(Tool):
         # note: must use to_string() here or astropy.io.fits.Card complains
         # about the value being a Unit.  Oddly it doesn't complain for the
         # data units.  Go figure.
-        self.setkey("BUNIT",self.density_unit.to_string(),self._density)
-        self.comment("Best-fit H2 volume density",self._density)
-        self.setkey("BUNIT",self.radiation_field_unit.to_string(),self._radiation_field)
-        self.comment("Best-fit interstellar radiation field",self._radiation_field)
+        utils.setkey("BUNIT",self.density_unit.to_string(),self._density)
+        utils.comment("Best-fit H2 volume density",self._density)
+        utils.setkey("BUNIT",self.radiation_field_unit.to_string(),self._radiation_field)
+        utils.comment("Best-fit interstellar radiation field",self._radiation_field)
         self._makehistory(self._density)
         self._makehistory(self._radiation_field)
 

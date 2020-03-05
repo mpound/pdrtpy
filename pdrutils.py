@@ -5,6 +5,7 @@
 import datetime
 import os.path
 import sys
+import numpy as np
 
 import astropy.units as u
 from astropy.table import Table
@@ -93,6 +94,38 @@ def get_table(filename,format='ipac',path=None):
         return Table.read(_tablename(filename),format=format)
     else:
         return Table.read(model_dir()+path+filename,format=format)
+    
+#########################
+# FITS KEYWORD utilities
+#########################
+def addkey(key,value,image):
+    '''Add a keyword,value pair to the image header'''
+    if key in image.header and type(value) == str:    
+        image.header[key] = image.header[key]+" "+value
+    else:
+        image.header[key]=value
+
+def comment(value,image):
+    '''Add a comment to an image header'''
+    addkey("COMMENT",value,image)
+    
+def history(value,image):
+    '''Add a history to an image header'''
+    addkey("HISTORY",value,image)
+
+def setkey(key,value,image):
+    '''Set the value of an existing keyword in the image header'''
+    image.header[key]=value
+    
+def dataminmax(image):
+    '''Set the data maximum and minimum in image header'''
+    setkey("DATAMIN",np.nanmin(image.data),image)
+    setkey("DATAMAX",np.nanmax(image.data),image)
+        
+def signature(image):
+    '''Add AUTHOR and DATE keywords to the image header'''
+    setkey("AUTHOR","PDR Toolbox "+version(),image)
+    setkey("DATE",now(),image)
 
 def firstkey(d):
     """Return the 'first' key in a dictionary
@@ -102,6 +135,11 @@ def firstkey(d):
     return list(d)[0]
 
 #@module_property
+################################################################
+# Conversions between various units of Radiation Field Strength
+# See table on page 18 of 
+# https://ism.obspm.fr/files/PDRDocumentation/PDRDoc.pdf
+################################################################
 
 def check_units(input_unit,compare_to):
     '''Return True if the input unit is equivalent to compare unit 
@@ -129,11 +167,6 @@ def check_units(input_unit,compare_to):
 
     return test_unit.is_equivalent(compare_unit)
 
-################################################################
-# Conversions between various units of Radiation Field Strength
-# See table on page 18 of 
-# https://ism.obspm.fr/files/PDRDocumentation/PDRDoc.pdf
-################################################################
 
 def to(unit,image):
   '''Convert the image values to another unit.
