@@ -170,13 +170,13 @@ class ModelSet(object):
             if "OI_63" in m:
                 num = "OI_63+CII_158"
                 den = "FIR"
-                l="OI_63+CII_158/FIR"
+                #lab="OI_63+CII_158/FIR"
                 z = {"numerator":num,"denominator":den}
                 k.append(z)
             if "OI_145" in m:
                 num = "OI_145+CII_158"
                 den = "FIR"
-                ll="OI_145+CII_158/FIR"
+                #lab="OI_145+CII_158/FIR"
                 z = {"numerator":num,"denominator":den}
                 k.append(z)
 
