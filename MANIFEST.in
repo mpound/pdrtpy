@@ -1,0 +1,3 @@
+include README.md
+recursive-include models *.tab *.fits
+recursive-include tables *.tab
