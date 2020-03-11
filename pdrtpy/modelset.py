@@ -1,7 +1,9 @@
 import itertools
 import collections
-import pdrutils as utils
+from copy import deepcopy
 import numpy as np
+from .pdrutils import get_table 
+from astropy.table import Table, unique, vstack
 
 #@ToDo:
 #   addModelSet() - for custom model sets. See model convention white paper
@@ -14,7 +16,7 @@ class ModelSet(object):
     :type z: float
     """
     def __init__(self,name,z):
-        self._all_models = utils.get_table("all_models.tab")
+        self._all_models = get_table("all_models.tab")
         self._all_models.add_index("name")
         if name not in self._all_models["name"]:
             raise ValueError("Unrecognized model %s. Choices are: %s"%(name,self._possible_models))
@@ -25,8 +27,10 @@ class ModelSet(object):
             raise ValueError("Z=%2.1f not found in %s. Choices are: %s"%(z,name,zzz))
         self._row = self._row[0][0]
         self._tabrow = self._all_models[self._row]
-        self._table = utils.get_table(path=self._tabrow["path"],filename=self._tabrow["filename"])
+        self._table = get_table(path=self._tabrow["path"],filename=self._tabrow["filename"])
         self._table.add_index("ratio")
+        self._set_identifiers()
+        self._set_ratios()
 
     @property
     def description(self):
@@ -77,18 +81,16 @@ class ModelSet(object):
     @property
     def supported_lines(self):
         """
-        :returns: set -- Set of lines and continuum that are covered by this ModelSet
+        :returns: :class:`astropy.table.Table1 -- Table of lines and continuum that are covered by this ModelSet
         """
-        #TODO see below
-        return set(np.append(self._table["numerator"].data,self._table["denominator"].data))
+        return self._identifiers
 
     @property
     def supported_ratios(self):
        """
-       :returns: :class:`astropy.table.Column` -- The emission ratios that are covered by this model
+       :returns: :class:`astropy.table.Table` -- The emission ratios that are covered by this model
        """
-       #TODO: keep as Table column or as something else. Should be consistent with return type of supported_lines
-       return self.table["ratio"]
+       return self._supported_ratios
 
     def ratiocount(self,m):
         """
@@ -203,14 +205,51 @@ class ModelSet(object):
                 z = {"numerator":num,"denominator":den}
                 k.append(z)
 
+    def _set_ratios(self):
+        """make a useful table of ratios covered by this model"""
+        self._supported_ratios = Table( [ self.table["title"], self.table["ratio"] ],copy=True)
+        self._supported_ratios['title'].unit = None
+        self._supported_ratios['ratio'].unit = None
+        self._supported_ratios.rename_column("ratio","ratio label")
+
+    def _set_identifiers(self):
+        """make a useful table of identifiers of lines covered by this model"""
+        n=deepcopy(self._table['numerator'])
+        n.name = 'ID'
+        d=deepcopy(self._table['denominator'])
+        d.name='ID'
+
+        t1 = Table([self._table['title'],n],copy=True)
+        # discard the summed fluxes as user would input them individually
+        for id in ['OI_145+CII_158','OI_63+CII_158']:
+            a = np.where(t1['ID']==id)[0]
+            for z in a:
+                t1.remove_row(z)
+        # now remove denominator from title (everything from / onwards)
+        for i in range(len(t1['title'])):
+            t1['title'][i] = t1['title'][i][0:t1['title'][i].index('/')]
+        
+        t2 = Table([self._table['title'],d],copy=True)
+        # remove numermator from title (everything before and including /)
+        for i in range(len(t2['title'])):
+            t2['title'][i] = t2['title'][i][t2['title'][i].index('/')+1:]
+        t = vstack([t1,t2])
+        t = unique(t,keys=['ID'],keep='first',silent=True)
+        t['title'].unit = None
+        t['ID'].unit = None
+        t.rename_column('title','canonical name')
+        self._identifiers = t
+        
+
     # ============= Static Methods =============
     @staticmethod
     def list():
-        """List the names and descriptions of available models"""
-        t = utils.get_table("all_models.tab")
+        """List the names and descriptions of available models (not just this one)"""
+        t = get_table("all_models.tab")
         t.remove_column("path")
         t.remove_column("filename")
         t.pprint_all(align="<")
+
 
     @staticmethod
     def WolfireKaufman():
@@ -226,13 +265,3 @@ class ModelSet(object):
         :returns: :class:`ModelSet` 
         """
         return ModelSet("kosmatau",z=1)
-#
-#    def has_metallicity(self,z):
-#        """Check if this model set contains a given metallicity 
-#           Parameters:
-#              z  - metallicity in solar units.  
-#           Returns: 
-#           True if the model set has at least one model of this metallicity
-#        """
-#        return np.any(np.isin(z,self._table["z"]),axis=0)
-#
