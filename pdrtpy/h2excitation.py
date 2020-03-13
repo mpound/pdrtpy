@@ -2,14 +2,14 @@
 from astropy.table import Table
 import astropy.units as u
 import astropy.constants as constants
-from measurement import Measurement
 import math
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy import curve_fit
+from scipy.optimize import curve_fit
 
-from tool import Tool
-import pdrutils as utils
+from .tool import Tool
+from .pdrutils import get_table, check_units, firstkey
+from .measurement import Measurement
 
 class H2Excitation(Tool):
     def __init__(self,measurements=None):
@@ -24,7 +24,7 @@ class H2Excitation(Tool):
             self._init_measurements(measurements)
 
         # default intensity units
-        self._ac = utils.get_table("atomic_constants.tab")
+        self._ac = get_table("atomic_constants.tab")
         self._ac.add_index("Line")
         self._ac.add_index("J_u")
         self._column_density = dict()
@@ -88,7 +88,7 @@ class H2Excitation(Tool):
         '''
         self._measurements = dict()
         for mm in m:
-            if not utils.check_units(mm.unit,self._intensity_units):
+            if not check_units(mm.unit,self._intensity_units):
                 raise TypeError("Measurement " +mm.id + " must be in intensity units equivalent to "+self._intensity_units)
             self._measurements[mm.id] = mm
         # re-initialize column densities
@@ -103,7 +103,7 @@ class H2Excitation(Tool):
               m - a Measurement instance containing intensity in units 
                   equivalent to (erg cm^-2 s^-1 sr^-1)
         '''
-        if not utils.check_units(m.unit,self._intensity_units):
+        if not check_units(m.unit,self._intensity_units):
             raise TypeError("Measurement " +m.id + " must be in intensity units equivalent to "+self._intensity_units)
 
         if self._measurements:
@@ -145,7 +145,7 @@ class H2Excitation(Tool):
         #print(intensity.unit)
         #print(intensity)
         N_upper = intensity * val
-        if not utils.check_units(N_upper.unit,self._cd_units):
+        if not check_units(N_upper.unit,self._cd_units):
           print("##### Warning: colden did not come out in correct units ("+N_upper.unit.to_string()+")")
         return N_upper
 
@@ -156,7 +156,7 @@ class H2Excitation(Tool):
 
     def average_column_density(self,norm,x,y,xsize,ysize,line):
         cdnorm = self.column_densities(norm=norm)
-        cdunit = cdnorm[utils.firstkey(cdnorm)].unit
+        cdunit = cdnorm[firstkey(cdnorm)].unit
         cdavg = dict()
         for cd in cdnorm:
             w = cdnorm[cd].uncertainty.array[y:y+ysize,x:x+xsize]
@@ -223,7 +223,7 @@ class H2Excitation(Tool):
         return np.max([m1 * x + n1, m2 * x + n2], axis = 0)
 
     def _one_line(x,m1,n1):
-       '''Return a line.
+        '''Return a line.
 
           Parameters:
                x - array of x values
@@ -232,9 +232,9 @@ class H2Excitation(Tool):
         '''
         return m1*x+n1
 
-    def x_exp(x,m1,n1,m2,m2):
-        return n1*np.exp(x*m1)+n2*np.exp(x*m2)
-
+    #def x_exp(x,m1,n1,m2,m2):
+    #    return n1*np.exp(x*m1)+n2*np.exp(x*m2)
+#
     def x_lin(x, m1, n1, m2, n2):
         zz1 = 10**(x*m1+n1)
         zz2 = 10**(x*m2+n2)

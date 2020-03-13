@@ -1,6 +1,3 @@
-#!/usr/bin/env python
-
-
 #todo: Look into seaborn https://seaborn.pydata.org
 # Also https://docs.bokeh.org/en
 # especially for coloring and style
@@ -19,10 +16,10 @@ import astropy.units as u
 from astropy.table import Table
 from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
 
-from tool import Tool
-from plot import LineRatioPlot
-import pdrutils as utils
-from modelset import ModelSet
+from .tool import Tool
+from .plot import LineRatioPlot
+from . import pdrutils as utils
+from .modelset import ModelSet
 
 
 # potential new structure

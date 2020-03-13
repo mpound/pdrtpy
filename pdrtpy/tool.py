@@ -1,6 +1,6 @@
 
 class Tool(object):
-    """ Base class object for PDRToolbox tools.  This class implements a simple 
+    """ Base class object for PDR Toolbox tools.  This class implements a simple 
         interface with a run method.  Tools will generally do some set up
         such as reading in observational data before run() can be invoked.
     """
@@ -11,6 +11,6 @@ class Tool(object):
     def run(self):
         """ Runs the tool. Each subclass Tool must implement its own run() method.
 
-            Returns: None
+            :rtype: None
         """
         return

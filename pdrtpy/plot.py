@@ -23,7 +23,7 @@ from astropy.visualization import simple_norm, ZScaleInterval , ImageNormalize
 from astropy.visualization.stretch import SinhStretch,  LinearStretch
 from matplotlib.colors import LogNorm
 
-import pdrutils as utils
+from .pdrutils import to
 
 rad_title = dict()
 rad_title['Habing'] = '$G_0$'
@@ -137,7 +137,7 @@ class LineRatioPlot(PlotBase):
     def _plot(self,data,units,cmap,image,contours,levels,norm,title,**kwargs):
         #@Todo raise exceptions 
         #@Todo separate imshow kwargs from other kwargs. See e.g.  https://fermipy.readthedocs.io/en/latest/_modules/fermipy/plotting.html
-        k=utils.to(units,data)
+        k = to(units,data)
         km = ma.masked_invalid(k)
         # make sure nans don't affect the color map
         min_ = np.nanmin(km)
@@ -318,7 +318,7 @@ class H2ExcitationPlot(PlotBase):
         self._plotkwargs = kwargs
 
     def _plotimage(self,data,units,cmap,image,contours,levels,norm):
-        k=utils.to(units,data)
+        k=to(units,data)
         km = ma.masked_invalid(k)
         min_ = km.min()
         max_ = km.max()

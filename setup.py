@@ -6,12 +6,13 @@ def readme():
         return f.read()
 
 setup(
-    name="Photodissociation Region Toolbox",
+    name="pdrtpy-mpound",
     version="2.0b",
     author = "Marc W. Pound",
     author_email  = "mpound@umd.edu",
     description="Photodissociation region analysis tools",
     keywords="PDR photodissociation",
+    long_description=readme(),
     packages=find_packages(),
     include_package_data = True,
     install_requires = [
