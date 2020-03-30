@@ -10,7 +10,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from astropy.visualization import ZScaleInterval, ImageNormalize
 from astropy.visualization.stretch import LinearStretch
 
-from .pdrutils import to
+from ..pdrutils import to
 
 rad_title = dict()
 rad_title['Habing'] = '$G_0$'
@@ -19,7 +19,7 @@ rad_title['Mathis'] = 'ISRF$_{Mathis}$'
 
 class PlotBase:
     def __init__(self,tool):
-        import matplotlib.pyplot as plt
+        import matplotlib.pyplot 
         self._plt = matplotlib.pyplot
         self._figure = None
         self._axis = None

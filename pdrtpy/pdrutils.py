@@ -1,6 +1,5 @@
-#!/usr/bin/env python
-
-# Utility code for PDR Toolbox
+"""Utility code for PDR Toolbox.
+"""
 
 import datetime
 import os.path
@@ -9,12 +8,15 @@ import numpy as np
 from pathlib import Path
 
 import astropy.units as u
+from astropy.constants import k_B
 from astropy.table import Table
 
 _VERSION_ = "2.0-Beta"
 
 # Radiation Field Strength units in cgs
 _RFS_UNIT_ = u.erg/(u.second*u.cm*u.cm)
+_INTEG_RFS_UNIT = u.erg/(u.second*u.cm)
+_CM = u.Unit("cm")
 
 # ISRF in other units
 habing_unit = u.def_unit('Habing',1.6E-3*_RFS_UNIT_)
@@ -26,37 +28,43 @@ u.add_enabled_units(mathis_unit)
     
 #See https://stackoverflow.com/questions/880530/can-modules-have-properties-the-same-way-that-objects-can
 # only works python 3.8+??
-def module_property(func):
-    """Decorator to turn module functions into properties.
-    Function names must be prefixed with an underscore."""
-    module = sys.modules[func.__module__]
+#def module_property(func):
+#    """Decorator to turn module functions into properties.
+#    Function names must be prefixed with an underscore."""
+#    module = sys.modules[func.__module__]
+#
+#    def base_getattr(name):
+#        raise AttributeError(
+#            f"module '{module.__name__}' has no fucking attribute '{name}'")
+#
+#    old_getattr = getattr(module, '__getattr__', base_getattr)
+#
+#    def new_getattr(name):
+#        if f'_{name}' == func.__name__:
+#            return func()
+#        else:
+#            return old_getattr(name)
+#
 
-    def base_getattr(name):
-        raise AttributeError(
-            f"module '{module.__name__}' has no fucking attribute '{name}'")
-
-    old_getattr = getattr(module, '__getattr__', base_getattr)
-
-    def new_getattr(name):
-        if f'_{name}' == func.__name__:
-            return func()
-        else:
-            return old_getattr(name)
-
-
-    module.__getattr__ = new_getattr
-    return func
+#    module.__getattr__ = new_getattr
+#    return func
 
 #@module_property
 #def _version():
+
 def version():
-    '''Version of the PDRT code'''
+    """Version of the PDRT code
+
+    :rtype: str
+    """
     return _VERSION_
 
 #@module_property
 #def _now():
 def now():
-    '''Return a string representing the current date and time in ISO format'''
+    """
+    :returns: a string representing the current date and time in ISO format
+    """
     return datetime.datetime.now().isoformat()
 
 #@module_property
@@ -64,41 +72,57 @@ def now():
 
 #@TODO  use setup.py and pkg_resources to do this properly
 def root_dir():
-    '''Project root directory, including trailing slash'''
+    """Project root directory, including trailing slash
+
+    :rtype: str
+    """
     #return os.path.dirname(os.path.abspath(__file__)) + '/'
     return str(root_path())+'/'
 
 def root_path():
-    '''Project root directory, including trailing slash'''
-    #return os.path.dirname(os.path.abspath(__file__)) + '/'
+    """Project root directory as path
+
+    :rtype: :py:mod:`Path`
+    """
     return Path(__file__).parent.parent
 
 #@module_property
 #def _model_dir():
 def model_dir():
-    '''Project model directory, including trailing slash'''
+    """Project model directory, including trailing slash
+
+    :rtype: str
+    """
     return os.path.join(root_dir(),'models/')
 
 def table_dir():
-    '''Project ancillary tables directory, including trailing slash'''
+    """Project ancillary tables directory, including trailing slash
+
+    :rtype: str
+    """
     return os.path.join(root_dir(),'tables/')
 
 def _tablename(filename):
-    '''Return fully qualified path of the input table.
-       Parameters:
-          filename - input table file name
-    '''
+    """Return fully qualified path of the input table.
+
+    :param filename: input table file name
+    :type filename: str
+    :rtype: str
+    """
     return table_dir()+filename
 
 
 def get_table(filename,format='ipac',path=None):
-    '''Return an astropy Table read from the input filename.  
-       is 'ipac'
-       Parameters:
-          filename - input filename, no path
-          format - file format, Default: ipac
-          path - path to filename relative to models directory.  Default of None means look in "tables" directory 
-    '''
+    """Return an astropy Table read from the input filename.  
+
+    :param filename: input filename, no path
+    :type filename: str
+    :param format:  file format, Default: "ipac"
+    :type format: str
+    :param  path: path to filename relative to models directory.  Default of None means look in "tables" directory 
+    :type path: str
+    :rtype: :class:`astropy.table.Table`
+    """
     if path is None:
         return Table.read(_tablename(filename),format=format)
     else:
@@ -108,38 +132,76 @@ def get_table(filename,format='ipac',path=None):
 # FITS KEYWORD utilities
 #########################
 def addkey(key,value,image):
-    '''Add a keyword,value pair to the image header'''
+    """Add a (FITS) keyword,value pair to the image header
+
+       :param key:   The keyword to add to the header
+       :type key:    str
+       :param value: the value for the keyword
+       :type value:  any native type
+       :param image: The image which to add the key,val to.
+       :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+    """
     if key in image.header and type(value) == str:    
         image.header[key] = image.header[key]+" "+value
     else:
         image.header[key]=value
 
 def comment(value,image):
-    '''Add a comment to an image header'''
+    """Add a comment to an image header
+
+       :param value: the value for the comment
+       :type value:  str
+       :param image: The image which to add the comment to
+       :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+    """
     addkey("COMMENT",value,image)
     
 def history(value,image):
-    '''Add a history to an image header'''
+    """Add a history record to an image header
+
+       :param value: the value for the history record
+       :type value:  str
+       :param image: The image which to add the HISTORY to
+       :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+    """
     addkey("HISTORY",value,image)
 
 def setkey(key,value,image):
-    '''Set the value of an existing keyword in the image header'''
+    """Set the value of an existing keyword in the image header
+
+       :param key:   The keyword to set in the header
+       :type key:    str
+       :param value: the value for the keyword
+       :type value:  any native type
+       :param image: The image which to add the key,val to.
+       :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+    """
     image.header[key]=value
     
 def dataminmax(image):
-    '''Set the data maximum and minimum in image header'''
+    """Set the data maximum and minimum in image header
+
+       :param image: The image which to add the key,val to.
+       :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+    """
     setkey("DATAMIN",np.nanmin(image.data),image)
     setkey("DATAMAX",np.nanmax(image.data),image)
         
 def signature(image):
-    '''Add AUTHOR and DATE keywords to the image header'''
+    """Add AUTHOR and DATE keywords to the image header
+       Author is 'PDR Toolbox', date as returned by now()
+
+       :param image: The image which to add the key,val to.
+       :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+    """
     setkey("AUTHOR","PDR Toolbox "+version(),image)
     setkey("DATE",now(),image)
 
 def firstkey(d):
-    """Return the 'first' key in a dictionary
-       Parameters:
-           d - the dictionary
+    """Return the "first" key in a dictionary
+
+       :param d: the dictionary
+       :type d: dict
     """
     return list(d)[0]
 
@@ -151,15 +213,14 @@ def firstkey(d):
 ################################################################
 
 def check_units(input_unit,compare_to):
-    '''Return True if the input unit is equivalent to compare unit 
+    """Check if the input unit is equivalent to another.
        
-       Parameters:
-          input_unit - astropy.Unit, astropy.Quanitity or string describing the unit to check.
-          compare_to - astropy.Unit, astropy.Quanitity or string describing the unit to check against.
-
-       Returns:
-          True if units are equivalent, False otherwise
-    '''
+       :param input_unit:  the unit to check.
+       :type input_unit:  :class:`astropy.units.Unit`, :class:`astropy.units.Quantity` or str
+       :param compare_unit:  the unit to check against
+       :type compare_unit:  :class:`astropy.units.Unit`, :class:`astropy.units.Quantity` or str
+       :return: `True` if the input unit is equivalent to compare unit, `False` otherwise 
+    """
     if isinstance(input_unit,u.Unit):
         test_unit = input_unit
     if isinstance(input_unit,u.Quantity):
@@ -178,22 +239,19 @@ def check_units(input_unit,compare_to):
 
 
 def to(unit,image):
-  '''Convert the image values to another unit.
+  """Convert the image values to another unit.
      While generally this is intended for converting radiation field
      strength maps between Habing, Draine, cgs, etc, it will work for
      any image that has a unit member variable. So, e.g., it would work
      to convert density from cm^-3 to m^-3.
 
-     Parameters:
-        unit - the string or `astropy.units.Unit` identifying the unit to
-        convert to 
-
-        image - the image to convert. It must have a `numpy.ndarray`
+     :param unit: identifying the unit to convert to 
+     :type unit: string or `astropy.units.Unit` 
+     :param image: the image to convert. It must have a `numpy.ndarray`
         data member and `astropy.units.Unit` unit member.
-
-     Returns:
-        an image with converted values and units
-  '''
+     :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+     :return: an image with converted values and units
+  """
   value = image.unit.to(unit)
   newmap = image.copy()
   newmap.data = newmap.data * value
@@ -201,104 +259,74 @@ def to(unit,image):
   return newmap
 
 def toHabing(image):
-  '''Convert a radiation field strength image to Habing units (G_0).
+  """Convert a radiation field strength image to Habing units (G_0).
      1 Habing = 1.6E-3 erg/s/cm^2
      See table on page 18 of 
      https://ism.obspm.fr/files/PDRDocumentation/PDRDoc.pdf
-  '''
+
+     :param image: the image to convert. It must have a `numpy.ndarray`
+        data member and `astropy.units.Unit` unit member.
+     :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+     :return: an image with converted values and units
+  """
   return to('Habing',image)
    
 def toDraine(image):
-  '''Convert a radiation field strength image to Draine units (\chi).
+  """Convert a radiation field strength image to Draine units (\chi).
      1 Draine = 2.704E-3 erg/s/cm^2
      See table on page 18 of 
      https://ism.obspm.fr/files/PDRDocumentation/PDRDoc.pdf
-  '''
+
+     :param image: the image to convert. It must have a `numpy.ndarray`
+        data member and `astropy.units.Unit` unit member.
+     :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+     :return: an image with converted values and units
+  """
 # 1 Draine = 1.69 G0 (Habing)\n",
   return to('Draine',image)
 
 def toMathis(image):
-  '''Convert a radiation field strength image to Mathis units
+  """Convert a radiation field strength image to Mathis units
      1 Mathis = 2.028E-3 erg/s/cm^2
      See table on page 18 of 
      https://ism.obspm.fr/files/PDRDocumentation/PDRDoc.pdf
-  '''
+
+     :param image: the image to convert. It must have a `numpy.ndarray`
+        data member and `astropy.units.Unit` unit member.
+     :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+     :return: an image with converted values and units
+  """
   return to('Mathis',image)
 
 def tocgs(image):
-  '''Convert a radiation field strength image to erg/s/cm^2'''
+  """Convert a radiation field strength image to erg/s/cm^2
+
+     :param image: the image to convert. It must have a :class:`numpy.ndarray` data member and `astropy.units.Unit` unit member.
+     :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+     :return: an image with converted values and units
+  """
   return to(_RFS_UNIT_,image)
 
-# use if current_models.tab is unavailable
-def _make_default_table():
-    ratiodict = {
-    "OI_145/OI_63"   : "oioi",
-    "OI_145/CII_158" : "o145cii",
-    "OI_63/CII_158"  : "oicp",
-    "CII_158/CI_609" : "ciici609",
-    "CI_370/CI_609"  : "cici",
-    "CII_158/CO_10"  : "ciico",
-    "CI_609/CO_10"   : "cico",
-    "CI_609/CO_21"   : "cico21",
-    "CI_609/CO_32"   : "cico32",
-    "CI_609/CO_43"   : "cico43",
-    "CI_609/CO_54"   : "cico54",
-    "CI_609/CO_65"   : "cico65",
-    "CO_21/CO_10"    : "co2110",
-    "CO_32/CO_10"    : "co3210",
-    "CO_32/CO_21"    : "co3221",
-    "CO_43/CO_21"    : "co4321",
-    "CO_65/CO_10"    : "co6510",
-    "CO_65/CO_21"    : "co6521",
-    "CO_65/CO_54"    : "co6554",
-    "CO_76/CO_10"    : "co7610",
-    "CO_76/CO_21"    : "co7621",
-    "CO_76/CO_43"    : "co7643",
-    "CO_76/CO_54"    : "co7654",
-    "CO_76/CO_65"    : "co7665",
-    "CO_87/CO_54"   : "co8754",
-    "CO_87/CO_65"   : "co8765",
-    "CO_98/CO_54"   : "co9854",
-    "CO_98/CO_65"   : "co9865",
-    "CO_109/CO_54"   : "co10954",
-    "CO_109/CO_65"   : "co10965",
-    "CO_1110/CO_54"   : "co111054",
-    "CO_1110/CO_65"   : "co111065",
-    "CO_1211/CO_54"   : "co121154",
-    "CO_1211/CO_65"   : "co121165",
-    "CO_1312/CO_54"   : "co131254",
-    "CO_1312/CO_65"   : "co131265",
-    "CO_1413/CO_54"   : "co141354",
-    "CO_1413/CO_65"   : "co141365",
-    "OI_63+CII_158/FIR"     : "fir",
-    "OI_145+CII_158/FIR"  : "firoi145",
-    "SIII_Z1/FEII_Z1"  : "siii35feii26z1",
-    "SIII_Z3/FEII_Z3"  : "siii35feii26z3",
-    "H200S1_Z1/H200S0_Z1" : "h200s1s0z1",
-    "H200S1_Z3/H200S0_Z3" : "h200s1s0z3",
-    "H200S2_Z1/H200S0_Z1" : "h200s2s0z1",
-    "H200S2_Z3/H200S0_Z3" : "h200s2s0z3",
-    "H200S2_Z1/H200S1_Z1" : "h200s2s1z1",
-    "H200S2_Z3/H200S1_Z3" : "h200s2s1z3",
-    "H200S3_Z1/H200S1_Z1" : "h200s3s1z1",
-    "H200S3_Z3/H200S1_Z3" : "h200s3s1z3",
-    "H200S1_Z1/SIII_Z1" : "h200s1siiiz1",
-    "H200S1_Z3/SIII_Z3" : "h200s1siiiz3",
-    "H200S2_Z1/SIII_Z1" : "h200s2siiiz1",
-    "H200S2_Z3/SIII_Z3" : "h200s2siiiz3",
-    "H264Q1_Z1/H210S1_Z1" : "h264q110s1z1",
-    "H264Q1_Z3/H210S1_Z3" : "h264q110s1z3"
-    }
-    b = list()
-    for r in ratiodict:
-        nd = r.split("/")
-        if ("Z3" in r):
-            z=3
-        else:
-            z=1
-        b.append((nd[0],nd[1],r,ratiodict[r]+"web",z))
-        
-    t = Table(rows=b,names=("numerator","denominator","label","filename","z"))
-    t.add_index("label")
-    t.write("current_models.tab",format="ascii.ipac",overwrite=True)
+def convert_integrated_intensity(image,wavelength=None):
+  """Convert integrated intensity from K km/s to erg/s/cm, assuming
+  :math:`B_\lambda d\lambda = 2kT/\lambda^3 dV` where :math:`T dV` is the integrated intensity in K km/s and :math:`\lambda` is the wavelength.
 
+  :param image: the image to convert. It must have a `numpy.ndarray` data member and `astropy.units.Unit` unit member. It's units must be K km/s
+  :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+  :param wavelength: the wavelength of the observation. The default is to determine wavelength from the image header RESTFREQ keyword
+  :type wavelength: :class:`astropy.units.Quantity`
+  :return: an image with converted values and units
+  """
+  f = image.header.get("RESTFREQ",None)
+  if f is None and wavelength is None:
+     raise Exception("Image header has no RESTFREQ. You must supply wavelength")
+  if f is not None and wavelength is None:
+     wavelength = f.to(_CM,equivalencies=u.spectral())
+  if image.header.get("BUNIT",None) != "K km/s":
+     raise Exception("Image BUNIT must be 'K km/s'")
+  factor = 2E5*k_B/wavelength**3
+  print("Factor = %s"%factor.decompose(u.cgs.bases))
+  newmap = image.copy()
+  newmap.data = newmap.data * factor.decompose(u.cgs.bases).value
+  newmap.unit = _INTEG_RFS_UNIT
+  return newmap

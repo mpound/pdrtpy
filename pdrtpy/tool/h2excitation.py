@@ -7,11 +7,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import curve_fit
 
-from .tool import Tool
+from .tool import ToolBase
 from .pdrutils import get_table, check_units, firstkey
 from .measurement import Measurement
 
-class H2Excitation(Tool):
+class H2Excitation(ToolBase):
     def __init__(self,measurements=None):
 
         # must be set before call to init_measurements

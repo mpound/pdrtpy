@@ -23,8 +23,8 @@ from astropy.visualization import simple_norm, ZScaleInterval , ImageNormalize
 from astropy.visualization.stretch import SinhStretch,  LinearStretch
 from matplotlib.colors import LogNorm
 
-from .plot import PlotBase
-from .pdrutils import to
+from .plotbase import PlotBase
+from ..pdrutils import to
 
 rad_title = dict()
 rad_title['Habing'] = '$G_0$'

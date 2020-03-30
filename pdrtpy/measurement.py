@@ -1,5 +1,4 @@
-#!/usr/bin/env python
-# coding: utf-8
+"""Manage spectral line or continuum observations"""
 
 from copy import deepcopy
 
@@ -10,43 +9,39 @@ import numpy as np
 
 class Measurement(CCDData):
     """Measurement represents one or more observations of a given spectral
-       line or continuum.  It is made up of a value array, an
-       uncertainty array, units, and a string identifier It is based
-       on `~astropy.nddata.CCDData`.  It can represent a single pixel
-       observation or an image.   Mathematical operations using Measurements
-       will correctly propagate errors.  
+    line or continuum.  It is made up of a value array, an
+    uncertainty array, units, and a string identifier It is based
+    on :class:`astropy.nddata.CCDData`.  It can represent a single pixel
+    observation or an image.   Mathematical operations using Measurements
+    will correctly propagate errors.  
        
-       See also the read method for instantiating from a FITS file.
+    Typically, Measurements will be instantiated from a FITS file by using the the :func:`read` or :func:`make_measurement` methods.  For a list of recognized spectral line identifiers, see :meth:`~pdrtpy.modelset.Modelset.supported_lines`.
        
-    :param data:  
-        The actual data contained in this `Measurement` object.
+    :param data:  The actual data contained in this :class:`Measurement` object.
         Note that the data will always be saved by *reference*, so you should
         make a copy of the ``data`` before passing it in if that's the desired
         behavior.
-    :type data: `numpy.ndarray`-like
+    :type data: :class:`numpy.ndarray`-like
 
-    :param uncertainty: 
-        Uncertainties on the data. If the uncertainty is a `numpy.ndarray`, it
-        it assumed to be, and stored as, a `~astropy.nddata.StdDevUncertainty`.
-        Required.
-    :type uncertainty:`~astropy.nddata.StdDevUncertainty`, \
-            `~astropy.nddata.VarianceUncertainty`, \
-            `~astropy.nddata.InverseVariance`, `numpy.ndarray` or 
-
+    :param uncertainty: Uncertainties on the data. If the uncertainty is a :class:`numpy.ndarray`, it assumed to be, and stored as, a :class:`astropy.nddata.StdDevUncertainty`.  Required.
+    :type uncertainty: :class:`astropy.nddata.StdDevUncertainty`, \
+            :class:`astropy.nddata.VarianceUncertainty`, \
+            :class:`astropy.nddata.InverseVariance` or :class:`numpy.ndarray`
     :param unit: The units of the data.  Required.
-    :type unit: `~astropy.units.Unit` or str. 
+    :type unit: :class:`astropy.units.Unit` or str
         
-    :param identifier: string indicating what this is an observation of, 
-                  e.g., "CO_10" for CO(1-0)
+    :param identifier: string indicating what this is an observation of, e.g., "CO_10" for CO(1-0)
     :type identifier: str
     
-    Methods
-    -------
-    read(\\*args, \\**kwargs)
-        ``Classmethod`` to create an Measurement instance based on a ``FITS`` file.
-        This method uses :func:`fits_measurement_reader` with the provided
-        parameters.  Example usage:
-            my_obs = Measurement.read("file.fits",identifier="CII_158")
+    :meth:`read(\\*args, \\**kwargs)`
+    ``Classmethod`` to create an Measurement instance based on a ``FITS`` file.
+    This method uses :func:`fits_measurement_reader` with the provided
+    parameters.  Example usage:
+        
+    .. code-block:: python
+
+       my_obs = Measurement.read("file.fits",identifier="CII_158")
+       my_other_obs = Measurement.read("file.fits",identifier="CO2_1",unit="K km/s")
 
     """
     def __init__(self,*args, **kwargs):
@@ -69,20 +64,32 @@ class Measurement(CCDData):
     @staticmethod
     def make_measurement(fluxfile,error,outfile,rms=None):
         """Create a FITS files with 2 HDUS, the first being the flux and the 2nd being 
-        the flux uncertainty. This format makes it to read into the underlying CCDData class.
+        the flux uncertainty. This format makes allows the resulting file to be read into the underlying :class:'~astropy.nddata.CCDData` class.
+
         :param fluxfile: The FITS file containing the flux data as a function of spatial coordinates
         :type fluxfile: str
         :param error: The errors on the flux data
              Possible values for error are:
-                 1. a filename with the same shape as fluxfile containing the error values per pixel
-                 2. a percentage value 'XX%' must have the "%" symbol in it
-                 3. 'rms' meaning use the rms parameter if given, otherwise look for the RMS keyword in the FITS header of the fluxfile
+             1. a filename with the same shape as fluxfile containing the error values per pixel
+             2. a percentage value 'XX%' must have the "%" symbol in it
+             3. 'rms' meaning use the rms parameter if given, otherwise look for the RMS keyword in the FITS header of the fluxfile
         :type error: str
         :param outfile: The output file to write the result in (FITS format)
         :type outfile: str
         :param rms:  If error == 'rms', this value may give the rms in same units as flux.
-        :type rms: float or :class:`astropy.Unit`
+        :type rms: float or :class:`astropy.units.Unit`
         :raises: Exception on various FITS header issues
+
+        Example usage:
+        
+        .. code-block:: python
+
+            # example with percentage error
+            Measurement.make_measurement("my_infile.fits",error='10%',outfile="my_outfile.fits")
+
+            # example with measurement in units of K km/s and error 
+            # indicated by RMS keyword in input file.
+            Measurement.make_measurement("my_infile.fits",error='rms',outfile="my_outfile.fits",units="K km/s")
         """
         _flux = fits.open(fluxfile)
             
@@ -117,39 +124,58 @@ class Measurement(CCDData):
             
     @property
     def flux(self):
-        '''Return the underlying flux data array'''
+        '''Return the underlying flux data array
+        
+        :rtype: :class:`numpy.ndarray`
+        '''
         return self.data
 
     @property
     def error(self):
-        '''Return the underlying error array'''
+        '''Return the underlying error array
+
+        :rtype: :class:`numpy.ndarray`
+        '''
         return self.uncertainty._array
     
     @property
     def SN(self):
-        '''Return the signal to noise ratio (flux/error)'''
+        '''Return the signal to noise ratio (flux/error)
+
+        :rtype: :class:`numpy.ndarray`
+        '''
         return self.flux/self.error
     
     @property
     def id(self):
-        '''Return the string ID of this measurement, e.g., CO_10'''
+        '''Return the string ID of this measurement, e.g., CO_10
+
+        :rtype: str
+        '''
         return self._identifier
 
     def identifier(self,id):
-        '''Set the string ID of this measurement, e.g., CO_10'''
+        '''Set the string ID of this measurement, e.g., CO_10
+      
+        :param id: the identifier
+        :type id: str
+        '''
         self._identifier = id
     
     @property
     def filename(self):
-        '''Return the FITS file that created this measurement, or None if it didn't originate from a file'''
+        '''The FITS file that created this measurement, or None if it didn't originate from a file
+        
+        :rtype: str or None
+        '''
         return self._filename
     
     def write(self,filename,**kwd):
-        '''Write this Measurement to a FITS file with flux in 1st HDU and error in 2nd HDU. See `astropy.nddata.CCDData.write
+        '''Write this Measurement to a FITS file with flux in 1st HDU and error in 2nd HDU. See astropy.nddata.CCDData.write
         
-            :param filename:  Name of file.
-            :type filename: str
-            :param kwd: All additional keywords are passed to :py:mod:`astropy.io.fits`
+        :param filename:  Name of file.
+        :type filename: str
+        :param kwd: All additional keywords are passed to :py:mod:`astropy.io.fits`
         '''
         hdu = self.to_hdu()
         hdu.writeto(filename,**kwd)
@@ -174,6 +200,7 @@ class Measurement(CCDData):
    
     def subtract(self,other):
         '''Subtract another Measurement from this one, propagating errors, units,  and updating identifiers
+
         :param other: a Measurement to subtract
         :type other: :class:`Measurement`
         '''
@@ -184,6 +211,7 @@ class Measurement(CCDData):
     
     def multiply(self,other):
         '''Multiply this Measurement by another, propagating errors, units,  and updating identifiers
+
         :param other: a Measurement to multiply
         :type other: :class:`Measurement`
         '''
@@ -194,6 +222,7 @@ class Measurement(CCDData):
         
     def divide(self,other):
         '''Divide this Measurement by another, propagating errors, units,  and updating identifiers
+
         :param other: a Measurement to divide
         :type other: :class:`Measurement`
         '''
@@ -238,45 +267,41 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
                         hdu_uncertainty='UNCERT',
                         hdu_mask='MASK', hdu_flags=None,
                         key_uncertainty_type='UTYPE', **kwd):
-    '''Reader for Measurement class, which will be called by Measurement.read.
+    '''Reader for Measurement class, which will be called by :meth:`Measurement.read`.
     
-        Parameters
-        ----------
-        :param filename: Name of fits file.
-        :type filename: str
+    :param filename: Name of FITS file.
+    :type filename: str
 
-        :param hdu: FITS extension from which Measurement should be initialized. If zero and
-            and no data in the primary extension, it will search for the first
-            extension with data. The header will be added to the primary header.
-            Default is ``0``.
-        :type hdu: int, optional
+    :param hdu: FITS extension from which Measurement should be initialized. 
+         If zero and and no data in the primary extension, it will
+         search for the first extension with data. The header will be
+         added to the primary header.  Default is 0.
+    :type hdu: int, optional
 
-        :type unit: `~astropy.units.Unit`, optional
-        :param unit : 
-            Units of the image data. If this argument is provided and there is a
-            unit for the image in the FITS header (the keyword ``BUNIT`` is used
-            as the unit, if present), this argument is used for the unit.
-            Default is ``None``.
+    :type unit: :class:`astropy.units.Unit`, optional
+    :param unit: 
+         Units of the image data. If this argument is provided and there is a
+         unit for the image in the FITS header (the keyword ``BUNIT`` is used
+         as the unit, if present), this argument is used for the unit.
+         Default is ``None``.
 
-        :type hdu_uncertainty: str or None, optional
-        :param hdu_uncertainty: FITS extension from which the uncertainty
-            should be initialized. If the extension does not exist the
-            uncertainty of the Measurement is ``None``.  Default is
-            ``'UNCERT'``.
+    :type hdu_uncertainty: str or None, optional
+    :param hdu_uncertainty: FITS extension from which the uncertainty
+         should be initialized. If the extension does not exist the
+         uncertainty of the Measurement is ``None``.  Default is
+         ``'UNCERT'``.
 
-        :type hdu_mask: str or None, optional
-        :param hdu_mask : FITS extension from which the mask should be initialized. If the extension does not exist the mask of the Measurement is ``None``.  Default is ``'MASK'``.
+    :type hdu_mask: str or None, optional
+    :param hdu_mask: FITS extension from which the mask should be initialized. If the extension does not exist the mask of the Measurement is ``None``.  Default is ``'MASK'``.
 
-        :type hdu_flags: str or None, optional
-        :param hdu_flags: Currently not implemented.  Default is ``None``.
+    :type hdu_flags: str or None, optional
+    :param hdu_flags: Currently not implemented.  Default is ``None``.
 
-        :type key_uncertainty_type: str, optional
-        :param key_uncertainty_type: The header key name where the class name of the uncertainty  is stored in the hdu of the uncertainty (if any).  Default is ``UTYPE``.
-        :param kwd :
-            Any additional keyword parameters are passed through to the FITS reader
-            in :mod:`astropy.io.fits`; see Notes for additional discussion.
+    :type key_uncertainty_type: str, optional
+     :param key_uncertainty_type: The header key name where the class name of the uncertainty  is stored in the hdu of the uncertainty (if any).  Default is ``UTYPE``.
+    :param kwd: Any additional keyword parameters are passed through to the FITS reader in :mod:`astropy.io.fits`; see Notes for additional discussion.
 
-        :raises: TypeError
+    :raises: TypeError
     '''
    
     _id = kwd.pop('identifier', 'unknown')

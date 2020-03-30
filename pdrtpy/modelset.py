@@ -1,17 +1,19 @@
+"""Manage pre-computed PDR models"""
+
 import itertools
 import collections
 from copy import deepcopy
 import numpy as np
-from .pdrutils import get_table 
 from astropy.table import Table, unique, vstack
+from .pdrutils import get_table 
 
 #@ToDo:
 #   addModelSet() - for custom model sets. See model convention white paper
 class ModelSet(object):
-    """Class for PDR Model Sets. Model Sets will interface with a  
-       directory containing the model FITS files.
+    """Class for computed PDR Model Sets. :class:`ModelSet` will interface with a directory containing the model FITS files.
+
     :param name: identifier.
-    :type name: str.
+    :type name: str
     :param z:  metallicity in solar units.  
     :type z: float
     """
@@ -34,36 +36,41 @@ class ModelSet(object):
 
     @property
     def description(self):
-        """
-        :returns: str -- The description of this model
+        """The description of this model
+
+        :rtype: str 
         """
         return self._tabrow["description"]+", Z=%2.1f"%self.z
 
     @property
     def name(self):
-        """
-        :returns: str -- The name of this model
+        """The name of this model
+
+        :rtype: str 
         """
         return self._tabrow["name"]
 
     @property
     def version (self):
-        """
-        :returns: str -- The version of this model
+        """The version of this model
+
+        :rtype: str
         """
         return self._tabrow["version"]
 
     @property
     def z(self):
-        """
-        :returns: float -- The metallicity of this model
+        """The metallicity of this model
+
+        :rtype: float
         """
         return self.metallicity
 
     @property
     def metallicity(self):
-        """
-        :returns: float -- The metallicity of this model
+        """The metallicity of this model
+
+        :rtype: float
         """
         return self._tabrow["z"]
 
@@ -73,31 +80,35 @@ class ModelSet(object):
 
     @property
     def table(self):
-        """
-        :returns: :class:`astropy.table.Table` -- a Table containing details of the models
+        """The table containing details of the models
+
+        :rtype: :class:`astropy.table.Table` 
         """
         return self._table
 
     @property
     def supported_lines(self):
-        """
-        :returns: :class:`astropy.table.Table1 -- Table of lines and continuum that are covered by this ModelSet
+        """Table of lines and continuum that are covered by this ModelSet
+
+        :rtype: :class:`astropy.table.Table` 
         """
         return self._identifiers
 
     @property
     def supported_ratios(self):
-       """
-       :returns: :class:`astropy.table.Table` -- The emission ratios that are covered by this model
-       """
-       return self._supported_ratios
+        """The emission ratios that are covered by this ModelSet
+
+        :rtype: :class:`astropy.table.Table` 
+        """
+        return self._supported_ratios
 
     def ratiocount(self,m):
-        """
-        :param m: list of string Measurement IDs, e.g. ["CII_158","OI_145","FIR"]
+        """The number of valid ratios in this ModelSet, given a list of observation (:class:`~pdrtpy.measurement.Measurement`) identifiers.
+
+        :param m: list of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g. ["CII_158","OI_145","FIR"]
         :type m: list
-        :returns: int -- The number of model ratios found for the given list 
-           of measurement IDs
+        :returns: The number of model ratios found for the given list of measurement IDs
+        :rtype: int
         """
         return len(self._get_ratio_elements(m))
         # Cute, but no longer needed:
@@ -106,11 +117,12 @@ class ModelSet(object):
         #return(sum(1 for _ in self.find_files(m)))
 
     def find_pairs(self,m):
-        """Find the valid model ratios labels in this ModelSet for a given list 
-           of measurement IDs
-        :param m: list of string Measurement IDs, e.g. ["CII_158","OI_145","FIR"]
+        """Find the valid model ratios labels in this ModelSet for a given list of measurement IDs
+
+        :param m: list of string `Measurement` IDs, e.g. ["CII_158","OI_145","FIR"]
         :type m: list
-        :returns: iterator -- An iterator of model ratios labels for the given list of measurement IDs
+        :returns: An iterator of model ratios labels for the given list of measurement IDs
+        :rtype: iterator
         """
         if not isinstance(m, collections.abc.Iterable) or isinstance(m, (str, bytes)) :
             raise Exception("m must be an array of strings")
@@ -124,13 +136,14 @@ class ModelSet(object):
                 yield(s)
 
     def find_files(self,m,ext="fits"):
-        """Find the valid model ratios files in this ModelSet for a given list 
-           of measurement IDs
-        :param m: list of string Measurement IDs, e.g. ["CII_158","OI_145","FIR"]
+        """Find the valid model ratios files in this ModelSet for a given list of measurement IDs.  See :meth:`~pdrtpy.measurement.Measurement.id`
+
+        :param m: list of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g. ["CII_158","OI_145","FIR"]
         :type m: list
-        :param ext: file extenstion. Default: 'fits'
+        :param ext: file extension. Default: "fits"
         :type ext: str
-        :returns: iterator -- An iterator of model ratio files for the given list of Measurement IDs
+        :returns: An iterator of model ratio files for the given list of Measurement IDs
+        :rtype: iterator
         """
         if not isinstance(m, collections.abc.Iterable) or isinstance(m, (str, bytes)):
             raise Exception("m must be an array of strings")
@@ -149,8 +162,9 @@ class ModelSet(object):
     
     def _find_ratio_elements(self,m):
         # TODO handle case of OI+CII/FIR so it is not special cased in lineratiofit.py
-        """Find the valid model numerator,denominator pairs in this ModelSet for a given list of measurement IDs
-        :param m: list of string Measurement IDs, e.g. ["CII_158","OI_145","FIR"]
+        """Find the valid model numerator,denominator pairs in this ModelSet for a given list of measurement IDs. See :meth:`~pdrtpy.measurement.Measurement.id`
+
+        :param m: list of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g. ["CII_158","OI_145","FIR"]
         :type m: list
         :returns: iterator -- An dictionary iterator where key is numerator and value is denominator
         """
@@ -166,8 +180,9 @@ class ModelSet(object):
                 yield(z)
 
     def _get_ratio_elements(self,m):   
-        """Get the valid model numerator,denominator pairs in this ModelSet for a given list of measurement IDs
-        :param m: list of string Measurement IDs, e.g. ["CII_158","OI_145","FIR"]
+        """Get the valid model numerator,denominator pairs in this ModelSet for a given list of measurement IDs. See :meth:`~pdrtpy.measurement.Measurement.id`
+
+        :param m: list of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g. ["CII_158","OI_145","FIR"]
         :type m: list
         :returns: dict -- A dictionary where key is numerator and value is denominator
         """
@@ -185,8 +200,9 @@ class ModelSet(object):
 
     def _get_oi_cii_fir(self,m,k):
         """Utility method for determining ratio elements, to handle special 
-           case of ([O I] 63 micron + [C II] 158 micron)/I_FIR
-        :param m: list of string Measurement IDs, e.g. ["CII_158","OI_145","FIR"]
+           case of ([O I] 63 micron + [C II] 158 micron)/I_FIR.
+
+        :param m: list of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g. ["CII_158","OI_145","FIR"]
         :type m: list
         :param k: list of existing ratios to append to  
         :type k: list
@@ -255,6 +271,7 @@ class ModelSet(object):
     def WolfireKaufman():
     #ToDo later upgrade to variable z when 2020 models are available
         """Easy way to get the latest Wolfire-Kaufman models, z=1
+
         :returns: :class:`ModelSet` 
         """
         return ModelSet("wk2006",z=1)
@@ -262,6 +279,7 @@ class ModelSet(object):
     @staticmethod
     def KosmaTau():
         """Easy way to get the latest KOSMA TAU models, z=1
+
         :returns: :class:`ModelSet` 
         """
         return ModelSet("kosmatau",z=1)

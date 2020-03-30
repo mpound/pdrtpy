@@ -16,23 +16,12 @@ import astropy.units as u
 from astropy.table import Table
 from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
 
-from .tool import Tool
-from .plot import LineRatioPlot
-from . import pdrutils as utils
-from .modelset import ModelSet
+from ..tool.toolbase import ToolBase
+from ..plot.lineratioplot import LineRatioPlot
+from .. import pdrutils as utils
+from ..modelset import ModelSet
 
-
-# potential new structure
-# PDRToolbox
-#   utils
-#   tool.py
-#    class Tool(object)
-#      self._plotter = None
-#      def run(self) { return;} // all subclass tools must implement run
-#   lineratiofit(Tool)
-#   h2excitation(Tool)
-#   plot
-class LineRatioFit(Tool):
+class LineRatioFit(ToolBase):
     """Tool to fit observations of flux ratios to a set of models"""
     def __init__(self,modelset=ModelSet.WolfireKaufman(),measurements=None):
         if type(modelset) == str:
@@ -58,35 +47,40 @@ class LineRatioFit(Tool):
     
     @property
     def modelset(self):
-        """Return the underlying :class:`ModelSet`"""
+        """The underlying :class:`ModelSet`"""
         return self._modelset
 
     @property
     def measurements(self):
-        """return stored :class:`measurements <Measurement>` as dictionary with Measurement IDs as keys"""
+        """The stored :class:`measurements <Measurement>` as dictionary with Measurement IDs as keys"""
         return self._measurements
     
     @property
     def measurementIDs(self):
-        '''Return stored measurement IDs as `dict_keys` iterator'''
+        '''The stored measurement IDs as `dict_keys` iterator'''
         if self._measurements is None: return None
         return self._measurements.keys()
 
     @property
     def ratiocount(self):
-        '''Return number of ratios that match models available in the 
+        '''The number of ratios that match models available in the 
            current ModelSet given the current set of measurements'''
         return self._modelset.ratiocount(self.measurementIDs)
 
     def _init_measurements(self,m):
+        """Initialize the measurements from an input list
+        
+        :param m: the input list of Measurements
+        :type m: list
+        """
         self._measurements = dict()
         for mm in m:
             self._measurements[mm.id] = mm
 
     #@deprecated
-    def _initialize_modelTable(self,filename):
-        """initialize models from an IPAC format ASCII file"""
-        self._modelTable=Table.read(filename,format="ascii.ipac")
+    #def _initialize_modelTable(self,filename):
+    #    """initialize models from an IPAC format ASCII file"""
+    #    self._modelTable=Table.read(filename,format="ascii.ipac")
 
     def _set_modelfilesUsed(self):
         self._modelfilesUsed = dict()
@@ -121,10 +115,10 @@ class LineRatioFit(Tool):
        return self._check_shapes(self._observedratios)
             
     def add_measurement(self,m):
-        '''Add a Measurement to internal dictionary used to compute ratios
+        '''Add a Measurement to internal dictionary used to compute ratios. This measurement may be intensity units (erg s^-1 cm-^2) or integrated intensity (K km/s).
 
-           Parameters:
-              m - a Measurement instance
+           :param m: - a Measurement instance
+           :type m: - :class:`Measurement`
         '''
         if self._measurements:
             self._measurements[m.id] = m
@@ -134,19 +128,22 @@ class LineRatioFit(Tool):
         
     def remove_measurement(self,id):
         '''Delete a measurement from the internal dictionary used to compute ratios.
-           raises KeyError if id not in existing Measurements
+           :param id: - the measurement identifier
+           :type id: - str
+           :raises: KeyError if id not in existing Measurements
         '''
         del self._measurements[id]
         self._set_modelfilesUsed()
    
-
     
     def read_models(self,unit):
         """Given a list of measurement IDs, find and open the FITS files that have matching ratios
            and populate the _modelratios dictionary.  Use astropy's CCDdata as a storage mechanism. 
-            Parameters: 
-                 m - list of measurement IDS (string)
-                 unit - units of the data (string)
+
+            :param  m: - list of measurement IDS (string)
+            :type m: list
+            :param unit: units of the data 
+            :type unit: string or astropy.Unit
         """
         d = utils.model_dir()
 
@@ -199,7 +196,9 @@ class LineRatioFit(Tool):
         for p in z:
             label = p["numerator"]+"/"+p["denominator"]
             # deepcopy workaround for bug: https://github.com/astropy/astropy/issues/9006
-            self._observedratios[label] = deepcopy(self._measurements[p["numerator"]])/deepcopy(self._measurements[p["denominator"]])
+            num = self._convert_if_necessary(self._measurements[p["numerator"]])
+            denom = self._convert_if_necessary(self._measurements[p["denominator"]])
+            self._observedratios[label] = deepcopy(num/denum)
             #@TODO create a meaningful header for the ratio map
             self._ratioHeader(p["numerator"],p["denominator"],label)
         self._add_oi_cii_fir()
@@ -211,19 +210,23 @@ class LineRatioFit(Tool):
             if "OI_63" in m:
                 lab="OI_63+CII_158/FIR"
                 #print(l)
-                a = deepcopy(self._measurements["OI_63"])+deepcopy(self._measurements["CII_158"])
+                oi = self._convert_if_necessary(self._measurements["OI_63"])
+                cii = self._convert_if_necessary(self._measurements["CII_158"])
+                a = deepcopy(oi+cii)
                 b = deepcopy(self._measurements["FIR"])
                 self._observedratios[lab] = a/b
                 self._ratioHeader("OI_63+CII_158","FIR",lab)
             if "OI_145" in m:
                 lab="OI_145+CII_158/FIR"
                 #print(ll)
-                aa = deepcopy(self._measurements["OI_145"])+deepcopy(self._measurements["CII_158"])
+                oi = self._convert_if_necessary(self._measurements["OI_145"])
+                cii = self._convert_if_necessary(self._measurements["CII_158"])
+                aa = deepcopy(oi+cii)
                 bb = deepcopy(self._measurements["FIR"])
                 self._observedratios[lab] = aa/bb
                 self._ratioHeader("OI_145+CII_158","FIR",lab)
                     
-    ##deprecated
+    #deprecated
     def __computeDeltaSq(self):
         '''Compute the difference-squared values from the observed ratios and models - single pixel version'''
         if not self._modelratios: # empty list or None
@@ -464,20 +467,25 @@ class LineRatioFit(Tool):
         self._makehistory(self._radiation_field)
 
        
+    def _convert_if_necessary(self,image):
+        if image.header["BUNIT"] == "K km/s":
+            return utils.convert_integrated_intensity(image)
+        else:
+            return image
 
-if __name__ == "__main__":
-    from measurement import Measurement 
-    import pdrutils as utils
-    m1 = Measurement(data=30,uncertainty = StdDevUncertainty([5.]),identifier="OI_145",unit="adu")
-    m2 = Measurement(data=10.,uncertainty = StdDevUncertainty(2.),identifier="CI_609",unit="adu")
-    m3 = Measurement(data=10.,uncertainty = StdDevUncertainty(1.5),identifier="CO_21",unit="adu")
-    m4 = Measurement(data=100.,uncertainty = StdDevUncertainty(10.),identifier="CII_158",unit="adu")
-
-    p = LineRatioFit(measurements = [m1,m2,m3,m4])
-    print("num ratios:", p.ratiocount)
-    print("modelfiles used: ", p._modelfilesUsed)
-    p.run()
-    p._modelset.get_ratio_elements(p.measurements)
-    p.makeRatioOverlays(cmap='gray')
-    p.plotRatiosOnModels()
-    p._observedratios
+#if __name__ == "__main__":
+#    from ..measurement import Measurement 
+#    from .. import pdrutils as utils
+#    m1 = Measurement(data=30,uncertainty = StdDevUncertainty([5.]),identifier="OI_145",unit="adu")
+#    m2 = Measurement(data=10.,uncertainty = StdDevUncertainty(2.),identifier="CI_609",unit="adu")
+#    m3 = Measurement(data=10.,uncertainty = StdDevUncertainty(1.5),identifier="CO_21",unit="adu")
+#    m4 = Measurement(data=100.,uncertainty = StdDevUncertainty(10.),identifier="CII_158",unit="adu")
+#
+#    p = LineRatioFit(measurements = [m1,m2,m3,m4])
+#    print("num ratios:", p.ratiocount)
+#    print("modelfiles used: ", p._modelfilesUsed)
+#    p.run()
+#    p._modelset.get_ratio_elements(p.measurements)
+#    p.makeRatioOverlays(cmap='gray')
+#    p.plotRatiosOnModels()
+#    p._observedratios
