@@ -6,6 +6,7 @@ import os.path
 import sys
 import numpy as np
 from pathlib import Path
+import warnings
 
 import astropy.units as u
 from astropy.constants import k_B
@@ -204,6 +205,16 @@ def firstkey(d):
        :type d: dict
     """
     return list(d)[0]
+
+def warn(cls,msg):
+    """Issue a warning
+
+       :param cls:  The calling Class
+       :type cls: Class
+       :param msg:  The warning message
+       :type msg: str
+    """
+    warnings.warn(cls.__class__.__name__+": "+msg)
 
 #@module_property
 ################################################################

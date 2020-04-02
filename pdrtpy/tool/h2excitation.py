@@ -1,4 +1,4 @@
-
+"""Class for fitting temperatures to :math:`H_2` Excitation Diagrams"""
 from astropy.table import Table
 import astropy.units as u
 import astropy.constants as constants
@@ -29,20 +29,25 @@ class H2Excitation(ToolBase):
         self._ac.add_index("J_u")
         self._column_density = dict()
 
-    #@property 
+    @property 
     def intensities(self):
-        '''Return stored intensities. See `addMeasurement`'''
+        '''The stored intensities. See :meth:`addMeasurement`
+         
+           :rtype: list of :class:`~pdrtpy.measurement.Measurement`
+        '''
         return self._measurements
 
 
     def column_densities(self,norm=False):
-        '''Return computed upper state column densities of stored intensities
-           Parameters:
-                norm - if True, normalize the column densities by the 
-                       statistical weight of the upper state, *g_u*.  
+        '''The computed upper state column densities of stored intensities
+
+           :param norm: if True, normalize the column densities by the 
+                       statistical weight of the upper state, :math:`g_u`.  
                        Default: False
-           Returns:
-                dictionary of column densities indexed by Line name
+           :type norm: bool
+
+           :returns: dictionary of column densities indexed by Line name
+           :rtype: dict
         '''
         # Compute column densities if needed. 
         # Note: this has a gotcha - if user changes an existing intensity 
@@ -62,13 +67,13 @@ class H2Excitation(ToolBase):
             return self._column_density
 
     def energies(self,line=False):
-        '''Return upper state energies of stored intensities, in K. 
+        '''Upper state energies of stored intensities, in K. 
 
-           Parameters:
-              line - if True, the dictionary index is the Line name, 
-                     otherwise it is the upper state J number.  Default: False
-           Returns:
-              dictionary indexed by upper state J level or Line name. 
+           :param line: if True, the dictionary index is the Line name, 
+                     otherwise it is the upper state :math:`J` number.  Default: False
+           :type line: bool
+           :returns: dictionary indexed by upper state :math:`J` number or Line name. 
+           :rtype: dict
         '''
         t = dict()
         if line:
@@ -82,9 +87,8 @@ class H2Excitation(ToolBase):
     def _init_measurements(self,m):
         '''Initialize measurements dictionary given a list.
 
-           Parameters:
-                m - list of intensity Measurements in units
-                  equivalent to (erg cm^-2 s^-1 sr^-1)
+           :param m: list of intensity :class:`~pdrtpy.measurement.Measurement`s in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
+           :type m: list of :class:`~pdrtpy.measurement.Measurement`
         '''
         self._measurements = dict()
         for mm in m:
@@ -99,9 +103,7 @@ class H2Excitation(ToolBase):
            compute the excitation diagram.   This method can also be used
            to safely replace an existing intensity Measurement.
 
-           Parameters:
-              m - a Measurement instance containing intensity in units 
-                  equivalent to (erg cm^-2 s^-1 sr^-1)
+           :param m: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
         '''
         if not check_units(m.unit,self._intensity_units):
             raise TypeError("Measurement " +m.id + " must be in intensity units equivalent to "+self._intensity_units)
@@ -118,24 +120,28 @@ class H2Excitation(ToolBase):
            change a Measurement in place, use this method. 
            Otherwise, the column densities will be inconsistent.
 
-               Parameters:
-                  m - a Measurement instance containing intensity in units 
-                      equivalent to (erg cm^-2 s^-1 sr^-1)
+           :param m: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
         '''
         self.addMeasurement(self,m)
 
 
     def colden(self,intensity):
-        '''Compute the column density in upper state N_upper, given an 
-           intensity I and assuming optically thin emission.  
-           Units of I need to be equivalent to (erg cm^-2 s^-1 sr^-1)
-                 I = A * dE * N_upper/(4 pi)
-                 N_upper = 4*pi*I/(A*dE)
-            where A is the Einstein A coefficient and dE is the energy of the transition
-            Parameters:
-                intensity - a Measurement of the intensity
-            Returns:
-                a Measurement of the column density.
+        '''Compute the column density in upper state :math:`N_u`, given an 
+           intensity :math:`I` and assuming optically thin emission.  
+           Units of :math:`I` need to be equivalent to 
+           :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`.
+
+           .. math::
+                 I &= {A \Delta E~N_u \over 4\pi}
+
+                 N_u &= 4\pi {I\over A\Delta E}
+
+           where :math:`A` is the Einstein A coefficient and :math:`\Delta E` is the energy of the transition.
+
+           :param m: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
+           :type intensity: :class:`~pdrtpy.measurement.Measurement`
+           :returns: a :class:`~pdrtpy.measurement.Measurement` of the column density.
+           :rtype: :class:`~pdrtpy.measurement.Measurement` 
         '''
         dE = self._ac.loc[intensity.id]["dE/k"]*constants.k_B.cgs*self._ac["dE/k"].unit
         A = self._ac.loc[intensity.id]["A"]*self._ac["A"].unit
@@ -155,6 +161,26 @@ class H2Excitation(ToolBase):
             self._column_density[m] = self.colden(self._measurements[m])
 
     def average_column_density(self,norm,x,y,xsize,ysize,line):
+        """Compute the average column density over a spatial box.
+
+           :param norm: if True, normalize the column densities by the 
+                       statistical weight of the upper state, :math:`g_u`.  
+           :type norm: bool
+           :param x: bottom left corner x 
+           :type x: int
+           :param y: bottom left corner y 
+           :type y: int
+           :param xsize: box width, pixels
+           :type xsize: int
+           :param ysize: box height, pixels
+           :type ysize: int
+           :param line: if True, the returned dictionary index is the Line name, otherwise it is the upper state :math:`J` number.  
+           :type line: bool
+           :returns: dictionary of column densities       
+           :rtype:  dict
+ 
+       """
+
         cdnorm = self.column_densities(norm=norm)
         cdunit = cdnorm[firstkey(cdnorm)].unit
         cdavg = dict()
@@ -185,7 +211,16 @@ class H2Excitation(ToolBase):
         pass
 
     def fit_excitation(self,**kwargs):
-        # do first pass guess using data partitioning and two linear fits
+        """Fit the :math:`log N_u-E` diagram with two excitation temperatures,
+        a ``warm`` :math:`T_{ex}` and a ``cold`` :math:`T_{ex}`.  A first
+        pass guess is initially made using data partitioning and two
+        linear fits.
+
+        :returns: The fit parameters as in :mod:`scipy.optimize.curve_fit`
+        :rtype: list
+        """
+
+
         fit_param, pcov = curve_fit(two_lin, x, y,sigma=sigma)
         tcold=-np.log10(math.e)/m1
         thot=-np.log10(math.e)/m2
@@ -211,12 +246,16 @@ class H2Excitation(ToolBase):
            an inflection point.  Second slope is steeper because slopes are 
            negative in excitation diagram.
 
-            Parameters:
-               x - array of x values
-               m1 - slope of first line
-               n1 - intercept of first line
-               m2 - slope of second line
-               n2 - intercept of second line
+           :param x: array of x values
+           :type x: :class:`numpy.ndarray` 
+           :param m1: slope of first line
+           :type m1: float
+           :param n1: intercept of first line
+           :type n1: float
+           :param m2: slope of second line
+           :type m2: float
+           :param n2: intercept of second line
+           :type n2: float
 
             See https://stackoverflow.com/questions/48674558/how-to-implement-automatic-model-determination-and-two-state-model-fitting-in-py
         ''' 
@@ -225,10 +264,12 @@ class H2Excitation(ToolBase):
     def _one_line(x,m1,n1):
         '''Return a line.
 
-          Parameters:
-               x - array of x values
-               m1 - slope of line
-               n1 - intercept of line
+           :param x: array of x values
+           :type x: :class:`numpy.ndarray` 
+           :param m1: slope of first line
+           :type m1: float
+           :param n1: intercept of first line
+           :type n1: float
         '''
         return m1*x+n1
 

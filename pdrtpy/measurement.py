@@ -67,6 +67,8 @@ class Measurement(CCDData):
         # This workaround is needed because CCDData raises an exception if unit
         # not given. Whereas having BUNIT in the image header instead would be 
         # perfectly reasonable...
+        # The side-effect of this is that Measurement not instantiated from 
+        # an image and with no unit given gets "adu" as the unit.  
         self._defunit = "adu"
         _unit = kwargs.pop('unit', self._defunit)
 

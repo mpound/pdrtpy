@@ -52,19 +52,37 @@ class LineRatioFit(ToolBase):
 
     @property
     def measurements(self):
-        """The stored :class:`measurements <Measurement>` as dictionary with Measurement IDs as keys"""
+        """The stored :class:`measurements <Measurement>` as dictionary with Measurement IDs as keys
+   
+        :rtype: dict:
+        """
         return self._measurements
     
     @property
     def measurementIDs(self):
-        '''The stored measurement IDs as `dict_keys` iterator'''
+        '''The stored measurement IDs.
+
+        :rtype dict_keys
+        '''
+         
         if self._measurements is None: return None
         return self._measurements.keys()
 
     @property
+    def observed_ratios(self):
+        '''The list of the observed line ratios that have been input so far.
+ 
+        :rtype: list of str
+        '''
+        return list(self._observedratios.keys())
+
+    @property
     def ratiocount(self):
         '''The number of ratios that match models available in the 
-           current ModelSet given the current set of measurements'''
+           current ModelSet given the current set of measurements
+ 
+        :rtype int:
+        '''
         return self._modelset.ratiocount(self.measurementIDs)
 
     def _init_measurements(self,m):
@@ -93,17 +111,24 @@ class LineRatioFit(ToolBase):
        s1 = d[utils.firstkey(d)].shape
        return np.all([m.shape == s1 for m in d.values()])
 
-    def _check_header(self,kw):
+    def _check_header(self,kw,value=NotImplemented):
        """Check to see if any of the given keyword values differ for 
           the input measurements.  
-          Parameter:
-             kw - string, the keyword to check
+
+          :param kw: the keyword to check
+          :type kw: str
+          :param value: If given and not NotImplemented, then check that all *kw* values of the input measurements requal this value.  The default is the special value NotImplemented rather than None which allows us to check against None if needed.
+          :type kw: any
        """
+       d = self._measurements
        try:
-           s1 = d[utils.firstkey(d)].header[kw]
+           if value == NotImplemented:
+               s1 = d[utils.firstkey(d)].header[kw]
+           else: 
+               s1 = value
            return np.all([m.header[kw] == s1 for m in d.values()])
        except KeyError:
-           print("WARNING: %s keyword not present in all Measurements")
+           print("WARNING: %s keyword not present in all Measurements"%kw)
            return False
        
     def _check_measurement_shapes(self):
@@ -140,10 +165,10 @@ class LineRatioFit(ToolBase):
         """Given a list of measurement IDs, find and open the FITS files that have matching ratios
            and populate the _modelratios dictionary.  Use astropy's CCDdata as a storage mechanism. 
 
-            :param  m: - list of measurement IDS (string)
-            :type m: list
-            :param unit: units of the data 
-            :type unit: string or astropy.Unit
+           :param  m: - list of measurement IDS (string)
+           :type m: list
+           :param unit: units of the data 
+           :type unit: string or astropy.Unit
         """
         d = utils.model_dir()
 
@@ -166,28 +191,55 @@ class LineRatioFit(ToolBase):
                 except KeyError:
                     raise Exception("Keyword CUNIT2 is required in file %s FITS header to describe units of interstellar radiation field"%thefile)
     
+    def _check_compatibility(self):
+        """Check that all Measurements are compatible (beams, coordinate systems, shapes) so that the computation make commence.
+ 
+          :raises: Exception if headers and shapes don't match, warns if no beam present
+        """
+
+        if not self._check_measurement_shapes():
+           raise Exception("Your input Measurements have different dimensions")
+
+        # Check the beam sizes
+        # @Todo do the convolution ourselves if requested.
+        if not self._check_header("BMAJ"):
+           raise Exception("Beam major axis (BMAJ) of your input Measurements do not match.  Please convolve all maps to the same beam size")
+        if not self._check_header("BMIN"):
+           raise Exception("Beam minor axis (BMIN) of your input Measurements do not match.  Please convolve all maps to the same beam size")
+        if not self._check_header("BPA"):
+           raise Exception("Beam position angle (BPA) of your input Measurements do not match.  Please convolve all maps to the same beam size")
+           
+
+        # Check the coordinate systems only if there is more than one pixel
+        m1 = self._measurements[utils.firstkey(self._measurements)]
+        if len(m1) != 0:
+            if not self._check_header("CTYPE1"):
+               raise Exception("CTYPE1 of your input Measurements do not match. Please ensure coordinates of all Measurements are the same.")
+            if not self._check_header("CTYPE2"):
+               raise Exception("CTYPE2 of your input Measurements do not match. Please ensure coordinates of all Measurements are the same.")
+
+        #Only allow beam = None if single value measurements.
+        if len(m1) == 0 :
+            if self._check_header("BMAJ",None) or self._check_header("BMIN",None) or self._check_header("BPA",None):
+               utils.warn(self,"No beam parameters in Measurement headers, assuming they are all equal!")
+        #if not self._check_header("BUNIT") ...
+
     def run(self):
         '''Run the full computation'''
-        self.read_models(unit='adu')
+        self._check_compatibility()
+        self.read_models(unit='erg s-1 cm-2 sr-1')
         self._compute_valid_ratios()
-        #if not self._check_header("BEAM") ...
-        #if not self._check_header("CTYPE1") ...
-        #if not self._check_header("CTYPE2") ...
-        #if not self._check_header("BUNIT") ...
         # eventually need to check that the maps overlap in real space.
         self._compute_delta_sq()
         self._compute_chisq()
         self._write_chisq()
         self.compute_density_radiation_field()
      
-    def observedratios(self):
-        '''Returns a list of the observed line ratios that have been input so far'''
-        return list(self._observedratios.keys())
 
     def _compute_valid_ratios(self):
         '''Compute the valid observed ratio maps for the available model data'''
         if not self._check_measurement_shapes():
-            raise TypeError("Measurement maps have different dimensions")
+            raise Exception("Measurement maps have different dimensions")
 
         # Note _find_ratio_elements does not handle case of OI+CII/FIR so 
         # we have to deal with that separately below.
@@ -198,7 +250,7 @@ class LineRatioFit(ToolBase):
             # deepcopy workaround for bug: https://github.com/astropy/astropy/issues/9006
             num = self._convert_if_necessary(self._measurements[p["numerator"]])
             denom = self._convert_if_necessary(self._measurements[p["denominator"]])
-            self._observedratios[label] = deepcopy(num/denum)
+            self._observedratios[label] = deepcopy(num/denom)
             #@TODO create a meaningful header for the ratio map
             self._ratioHeader(p["numerator"],p["denominator"],label)
         self._add_oi_cii_fir()
@@ -248,11 +300,12 @@ class LineRatioFit(ToolBase):
     def _computeDelta(self,f):
         '''Compute the difference-squared values from the observed ratios 
            and models - multi-pixel version
-           Parameters:
-                f - fractional amount by which the variance is underestimated. 
-                    For traditional chi-squared calculation f is zero.  
-                    For log-likelihood calculation f is positive and less than 1.
-                    See, e.g. https://emcee.readthedocs.io/en/stable/tutorials/line/#maximum-likelihood-estimation
+           
+           :param f: fractional amount by which the variance is underestimated. 
+           For traditional chi-squared calculation f is zero.  
+           For log-likelihood calculation f is positive and less than 1.
+           See, e.g. https://emcee.readthedocs.io/en/stable/tutorials/line/#maximum-likelihood-estimation
+           :type f: float
         '''
         if not self._modelratios: # empty list or None
             raise Exception("No model data ready.  You need to call read_fits")
@@ -261,7 +314,7 @@ class LineRatioFit(ToolBase):
             raise Exception("Not enough ratios to compute deltasq.  Need 2, got %d"%self.ratiocount)
 
         if not self._check_ratio_shapes():
-            raise TypeError("Observed ratio maps have different dimensions")
+            raise Exception("Observed ratio maps have different dimensions")
             
         returnval = dict()
         for r in self._observedratios:
@@ -288,6 +341,8 @@ class LineRatioFit(ToolBase):
                 ff.append(_q)
             # result order is g0,n,y,x
             newshape = np.hstack((self._modelratios[r].shape,self._observedratios[r].shape))
+            print("newshape type(newshape)",newshape,type(newshape),type(newshape[0]))
+            print("ff.shape ",np.shape(ff))
             # result order is y,x,g0,n
             #newshape = np.hstack((self._observedratios[r].shape,self._modelratios[r].shape))
             _qq = np.reshape(ff,newshape)
@@ -298,6 +353,14 @@ class LineRatioFit(ToolBase):
         return returnval
 
     def compute_log_likelihood(self,f):
+        """***Experimental***
+
+           :param f: fractional amount by which the variance is underestimated. 
+           For traditional chi-squared calculation f is zero.  
+           For log-likelihood calculation f is positive and less than 1.
+           See, e.g. https://emcee.readthedocs.io/en/stable/tutorials/line/#maximum-likelihood-estimation
+           :type f: float
+        """
         l = self._computeDelta(f)
         sumary = -0.5* sum((l[r]._data for r in l))
         k = utils.firstkey(self._deltasq)
@@ -329,12 +392,20 @@ class LineRatioFit(ToolBase):
         self._makehistory(self._reducedChisq)
         
     def _write_chisq(self,file="chisq.fits",rfile="rchisq.fits"):
-        '''Write the chisq and reduced-chisq data to a file'''
+        '''Write the chisq and reduced-chisq data to a file
+         
+           :param file: FITS file to write the chisq map to.
+           :type  file: str
+           :param rfile: FITS file to write the reduced chisq map to.
+           :type rfile: str
+        '''
         self._chisq.write(file,overwrite=True,hdu_mask='MASK')
         self._reducedChisq.write(rfile,overwrite=True,hdu_mask='MASK')  
 
     def compute_likeliest(self):
-        '''Compute the likeliest density n and radiation field spatial maps by searching for the minimum chisq at each spatial pixel.'''
+        """***Experimental*** 
+        Compute the likeliest density n and radiation field spatial maps
+        """
         if self._likelihood is None: return
         
         # get the likelihood maxima of each pixel along the g,n axes
@@ -367,7 +438,7 @@ class LineRatioFit(ToolBase):
         
     def compute_density_radiation_field(self):
         '''Compute the best-fit density n and radiation field spatial maps 
-           by searching for the minimum chisq at each spatial pixel.'''
+           by searching for the minimum chi-squared at each spatial pixel.'''
         if self._chisq is None or self._reducedChisq is None: return
         
         # get the chisq minima of each pixel along the g,n axes
@@ -410,7 +481,11 @@ class LineRatioFit(ToolBase):
             
                  
     def _makehistory(self,image):
-        '''Add information to HISTORY keyword indicating how the n,G0 were computed (measurements give, ratios used)'''
+        '''Add information to HISTORY keyword indicating how the density and radiation field were computed (measurements given, ratios used)
+
+       :param image: The image which to add the history to.
+       :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+        '''
         s = "Measurements provided: "
         for k in self._measurements.keys():
             s = s + k + ", "
@@ -424,19 +499,23 @@ class LineRatioFit(ToolBase):
 
     def _ratioHeader(self,numerator,denominator,label):
         '''Add the RATIO identifier to the appropriate image
-           Parameters:
-                numerator - numerator string key of the line ratio
-                denominator - denominator string key of the line ratio
-                label - ratio label
+
+           :param numerator:  numerator key of the line ratio
+           :type numerator: str
+           :param denominator:  denominator key of the line ratio
+           :type denominator: str
+           :param label:  ratio key indicating which observation image (Measuremnet) to use
+           :type label: str
         '''
         utils.addkey("RATIO",label,self._observedratios[label])
         utils.dataminmax(self._observedratios[label])
         utils.signature(self._observedratios[label])
         
     def _fixheader(self,image):
-        '''Put axis 3 and 4 header values into chisq maps
-           Parameter:
-                image - the image to which to add the header values
+        '''Put axis 3 and 4 header values into an image
+
+        :param image: The image to which to add the header values
+        :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
         '''
         # @TODO make these headers compliant with inputs (e.g. requested units)
         utils.setkey("CTYPE3","Log(Volume Density)",image)
@@ -468,6 +547,11 @@ class LineRatioFit(ToolBase):
 
        
     def _convert_if_necessary(self,image):
+        """If the input image has units of K km/s convert it to intensity
+
+        :param image: The image to which to add the header values
+        :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+        """
         if image.header["BUNIT"] == "K km/s":
             return utils.convert_integrated_intensity(image)
         else:
