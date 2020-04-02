@@ -6,26 +6,11 @@ Subpackages
 
 .. toctree::
 
-   pdrtpy.test
+   pdrtpy.plot
+   pdrtpy.tool
 
 Submodules
 ----------
-
-pdrtpy.h2excitation module
---------------------------
-
-.. automodule:: pdrtpy.h2excitation
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-pdrtpy.lineratiofit module
---------------------------
-
-.. automodule:: pdrtpy.lineratiofit
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 pdrtpy.measurement module
 -------------------------
@@ -47,22 +32,6 @@ pdrtpy.pdrutils module
 ----------------------
 
 .. automodule:: pdrtpy.pdrutils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-pdrtpy.plot module
-------------------
-
-.. automodule:: pdrtpy.plot
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-pdrtpy.tool module
-------------------
-
-.. automodule:: pdrtpy.tool
    :members:
    :undoc-members:
    :show-inheritance:
