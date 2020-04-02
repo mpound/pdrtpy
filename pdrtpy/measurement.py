@@ -40,6 +40,8 @@ class Measurement(CCDData):
         
     .. code-block:: python
 
+       from pdrtpy.measurement import Measurement
+
        my_obs = Measurement.read("file.fits",identifier="CII_158")
        my_other_obs = Measurement.read("file.fits",identifier="CO2_1",unit="K km/s")
 
@@ -50,6 +52,10 @@ class Measurement(CCDData):
             print("args=",*args)
             print("kwargs=",*kwargs)
         self._identifier = kwargs.pop('identifier', 'unknown')
+        _beam = dict()
+        _beam["BMAJ"] = kwargs.pop('bmaj', None)
+        _beam["BMIN"] = kwargs.pop('bmin', None)
+        _beam["BPA"] = kwargs.pop('bpa', None)
         self._filename = None
 
         #Won't work: On arithmetic operations, this raises the exception. 
@@ -57,10 +63,32 @@ class Measurement(CCDData):
         #    raise ValueError("an identifier for Measurement must be specified.")
         #On arithmetic operations, this causes an annoying 
         # log.info() message from CCDData about overwriting Quantity 
-        #_unit = kwargs.pop('unit', 'adu')
 
-        super().__init__(*args, **kwargs)#, unit=_unit)
-        
+        # This workaround is needed because CCDData raises an exception if unit
+        # not given. Whereas having BUNIT in the image header instead would be 
+        # perfectly reasonable...
+        self._defunit = "adu"
+        _unit = kwargs.pop('unit', self._defunit)
+
+        super().__init__(*args, **kwargs, unit=_unit)
+
+        # Set unit to header BUNIT or put BUNIT into header if it 
+        # wasn't present 
+        if "BUNIT" in self.header:
+            self.unit(self.header["BUNIT"])
+            self.uncertainy.unit(self.header["BUNIT"])
+        else: 
+            # use str in case a astropy.Unit was given
+            self.header["BUNIT"] = str(_unit) 
+
+        # Ditto beam parameters
+        if "BMAJ" not in self.header:
+            self.header["BMAJ"] = _beam["BMAJ"]
+        if "BMIN" not in self.header:
+            self.header["BMIN"] = _beam["BMIN"]
+        if "BPA" not in self.header:
+            self.header["BPA"] = _beam["BPA"]
+
     @staticmethod
     def make_measurement(fluxfile,error,outfile,rms=None):
         """Create a FITS files with 2 HDUS, the first being the flux and the 2nd being 
@@ -193,7 +221,13 @@ class Measurement(CCDData):
         :param other: a Measurement to add
         :type other: :class:`Measurement`
         """
-        z=super().add(other)
+        # need to do tricky stuff to preserve unit propogation.
+        # super().add() does not work because it instantiates a Measurement
+        # with the default unit "adu" and then units for the operation are
+        # not conformable.  I blame astropy CCDData authors for making that
+        # class so hard to subclass.
+        z=CCDData.add(self,other)
+        z=Measurement(z,unit=z._unit)
         z._identifier = self.id + '+' + other.id
         z._unit = self.unit
         return z
@@ -204,9 +238,9 @@ class Measurement(CCDData):
         :param other: a Measurement to subtract
         :type other: :class:`Measurement`
         '''
-        z=super().subtract(other)
+        z=CCDData.subtract(self,other)
+        z=Measurement(z,unit=z._unit)
         z._identifier = self.id + '-' + other.id
-        z._unit = self.unit
         return z
     
     def multiply(self,other):
@@ -215,9 +249,9 @@ class Measurement(CCDData):
         :param other: a Measurement to multiply
         :type other: :class:`Measurement`
         '''
-        z=super().multiply(other)
+        z=CCDData.multiply(self,other)
+        z=Measurement(z,unit=z._unit)
         z._identifier = self.id + '*' + other.id
-        z._unit = self.unit*other.unit
         return z
         
     def divide(self,other):
@@ -226,9 +260,9 @@ class Measurement(CCDData):
         :param other: a Measurement to divide
         :type other: :class:`Measurement`
         '''
-        z=super().divide(other)
+        z=CCDData.divide(self,other)
+        z=Measurement(z,unit=z._unit)
         z._identifier = self.id + '/' + other.id
-        z._unit = self.unit/other.unit
         return z
     
     def __add__(self,other):
@@ -249,6 +283,9 @@ class Measurement(CCDData):
         '''Divide this Measurement by another using / operator, propagating errors, units,  and updating identifiers'''
         z=self.divide(other)
         return z
+
+    def __len__(self):
+        return len(self.shape)
 
     def __repr__(self):
         m = "%s +/- %s %s" % (self.data,self.error,self.unit)
