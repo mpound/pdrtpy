@@ -53,6 +53,8 @@ u.add_enabled_units(mathis_unit)
 #@module_property
 #def _version():
 
+#@todo check_header_present(list) to return boolean array of keywwords
+# present or not in a FITS header
 def version():
     """Version of the PDRT code
 
@@ -143,7 +145,10 @@ def addkey(key,value,image):
        :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
     """
     if key in image.header and type(value) == str:    
-        image.header[key] = image.header[key]+" "+value
+        s =  str(image.header[key])
+        # avoid concatenating duplicates
+        if s != value:
+            image.header[key] = str(image.header[key])+" "+value
     else:
         image.header[key]=value
 
@@ -155,7 +160,9 @@ def comment(value,image):
        :param image: The image which to add the comment to
        :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
     """
-    addkey("COMMENT",value,image)
+    # direct assignment will always make a new card for COMMENT
+    # See https://docs.astropy.org/en/stable/io/fits/
+    image.header["COMMENT"]=value
     
 def history(value,image):
     """Add a history record to an image header
@@ -165,7 +172,8 @@ def history(value,image):
        :param image: The image which to add the HISTORY to
        :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
     """
-    addkey("HISTORY",value,image)
+    # direct assignment will always make a new card for HISTORY
+    image.header["HISTORY"]=value
 
 def setkey(key,value,image):
     """Set the value of an existing keyword in the image header

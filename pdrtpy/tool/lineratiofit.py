@@ -35,11 +35,11 @@ class LineRatioFit(ToolBase):
             self._init_measurements(measurements)
 
         self._modelratios = None
-        self._set_modelfilesUsed()
+        self._set_model_files_used()
         self._observedratios = None
         self._chisq = None
         self._deltasq = None
-        self._reducedChisq = None
+        self._reduced_chisq = None
         self._likelihood = None
         self.radiation_field_unit = None
         self.density_unit = None
@@ -100,11 +100,11 @@ class LineRatioFit(ToolBase):
     #    """initialize models from an IPAC format ASCII file"""
     #    self._modelTable=Table.read(filename,format="ascii.ipac")
 
-    def _set_modelfilesUsed(self):
-        self._modelfilesUsed = dict()
+    def _set_model_files_used(self):
+        self._model_files_used = dict()
         if self._measurements is None: return
         for x in self._modelset.find_files(self.measurementIDs):
-            self._modelfilesUsed[x[0]]=x[1]
+            self._model_files_used[x[0]]=x[1]
 
     def _check_shapes(self,d):
        #ugly
@@ -149,7 +149,7 @@ class LineRatioFit(ToolBase):
             self._measurements[m.id] = m
         else:
             self._init_measurements(m)
-        self._set_modelfilesUsed()
+        self._set_model_files_used()
         
     def remove_measurement(self,id):
         '''Delete a measurement from the internal dictionary used to compute ratios.
@@ -158,7 +158,7 @@ class LineRatioFit(ToolBase):
            :raises: KeyError if id not in existing Measurements
         '''
         del self._measurements[id]
-        self._set_modelfilesUsed()
+        self._set_model_files_used()
    
     
     def read_models(self,unit):
@@ -340,14 +340,26 @@ class LineRatioFit(ToolBase):
                 _q = (mf - pix)**2/s2 + add_term
                 ff.append(_q)
             # result order is g0,n,y,x
-            newshape = np.hstack((self._modelratios[r].shape,self._observedratios[r].shape))
-            print("newshape type(newshape)",newshape,type(newshape),type(newshape[0]))
-            print("ff.shape ",np.shape(ff))
+            #print("Shape mr1 ",self._modelratios[r].shape,type(self._modelratios[r].shape[0]))
+            #print("Shape or2 ",self._observedratios[r].shape)#,type(self._observedratios[r].shape[0]))
+
+            # Catch the case of a single pixel
+            if len(self._observedratios[r].shape) == 0:
+                newshape = np.hstack((self._modelratios[r].shape))
+                _meta= deepcopy(self._modelratios[r].meta)
+                # clean potential crap
+                _meta.pop("",None)
+                _meta.pop("TITLE",None)
+            else:
+                newshape = np.hstack((self._modelratios[r].shape,self._observedratios[r].shape))
+                _meta= deepcopy(self._observedratios[r].meta)
+            #print("newshape type(newshape)",newshape,type(newshape),type(newshape[0]))
+            #print("ff.shape ",np.shape(ff))
             # result order is y,x,g0,n
             #newshape = np.hstack((self._observedratios[r].shape,self._modelratios[r].shape))
             _qq = np.reshape(ff,newshape)
-            _wcs = self._observedratios[r].wcs.deepcopy()
-            _meta= deepcopy(self._observedratios[r].meta)
+            # WCS will be None for single pixel
+            _wcs = deepcopy(self._observedratios[r].wcs)
             returnval[r] = CCDData(_qq,unit="adu",wcs=_wcs,meta=_meta)
     
         return returnval
@@ -364,7 +376,9 @@ class LineRatioFit(ToolBase):
         l = self._computeDelta(f)
         sumary = -0.5* sum((l[r]._data for r in l))
         k = utils.firstkey(self._deltasq)
-        self._likelihood = CCDData(sumary,unit='adu',wcs=self._deltasq[k].wcs,meta=self._deltasq[k].meta)
+        _wcs = deepcopy(self._deltasq[k].wcs)
+        _meta = deepcopy(self._deltasq[k].meta)
+        self._likelihood = CCDData(sumary,unit='adu',wcs=_wcs,meta=_meta)
         self._fixheader(self._likelihood)
         self._makehistory(self._likelihood)
 
@@ -382,14 +396,16 @@ class LineRatioFit(ToolBase):
         sumary = sum((self._deltasq[r]._data for r in self._deltasq))
         self._dof = len(self._deltasq) - 1
         k = utils.firstkey(self._deltasq)
-        self._chisq = CCDData(sumary,unit='adu',wcs=self._deltasq[k].wcs,meta=self._deltasq[k].meta)
-        self._reducedChisq =  self._chisq.divide(self._dof)
+        _wcs = deepcopy(self._deltasq[k].wcs)
+        _meta = deepcopy(self._deltasq[k].meta)
+        self._chisq = CCDData(sumary,unit='adu',wcs=_wcs,meta=_meta)
+        self._reduced_chisq =  self._chisq.divide(self._dof)
         self._fixheader(self._chisq)
-        self._fixheader(self._reducedChisq)
+        self._fixheader(self._reduced_chisq)
         utils.setkey("BUNIT","Chi-squared",self._chisq)
-        utils.setkey("BUNIT",("Reduced Chi-squared (DOF=%d)"%self._dof),self._reducedChisq)
+        utils.setkey("BUNIT",("Reduced Chi-squared (DOF=%d)"%self._dof),self._reduced_chisq)
         self._makehistory(self._chisq)
-        self._makehistory(self._reducedChisq)
+        self._makehistory(self._reduced_chisq)
         
     def _write_chisq(self,file="chisq.fits",rfile="rchisq.fits"):
         '''Write the chisq and reduced-chisq data to a file
@@ -400,7 +416,7 @@ class LineRatioFit(ToolBase):
            :type rfile: str
         '''
         self._chisq.write(file,overwrite=True,hdu_mask='MASK')
-        self._reducedChisq.write(rfile,overwrite=True,hdu_mask='MASK')  
+        self._reduced_chisq.write(rfile,overwrite=True,hdu_mask='MASK')  
 
     def compute_likeliest(self):
         """***Experimental*** 
@@ -439,13 +455,18 @@ class LineRatioFit(ToolBase):
     def compute_density_radiation_field(self):
         '''Compute the best-fit density n and radiation field spatial maps 
            by searching for the minimum chi-squared at each spatial pixel.'''
-        if self._chisq is None or self._reducedChisq is None: return
+        if self._chisq is None or self._reduced_chisq is None: return
         
         # get the chisq minima of each pixel along the g,n axes
-        z=np.amin(self._reducedChisq,(0,1))
-        gi,ni,yi,xi=np.where(self._reducedChisq==z)
-        # astronomical spatial indices
-        spatial_idx = (yi,xi)
+        z=np.amin(self._reduced_chisq,(0,1))
+        gnxy = np.where(self._reduced_chisq==z)
+        gi = gnxy[0]
+        ni = gnxy[1]
+        if len(gnxy) == 4:
+            # astronomical spatial indices
+            spatial_idx = (gnxy[2],gnxy[3])
+        else:
+            spatial_idx = 0
         # model n,g0 indices
         model_idx   = np.transpose(np.array([ni,gi]))
         # qq[:,:2] takes the first two columns of qq
@@ -456,23 +477,31 @@ class LineRatioFit(ToolBase):
         fk = utils.firstkey(self._modelratios)
         fk2 = utils.firstkey(self._observedratios)
         newshape = self._observedratios[fk2].shape
-        g0=10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,1]
+        g0 =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,1]
         n =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,0]
+        #print("G ",g0)
+        #print("N ",n)
 
-        # note this will reshape g0 in radiation_field for us!
-        self._radiation_field=self._observedratios[fk2].copy()
-        self._radiation_field.data[spatial_idx]=g0
-
-        # We cannot mask nans because numpy does not support writing
-        # MaskedArrays to a file. Will get a not implemented error.
-        # Therefore just copy the nans over from the input observations.
-        self._radiation_field.data[np.isnan(self._observedratios[fk2])] = np.nan
+        self._radiation_field=deepcopy(self._observedratios[fk2])
+        if spatial_idx == 0:
+            self._radiation_field.data=g0[0]
+        else:
+            # note this will reshape g0 in radiation_field for us!
+            self._radiation_field.data[spatial_idx]=g0
+            # We cannot mask nans because numpy does not support writing
+            # MaskedArrays to a file. Will get a not implemented error.
+            # Therefore just copy the nans over from the input observations.
+            self._radiation_field.data[np.isnan(self._observedratios[fk2])] = np.nan
         self._radiation_field.unit = self.radiation_field_unit
         self._radiation_field.uncertainty.unit = self.radiation_field_unit
 
-        self._density=self._observedratios[fk2].copy()      
-        self._density.data[spatial_idx]=n
-        self._density.data[np.isnan(self._observedratios[fk2])] = np.nan
+        self._density=deepcopy(self._observedratios[fk2])
+        if spatial_idx == 0:
+            self._density.data=n[0]
+        else:
+            self._density.data[spatial_idx]=n
+            self._density.data[np.isnan(self._observedratios[fk2])] = np.nan
+
         self._density.unit = self.density_unit
         self._density.uncertainty.unit = self.density_unit
 
@@ -489,11 +518,11 @@ class LineRatioFit(ToolBase):
         s = "Measurements provided: "
         for k in self._measurements.keys():
             s = s + k + ", "
-        utils.addkey("HISTORY",s,image)
+        utils.history(s,image)
         s = "Ratios used: "
         for k in self._deltasq.keys():
             s = s + k + ", "
-        utils.addkey("HISTORY",s,image)
+        utils.history(s,image)
         utils.signature(image)
         utils.dataminmax(image)
 
@@ -512,23 +541,26 @@ class LineRatioFit(ToolBase):
         utils.signature(self._observedratios[label])
         
     def _fixheader(self,image):
-        '''Put axis 3 and 4 header values into an image
+        '''Put additional axis and header values into an image
 
         :param image: The image to which to add the header values
         :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
         '''
         # @TODO make these headers compliant with inputs (e.g. requested units)
-        utils.setkey("CTYPE3","Log(Volume Density)",image)
-        utils.setkey("CTYPE4","Log(Radiation Field)",image)
-        utils.setkey("CUNIT3",str(self.density_unit),image)
-        utils.setkey("CUNIT4",str(self.radiation_field_unit),image)
+        naxis = len(image.shape)
+        ax1=str(naxis-1)
+        ax2=str(naxis)
+        utils.setkey("CTYPE"+ax1,"Log(Volume Density)",image)
+        utils.setkey("CTYPE"+ax2,"Log(Radiation Field)",image)
+        utils.setkey("CUNIT"+ax1,str(self.density_unit),image)
+        utils.setkey("CUNIT"+ax2,str(self.radiation_field_unit),image)
         #@TODO this cdelts will change with new models.  make this flexible
-        utils.setkey("CDELT3",0.25,image)
-        utils.setkey("CDELT4",0.25,image)
-        utils.setkey("CRVAL4",-0.5,image)
-        utils.setkey("CRVAL3",1.0,image)
-        utils.setkey("CRPIX3",1.0,image)
-        utils.setkey("CRPIX4",1.0,image)
+        utils.setkey("CDELT"+ax1,0.25,image)
+        utils.setkey("CDELT"+ax2,0.25,image)
+        utils.setkey("CRVAL"+ax1,-0.5,image)
+        utils.setkey("CRVAL"+ax2,1.0,image)
+        utils.setkey("CRPIX"+ax1,1.0,image)
+        utils.setkey("CRPIX"+ax2,1.0,image)
         
          
     def _density_radiation_field_header(self):
@@ -567,7 +599,7 @@ class LineRatioFit(ToolBase):
 #
 #    p = LineRatioFit(measurements = [m1,m2,m3,m4])
 #    print("num ratios:", p.ratiocount)
-#    print("modelfiles used: ", p._modelfilesUsed)
+#    print("modelfiles used: ", p._model_files_used)
 #    p.run()
 #    p._modelset.get_ratio_elements(p.measurements)
 #    p.makeRatioOverlays(cmap='gray')

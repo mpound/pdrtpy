@@ -1,14 +1,14 @@
-#todo: Look into seaborn https://seaborn.pydata.org
-# Also https://docs.bokeh.org/en
-# especially for coloring and style
-
+"""Base class for tool plotters
+"""
 import numpy as np
 
 import matplotlib.axes as maxes
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from astropy.visualization import ZScaleInterval, ImageNormalize
+from astropy.visualization import simple_norm, ZScaleInterval , ImageNormalize
 from astropy.visualization.stretch import LinearStretch
+from astropy.visualization.stretch import SinhStretch,  LinearStretch
+from matplotlib.colors import LogNorm
 
 from ..pdrutils import to
 
@@ -26,7 +26,7 @@ class PlotBase:
         self._tool = tool
         #print("Done PlotBase")
 
-    def _autolevels(self,data,steps='log',numlevels=None):
+    def _autolevels(self,data,steps='log',numlevels=None,verbose=False):
         """Compute contour levels automatically based on data. 
 
         :param data: The data to contour
@@ -35,6 +35,8 @@ class PlotBase:
         :type steps: str
         :param numlevels: The number of contour levels to compute. Default: None which means autocompute the number of levels which typically gives about 10 levels.
         :type numlevels: int
+        :param verbose: Print the computed levels. Default: False
+        :type verbose: boolean
         :returns:  numpy.array containing level values
         """
  
@@ -63,7 +65,8 @@ class PlotBase:
             levels = np.array([min_ * np.power(10,slope*j) for j in range(0,numlevels)])
         else:
            raise Exception("steps must be 'lin' or 'log'")
-        print("Computed %d contour autolevels: %s"%(numlevels,levels))
+        if verbose:
+            print("Computed %d contour autolevels: %s"%(numlevels,levels))
         return levels
         
     def _zscale(self,image):
@@ -76,6 +79,16 @@ class PlotBase:
         # clip=False required or NaNs get max color value, see https://github.com/astropy/astropy/issues/8165
         norm= ImageNormalize(data=image,interval=ZScaleInterval(contrast=0.5),stretch=LinearStretch(),clip=False)
         return norm
+
+    def _get_norm(self,norm,km,min,max):
+        if norm == 'simple':
+            return simple_norm(km, min_cut=min,max_cut=max, stretch='log', clip=False)
+        elif norm == 'zscale':
+            return self._zscale(km)
+        elif norm == 'log':
+            return LogNorm()
+        else: 
+            return norm
 
     def _wcs_colorbar(self,image, axis, pos="right", width="10%",pad=0.15,orientation="vertical"):
         """Create a colorbar for a subplot with WCSAxes 
