@@ -1,5 +1,6 @@
 """Manage spectral line or continuum observations"""
 
+# Todo:  cleaner string rep (e.g., E format)
 from copy import deepcopy
 
 import astropy.units as u
