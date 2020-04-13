@@ -7,6 +7,7 @@ import sys
 import numpy as np
 from pathlib import Path
 import warnings
+from copy import deepcopy
 
 import astropy.units as u
 from astropy.constants import k_B
@@ -272,7 +273,7 @@ def to(unit,image):
      :return: an image with converted values and units
   """
   value = image.unit.to(unit)
-  newmap = image.copy()
+  newmap = deepcopy(image)
   newmap.data = newmap.data * value
   newmap.unit = u.Unit(unit)
   return newmap
@@ -345,7 +346,7 @@ def convert_integrated_intensity(image,wavelength=None):
      raise Exception("Image BUNIT must be 'K km/s'")
   factor = 2E5*k_B/wavelength**3
   print("Factor = %s"%factor.decompose(u.cgs.bases))
-  newmap = image.copy()
+  newmap = deepcopy(image)
   newmap.data = newmap.data * factor.decompose(u.cgs.bases).value
   newmap.unit = _INTEG_RFS_UNIT
   return newmap
