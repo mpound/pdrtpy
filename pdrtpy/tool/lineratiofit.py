@@ -11,6 +11,7 @@ import numpy.ma as ma
 import scipy.stats as stats
 
 from astropy.io import fits
+from astropy.io.fits.header import Header
 import astropy.wcs as wcs
 import astropy.units as u
 from astropy.table import Table
@@ -400,6 +401,9 @@ class LineRatioFit(ToolBase):
         _meta = deepcopy(self._deltasq[k].meta)
         self._chisq = CCDData(sumary,unit='adu',wcs=_wcs,meta=_meta)
         self._reduced_chisq =  self._chisq.divide(self._dof)
+        # must make a copy here otherwise the header is an OrderDict
+        # instead of astropy.io.fits.header.Header
+        self._reduced_chisq.header =  Header(self._chisq.header)
         self._fixheader(self._chisq)
         self._fixheader(self._reduced_chisq)
         utils.setkey("BUNIT","Chi-squared",self._chisq)
@@ -576,6 +580,9 @@ class LineRatioFit(ToolBase):
         utils.comment("Best-fit interstellar radiation field",self._radiation_field)
         self._makehistory(self._density)
         self._makehistory(self._radiation_field)
+        # convert from OrderedDict to astropy.io.fits.header.Header
+        self._density.header = Header(self._density.header)
+        self._radiation_field.header = Header(self._radiation_field.header)
 
        
     def _convert_if_necessary(self,image):
