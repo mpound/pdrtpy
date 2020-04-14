@@ -90,8 +90,21 @@ def root_path():
     """
     return Path(__file__).parent.parent
 
-#@module_property
-#def _model_dir():
+def data_dir():
+    """Project test data directory, including trailing slash
+
+    :rtype: str
+    """
+    return os.path.join(root_dir(),'testdata/')
+
+def get_data(filename):
+    """Get fully qualified pathname to FITS test data file.
+
+    :param filename: input filename, no path
+    :type filename: str
+    """
+    return data_dir()+filename
+
 def model_dir():
     """Project model directory, including trailing slash
 
@@ -264,6 +277,8 @@ def to(unit,image):
      strength maps between Habing, Draine, cgs, etc, it will work for
      any image that has a unit member variable. So, e.g., it would work
      to convert density from cm^-3 to m^-3.
+     If the input image is a :class:`~pdrtpy.measurement.Measurement`, its
+     uncertainty will also be converted.
 
      :param unit: identifying the unit to convert to 
      :type unit: string or `astropy.units.Unit` 
@@ -276,6 +291,10 @@ def to(unit,image):
   newmap = deepcopy(image)
   newmap.data = newmap.data * value
   newmap.unit = u.Unit(unit)
+  # deal with uncertainty in Measurements.
+  if getattr(newmap,"_uncertainty") is not None:
+     newmap._uncertainty.array = newmap.uncertainty.array * value
+     newmap._uncertainty.unit = u.Unit(unit)
   return newmap
 
 def toHabing(image):
@@ -341,12 +360,18 @@ def convert_integrated_intensity(image,wavelength=None):
   if f is None and wavelength is None:
      raise Exception("Image header has no RESTFREQ. You must supply wavelength")
   if f is not None and wavelength is None:
-     wavelength = f.to(_CM,equivalencies=u.spectral())
+     # FITS restfreq's are in Hz
+     wavelength = u.Quantity(f,"Hz").to(_CM,equivalencies=u.spectral())
   if image.header.get("BUNIT",None) != "K km/s":
      raise Exception("Image BUNIT must be 'K km/s'")
   factor = 2E5*k_B/wavelength**3
   print("Factor = %s"%factor.decompose(u.cgs.bases))
   newmap = deepcopy(image)
-  newmap.data = newmap.data * factor.decompose(u.cgs.bases).value
+  value = factor.decompose(u.cgs.bases).value
+  newmap.data = newmap.data * value
   newmap.unit = _INTEG_RFS_UNIT
+  # deal with uncertainty in Measurements.
+  if getattr(newmap,"_uncertainty") is not None:
+     newmap._uncertainty.array = newmap.uncertainty.array * value
+     newmap._uncertainty.unit = _INTEG_RFS_UNIT
   return newmap

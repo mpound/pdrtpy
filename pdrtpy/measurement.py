@@ -49,6 +49,7 @@ class Measurement(CCDData):
     """
     def __init__(self,*args, **kwargs):
         debug = kwargs.pop('debug', False)
+
         if debug: 
             print("args=",*args)
             print("kwargs=",*kwargs)
@@ -56,7 +57,8 @@ class Measurement(CCDData):
         _beam = dict()
         _beam["BMAJ"] = kwargs.pop('bmaj', None)
         _beam["BMIN"] = kwargs.pop('bmin', None)
-        _beam["BPA"] = kwargs.pop('bpa', None)
+        _beam["BPA"]  = kwargs.pop('bpa', None)
+        self._restfreq = kwargs.pop('restfreq',None)
         self._filename = None
 
         #Won't work: On arithmetic operations, this raises the exception. 
@@ -76,6 +78,12 @@ class Measurement(CCDData):
         # Also works: super().__init__(*args, **kwargs, unit=_unit)
         CCDData.__init__(self,*args, **kwargs, unit=_unit)
 
+        # If user provided restfreq, insert it into header
+        # FITS standard is Hz
+        if self._restfreq is not None:
+            rf = u.Unit(self._restfreq).to("Hz")
+            print("new restfreq: %s Hz"%rf)
+            self.header["RESTFREQ"] = rf
         # Set unit to header BUNIT or put BUNIT into header if it 
         # wasn't present 
         if "BUNIT" in self.header:
@@ -128,10 +136,13 @@ class Measurement(CCDData):
         if error == 'rms':
             _error = deepcopy(_flux)
             if rms is None:
-                _rms = _flux[0].header.get("RMS",None)
-                if _rms is None:
+                rms = _flux[0].header.get("RMS",None)
+                if rms is None:
                     raise Exception("rms not given as parameter and RMS keyword not present in flux header")
-                _error[0].data = np.full(_error[0].data.shape,rms)
+                else:
+                    print("Found RMS in header: %.2E %s"%(rms,_error[0].data.shape))
+            tmp = np.full(_error[0].data.shape,rms)
+            _error[0].data[:] = rms
         elif "%" in error:
             percent = float(error.strip('%')) / 100.0
             _error = deepcopy(_flux)
@@ -363,20 +374,3 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
 with registry.delay_doc_updates(Measurement):
     registry.register_reader('fits', Measurement, fits_measurement_reader)
     
-
-if __name__ == "__main__":
-
-    m1 = Measurement(data=[30.,20.],uncertainty = StdDevUncertainty([5.,5.]),identifier="OI_145",unit="adu")
-    m2 = Measurement(data=10.,uncertainty = StdDevUncertainty(2.),identifier="CI_609",unit="adu")
-    m3 = Measurement(data=10.,uncertainty = StdDevUncertainty(1.5),identifier="CO_21",unit="adu")
-    m4 = Measurement(data=100.,uncertainty = StdDevUncertainty(10.),identifier="CII_158",unit="adu")
-
-    print(m1/m2)
-    print(m2/m3)
-    print(m1*m2)
-    print(m2/m4)
-    print(m4*m3)
-    print(m4+m3)
-    print(m3-m1)
-
-    print(m3.levels)
