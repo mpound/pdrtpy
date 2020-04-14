@@ -73,13 +73,14 @@ class Measurement(CCDData):
         self._defunit = "adu"
         _unit = kwargs.pop('unit', self._defunit)
 
-        super().__init__(*args, **kwargs, unit=_unit)
+        # Also works: super().__init__(*args, **kwargs, unit=_unit)
+        CCDData.__init__(self,*args, **kwargs, unit=_unit)
 
         # Set unit to header BUNIT or put BUNIT into header if it 
         # wasn't present 
         if "BUNIT" in self.header:
-            self.unit(self.header["BUNIT"])
-            self.uncertainy.unit(self.header["BUNIT"])
+            self._unit = u.Unit(self.header["BUNIT"])
+            self.uncertainty._unit = u.Unit(self.header["BUNIT"])
         else: 
             # use str in case a astropy.Unit was given
             self.header["BUNIT"] = str(_unit) 
@@ -349,7 +350,7 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
     # @TODO if uncertainty plane not present, look for RMS keyword
     # @TODO header values get stuffed into WCS, others may be dropped by CCDData._generate_wcs_and_update_header
     try:
-       z = Measurement(z)
+       z=Measurement(z,unit=z._unit)
     except Exception:
        raise TypeError('could not convert fits_measurement_reader output to Measurement')
     z.identifier(_id)
