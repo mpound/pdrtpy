@@ -196,6 +196,7 @@ class LineRatioPlot(PlotBase):
 
         kwargs_opts = {'units' : None,
                        'image':True,
+                       'colorbar': True,
                        'contours': True,
                        'label': False,
                        'title': None
@@ -253,7 +254,8 @@ class LineRatioPlot(PlotBase):
             current_cmap = mcm.get_cmap(kwargs_imshow['cmap'])
             current_cmap.set_bad(color='white',alpha=1)
             im=self._axis[axidx].imshow(km,**kwargs_imshow)
-            self._wcs_colorbar(im,self._axis[axidx])
+            if kwargs_opts['colorbar']:
+                self._wcs_colorbar(im,self._axis[axidx])
 
         if kwargs_opts['contours']:
             if kwargs_contour['levels'] is None:
@@ -261,7 +263,7 @@ class LineRatioPlot(PlotBase):
                 kwargs_contour['levels'] = self._autolevels(km,'log')
 
             # suppress warnings about unused keywords
-            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap''aspect']:
+            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap''aspect','colorbar','reset', 'aspect']:
                 kwargs_contour.pop(kx,None)
 
             contourset = self._axis[axidx].contour(km, **kwargs_contour)
@@ -294,6 +296,7 @@ class LineRatioPlot(PlotBase):
 
         kwargs_opts = {'units' : None,
                        'image':True,
+                       'colorbar': False,
                        'contours': True,
                        'label': False
                        }
@@ -375,7 +378,10 @@ class LineRatioPlot(PlotBase):
         self._axis[axidx].xaxis.set_minor_formatter(ticker.NullFormatter())
 
         if kwargs_opts['image']:
-            self._axis[axidx].pcolormesh(x,y,km,cmap=kwargs_imshow['cmap'],norm=kwargs_imshow['norm'])
+            im = self._axis[axidx].pcolormesh(x,y,km,cmap=kwargs_imshow['cmap'],norm=kwargs_imshow['norm'])
+            if kwargs_opts['colorbar']:
+                self._figure.colorbar(im,ax=self._axis[axidx])
+                #self._wcs_colorbar(im,self._axis[axidx])
     #todo: allow unit conversion to cgs or Draine
     
         if kwargs_opts['contours']:
@@ -384,7 +390,7 @@ class LineRatioPlot(PlotBase):
                 kwargs_contour['levels'] = self._autolevels(km,'log')
 
             # suppress warnings about unused keywords
-            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap''aspect']:
+            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap''aspect','colorbar','reset', 'aspect']:
                 kwargs_contour.pop(kx,None)
 
             contourset = self._axis[axidx].contour(x,y,km.data, **kwargs_contour)
@@ -463,6 +469,7 @@ class LineRatioPlot(PlotBase):
 
         kwargs_opts = {'units': None,
                        'image':True,
+                       'colorbar': True,
                        'contours': True,
                        'levels' : None,
                        'label': False,
