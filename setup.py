@@ -35,4 +35,5 @@ setup(
     ],
     license = "GPLv3",
     zip_safe=False,
+    python_requires='>=3.6'
 )

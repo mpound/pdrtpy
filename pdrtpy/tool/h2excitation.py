@@ -1,4 +1,3 @@
-"""Class for fitting temperatures to :math:`H_2` Excitation Diagrams"""
 from astropy.table import Table
 import astropy.units as u
 import astropy.constants as constants
@@ -12,6 +11,7 @@ from ..pdrutils import get_table, check_units, firstkey
 from ..measurement import Measurement
 
 class H2Excitation(ToolBase):
+    """Tool for fitting temperatures to :math:`H_2` Excitation Diagrams"""
     def __init__(self,measurements=None):
 
         # must be set before call to init_measurements
@@ -31,7 +31,7 @@ class H2Excitation(ToolBase):
 
     @property 
     def intensities(self):
-        '''The stored intensities. See :meth:`addMeasurement`
+        '''The stored intensities. See :meth:`add_measurement`
          
            :rtype: list of :class:`~pdrtpy.measurement.Measurement`
         '''
@@ -98,7 +98,7 @@ class H2Excitation(ToolBase):
         # re-initialize column densities
         self._column_densities = dict()
   
-    def addMeasurement(self,m):
+    def add_measurement(self,m):
         '''Add an intensity Measurement to internal dictionary used to 
            compute the excitation diagram.   This method can also be used
            to safely replace an existing intensity Measurement.
@@ -115,14 +115,14 @@ class H2Excitation(ToolBase):
         else:
             self._init_measurements(m)
 
-    def replaceMeasurement(self,m):
+    def replace_measurement(self,m):
         '''Safely replace an existing intensity Measurement.  Do not 
            change a Measurement in place, use this method. 
            Otherwise, the column densities will be inconsistent.
 
            :param m: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
         '''
-        self.addMeasurement(self,m)
+        self.add_measurement(self,m)
 
 
     def colden(self,intensity):

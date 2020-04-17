@@ -9,7 +9,6 @@ The :mod:`~pdrtpy.plot` module provides classes that are paired with tools in th
 
 PlotBase
 --------
-The base class of all plots.
 
 .. automodule:: pdrtpy.plot.plotbase
    :members:
@@ -19,8 +18,6 @@ The base class of all plots.
 H2ExcitationPlot
 ----------------
 
-Something here
-
 .. automodule:: pdrtpy.plot.h2excitationplot
    :members:
    :undoc-members:
@@ -28,8 +25,6 @@ Something here
 
 LineRatioPlot 
 -------------
-
-something else here
 
 .. automodule:: pdrtpy.plot.lineratioplot
    :members:

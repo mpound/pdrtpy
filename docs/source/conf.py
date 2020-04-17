@@ -49,6 +49,7 @@ intersphinx_mapping = {
     'numpy': ('http://docs.scipy.org/doc/numpy/', None),
     'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
     'astropy': ('http://docs.astropy.org/en/stable/', None),
+    'matplotib': ('http://matplotlib.org/',None)
 }
 
 # Add any paths that contain templates here, relative to this directory.

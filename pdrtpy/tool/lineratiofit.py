@@ -55,7 +55,7 @@ class LineRatioFit(ToolBase):
     def measurements(self):
         """The stored :class:`measurements <Measurement>` as dictionary with Measurement IDs as keys
    
-        :rtype: dict:
+        :rtype: dict
         """
         return self._measurements
     
@@ -63,7 +63,7 @@ class LineRatioFit(ToolBase):
     def measurementIDs(self):
         '''The stored measurement IDs.
 
-        :rtype dict_keys
+        :rtype: :class:`dict_keys`
         '''
          
         if self._measurements is None: return None
@@ -82,9 +82,25 @@ class LineRatioFit(ToolBase):
         '''The number of ratios that match models available in the 
            current ModelSet given the current set of measurements
  
-        :rtype int:
+        :rtype: int
         '''
         return self._modelset.ratiocount(self.measurementIDs)
+
+    @property
+    def density(self):
+        '''The computed density value(s).
+
+        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        '''
+        return self._density
+
+    @property
+    def radiation_field(self):
+        '''The computed radiation field value(s).
+
+        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        '''
+        return self._radiation_field
 
     def _init_measurements(self,m):
         """Initialize the measurements from an input list
@@ -143,8 +159,9 @@ class LineRatioFit(ToolBase):
     def add_measurement(self,m):
         '''Add a Measurement to internal dictionary used to compute ratios. This measurement may be intensity units (erg s^-1 cm-^2) or integrated intensity (K km/s).
 
-           :param m: - a Measurement instance
-           :type m: - :class:`Measurement`
+           :param m: a Measurement instance to be added to this tool
+           :type m: :class:`~pdrtpy.measurement.Measurement`.
+
         '''
         if self._measurements:
             self._measurements[m.id] = m
@@ -154,8 +171,8 @@ class LineRatioFit(ToolBase):
         
     def remove_measurement(self,id):
         '''Delete a measurement from the internal dictionary used to compute ratios.
-           :param id: - the measurement identifier
-           :type id: - str
+           :param id: the measurement identifier
+           :type id: str
            :raises: KeyError if id not in existing Measurements
         '''
         del self._measurements[id]
@@ -166,7 +183,7 @@ class LineRatioFit(ToolBase):
         """Given a list of measurement IDs, find and open the FITS files that have matching ratios
            and populate the _modelratios dictionary.  Use astropy's CCDdata as a storage mechanism. 
 
-           :param  m: - list of measurement IDS (string)
+           :param  m: list of measurement IDS (string)
            :type m: list
            :param unit: units of the data 
            :type unit: string or astropy.Unit
@@ -365,13 +382,14 @@ class LineRatioFit(ToolBase):
     
         return returnval
 
-    def compute_log_likelihood(self,f):
+    def _compute_log_likelihood(self,f):
         """***Experimental***
 
            :param f: fractional amount by which the variance is underestimated. 
            For traditional chi-squared calculation f is zero.  
            For log-likelihood calculation f is positive and less than 1.
            See, e.g. https://emcee.readthedocs.io/en/stable/tutorials/line/#maximum-likelihood-estimation
+
            :type f: float
         """
         l = self._computeDelta(f)
@@ -422,7 +440,7 @@ class LineRatioFit(ToolBase):
         self._chisq.write(file,overwrite=True,hdu_mask='MASK')
         self._reduced_chisq.write(rfile,overwrite=True,hdu_mask='MASK')  
 
-    def compute_likeliest(self):
+    def _compute_likeliest(self):
         """***Experimental*** 
         Compute the likeliest density n and radiation field spatial maps
         """

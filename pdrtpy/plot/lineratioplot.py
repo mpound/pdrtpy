@@ -36,12 +36,59 @@ rad_title['Draine'] = '$\chi$'
 rad_title['Mathis'] = 'ISRF$_{Mathis}$'
 
 class LineRatioPlot(PlotBase):
-    """ Class to plot various results from PDR Toolbox model fitting.
+    """Class to plot various results from PDR Toolbox model fitting.
     
-       :param tool: The line ratio fitting tool that is to be plotted.
-       :type tool: `~pdrtpy.tool.LineRatioFit`
+
+    :Keyword Arguments:
+
+    To manage the plots, the methods in this class take keywords (\*\*kwargs) that turn on or off various options, specify plot units, or map to matplotlib's :meth:`~matplotlib.axes.Axes.plot`, :meth:`~matplotlib.axes.Axes.imshow`, :meth:`~matplotlib.axes.Axes.contour` keywords.  The methods have reasonable defaults, so try them with no keywords to see what they do before modifying keywords.
+
+     * *units* (``str`` or :class:`astropy.units.Unit`) data units to use in the plot. This can be either a string such as, 'cm^-3' or 'Habing', or it can be an :class:`astropy.units.Unit`.  Data will be converted to the desired unit. 
+
+     * *image* (``bool``) whether or not to display the image map (imshow). 
+     * *cmap* (``str``) colormap name, Default: 'plasma' 
+
+     * *contours* (``bool``), whether or not to plot contours
+
+     * *label* (``bool``), whether or not to label contours 
+
+     * *linewidth* (``float``), the line width in points, Default: 1.0
+
+     * *levels* (``int`` or array-like) Determines the number and positions of the contour lines / regions.  If an int n, use n data intervals; i.e. draw n+1 contour lines. The level heights are automatically chosen.  If array-like, draw contour lines at the specified levels. The values must be in increasing order.  
+
+     * *norm* (``str`` or :mod:`astropy.visualization` normalization object) The normalization to use in the image. The string 'simple' will normalize with :func:`~astropy.visualization.simple_norm` with a log stretch and 'zscale' will normalize with IRAF's zscale algorithm.  See :class:`~astropy.visualization.ZScaleInterval`.
+
+     * *aspect* (``str``) aspect ratio, 'equal' or 'auto' are typical defaults.
+
+     * *origin* (``str``) Origin of the image. Default: 'lower'
+
+     * *title* (``str``) A title for the plot.  LaTeX allowed.
+
+     * *vmin*  (``float``) Minimum value for colormap normalization
+
+     * *vmax*  (``float``) Maximum value for colormap normalization
+
+     The following keywords are available, but you probably won't touch.
+
+     * *nrows* (``int``) Number of rows in the subplot
+
+     * *ncols* (``int``) Number of columns in the subplot
+
+     * *index* (``int``) Index of the subplot
+
+     * *reset* (``bool``) Whether or not to reset the figure.
+
+     Providing keywords other than these has undefined results, but may just work!
+       
     """
+
     def __init__(self,tool):
+        """Init method
+
+           :param tool: The line ratio fitting tool that is to be plotted.
+           :type tool: `~pdrtpy.tool.LineRatioFit`
+        """
+
         super().__init__(tool)
         self._figure = None
         self._axis = None
@@ -50,41 +97,44 @@ class LineRatioPlot(PlotBase):
                   '#f781bf', '#a65628', '#984ea3',
                   '#999999', '#e41a1c', '#dede00']
 
-    def modelratio(self,identifier,**kwargs):
+    def modelratio(self,id,**kwargs):
         """Plot one of the model ratios
      
-           :param id: - the measurement identifier
-           :type id: - str
-           :raises: KeyError if id not in existing model ratios
+           :param id: the ratio identifier, such as ``CII_158/CO_32``.
+           :type id: str
+           :param \**kwargs: see class documentation above
+           :raises KeyError: if is id not in existing model ratios
+
         """
-        if len(self._tool._modelratios[identifier].shape) == 0:
-            return self._tool._modelratios[identifier]
+        if len(self._tool._modelratios[id].shape) == 0:
+            return self._tool._modelratios[id]
 
-        kwargs_opts = {'title': self._tool._modelset.table.loc[identifier]["title"], 'units': u.dimensionless_unscaled }
+        kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'units': u.dimensionless_unscaled }
         kwargs_opts.update(kwargs)
-        self._plot(self._tool._modelratios[identifier],kwargs)
+        self._plot(self._tool._modelratios[id],**kwargs_opts)
 
-    def observedratio(self,identifier,**kwargs):
+    def observedratio(self,id,**kwargs):
         """Plot one of the observed ratios
 
-           :param id: - the measurement identifier
+           :param id: the ratio identifier, such as ``CII_158/CO_32``.
            :type id: - str
-           :raises: KeyError if id not in existing Measurements
+           :raises KeyError: if id is not in existing observed ratios
         """
-        if len(self._tool._observedratios[identifier].shape) == 0:
-            return self._tool._observedratios[identifier]
+        if len(self._tool._observedratios[id].shape) == 0:
+            return self._tool._observedratios[id]
 
-        kwargs_opts = {'title': self._tool._modelset.table.loc[identifier]["title"], 'units': u.dimensionless_unscaled }
+        kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'units': u.dimensionless_unscaled }
         kwargs_opts.update(kwargs)
-        self._plot(data=self._tool._observedratios[identifier],**kwargs_opts)
+        self._plot(data=self._tool._observedratios[id],**kwargs_opts)
 
     def density(self,**kwargs):
-
+        '''Plot the density map that was computed by :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool. Default units: cm :math:`^{-3}`
+        '''
         kwargs_opts = {'units': 'cm^-3',
                        'image':True,
                        'contours': False,
                        'label': False,
-                       'linewidths': 1.0,
+                       'linewidth': 1.0,
                        'levels': None,
                        'norm': None,
                        'title': None}
@@ -101,6 +151,8 @@ class LineRatioPlot(PlotBase):
         self._plot(self._tool._density,**kwargs_opts)
 
     def radiation_field(self,**kwargs):
+        '''Plot the radiation field map that was computed by :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool. Default units: Habing.
+        '''
 
         #fancyunits=self._tool._radiation_field.unit.to_string('latex')
 
@@ -108,7 +160,7 @@ class LineRatioPlot(PlotBase):
                        'image':True,
                        'contours': False,
                        'label': False,
-                       'linewidths': 1.0,
+                       'linewidth': 1.0,
                        'levels': None,
                        'norm': None,
                        'title': None}
@@ -132,13 +184,18 @@ class LineRatioPlot(PlotBase):
     #    axis = axes[xaxis] #yep key error if you do it wrong
     #        
     def chisq(self, **kwargs):           
+        '''Plot the :math:`\chi^2` map that was computed by the
+        :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
+        
+        **Currently only works for single-pixel Measurements**
+        '''
 
         kwargs_opts = {'units': None,
                        'image':True,
                        'contours': True,
                        'label': False,
                        'colors': ['white'],
-                       'linewidths': 1.0,
+                       'linewidth': 1.0,
                        'norm': 'zscale',
                        'title': r'$\chi^2$' }
         kwargs_opts.update(kwargs)
@@ -151,13 +208,18 @@ class LineRatioPlot(PlotBase):
         self._plot_no_wcs(data=self._tool._chisq,header=None,**kwargs_opts)
 
     def reduced_chisq(self, **kwargs):
+        '''Plot the reduced :math:`\chi^2` map that was computed by the
+        :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
+        
+        **Currently only works for single-pixel Measurements**
+        '''
 
         kwargs_opts = {'units': None,
                        'image':True,
                        'contours': True,
                        'label': False,
                        'colors': ['white'],
-                       'linewidths': 1.0,
+                       'linewidth': 1.0,
                        'norm': 'zscale',
                        'title': r'$\chi_\nu^2$'}
         kwargs_opts.update(kwargs)
@@ -166,6 +228,9 @@ class LineRatioPlot(PlotBase):
         self._plot_no_wcs(self._tool._reduced_chisq,header=None,**kwargs_opts)
 
     def plot_both(self,units = ['Habing','cm^-3'], **kwargs):
+        '''Plot both radiation field and density maps computed by the
+        :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool in a 1x2 panel subplot. Defaul units: ['Habing','cm^-3']
+        '''
 
         _index = [1,2]
         _reset = [True,False]
@@ -192,7 +257,98 @@ class LineRatioPlot(PlotBase):
         d = self.density(units=units[1],**kwargs_opts)
         return (rf,d)
 
+    def confidence_intervals(self,**kwargs):
+        '''Plot the confidence intervals from the :math:`\chi^2` map computed by the
+        :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool. Default levels:  [50., 68., 80., 95., 99.]
+        
+        **Currently only works for single-pixel Measurements**
+        '''
+
+        if len(self._tool._chisq.shape) != 2:
+            raise NotImplementedError("Plotting of confidence intervals is not yet implemented for maps")
+
+        kwargs_opts = {'units': None,
+                       'image':False,
+                       'contours': True,
+                       'label': True,
+                       'levels': [50., 68., 80., 95., 99.],
+                       'colors': ['black'],
+                       'linewidth': 1.0,
+                       'norm': 'simple',
+                       'title': "Confidence Intervals"}
+
+        kwargs_opts.update(kwargs)
+
+        chidata = self._tool._chisq.data
+        chi2_stat = 100*stats.distributions.chi2.cdf(chidata,self._tool._dof)
+        self._plot_no_wcs(data=chi2_stat,header=self._tool._chisq.header,**kwargs_opts)
+        #print("CF min max ",np.min(chi2_stat),np.max(chi2_stat))
+    
+    def overlay_all_ratios(self,**kwargs):
+        '''Overlay all the measured ratios and their errors on the :math:`(n,G_0)` space. Will uses Nx3 subplots.  Default ncols: 3. 
+        '''
+
+        if len(self._tool._chisq.shape) != 2:
+            raise NotImplementedError("Plotting of ratio overlays is not yet implemented for maps")
+
+        kwargs_opts = {'units': None,
+                       'image':False,
+                       'contours': False,
+                       'levels' : None,
+                       'label': False,
+                       'linewidth': 1.0,
+                       'ncols': 3.0,
+                       'norm': None,
+                       'title': None,
+                       'reset': True}
+
+        kwargs_opts.update(kwargs)
+
+        i =0 
+        ncols = kwargs_opts["ncols"]
+        # where used??
+        nrows = int(round(self._tool.ratiocount/ncols+0.49,0))
+        for key,val in self._tool._modelratios.items():
+            self._ratiocolor = self._CB_color_cycle[i]
+            kwargs_opts['measurements'] = [self._tool._observedratios[key]]
+            if i > 0: kwargs_opts['reset']=False
+            self._plot_no_wcs(val,header=None,**kwargs_opts)
+            i = i+1
+        # do some sort of legend
+        lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in self._CB_color_cycle[0:i]]
+        labels = list(self._tool._model_files_used.keys())
+        self._plt.legend(lines, labels)
+
+    def ratios_on_models(self,**kwargs):
+        '''Overlay all the measured ratios and their errors on the individual models for those ratios.
+        '''
+
+        if len(self._tool._chisq.shape) != 2:
+            raise NotImplementedError("Plotting of ratio overlays is not yet implemented for maps")
+
+        kwargs_opts = {'units': None,
+                       'image':True,
+                       'colorbar': True,
+                       'contours': True,
+                       'levels' : None,
+                       'label': False,
+                       'linewidth': 1.0,
+                       'norm': 'zscale',
+                       'title': None,
+                       'reset': True}
+
+        kwargs_opts.update(kwargs)
+
+        for key,val in self._tool._modelratios.items():
+            m = self._tool._model_files_used[key]
+            kwargs_opts['measurements'] = [self._tool._observedratios[key]]
+            self._ratiocolor='#4daf4a'
+            kwargs_opts['title'] = key + " model (Observed ratio indicated)"
+            self._plot_no_wcs(val,header=None,**kwargs_opts)
+            
+
     def _plot(self,data,**kwargs):
+        '''generic plotting method used by other plot methods'''
 
         kwargs_opts = {'units' : None,
                        'image':True,
@@ -204,7 +360,7 @@ class LineRatioPlot(PlotBase):
 
         kwargs_contour = {'levels': None, 
                           'colors': ['white'],
-                          'linewidths': 1.0}
+                          'linewidth': 1.0}
 
 
         # Merge in any keys the user provided, overriding defaults.
@@ -278,8 +434,8 @@ class LineRatioPlot(PlotBase):
             self._axis[axidx].set_ylabel(k.wcs.wcs.lattyp)
         
        
-    # only works for single pixe mapsx
     def _plot_no_wcs(self,data,header=None,**kwargs):
+        '''generic plotting method for images with no WCS used by other plot methods'''
         #print("KWARGS is ",kwargs)
         measurements= kwargs.pop("measurements",None)
         _dataheader = getattr(data,"header",None)
@@ -303,7 +459,7 @@ class LineRatioPlot(PlotBase):
 
         kwargs_contour = {'levels': None, 
                           'colors': ['white'],
-                          'linewidths': 1.0}
+                          'linewidth': 1.0}
 
 
         # Merge in any keys the user provided, overriding defaults.
@@ -397,7 +553,8 @@ class LineRatioPlot(PlotBase):
             #print("contourset :",contourset.levels)
 
             if kwargs_opts['label']:
-                self._axis[axidx].clabel(contourset,contourset.levels,inline=True,fmt='%1.1e')
+                drawn = self._axis[axidx].clabel(contourset,contourset.levels,inline=True,fmt='%1.2e')
+                #print("drew %s"%drawn)
 
         if kwargs_opts['title'] is not None: 
             self._axis[axidx].set_title(kwargs_opts['title'])
@@ -409,82 +566,3 @@ class LineRatioPlot(PlotBase):
                 for i in range(0,3):
                     cset = self._axis[axidx].contour(x,y,k.data,levels=m.levels, linestyles=lstyles, colors=colors)
                 
-    def confidence_intervals(self,**kwargs):
-
-        if len(self._tool._chisq.shape) != 2:
-            raise NotImplementedError("Plotting of confidence intervals is not yet implemented for maps")
-
-        kwargs_opts = {'units': None,
-                       'image':True,
-                       'contours': True,
-                       'label': True,
-                       'levels': [50., 68., 80., 95., 99.],
-                       'colors': ['black'],
-                       'linewidths': 1.0,
-                       'norm': 'simple',
-                       'title': "Confidence Intervals"}
-
-        kwargs_opts.update(kwargs)
-
-        chidata = self._tool._chisq.data
-        chi2_stat = 100*stats.distributions.chi2.cdf(chidata,self._tool._dof)
-        self._plot_no_wcs(data=chi2_stat,header=self._tool._chisq.header,**kwargs_opts)
-        #print("CF min max ",np.min(chi2_stat),np.max(chi2_stat))
-    
-    def overlay_all_ratios(self,**kwargs):
-
-        if len(self._tool._chisq.shape) != 2:
-            raise NotImplementedError("Plotting of ratio overlays is not yet implemented for maps")
-
-        kwargs_opts = {'units': None,
-                       'image':False,
-                       'contours': False,
-                       'levels' : None,
-                       'label': False,
-                       'linewidths': 1.0,
-                       'norm': None,
-                       'title': None,
-                       'reset': True}
-
-        kwargs_opts.update(kwargs)
-
-        i =0 
-        ncols = 3
-        nrows = int(round(self._tool.ratiocount/3+0.49,0))
-        for key,val in self._tool._modelratios.items():
-            self._ratiocolor = self._CB_color_cycle[i]
-            kwargs_opts['measurements'] = [self._tool._observedratios[key]]
-            if i > 0: kwargs_opts['reset']=False
-            self._plot_no_wcs(val,header=None,**kwargs_opts)
-            i = i+1
-        # do some sort of legend
-        lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in self._CB_color_cycle[0:i]]
-        labels = list(self._tool._model_files_used.keys())
-        self._plt.legend(lines, labels)
-
-    def ratios_on_models(self,**kwargs):
-
-        if len(self._tool._chisq.shape) != 2:
-            raise NotImplementedError("Plotting of ratio overlays is not yet implemented for maps")
-
-        kwargs_opts = {'units': None,
-                       'image':True,
-                       'colorbar': True,
-                       'contours': True,
-                       'levels' : None,
-                       'label': False,
-                       'linewidths': 1.0,
-                       'norm': 'zscale',
-                       'title': None,
-                       'reset': True}
-
-        kwargs_opts.update(kwargs)
-
-        for key,val in self._tool._modelratios.items():
-            m = self._tool._model_files_used[key]
-            kwargs_opts['measurements'] = [self._tool._observedratios[key]]
-            self._ratiocolor='#4daf4a'
-            kwargs_opts['title'] = key + " model (Observed ratio indicated)"
-            self._plot_no_wcs(val,header=None,**kwargs_opts)
-            
-

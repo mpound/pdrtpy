@@ -17,7 +17,6 @@ _VERSION_ = "2.0-Beta"
 
 # Radiation Field Strength units in cgs
 _RFS_UNIT_ = u.erg/(u.second*u.cm*u.cm)
-_INTEG_RFS_UNIT = u.erg/(u.second*u.cm)
 _CM = u.Unit("cm")
 
 # ISRF in other units
@@ -347,7 +346,7 @@ def tocgs(image):
   return to(_RFS_UNIT_,image)
 
 def convert_integrated_intensity(image,wavelength=None):
-  """Convert integrated intensity from K km/s to erg/s/cm, assuming
+  """Convert integrated intensity from K km/s to erg/s/cm2/sr, assuming
   :math:`B_\lambda d\lambda = 2kT/\lambda^3 dV` where :math:`T dV` is the integrated intensity in K km/s and :math:`\lambda` is the wavelength.
 
   :param image: the image to convert. It must have a `numpy.ndarray` data member and `astropy.units.Unit` unit member. It's units must be K km/s
@@ -369,9 +368,9 @@ def convert_integrated_intensity(image,wavelength=None):
   newmap = deepcopy(image)
   value = factor.decompose(u.cgs.bases).value
   newmap.data = newmap.data * value
-  newmap.unit = _INTEG_RFS_UNIT
+  newmap.unit = _RFS_UNIT
   # deal with uncertainty in Measurements.
   if getattr(newmap,"_uncertainty") is not None:
      newmap._uncertainty.array = newmap.uncertainty.array * value
-     newmap._uncertainty.unit = _INTEG_RFS_UNIT
+     newmap._uncertainty.unit = _RFS_UNIT
   return newmap

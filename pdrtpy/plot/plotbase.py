@@ -73,8 +73,8 @@ class PlotBase:
         """Normalization object using Zscale algorithm
         
         :param image: the image object
-        :type image: astropy.io.fits HDU or CCDData
-        :returns: astropy.visualization.normalization object
+        :type image: :mod:`astropy.io.fits` HDU or CCDData
+        :returns: :mod:`astropy.visualization.normalization` object
         """
         # clip=False required or NaNs get max color value, see https://github.com/astropy/astropy/issues/8165
         norm= ImageNormalize(data=image,interval=ZScaleInterval(contrast=0.5),stretch=LinearStretch(),clip=False)

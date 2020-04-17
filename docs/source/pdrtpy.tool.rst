@@ -20,7 +20,7 @@ The base class of all tools.  Tools have a built-in plotter and a :meth:`run` me
 H2Excitation
 ------------
 
-Tool for fitting :math:`H_2` excitation diagrams.
+Tool for fitting temperatures in :math:`H_2` excitation diagrams.  A two temperature model is assumed, :math:`T_{warm}` and :math:`T_{cold}`.
 
 .. automodule:: pdrtpy.tool.h2excitation
    :members:
