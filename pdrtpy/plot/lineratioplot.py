@@ -1,9 +1,11 @@
 #todo: 
-# document
+# Fix the rows/cols issue in ratios_on_models and overlay_all_ratios
 #
-#todo: use matplotlib contourf to shade the area between +/- error rather than use dashed lines
+# Allow axis units to be something other than model units
 #
-# raise appropriate exceptions 
+#use matplotlib contourf to shade the area between +/- error rather than use dashed lines
+#
+# continue to raise appropriate exceptions 
 #
 # Look into seaborn https://seaborn.pydata.org
 # Also https://docs.bokeh.org/en
@@ -286,6 +288,8 @@ class LineRatioPlot(PlotBase):
     
     def overlay_all_ratios(self,**kwargs):
         '''Overlay all the measured ratios and their errors on the :math:`(n,G_0)` space. Will uses Nx3 subplots.  Default ncols: 3. 
+
+        **Currently only works for single-pixel Measurements**
         '''
 
         if len(self._tool._chisq.shape) != 2:
@@ -297,7 +301,7 @@ class LineRatioPlot(PlotBase):
                        'levels' : None,
                        'label': False,
                        'linewidth': 1.0,
-                       'ncols': 3.0,
+                       'ncols': 1,
                        'norm': None,
                        'title': None,
                        'reset': True}
@@ -321,6 +325,8 @@ class LineRatioPlot(PlotBase):
 
     def ratios_on_models(self,**kwargs):
         '''Overlay all the measured ratios and their errors on the individual models for those ratios.
+
+        **Currently only works for single-pixel Measurements**
         '''
 
         if len(self._tool._chisq.shape) != 2:
@@ -545,8 +551,9 @@ class LineRatioPlot(PlotBase):
                 # Figure out some autolevels 
                 kwargs_contour['levels'] = self._autolevels(km,'log')
 
-            # suppress warnings about unused keywords
-            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap''aspect','colorbar','reset', 'aspect']:
+            # suppress warnings about unused keywords and potential error 
+            # about cmap not being None
+            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect','colorbar','reset', 'aspect']:
                 kwargs_contour.pop(kx,None)
 
             contourset = self._axis[axidx].contour(x,y,km.data, **kwargs_contour)

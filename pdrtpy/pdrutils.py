@@ -17,6 +17,7 @@ _VERSION_ = "2.0-Beta"
 
 # Radiation Field Strength units in cgs
 _RFS_UNIT_ = u.erg/(u.second*u.cm*u.cm)
+_OBS_UNIT_ = u.erg/(u.second*u.cm*u.cm*u.sr)
 _CM = u.Unit("cm")
 
 # ISRF in other units
@@ -346,8 +347,30 @@ def tocgs(image):
   return to(_RFS_UNIT_,image)
 
 def convert_integrated_intensity(image,wavelength=None):
-  """Convert integrated intensity from K km/s to erg/s/cm2/sr, assuming
-  :math:`B_\lambda d\lambda = 2kT/\lambda^3 dV` where :math:`T dV` is the integrated intensity in K km/s and :math:`\lambda` is the wavelength.
+  # cute. Put r in front of docstring to prevent python interpreter from 
+  # processing \.  Otherwise \times gets interpreted as tab imes
+  #https://stackoverflow.com/questions/8385538/how-to-enable-math-in-sphinx
+  r"""Convert integrated intensity from K km :math:`{\rm s}^{-1}` to 
+  :math:`{\rm erg s^{-1} cm^{-2} sr^{-1}}`, assuming
+  :math:`B_\lambda d\lambda = 2kT/\lambda^3 dV` where :math:`T dV` is the integrated intensity in K km/s and :math:`\lambda` is the wavelength.  The derivation:
+
+  .. math::
+
+     B_\lambda = 2 h c^2/\lambda^5  {1\over{exp[hc/\lambda k T] - 1}} 
+
+  The integrated line is :math:`B_\lambda d\lambda` and for :math:`hc/\lambda k T << 1`:
+
+  .. math::
+
+     B_\lambda d\lambda = 2c^2/\lambda^5  \times (\lambda kT/hc)~d\lambda 
+
+  The relationship between velocity and wavelength, :math:`dV = \lambda/c~d\lambda`, giving 
+
+  .. math::
+
+     B_\lambda d\lambda = 2\times10^5~kT/\lambda^3~dV,  
+
+  with :math:`\lambda`  in cm, the factor :math:`10^5` is to convert :math:`dV` in km :math:`{\rm s}^{-1}` to cm :math:`{\rm s}^{-1}`.
 
   :param image: the image to convert. It must have a `numpy.ndarray` data member and `astropy.units.Unit` unit member. It's units must be K km/s
   :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
@@ -364,13 +387,13 @@ def convert_integrated_intensity(image,wavelength=None):
   if image.header.get("BUNIT",None) != "K km/s":
      raise Exception("Image BUNIT must be 'K km/s'")
   factor = 2E5*k_B/wavelength**3
-  print("Factor = %s"%factor.decompose(u.cgs.bases))
+  print("Converting K km/s to %s using Factor = %s"%(_OBS_UNIT_, "{0:+0.3E}".format(factor.decompose(u.cgs.bases))))
   newmap = deepcopy(image)
   value = factor.decompose(u.cgs.bases).value
   newmap.data = newmap.data * value
-  newmap.unit = _RFS_UNIT
+  newmap.unit = _OBS_UNIT_
   # deal with uncertainty in Measurements.
   if getattr(newmap,"_uncertainty") is not None:
      newmap._uncertainty.array = newmap.uncertainty.array * value
-     newmap._uncertainty.unit = _RFS_UNIT
+     newmap._uncertainty.unit = _OBS_UNIT_
   return newmap

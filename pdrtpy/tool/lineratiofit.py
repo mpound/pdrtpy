@@ -1,6 +1,3 @@
-#todo: Look into seaborn https://seaborn.pydata.org
-# Also https://docs.bokeh.org/en
-# especially for coloring and style
 import itertools
 import collections
 from copy import deepcopy
@@ -157,7 +154,7 @@ class LineRatioFit(ToolBase):
        return self._check_shapes(self._observedratios)
             
     def add_measurement(self,m):
-        '''Add a Measurement to internal dictionary used to compute ratios. This measurement may be intensity units (erg s^-1 cm-^2) or integrated intensity (K km/s).
+        r'''Add a Measurement to internal dictionary used to compute ratios. This measurement may be intensity units (erg :math:`{\rm s}^{-1}` :math:`{\rm cm}^{-2}`) or integrated intensity (K km/s).
 
            :param m: a Measurement instance to be added to this tool
            :type m: :class:`~pdrtpy.measurement.Measurement`.
@@ -171,9 +168,10 @@ class LineRatioFit(ToolBase):
         
     def remove_measurement(self,id):
         '''Delete a measurement from the internal dictionary used to compute ratios.
+
            :param id: the measurement identifier
            :type id: str
-           :raises: KeyError if id not in existing Measurements
+           :raises KeyError: if id not in existing Measurements
         '''
         del self._measurements[id]
         self._set_model_files_used()
@@ -212,7 +210,7 @@ class LineRatioFit(ToolBase):
     def _check_compatibility(self):
         """Check that all Measurements are compatible (beams, coordinate systems, shapes) so that the computation make commence.
  
-          :raises: Exception if headers and shapes don't match, warns if no beam present
+          :raises Exception: if headers and shapes don't match, warns if no beam present
         """
 
         if not self._check_measurement_shapes():

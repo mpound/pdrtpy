@@ -33,9 +33,20 @@ class Measurement(CCDData):
         
     :param identifier: string indicating what this is an observation of, e.g., "CO_10" for CO(1-0)
     :type identifier: str
+
+    :param bmaj: [optional] beam major axis diameter. This will be converted to degrees for storage in FITS header
+    :type  bmaj: class:`astropy.units.Quantity`  
+
+    :param bmin: [optional] beam minor axis diameter. This will be converted to degrees for storage in FITS header
+    :type  bmin: class:`astropy.units.Quantity`  
+
+    :param bpa: [optional] beam position angle. This will be converted to degrees for storage in FITS header
+    :type  bpa: class:`astropy.units.Quantity`  
+
+    :raises TypeError: if beam parameters are not Quantities
     
-    :meth:`read(\\*args, \\**kwargs)`
-    ``Classmethod`` to create an Measurement instance based on a ``FITS`` file.
+    Measurements can also be instantiated by the **read(\\*args, \\**kwargs)**, 
+    to create an Measurement instance based on a ``FITS`` file.
     This method uses :func:`fits_measurement_reader` with the provided
     parameters.  Example usage:
         
@@ -44,8 +55,9 @@ class Measurement(CCDData):
        from pdrtpy.measurement import Measurement
 
        my_obs = Measurement.read("file.fits",identifier="CII_158")
-       my_other_obs = Measurement.read("file.fits",identifier="CO2_1",unit="K km/s")
+       my_other_obs = Measurement.read("file2.fits",identifier="CO2_1",unit="K km/s",bmaj=9.3*u.arcsec,bmin=14.1*u.arcsec,bpa=23.2*u.degrees)
 
+    See also: :class:`astropy.nddata.CCDData`.
     """
     def __init__(self,*args, **kwargs):
         debug = kwargs.pop('debug', False)
@@ -55,13 +67,13 @@ class Measurement(CCDData):
             print("kwargs=",*kwargs)
         self._identifier = kwargs.pop('identifier', 'unknown')
         _beam = dict()
-        _beam["BMAJ"] = kwargs.pop('bmaj', None)
-        _beam["BMIN"] = kwargs.pop('bmin', None)
-        _beam["BPA"]  = kwargs.pop('bpa', None)
+        _beam["BMAJ"] = self._beam_convert(kwargs.pop('bmaj', None))
+        _beam["BMIN"] = self._beam_convert(kwargs.pop('bmin', None))
+        _beam["BPA"]  = self._beam_convert(kwargs.pop('bpa', None))
         self._restfreq = kwargs.pop('restfreq',None)
         self._filename = None
 
-        #Won't work: On arithmetic operations, this raises the exception. 
+        #This won't work: On arithmetic operations, this raises the exception. 
         #if self._identifier is None:
         #    raise ValueError("an identifier for Measurement must be specified.")
         #On arithmetic operations, this causes an annoying 
@@ -82,7 +94,7 @@ class Measurement(CCDData):
         # FITS standard is Hz
         if self._restfreq is not None:
             rf = u.Unit(self._restfreq).to("Hz")
-            print("new restfreq: %s Hz"%rf)
+            #print("new restfreq: %s Hz"%rf)
             self.header["RESTFREQ"] = rf
         # Set unit to header BUNIT or put BUNIT into header if it 
         # wasn't present 
@@ -92,14 +104,22 @@ class Measurement(CCDData):
         else: 
             # use str in case a astropy.Unit was given
             self.header["BUNIT"] = str(_unit) 
-
         # Ditto beam parameters
         if "BMAJ" not in self.header:
+            #print("setting BMAJ to ",_beam["BMAJ"])
             self.header["BMAJ"] = _beam["BMAJ"]
         if "BMIN" not in self.header:
             self.header["BMIN"] = _beam["BMIN"]
         if "BPA" not in self.header:
             self.header["BPA"] = _beam["BPA"]
+
+    def _beam_convert(self,bpar):
+        if bpar is None:  
+            return bpar
+        if type(bpar) == u.Quantity:
+            return bpar.to("degree").value
+        raise TypeError("Beam parameters must be astropy Quantities")
+        
 
     @staticmethod
     def make_measurement(fluxfile,error,outfile,rms=None):
@@ -108,17 +128,18 @@ class Measurement(CCDData):
 
         :param fluxfile: The FITS file containing the flux data as a function of spatial coordinates
         :type fluxfile: str
-        :param error: The errors on the flux data
-             Possible values for error are:
-             1. a filename with the same shape as fluxfile containing the error values per pixel
-             2. a percentage value 'XX%' must have the "%" symbol in it
-             3. 'rms' meaning use the rms parameter if given, otherwise look for the RMS keyword in the FITS header of the fluxfile
+        :param error: The errors on the flux data Possible values for error are:
+
+             - a filename with the same shape as fluxfile containing the error values per pixel
+             - a percentage value 'XX%' must have the "%" symbol in it
+             - 'rms' meaning use the rms parameter if given, otherwise look for the RMS keyword in the FITS header of the fluxfile
+
         :type error: str
         :param outfile: The output file to write the result in (FITS format)
         :type outfile: str
         :param rms:  If error == 'rms', this value may give the rms in same units as flux.
         :type rms: float or :class:`astropy.units.Unit`
-        :raises: Exception on various FITS header issues
+        :raises Exception: on various FITS header issues
 
         Example usage:
         
@@ -353,7 +374,7 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
      :param key_uncertainty_type: The header key name where the class name of the uncertainty  is stored in the hdu of the uncertainty (if any).  Default is ``UTYPE``.
     :param kwd: Any additional keyword parameters are passed through to the FITS reader in :mod:`astropy.io.fits`; see Notes for additional discussion.
 
-    :raises: TypeError
+    :raises TypeError: If the conversion from CCDData to Measurement fails
     '''
    
     _id = kwd.pop('identifier', 'unknown')

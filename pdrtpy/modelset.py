@@ -16,6 +16,7 @@ class ModelSet(object):
     :type name: str
     :param z:  metallicity in solar units.  
     :type z: float
+    :raises ValueError: If identifier or z not recognized/found.
     """
     def __init__(self,name,z):
         self._all_models = get_table("all_models.tab")
@@ -159,6 +160,11 @@ class ModelSet(object):
                 tup = (s,fullpath)
                 yield(tup)
             
+    def model_ratios(self,m):
+        ratios = list()
+        for p in self.find_files(m):
+            ratios.append(p[0])
+        return ratios
     
     def _find_ratio_elements(self,m):
         # TODO handle case of OI+CII/FIR so it is not special cased in lineratiofit.py
