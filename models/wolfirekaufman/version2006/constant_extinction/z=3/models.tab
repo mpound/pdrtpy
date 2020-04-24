@@ -1,12 +1,12 @@
-|     numerator|denominator|              ratio|         filename|   z| title                                                                    |
-|          char|       char|               char|             char|long| char                                                                     |
-|              |           |                   |                 |    | null                                                                     |
-|          null|       null|               null|             null|null| null                                                                     |
-          SIII        FEII           SIII/FEII  siii35feii26z3web   3  [S III] 35 $\mu$m / [Fe II] 25 $\mu$m
-        H200S1      H200S0       H200S1/H200S0     h200s1s0z3web    3  H$_2$0-0S(1) 17 $\mu$m / H$_2$0-0S(0) 28.2$ \mu$m
-        H200S2      H200S0       H200S2/H200S0     h200s2s0z3web    3  H$_2$0-0S(2) 12.3 $\mu$m / H$_2$0-0S(0) 28.2$ \mu$m
-        H200S2      H200S1       H200S2/H200S1     h200s2s1z3web    3  H$_2$0-0S(2) 12.3 $\mu$m / H$_2$0-0S(1) 17$ \mu$m
-        H200S3      H200S1       H200S3/H200S1     h200s3s1z3web    3  H$_2$0-0S(3) 9.7 $\mu$m / H$_2$0-0S(1) 17$ \mu$m
-        H200S1      SIII         H200S1/SIII     h200s1siiiz3web    3  H$_2$0-0S(1) 17 $\mu$m / [S III] 35 $\mu$m
-        H200S2      SIII         H200S2/SIII     h200s2siiiz3web    3  H$_2$0-0S(2) 12.3 $\mu$m / [S III] 35 $\mu$m
-        H264Q1      H210S1       H264Q1/H210S1   h264q110s1z3web    3  H$_2$6-5Q(1) 1.6 $\mu$m / H$_2$1-0S(1) 2.12 $\mu$m
+|     numerator|denominator|              ratio|         filename|   z | title                                                                    |
+|          char|       char|               char|             char|float| char                                                                     |
+|              |           |                   |                 |     | null                                                                     |
+|          null|       null|               null|             null|null | null                                                                     |
+          SIII        FEII           SIII/FEII  siii35feii26z3web   3     [S III] 35 $\mu$m / [Fe II] 25 $\mu$m
+        H200S1      H200S0       H200S1/H200S0     h200s1s0z3web    3     H$_2$0-0S(1) 17 $\mu$m / H$_2$0-0S(0) 28.2$ \mu$m
+        H200S2      H200S0       H200S2/H200S0     h200s2s0z3web    3     H$_2$0-0S(2) 12.3 $\mu$m / H$_2$0-0S(0) 28.2$ \mu$m
+        H200S2      H200S1       H200S2/H200S1     h200s2s1z3web    3     H$_2$0-0S(2) 12.3 $\mu$m / H$_2$0-0S(1) 17$ \mu$m
+        H200S3      H200S1       H200S3/H200S1     h200s3s1z3web    3     H$_2$0-0S(3) 9.7 $\mu$m / H$_2$0-0S(1) 17$ \mu$m
+        H200S1      SIII         H200S1/SIII     h200s1siiiz3web    3     H$_2$0-0S(1) 17 $\mu$m / [S III] 35 $\mu$m
+        H200S2      SIII         H200S2/SIII     h200s2siiiz3web    3     H$_2$0-0S(2) 12.3 $\mu$m / [S III] 35 $\mu$m
+        H264Q1      H210S1       H264Q1/H210S1   h264q110s1z3web    3     H$_2$6-5Q(1) 1.6 $\mu$m / H$_2$1-0S(1) 2.12 $\mu$m
