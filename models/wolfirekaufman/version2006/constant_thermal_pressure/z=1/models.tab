@@ -1,17 +1,17 @@
-|     numerator|denominator|              ratio|         filename|   z|
-|          char|       char|               char|             char|long|
-|              |           |                   |                 |    |
-|          null|       null|               null|             null|null|
-         OI_145       OI_63        OI_145/OI_63        oioiwebpth    1 
-         OI_145     CII_158      OI_145/CII_158     o145ciiwebpth    1 
-          OI_63     CII_158       OI_63/CII_158        oicpwebpth    1 
-        CII_158      CI_609      CII_158/CI_609    ciici609webpth    1 
-         CI_370      CI_609       CI_370/CI_609        ciciwebpth    1 
-        CII_158       CO_10       CII_158/CO_10       ciicowebpth    1 
-         CI_609       CO_10        CI_609/CO_10        cicowebpth    1 
-         CI_609       CO_43        CI_609/CO_43    ci10co43webpth    1 
-          CO_76       CO_10         CO_76/CO_10      co7610webpth    1 
-          CO_76      CI_370         CO_76/CI_370   co76ci21webpth    1 
-          CO_76       CO_43         CO_76/CO_43      co7643webpth    1 
-          CO_76      H200S3        CO_76/H200S3  co76h200s3webpth    1 
-  OI_63+CII_158         FIR   OI_63+CII_158/FIR         firwebpth    1 
+|     numerator|denominator|              ratio|         filename|   z | title                                                                    |
+|          char|       char|               char|             char|float| char                                                                     |
+|              |           |                   |                 |     | null                                                                     |
+|          null|       null|               null|             null|null | null                                                                     |
+         OI_145       OI_63        OI_145/OI_63        oioiwebpth    1   [O I] 145 $\mu$m / [O I] 63 $\mu$m  [Pth]
+         OI_145     CII_158      OI_145/CII_158     o145ciiwebpth    1   [O I] 145 $\mu$m / [C II] 158 $\mu$m  [Pth]
+          OI_63     CII_158       OI_63/CII_158        oicpwebpth    1   [O I] 63 $\mu$m / [C II] 158 $\mu$m  [Pth]
+        CII_158      CI_609      CII_158/CI_609    ciici609webpth    1   [C II] 158 $\mu$m / [C I] 609 $\mu$m  [Pth]
+         CI_370      CI_609       CI_370/CI_609        ciciwebpth    1   [C I] 370 $\mu$m / [C I] 609 $\mu$m  [Pth]
+        CII_158       CO_10       CII_158/CO_10       ciicowebpth    1   [C II] 158 $\mu$m / CO(J=1-0)  [Pth]
+         CI_609       CO_10        CI_609/CO_10        cicowebpth    1   [C I] 609 $\mu$m / CO(J=1-0)  [Pth]
+         CI_609       CO_43        CI_609/CO_43    ci10co43webpth    1   [C I] 609 $\mu$m / CO(J=4-3)  [Pth]
+          CO_76       CO_10         CO_76/CO_10      co7610webpth    1   CO(J=7-6) / CO(J=1-0)  [Pth]
+          CO_76      CI_370         CO_76/CI_370   co76ci21webpth    1   CO(J=7-6) / [C I] 370 $\mu$m  [Pth]
+          CO_76       CO_43         CO_76/CO_43      co7643webpth    1   CO(J=7-6) / CO(J=4-3)  [Pth]
+          CO_76      H200S3        CO_76/H200S3  co76h200s3webpth    1   CO(J=7-6) / H$_2$0-0S(3) 9.7 $\mu$m  [Pth]
+  OI_63+CII_158         FIR   OI_63+CII_158/FIR         firwebpth    1   ([O I] 63 $\mu$m + [C II] 158 $\mu$m) / I$_{FIR}$  [Pth]
