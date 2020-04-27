@@ -24,12 +24,11 @@ class ModelSet(object):
         if name not in self._all_models["name"]:
             raise ValueError("Unrecognized model %s. Choices are: %s"%(name,self._possible_models))
 
-        zzz = self._all_models.loc[name]["z"]
-        self._row = np.where(zzz==z)
-        if self._row[0].size == 0:
-            raise ValueError("Z=%2.1f not found in %s. Choices are: %s"%(z,name,zzz))
-        self._row = self._row[0][0]
-        self._tabrow = self._all_models[self._row]
+        matching_rows = np.where(self._all_models["z"]==z)
+        possible_z =  self._all_models.loc[name]["z"]
+        if matching_rows[0].size == 0:
+            raise ValueError("Z=%2.1f not found in %s. Choices are: %s"%(z,name,possible_z.data))
+        self._tabrow = self._all_models[matching_rows].loc[name]
         self._table = get_table(path=self._tabrow["path"],filename=self._tabrow["filename"])
         self._table.add_index("ratio")
         self._set_identifiers()
@@ -285,7 +284,9 @@ class ModelSet(object):
     @staticmethod
     def KosmaTau():
         """Easy way to get the latest KOSMA TAU models, z=1
+         ** not yet fully implemented **
 
         :returns: :class:`ModelSet` 
         """
-        return ModelSet("kosmatau",z=1)
+        raise NotImplementedError
+        #return ModelSet("kosmatau",z=1)
