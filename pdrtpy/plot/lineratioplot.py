@@ -48,13 +48,16 @@ class LineRatioPlot(PlotBase):
      * *units* (``str`` or :class:`astropy.units.Unit`) data units to use in the plot. This can be either a string such as, 'cm^-3' or 'Habing', or it can be an :class:`astropy.units.Unit`.  Data will be converted to the desired unit. 
 
      * *image* (``bool``) whether or not to display the image map (imshow). 
+
      * *cmap* (``str``) colormap name, Default: 'plasma' 
+
+     * *colorbar* (``str``) whether or not to display colorbar
 
      * *contours* (``bool``), whether or not to plot contours
 
      * *label* (``bool``), whether or not to label contours 
 
-     * *linewidth* (``float``), the line width in points, Default: 1.0
+     * *linewidths* (``float or sequence of float``), the line width in points, Default: 1.0
 
      * *levels* (``int`` or array-like) Determines the number and positions of the contour lines / regions.  If an int n, use n data intervals; i.e. draw n+1 contour lines. The level heights are automatically chosen.  If array-like, draw contour lines at the specified levels. The values must be in increasing order.  
 
@@ -111,9 +114,9 @@ class LineRatioPlot(PlotBase):
         if len(self._tool._modelratios[id].shape) == 0:
             return self._tool._modelratios[id]
 
-        kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'units': u.dimensionless_unscaled }
+        kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'units': u.dimensionless_unscaled , 'colorbar':True}
         kwargs_opts.update(kwargs)
-        self._plot(self._tool._modelratios[id],**kwargs_opts)
+        self._plot_no_wcs(self._tool._modelratios[id],**kwargs_opts)
 
     def observedratio(self,id,**kwargs):
         """Plot one of the observed ratios
@@ -125,7 +128,7 @@ class LineRatioPlot(PlotBase):
         if len(self._tool._observedratios[id].shape) == 0:
             return self._tool._observedratios[id]
 
-        kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'units': u.dimensionless_unscaled }
+        kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'units': u.dimensionless_unscaled , 'colorbar':False}
         kwargs_opts.update(kwargs)
         self._plot(data=self._tool._observedratios[id],**kwargs_opts)
 
@@ -136,7 +139,7 @@ class LineRatioPlot(PlotBase):
                        'image':True,
                        'contours': False,
                        'label': False,
-                       'linewidth': 1.0,
+                       'linewidths': 1.0,
                        'levels': None,
                        'norm': None,
                        'title': None}
@@ -162,7 +165,7 @@ class LineRatioPlot(PlotBase):
                        'image':True,
                        'contours': False,
                        'label': False,
-                       'linewidth': 1.0,
+                       'linewidths': 1.0,
                        'levels': None,
                        'norm': None,
                        'title': None}
@@ -197,7 +200,7 @@ class LineRatioPlot(PlotBase):
                        'contours': True,
                        'label': False,
                        'colors': ['white'],
-                       'linewidth': 1.0,
+                       'linewidths': 1.0,
                        'norm': 'zscale',
                        'title': r'$\chi^2$' }
         kwargs_opts.update(kwargs)
@@ -221,7 +224,7 @@ class LineRatioPlot(PlotBase):
                        'contours': True,
                        'label': False,
                        'colors': ['white'],
-                       'linewidth': 1.0,
+                       'linewidths': 1.0,
                        'norm': 'zscale',
                        'title': r'$\chi_\nu^2$'}
         kwargs_opts.update(kwargs)
@@ -229,7 +232,7 @@ class LineRatioPlot(PlotBase):
             raise NotImplementedError("Plotting of chisq is not yet implemented for maps")
         self._plot_no_wcs(self._tool._reduced_chisq,header=None,**kwargs_opts)
 
-    def plot_both(self,units = ['Habing','cm^-3'], **kwargs):
+    def show_both(self,units = ['Habing','cm^-3'], **kwargs):
         '''Plot both radiation field and density maps computed by the
         :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool in a 1x2 panel subplot. Defaul units: ['Habing','cm^-3']
         '''
@@ -275,7 +278,7 @@ class LineRatioPlot(PlotBase):
                        'label': True,
                        'levels': [50., 68., 80., 95., 99.],
                        'colors': ['black'],
-                       'linewidth': 1.0,
+                       'linewidths': 1.0,
                        'norm': 'simple',
                        'title': "Confidence Intervals"}
 
@@ -287,7 +290,7 @@ class LineRatioPlot(PlotBase):
         #print("CF min max ",np.min(chi2_stat),np.max(chi2_stat))
     
     def overlay_all_ratios(self,**kwargs):
-        '''Overlay all the measured ratios and their errors on the :math:`(n,G_0)` space. Will uses Nx3 subplots.  Default ncols: 3. 
+        '''Overlay all the measured ratios and their errors on the :math:`(n,G_0)` space. 
 
         **Currently only works for single-pixel Measurements**
         '''
@@ -300,7 +303,7 @@ class LineRatioPlot(PlotBase):
                        'contours': False,
                        'levels' : None,
                        'label': False,
-                       'linewidth': 1.0,
+                       'linewidths': 1.0,
                        'ncols': 1,
                        'norm': None,
                        'title': None,
@@ -309,9 +312,6 @@ class LineRatioPlot(PlotBase):
         kwargs_opts.update(kwargs)
 
         i =0 
-        ncols = kwargs_opts["ncols"]
-        # where used??
-        nrows = int(round(self._tool.ratiocount/ncols+0.49,0))
         for key,val in self._tool._modelratios.items():
             self._ratiocolor = self._CB_color_cycle[i]
             kwargs_opts['measurements'] = [self._tool._observedratios[key]]
@@ -324,6 +324,7 @@ class LineRatioPlot(PlotBase):
         self._plt.legend(lines, labels)
 
     def ratios_on_models(self,**kwargs):
+#Will uses Nx3 subplots.  Default ncols: 3. 
         '''Overlay all the measured ratios and their errors on the individual models for those ratios.
 
         **Currently only works for single-pixel Measurements**
@@ -338,19 +339,25 @@ class LineRatioPlot(PlotBase):
                        'contours': True,
                        'levels' : None,
                        'label': False,
-                       'linewidth': 1.0,
+                       'linewidths': 1.0,
+                       'ncols': 1,
                        'norm': 'zscale',
                        'title': None,
+                       'index': 1,
                        'reset': True}
 
         kwargs_opts.update(kwargs)
 
+        ncols = kwargs_opts["ncols"]
+        kwargs_opts["nrows"] = int(round(self._tool.ratiocount/ncols+0.49,0))
         for key,val in self._tool._modelratios.items():
+            if kwargs_opts['index'] > 1: kwargs_opts['reset'] = False
             m = self._tool._model_files_used[key]
             kwargs_opts['measurements'] = [self._tool._observedratios[key]]
             self._ratiocolor='#4daf4a'
             kwargs_opts['title'] = key + " model (Observed ratio indicated)"
             self._plot_no_wcs(val,header=None,**kwargs_opts)
+            kwargs_opts['index'] = kwargs_opts['index'] + 1
             
 
     def _plot(self,data,**kwargs):
@@ -366,7 +373,7 @@ class LineRatioPlot(PlotBase):
 
         kwargs_contour = {'levels': None, 
                           'colors': ['white'],
-                          'linewidth': 1.0}
+                          'linewidths': 1.0}
 
 
         # Merge in any keys the user provided, overriding defaults.
@@ -400,7 +407,8 @@ class LineRatioPlot(PlotBase):
         kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km,min_,max_)
 
         kwargs_subplot.update(kwargs)
-        kwargs_subplot['figsize'] = kwargs.get("figsize",(kwargs_subplot["nrows"]*5,kwargs_subplot["ncols"]*5))
+        # swap ncols and nrows in figsize to preserve aspect ratio
+        kwargs_subplot['figsize'] = kwargs.get("figsize",(kwargs_subplot["ncols"]*5,kwargs_subplot["nrows"]*5))
 
         #print("Got non-default kwargs: ", kwargs)
 
@@ -415,6 +423,9 @@ class LineRatioPlot(PlotBase):
         if kwargs_opts['image']:
             current_cmap = mcm.get_cmap(kwargs_imshow['cmap'])
             current_cmap.set_bad(color='white',alpha=1)
+            # suppress errors and warnings about unused keywords
+            for kx in ['units', 'image', 'contours', 'label', 'title']:
+                kwargs_imshow.pop(kx,None)
             im=self._axis[axidx].imshow(km,**kwargs_imshow)
             if kwargs_opts['colorbar']:
                 self._wcs_colorbar(im,self._axis[axidx])
@@ -424,7 +435,7 @@ class LineRatioPlot(PlotBase):
                 # Figure out some autolevels 
                 kwargs_contour['levels'] = self._autolevels(km,'log')
 
-            # suppress warnings about unused keywords
+            # suppress errors and warnings about unused keywords
             for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap''aspect','colorbar','reset', 'aspect']:
                 kwargs_contour.pop(kx,None)
 
@@ -465,7 +476,7 @@ class LineRatioPlot(PlotBase):
 
         kwargs_contour = {'levels': None, 
                           'colors': ['white'],
-                          'linewidth': 1.0}
+                          'linewidths': 1.0}
 
 
         # Merge in any keys the user provided, overriding defaults.
@@ -504,7 +515,9 @@ class LineRatioPlot(PlotBase):
         kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km,min_,max_)
 
         kwargs_subplot.update(kwargs)
-        kwargs_subplot['figsize'] = kwargs.get("figsize",(kwargs_subplot["nrows"]*5,kwargs_subplot["ncols"]*5))
+        # swap ncols and nrows in figsize to preserve aspect ratio
+        kwargs_subplot['figsize'] = kwargs.get("figsize",(kwargs_subplot["ncols"]*5,kwargs_subplot["nrows"]*5))
+        #print("subplot kwargs : ",kwargs_subplot)
 
         #print("Got non-default kwargs: ", kwargs)
 
@@ -512,6 +525,8 @@ class LineRatioPlot(PlotBase):
         if kwargs_subplot['reset']:
 # @todo can probably consolodate this
             self._figure,self._axis = self._plt.subplots(kwargs_subplot['nrows'],kwargs_subplot['ncols'],figsize=kwargs_subplot['figsize'],subplot_kw={'aspect':kwargs_imshow['aspect']},constrained_layout=True)
+
+        #print(self._figure,self._axis)
 
         # Make sure self._axis is an array because we will index it below.
         if type(self._axis) is not np.ndarray:
