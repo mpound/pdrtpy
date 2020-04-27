@@ -1,12 +1,12 @@
 """Manage spectral line or continuum observations"""
 
-# Todo:  cleaner string rep (e.g., E format)
 from copy import deepcopy
 
 import astropy.units as u
 from astropy.io import fits,registry
 from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
 import numpy as np
+from os import remove
 
 class Measurement(CCDData):
     """Measurement represents one or more observations of a given spectral
@@ -122,7 +122,7 @@ class Measurement(CCDData):
         
 
     @staticmethod
-    def make_measurement(fluxfile,error,outfile,rms=None):
+    def make_measurement(fluxfile,error,outfile,rms=None,overwrite=False):
         """Create a FITS files with 2 HDUS, the first being the flux and the 2nd being 
         the flux uncertainty. This format makes allows the resulting file to be read into the underlying :class:'~astropy.nddata.CCDData` class.
 
@@ -139,7 +139,11 @@ class Measurement(CCDData):
         :type outfile: str
         :param rms:  If error == 'rms', this value may give the rms in same units as flux.
         :type rms: float or :class:`astropy.units.Unit`
+        :param overwrite: If `True`, overwrite the output file if it exists. Default: `False`.
+        :type overwrite: bool
+
         :raises Exception: on various FITS header issues
+        :raises OSError: if `overwrite` is `False` and the output file exists.
 
         Example usage:
         
@@ -150,7 +154,7 @@ class Measurement(CCDData):
 
             # example with measurement in units of K km/s and error 
             # indicated by RMS keyword in input file.
-            Measurement.make_measurement("my_infile.fits",error='rms',outfile="my_outfile.fits",units="K km/s")
+            Measurement.make_measurement("my_infile.fits",error='rms',outfile="my_outfile.fits",units="K km/s",overwrite=True)
         """
         _flux = fits.open(fluxfile)
             
@@ -176,14 +180,19 @@ class Measurement(CCDData):
         eb = _error[0].header.get('bunit','adu')
         if fb != eb:
             raise Exception("BUNIT must be the same in both flux (%s) and error (%s) maps"%(fb,eb))
-        _out = fits.open(name=outfile,mode="append")
+        # Sigh, this is necessary since there is not mode available in
+        # fits.open that will truncate an existing file for writing
+        if overwrite:
+            remove(outfile)
+        _out = fits.open(name=outfile,mode="ostream")
         _out.append(_flux[0])
         _out[0].header['bunit'] = fb
         _out.append(_error[0])
         _out[1].header['extname']='UNCERT'
         _out[1].header['bunit'] = eb
         _out[1].header['utype'] = 'StdDevUncertainty'
-        _out.writeto(outfile,overwrite=True)
+        _out.writeto(outfile,overwrite=overwrite)
+
         
             
     @property
