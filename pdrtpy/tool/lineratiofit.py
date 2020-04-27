@@ -135,12 +135,23 @@ class LineRatioFit(ToolBase):
           :type kw: any
        """
        d = self._measurements
+       fk = utils.firstkey(d)
+       in_wcs = False
        try:
            if value == NotImplemented:
-               s1 = d[utils.firstkey(d)].header[kw]
+               h  =  d[fk].header
+               if kw not in h:
+                  #CTYPES etc can also be in WCS so check that too
+                  s1 =  d[fk].wcs.to_header()[kw]
+                  in_wcs = True
+               else:
+                  s1 = h[kw]
            else: 
                s1 = value
-           return np.all([m.header[kw] == s1 for m in d.values()])
+           if in_wcs:
+               return np.all([m.wcs.to_header()[kw] == s1 for m in d.values()])
+           else:
+               return np.all([m.header[kw] == s1 for m in d.values()])
        except KeyError:
            print("WARNING: %s keyword not present in all Measurements"%kw)
            return False
@@ -177,7 +188,7 @@ class LineRatioFit(ToolBase):
         self._set_model_files_used()
    
     
-    def read_models(self,unit):
+    def read_models(self,unit=u.dimensionless_unscaled):
         """Given a list of measurement IDs, find and open the FITS files that have matching ratios
            and populate the _modelratios dictionary.  Use astropy's CCDdata as a storage mechanism. 
 
@@ -243,7 +254,7 @@ class LineRatioFit(ToolBase):
     def run(self):
         '''Run the full computation'''
         self._check_compatibility()
-        self.read_models(unit='erg s-1 cm-2 sr-1')
+        self.read_models()
         self._compute_valid_ratios()
         # eventually need to check that the maps overlap in real space.
         self._compute_delta_sq()
