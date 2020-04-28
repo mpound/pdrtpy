@@ -1,6 +1,9 @@
 #todo: 
 # Fix the rows/cols issue in ratios_on_models and overlay_all_ratios
 #
+# keywords for show_both need to be arrays. ugh.
+# allo levels to be percent?
+#
 # Allow axis units to be something other than model units
 #
 #use matplotlib contourf to shade the area between +/- error rather than use dashed lines
@@ -150,8 +153,7 @@ class LineRatioPlot(PlotBase):
         if len( self._tool._density.shape) == 0 :
             return to(kwargs_opts['units'],self._tool._density)
 
-        #fancyunits=self._tool._density.unit.to_string('latex')
-        fancyunits=u.Unit(units).to_string('latex')
+        fancyunits=u.Unit(kwargs_opts['units']).to_string('latex')
         kwargs_opts['title'] = 'n ('+fancyunits+')'
         self._plot(self._tool._density,**kwargs_opts)
 
@@ -175,13 +177,14 @@ class LineRatioPlot(PlotBase):
         if len( self._tool._radiation_field.shape) == 0 :
             return to(kwargs_opts['units'],self._tool._radiation_field)
 
-        if units not in rad_title:
-            fancyunits=u.Unit(units).to_string('latex')
-            kwargs_opts['title'] = 'Radiation Field ('+fancyunits+')'
-        else:
-            kwargs_opts['title'] = rad_title[units]
+        if kwargs_opts['title'] is None:
+            fancyunits=u.Unit(kwargs_opts['units']).to_string('latex')
+            if kwargs_opts['units'] not in rad_title:
+                kwargs_opts['title'] = 'Radiation Field ('+fancyunits+')'
+            else:
+                kwargs_opts['title'] = rad_title[kwargs_opts['units']]+' ('+fancyunits+')'
 
-        self._plot(self._tool._radiation_field,**kwarg_opts)
+        self._plot(self._tool._radiation_field,**kwargs_opts)
 
     #def chisq(self,xaxis,xpix,ypix):
     #    """Make a line plot of chisq as a function of G0 or n for a given pixel"""
@@ -192,7 +195,6 @@ class LineRatioPlot(PlotBase):
         '''Plot the :math:`\chi^2` map that was computed by the
         :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
         
-        **Currently only works for single-pixel Measurements**
         '''
 
         kwargs_opts = {'units': None,
@@ -209,14 +211,16 @@ class LineRatioPlot(PlotBase):
            kwargs_opts['colors'][0] = 'black'
 
         if len(self._tool._chisq.shape) != 2:
-            raise NotImplementedError("Plotting of chisq is not yet implemented for maps")
-        self._plot_no_wcs(data=self._tool._chisq,header=None,**kwargs_opts)
+            data = self._tool.chisq(min=True)
+            self._plot(data,**kwargs_opts)
+        else:
+            data = self._tool.chisq(min=False)
+            self._plot_no_wcs(data,header=None,**kwargs_opts)
 
     def reduced_chisq(self, **kwargs):
         '''Plot the reduced :math:`\chi^2` map that was computed by the
         :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
         
-        **Currently only works for single-pixel Measurements**
         '''
 
         kwargs_opts = {'units': None,
@@ -226,11 +230,14 @@ class LineRatioPlot(PlotBase):
                        'colors': ['white'],
                        'linewidths': 1.0,
                        'norm': 'zscale',
-                       'title': r'$\chi_\nu^2$'}
+                       'title': r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof}
         kwargs_opts.update(kwargs)
-        if len(self._tool._chisq.shape) != 2:
-            raise NotImplementedError("Plotting of chisq is not yet implemented for maps")
-        self._plot_no_wcs(self._tool._reduced_chisq,header=None,**kwargs_opts)
+        if len(self._tool._reduced_chisq.shape) != 2:
+            data = self._tool.reduced_chisq(min=True)
+            self._plot(data,**kwargs_opts)
+        else:
+            data = self._tool.reduced_chisq(min=False)
+            self._plot_no_wcs(data,header=None,**kwargs_opts)
 
     def show_both(self,units = ['Habing','cm^-3'], **kwargs):
         '''Plot both radiation field and density maps computed by the
@@ -424,7 +431,7 @@ class LineRatioPlot(PlotBase):
             current_cmap = mcm.get_cmap(kwargs_imshow['cmap'])
             current_cmap.set_bad(color='white',alpha=1)
             # suppress errors and warnings about unused keywords
-            for kx in ['units', 'image', 'contours', 'label', 'title']:
+            for kx in ['units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols', 'index', 'reset','colors']:
                 kwargs_imshow.pop(kx,None)
             im=self._axis[axidx].imshow(km,**kwargs_imshow)
             if kwargs_opts['colorbar']:
@@ -436,7 +443,7 @@ class LineRatioPlot(PlotBase):
                 kwargs_contour['levels'] = self._autolevels(km,'log')
 
             # suppress errors and warnings about unused keywords
-            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap''aspect','colorbar','reset', 'aspect']:
+            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect','colorbar','reset', 'nrows', 'ncols', 'index']:
                 kwargs_contour.pop(kx,None)
 
             contourset = self._axis[axidx].contour(km, **kwargs_contour)
@@ -568,7 +575,7 @@ class LineRatioPlot(PlotBase):
 
             # suppress warnings about unused keywords and potential error 
             # about cmap not being None
-            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect','colorbar','reset', 'aspect']:
+            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect','colorbar','reset', 'nrows', 'ncols', 'index']:
                 kwargs_contour.pop(kx,None)
 
             contourset = self._axis[axidx].contour(x,y,km.data, **kwargs_contour)
