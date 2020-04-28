@@ -99,6 +99,44 @@ class LineRatioFit(ToolBase):
         '''
         return self._radiation_field
 
+    def chisq(self,min=False):
+        '''The computed chisquare value(s). 
+
+        :type min: bool
+        :param min: If `True` return the minimum reduced :math:`\chi^2`. 
+        In the case of map inputs this will be a spatial map of
+        mininum :math:`\chi^2`.  If `False` with map inputs the entire
+        :math:`\chi^2` hypercube is returned.  If `True` with single pixel
+        inputs, a single value is returned.  If `False` with single pixel
+        inputs, :math:`\chi^2` as a function of density and radiation
+        field is returned.
+
+        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        '''
+        if min:
+            return self._chisq_min
+        else:
+            return self._chisq
+
+    def reduced_chisq(self,min=False):
+        r'''The computed reduced chisquare value(s).
+        
+        :type min: bool
+        :param min: If `True` return the minimum reduced :math:`\chi_\nu^2`.
+        In the case of map inputs this will be a spatial map of
+        mininum :math:`\chi_\nu^2`.  If `False` with map inputs the entire
+        :math:`\chi_\nu^2` hypercube is returned.  If `True` with single pixel
+        inputs, a single value is returned.  If `False` with single pixel
+        inputs, :math:`\chi_\nu^2` as a function of density and radiation
+        field is returned.
+
+        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        '''
+        if min:
+            return self._reduced_chisq_min
+        else:
+            return self._reduced_chisq
+
     def _init_measurements(self,m):
         """Initialize the measurements from an input list
         
@@ -278,6 +316,7 @@ class LineRatioFit(ToolBase):
             num = self._convert_if_necessary(self._measurements[p["numerator"]])
             denom = self._convert_if_necessary(self._measurements[p["denominator"]])
             self._observedratios[label] = deepcopy(num/denom)
+            self._observedratios[label].meta = deepcopy(num.header)
             #@TODO create a meaningful header for the ratio map
             self._ratioHeader(p["numerator"],p["denominator"],label)
         self._add_oi_cii_fir()
@@ -294,6 +333,7 @@ class LineRatioFit(ToolBase):
                 a = deepcopy(oi+cii)
                 b = deepcopy(self._measurements["FIR"])
                 self._observedratios[lab] = a/b
+                self._observedratios[lab].meta = deepcopy(b.header)
                 self._ratioHeader("OI_63+CII_158","FIR",lab)
             if "OI_145" in m:
                 lab="OI_145+CII_158/FIR"
@@ -303,6 +343,7 @@ class LineRatioFit(ToolBase):
                 aa = deepcopy(oi+cii)
                 bb = deepcopy(self._measurements["FIR"])
                 self._observedratios[lab] = aa/bb
+                self._observedratios[lab].meta = deepcopy(b.header)
                 self._ratioHeader("OI_145+CII_158","FIR",lab)
                     
     #deprecated
@@ -380,8 +421,6 @@ class LineRatioFit(ToolBase):
             else:
                 newshape = np.hstack((self._modelratios[r].shape,self._observedratios[r].shape))
                 _meta= deepcopy(self._observedratios[r].meta)
-            #print("newshape type(newshape)",newshape,type(newshape),type(newshape[0]))
-            #print("ff.shape ",np.shape(ff))
             # result order is y,x,g0,n
             #newshape = np.hstack((self._observedratios[r].shape,self._modelratios[r].shape))
             _qq = np.reshape(ff,newshape)
@@ -430,7 +469,7 @@ class LineRatioFit(ToolBase):
         self._reduced_chisq =  self._chisq.divide(self._dof)
         # must make a copy here otherwise the header is an OrderDict
         # instead of astropy.io.fits.header.Header
-        self._reduced_chisq.header =  Header(self._chisq.header)
+        self._reduced_chisq.header =  Header(deepcopy(self._chisq.header))
         self._fixheader(self._chisq)
         self._fixheader(self._reduced_chisq)
         utils.setkey("BUNIT","Chi-squared",self._chisq)
@@ -489,8 +528,11 @@ class LineRatioFit(ToolBase):
         if self._chisq is None or self._reduced_chisq is None: return
         
         # get the chisq minima of each pixel along the g,n axes
-        z=np.amin(self._reduced_chisq,(0,1))
-        gnxy = np.where(self._reduced_chisq==z)
+        rchi_min=np.amin(self._reduced_chisq,(0,1))
+        chi_min=np.amin(self._chisq,(0,1))
+        print("CHI ",np.shape(chi_min))
+        print("rCHI  ",np.shape(rchi_min))
+        gnxy = np.where(self._reduced_chisq==rchi_min)
         gi = gnxy[0]
         ni = gnxy[1]
         if len(gnxy) == 4:
@@ -516,6 +558,7 @@ class LineRatioFit(ToolBase):
         self._radiation_field=deepcopy(self._observedratios[fk2])
         if spatial_idx == 0:
             self._radiation_field.data=g0[0]
+            self._radiation_field.uncertainty.array=None
         else:
             # note this will reshape g0 in radiation_field for us!
             self._radiation_field.data[spatial_idx]=g0
@@ -523,22 +566,53 @@ class LineRatioFit(ToolBase):
             # MaskedArrays to a file. Will get a not implemented error.
             # Therefore just copy the nans over from the input observations.
             self._radiation_field.data[np.isnan(self._observedratios[fk2])] = np.nan
+
         self._radiation_field.unit = self.radiation_field_unit
         self._radiation_field.uncertainty.unit = self.radiation_field_unit
 
         self._density=deepcopy(self._observedratios[fk2])
         if spatial_idx == 0:
             self._density.data=n[0]
+            self._density.uncertainty.array=None
         else:
             self._density.data[spatial_idx]=n
             self._density.data[np.isnan(self._observedratios[fk2])] = np.nan
 
         self._density.unit = self.density_unit
         self._density.uncertainty.unit = self.density_unit
+        #this raises exception, CCDData enforces both units the same
+        #self._density.uncertainty.unit =  u.dimensionless_unscaled
 
         #fix the headers
         self._density_radiation_field_header() 
-            
+
+        # now save copies of the 2D min chisquares
+        self._chisq_min=deepcopy(self._observedratios[fk2])
+        print("spatial chi min ",np.shape(self._chisq_min))
+        print("INDEX ",np.shape(spatial_idx))
+        if spatial_idx == 0:
+            self._chisq_min.data = chi_min[0]
+        else:
+            self._chisq_min.data=chi_min
+            self._chisq_min.data[np.isnan(self._observedratios[fk2])] = np.nan
+        self._chisq_min.unit = u.dimensionless_unscaled
+        self._chisq_min.uncertainty.unit = u.dimensionless_unscaled
+
+        self._reduced_chisq_min=deepcopy(self._observedratios[fk2])
+        print("spatial rchi min ",np.shape(self._chisq_min))
+        if spatial_idx == 0:
+            self._reduced_chisq_min.data = rchi_min[0]
+        else:
+            self._reduced_chisq_min.data=rchi_min
+            self._reduced_chisq_min.data[np.isnan(self._observedratios[fk2])] = np.nan
+        self._reduced_chisq_min.unit = u.dimensionless_unscaled
+        self._reduced_chisq_min.uncertainty.unit = u.dimensionless_unscaled
+
+        # update histories
+        utils.setkey("BUNIT","Minimum Chi-squared",self._chisq_min)
+        utils.setkey("BUNIT",("Minimum Reduced Chi-squared (DOF=%d)"%self._dof),self._reduced_chisq_min)
+        self._makehistory(self._reduced_chisq_min)
+        self._makehistory(self._chisq_min)
                  
     def _makehistory(self,image):
         '''Add information to HISTORY keyword indicating how the density and radiation field were computed (measurements given, ratios used)
@@ -585,13 +659,15 @@ class LineRatioFit(ToolBase):
         utils.setkey("CTYPE"+ax2,"Log(Radiation Field)",image)
         utils.setkey("CUNIT"+ax1,str(self.density_unit),image)
         utils.setkey("CUNIT"+ax2,str(self.radiation_field_unit),image)
-        #@TODO this cdelts will change with new models.  make this flexible
-        utils.setkey("CDELT"+ax1,0.25,image)
-        utils.setkey("CDELT"+ax2,0.25,image)
-        utils.setkey("CRVAL"+ax1,-0.5,image)
-        utils.setkey("CRVAL"+ax2,1.0,image)
-        utils.setkey("CRPIX"+ax1,1.0,image)
-        utils.setkey("CRPIX"+ax2,1.0,image)
+
+        fk = utils.firstkey(self._modelratios)
+        mod = self._modelratios[fk]
+        utils.setkey("CDELT"+ax1,mod.wcs.wcs.cdelt[0],image)
+        utils.setkey("CDELT"+ax2,mod.wcs.wcs.cdelt[1],image)
+        utils.setkey("CRVAL"+ax1,mod.wcs.wcs.crval[0],image)
+        utils.setkey("CRVAL"+ax2,mod.wcs.wcs.crval[1],image)
+        utils.setkey("CRPIX"+ax1,mod.wcs.wcs.crpix[0],image)
+        utils.setkey("CRPIX"+ax2,mod.wcs.wcs.crpix[1],image)
         
          
     def _density_radiation_field_header(self):
@@ -623,19 +699,3 @@ class LineRatioFit(ToolBase):
         else:
             return image
 
-#if __name__ == "__main__":
-#    from ..measurement import Measurement 
-#    from .. import pdrutils as utils
-#    m1 = Measurement(data=30,uncertainty = StdDevUncertainty([5.]),identifier="OI_145",unit="adu")
-#    m2 = Measurement(data=10.,uncertainty = StdDevUncertainty(2.),identifier="CI_609",unit="adu")
-#    m3 = Measurement(data=10.,uncertainty = StdDevUncertainty(1.5),identifier="CO_21",unit="adu")
-#    m4 = Measurement(data=100.,uncertainty = StdDevUncertainty(10.),identifier="CII_158",unit="adu")
-#
-#    p = LineRatioFit(measurements = [m1,m2,m3,m4])
-#    print("num ratios:", p.ratiocount)
-#    print("modelfiles used: ", p._model_files_used)
-#    p.run()
-#    p._modelset.get_ratio_elements(p.measurements)
-#    p.makeRatioOverlays(cmap='gray')
-#    p.plotRatiosOnModels()
-#    p._observedratios
