@@ -595,7 +595,6 @@ class LineRatioFit(ToolBase):
         self._chisq_min.uncertainty.unit = u.dimensionless_unscaled
 
         self._reduced_chisq_min=deepcopy(self._observedratios[fk2])
-        print("spatial rchi min ",np.shape(self._chisq_min))
         if spatial_idx == 0:
             self._reduced_chisq_min.data = rchi_min[0]
         else:
