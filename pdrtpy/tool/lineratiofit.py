@@ -530,8 +530,6 @@ class LineRatioFit(ToolBase):
         # get the chisq minima of each pixel along the g,n axes
         rchi_min=np.amin(self._reduced_chisq,(0,1))
         chi_min=np.amin(self._chisq,(0,1))
-        print("CHI ",np.shape(chi_min))
-        print("rCHI  ",np.shape(rchi_min))
         gnxy = np.where(self._reduced_chisq==rchi_min)
         gi = gnxy[0]
         ni = gnxy[1]
@@ -588,8 +586,6 @@ class LineRatioFit(ToolBase):
 
         # now save copies of the 2D min chisquares
         self._chisq_min=deepcopy(self._observedratios[fk2])
-        print("spatial chi min ",np.shape(self._chisq_min))
-        print("INDEX ",np.shape(spatial_idx))
         if spatial_idx == 0:
             self._chisq_min.data = chi_min[0]
         else:
