@@ -35,6 +35,7 @@ Until I work out the errors in getting project uploaded to PyPi.org, the way to 
 
 
 .. code-block:: sh
+
    git clone https://github.com/mpound/pdrtpy
    cd pdrtpy
    python setup.py install
