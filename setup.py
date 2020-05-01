@@ -6,7 +6,7 @@ def readme():
         return f.read()
 
 setup(
-    name="pdrtpy-mpound",
+    name="pdrtpy",
     version="2.0b",
     author = "Marc W. Pound",
     author_email  = "mpound@umd.edu",
