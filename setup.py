@@ -14,7 +14,7 @@ print("Found packages ",find_packages(exclude=excludelist))
 
 setup(
     name="pdrtpy",
-    version="2.0b",
+    version="2.0b0",
     author = "Marc W. Pound",
     author_email  = "mpound@umd.edu",
     description="Photodissociation region analysis tools",
@@ -22,7 +22,7 @@ setup(
     long_description=readme(),
     packages=find_packages(exclude=excludelist),
     include_package_data = True,
-    package_data = {'pdrtpy': ['tables/*', 'notebooks/*', 'models/*','testdata/*'] },
+    #package_data = {'pdrtpy': ['tables/*', 'notebooks/*', 'models/*','testdata/*'] },
     install_requires = [
         'astropy',
         'numpy',
