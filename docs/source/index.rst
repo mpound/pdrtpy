@@ -33,11 +33,20 @@ Installation
 
 Until I work out the errors in getting project uploaded to PyPi.org, the way to install is from the git repository.
 
+
+.. code-block:: sh
+   git clone https://github.com/mpound/pdrtpy
+   cd pdrtpy
+   python setup.py install
+
+or 
+
 .. code-block:: sh
 
    git clone https://github.com/mpound/pdrtpy
    cd pdrtpy
    pip install -e .
+
 
 Requirements
 ------------
