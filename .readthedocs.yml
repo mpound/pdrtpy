@@ -22,6 +22,9 @@ python:
   version: 3.6
   install:
     - requirements: docs/requirements.txt
+  packages:
+    - method: pip
+    - path: .
+      extra_requirements:
+        - docs
 
-packages:
-  method: pip
