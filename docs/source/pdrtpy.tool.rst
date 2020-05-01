@@ -1,10 +1,18 @@
+Analysis Tools
+==============
+
+The :mod:`~pdrtpy.tool` module contains the tools in the `PDR Toolbox <http://dustem.astro.umd.edu>`_.  All tools are derived from :class:`~pdrtpy.tool.toolbase.ToolBase`.
+
+For examples how to use `LineRatioFit`, see the notebooks `PDRT_Example_Find_n_G0_Single_Pixel.ipynb` and `PDRT_Example_Make_n_G0_maps.ipynb`.
+
+--------------
 
 .. automodule:: pdrtpy.tool
    :members:
    :undoc-members:
    :show-inheritance:
 
-The :mod:`~pdrtpy.tool` module contains the tools in the `PDR Toolbox <http://dustem.astro.umd.edu>`_.  All tools are derived from :class:`~pdrtpy.tool.toolbase.ToolBase`.
+
 
 ToolBase
 --------
