@@ -103,13 +103,7 @@ class LineRatioFit(ToolBase):
         '''The computed chisquare value(s). 
 
         :type min: bool
-        :param min: If `True` return the minimum reduced :math:`\chi^2`. 
-        In the case of map inputs this will be a spatial map of
-        mininum :math:`\chi^2`.  If `False` with map inputs the entire
-        :math:`\chi^2` hypercube is returned.  If `True` with single pixel
-        inputs, a single value is returned.  If `False` with single pixel
-        inputs, :math:`\chi^2` as a function of density and radiation
-        field is returned.
+        :param min: If `True` return the minimum reduced :math:`\chi^2`.  In the case of map inputs this will be a spatial map of mininum :math:`\chi^2`.  If `False` with map inputs the entire :math:`\chi^2` hypercube is returned.  If `True` with single pixel inputs, a single value is returned.  If `False` with single pixel inputs, :math:`\chi^2` as a function of density and radiation field is returned.
 
         :rtype: :class:`~pdrtpy.measurement.Measurement`
         '''
@@ -122,13 +116,7 @@ class LineRatioFit(ToolBase):
         r'''The computed reduced chisquare value(s).
         
         :type min: bool
-        :param min: If `True` return the minimum reduced :math:`\chi_\nu^2`.
-        In the case of map inputs this will be a spatial map of
-        mininum :math:`\chi_\nu^2`.  If `False` with map inputs the entire
-        :math:`\chi_\nu^2` hypercube is returned.  If `True` with single pixel
-        inputs, a single value is returned.  If `False` with single pixel
-        inputs, :math:`\chi_\nu^2` as a function of density and radiation
-        field is returned.
+        :param min: If `True` return the minimum reduced :math:`\chi_\nu^2`.  In the case of map inputs this will be a spatial map of mininum :math:`\chi_\nu^2`.  If `False` with map inputs the entire :math:`\chi_\nu^2` hypercube is returned.  If `True` with single pixel inputs, a single value is returned.  If `False` with single pixel inputs, :math:`\chi_\nu^2` as a function of density and radiation field is returned.
 
         :rtype: :class:`~pdrtpy.measurement.Measurement`
         '''
@@ -556,7 +544,7 @@ class LineRatioFit(ToolBase):
         self._radiation_field=deepcopy(self._observedratios[fk2])
         if spatial_idx == 0:
             self._radiation_field.data=g0[0]
-            self._radiation_field.uncertainty.array=None
+            self._radiation_field.uncertainty.array=float("NAN")
         else:
             # note this will reshape g0 in radiation_field for us!
             self._radiation_field.data[spatial_idx]=g0
@@ -564,6 +552,9 @@ class LineRatioFit(ToolBase):
             # MaskedArrays to a file. Will get a not implemented error.
             # Therefore just copy the nans over from the input observations.
             self._radiation_field.data[np.isnan(self._observedratios[fk2])] = np.nan
+            # kluge because we dont know how to properly calcultate undertainty on this.
+            #self._radiation_field.uncertainty.array=np.zeroes(self._radiation_field.uncertainty.array)
+            self._radiation_field.uncertainty.array[:] = np.nan
 
         self._radiation_field.unit = self.radiation_field_unit
         self._radiation_field.uncertainty.unit = self.radiation_field_unit
@@ -571,10 +562,13 @@ class LineRatioFit(ToolBase):
         self._density=deepcopy(self._observedratios[fk2])
         if spatial_idx == 0:
             self._density.data=n[0]
-            self._density.uncertainty.array=None
+            self._density.uncertainty.array=float("NAN")
         else:
             self._density.data[spatial_idx]=n
             self._density.data[np.isnan(self._observedratios[fk2])] = np.nan
+            # kluge because we dont know how to properly calcultate undertainty on this.
+            #self._density.uncertainty.array=np.zeroes(self._density.uncertainty.array)
+            self._density.uncertainty.array[:] = np.nan
 
         self._density.unit = self.density_unit
         self._density.uncertainty.unit = self.density_unit
@@ -587,7 +581,7 @@ class LineRatioFit(ToolBase):
         # now save copies of the 2D min chisquares
         self._chisq_min=deepcopy(self._observedratios[fk2])
         if spatial_idx == 0:
-            self._chisq_min.data = chi_min[0]
+            self._chisq_min.data = chi_min
         else:
             self._chisq_min.data=chi_min
             self._chisq_min.data[np.isnan(self._observedratios[fk2])] = np.nan
@@ -596,7 +590,7 @@ class LineRatioFit(ToolBase):
 
         self._reduced_chisq_min=deepcopy(self._observedratios[fk2])
         if spatial_idx == 0:
-            self._reduced_chisq_min.data = rchi_min[0]
+            self._reduced_chisq_min.data = rchi_min
         else:
             self._reduced_chisq_min.data=rchi_min
             self._reduced_chisq_min.data[np.isnan(self._observedratios[fk2])] = np.nan

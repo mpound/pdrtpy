@@ -7,6 +7,7 @@ from astropy.io import fits,registry
 from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
 import numpy as np
 from os import remove
+from os.path import exists
 
 class Measurement(CCDData):
     """Measurement represents one or more observations of a given spectral
@@ -182,7 +183,7 @@ class Measurement(CCDData):
             raise Exception("BUNIT must be the same in both flux (%s) and error (%s) maps"%(fb,eb))
         # Sigh, this is necessary since there is not mode available in
         # fits.open that will truncate an existing file for writing
-        if overwrite:
+        if overwrite and exists(outfile):
             remove(outfile)
         _out = fits.open(name=outfile,mode="ostream")
         _out.append(_flux[0])
