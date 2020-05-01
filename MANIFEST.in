@@ -1,3 +1,5 @@
 include README.md
 recursive-include models *.tab *.fits
 recursive-include tables *.tab
+recursive-include testdata *.fits
+recursive-include notebooks *.ipynb *.png *.jpg
