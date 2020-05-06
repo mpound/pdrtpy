@@ -397,3 +397,52 @@ def convert_integrated_intensity(image,wavelength=None):
      newmap._uncertainty.array = newmap.uncertainty.array * value
      newmap._uncertainty.unit = _OBS_UNIT_
   return newmap
+
+def dropaxis(w):
+    """ Drop the first single dimension axis from a World Coordiante System.  Returns the modified WCS if it had a single dimension axis or the original WCS if not.
+ 
+    :param w: a WCS
+    :type w: :class:`astropy.wcs.WCS`
+    :rtype: :class:`astropy.wcs.WCS`
+    """
+    for i in range(len(w._naxis)):
+        if w._naxis[i] == 1:
+            return w.dropaxis(i)
+    return w
+
+def has_single_axis(w):
+    """Check if the input WCS has any single dimension axes
+
+    :param w: a WCS
+    :type w: :class:`astropy.wcs.WCS`
+    :return: True if the input WCS has any single dimension axes, False otherwise
+    :rtype: bool
+    """
+    for i in range(len(w._naxis)):
+        if w._naxis[i] == 1: return True
+    return False
+
+def squeeze(image):
+  """Remove single-dimensional entries from image data and WCS.
+
+  :param image: the image to convert. It must have a `numpy.ndarray` data member and `astropy.units.Unit` unit member. 
+  :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+ 
+  :return: an image with single axes removed
+  :rtype: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement` as input
+  """
+  while has_single_axis(image.wcs):
+    image.wcs = dropaxis(image.wcs)
+
+  # this is a no-op if there are no dimensions to squeeze
+  image.data = np.squeeze(image.data)
+
+  # update the header which can be independent of WCS
+  image.header["NAXIS"] = image.wcs.wcs.naxis
+  i =  image.wcs.wcs.naxis+1
+  nax = "NAXIS"+str(i)
+  while image.header.pop(nax,None) is not None:
+    i=i+1
+    nax = "NAXIS"+str(i)
+  
+  return image
