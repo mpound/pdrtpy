@@ -59,7 +59,7 @@ class Measurement(CCDData):
        my_obs = Measurement.read("file.fits",identifier="CII_158")
        my_other_obs = Measurement.read("file2.fits",identifier="CO2_1",unit="K km/s",bmaj=9.3*u.arcsec,bmin=14.1*u.arcsec,bpa=23.2*u.degrees)
 
-    See also: :class:`astropy.nddata.CCDData`.
+    By default image axis with only a single dimension are removed on read.  If you do not want this behavior, used `read(squeeze=False)`. See also: :class:`astropy.nddata.CCDData`.
     """
     def __init__(self,*args, **kwargs):
         debug = kwargs.pop('debug', False)
@@ -183,7 +183,7 @@ class Measurement(CCDData):
         eb = _error[0].header.get('bunit','adu')
         if fb != eb:
             raise Exception("BUNIT must be the same in both flux (%s) and error (%s) maps"%(fb,eb))
-        # Sigh, this is necessary since there is not mode available in
+        # Sigh, this is necessary since there is no mode available in
         # fits.open that will truncate an existing file for writing
         if overwrite and exists(outfile):
             remove(outfile)
@@ -359,6 +359,12 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
     :param filename: Name of FITS file.
     :type filename: str
 
+    :param identifier: string indicating what this is an observation of, e.g., "CO_10" for CO(1-0)
+    :type identifier: str
+
+    :param squeeze: If ``True``, remove single dimension axes from the input image. Default: ``True``
+    :type squeeze: bool
+
     :param hdu: FITS extension from which Measurement should be initialized. 
          If zero and and no data in the primary extension, it will
          search for the first extension with data. The header will be
@@ -386,7 +392,9 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
 
     :type key_uncertainty_type: str, optional
      :param key_uncertainty_type: The header key name where the class name of the uncertainty  is stored in the hdu of the uncertainty (if any).  Default is ``UTYPE``.
-    :param kwd: Any additional keyword parameters are passed through to the FITS reader in :mod:`astropy.io.fits`; see Notes for additional discussion.
+
+
+    :param kwd: Any additional keyword parameters are passed through to the FITS reader in :mod:`astropy.io.fits`
 
     :raises TypeError: If the conversion from CCDData to Measurement fails
     '''
