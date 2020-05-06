@@ -1,0 +1,7 @@
+|     numerator|denominator|              ratio|         filename       |   z | title                                                                    |
+|          char|       char|               char|             char       |float| char                                                                     |
+|              |           |                   |                        |     | null                                                                     |
+|          null|       null|               null|             null       |null | null                                                                     |
+          OI_63     CII_158       OI_63/CII_158  OI63_CII158                1   [O I] 63 $\mu$m / [C II] 158 $\mu$m
+        CII_158       CO_10       CII_158/CO_10  CII158_CO10                1   [C II] 158 $\mu$m / CO(J=1-0)
+  OI_63+CII_158         FIR   OI_63+CII_158/FIR  OI63+CII158_FIR            1   ([O I] 63 $\mu$m + [C II] 158 $\mu$m) / I$_{FIR}$
