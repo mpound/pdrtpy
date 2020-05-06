@@ -570,13 +570,13 @@ storage mechanism.
         gnxy = np.where(self._reduced_chisq==rchi_min)
         gi = gnxy[firstindex]
         ni = gnxy[secondindex]
-        print("GI ",gi)
-        print("NI ",ni)
+        #print("GI ",gi)
+        #print("NI ",ni)
         #print("len(rchimin) shape(rchimin) ",len(rchi_min),rchi_min.shape)
-        print("len(gi) len(ni) ",len(gi),len(ni))
-        print("shape(gi) shape(ni) ",np.shape(gi),np.shape(ni))
-        print("gnxy shape , len(gnxy) ",np.shape(gnxy),len(np.shape(gnxy)))
-        print("chi_min shape, len(shape(chi_min)) ",np.shape(chi_min),len(np.shape(chi_min)))
+        #print("len(gi) len(ni) ",len(gi),len(ni))
+        #print("shape(gi) shape(ni) ",np.shape(gi),np.shape(ni))
+        #print("gnxy shape , len(gnxy) ",np.shape(gnxy),len(np.shape(gnxy)))
+        #print("chi_min shape, len(shape(chi_min)) ",np.shape(chi_min),len(np.shape(chi_min)))
         if len(gnxy) >= 4:
             # astronomical spatial indices
             spatial_idx = (gnxy[thirdindex],gnxy[fourthindex])
@@ -587,7 +587,7 @@ storage mechanism.
         if self._modelnaxis == 3:
             # add 3rd axis to model_idx
             model_idx = np.insert(model_idx,0,[0],axis=1)
-        print("MODEL INDEX: ",model_idx)
+        #print("MODEL INDEX: ",model_idx)
         # qq[:,:2] takes the first two columns of qq
         # [:,[1,0]] swaps those columns
         # np.flip would also swap them.
@@ -597,8 +597,8 @@ storage mechanism.
         newshape = self._observedratios[fk2].shape
         g0 =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,1]
         n =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,0]
-        print("G ",g0)
-        print("N ",n)
+        #print("G ",g0)
+        #print("N ",n)
 
         self._radiation_field=deepcopy(self._observedratios[fk2])
         if spatial_idx == 0:
@@ -639,7 +639,7 @@ storage mechanism.
 
         # now save copies of the 2D min chisquares
         self._chisq_min=deepcopy(self._observedratios[fk2])
-        print("chisq_min shape, len(chisq_min) ",np.shape(self._chisq_min),len(np.shape(self._chisq_min)))
+        #print("chisq_min shape, len(chisq_min) ",np.shape(self._chisq_min),len(np.shape(self._chisq_min)))
         if spatial_idx == 0:
             self._chisq_min.data = chi_min
         else:

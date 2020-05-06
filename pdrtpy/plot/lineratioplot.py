@@ -234,10 +234,10 @@ class LineRatioPlot(PlotBase):
         kwargs_opts.update(kwargs)
         if self._tool.has_maps:
             data = self._tool.reduced_chisq(min=True)
-            print("min=True, map inputs, calling plot")
+            #print("min=True, map inputs, calling plot")
             self._plot(data,**kwargs_opts)
         else:
-            print("min=False, calling plot_no_wcs")
+            #print("min=False, calling plot_no_wcs")
             data = self._tool.reduced_chisq(min=False)
             self._plot_no_wcs(data,header=None,**kwargs_opts)
 
