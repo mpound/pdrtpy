@@ -8,6 +8,7 @@ from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertaint
 import numpy as np
 from os import remove
 from os.path import exists
+from .pdrutils import squeeze
 
 class Measurement(CCDData):
     """Measurement represents one or more observations of a given spectral
@@ -101,7 +102,8 @@ class Measurement(CCDData):
         # wasn't present 
         if "BUNIT" in self.header:
             self._unit = u.Unit(self.header["BUNIT"])
-            self.uncertainty._unit = u.Unit(self.header["BUNIT"])
+            if self.uncertainty is not None:
+                self.uncertainty._unit = u.Unit(self.header["BUNIT"])
         else: 
             # use str in case a astropy.Unit was given
             self.header["BUNIT"] = str(_unit) 
@@ -194,8 +196,6 @@ class Measurement(CCDData):
         _out[1].header['utype'] = 'StdDevUncertainty'
         _out.writeto(outfile,overwrite=overwrite)
 
-        
-            
     @property
     def flux(self):
         '''Return the underlying flux data array
@@ -210,6 +210,8 @@ class Measurement(CCDData):
 
         :rtype: :class:`numpy.ndarray`
         '''
+        if self.uncertainty is None: 
+            return None
         return self.uncertainty._array
     
     @property
@@ -218,6 +220,8 @@ class Measurement(CCDData):
 
         :rtype: :class:`numpy.ndarray`
         '''
+        if self.uncertainty is None: 
+            return None
         return self.flux/self.error
     
     @property
@@ -388,7 +392,11 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
     '''
    
     _id = kwd.pop('identifier', 'unknown')
+    _squeeze = kwd.pop('squeeze', True)
     z = CCDData.read(filename,hdu,unit,hdu_uncertainty,hdu_mask,key_uncertainty_type, **kwd)
+    if _squeeze:
+        z = squeeze(z)
+        
     # @TODO if uncertainty plane not present, look for RMS keyword
     # @TODO header values get stuffed into WCS, others may be dropped by CCDData._generate_wcs_and_update_header
     try:
