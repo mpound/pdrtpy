@@ -48,7 +48,7 @@ class LineRatioPlot(PlotBase):
 
     To manage the plots, the methods in this class take keywords (\*\*kwargs) that turn on or off various options, specify plot units, or map to matplotlib's :meth:`~matplotlib.axes.Axes.plot`, :meth:`~matplotlib.axes.Axes.imshow`, :meth:`~matplotlib.axes.Axes.contour` keywords.  The methods have reasonable defaults, so try them with no keywords to see what they do before modifying keywords.
 
-     * *units* (``str`` or :class:`astropy.units.Unit`) data units to use in the plot. This can be either a string such as, 'cm^-3' or 'Habing', or it can be an :class:`astropy.units.Unit`.  Data will be converted to the desired unit. 
+     * *units* (``str`` or :class:`astropy.units.Unit`) data units to use in the plot. This can be either a string such as, 'cm^-3' or 'Habing', or it can be an :class:`astropy.units.Unit`.  Data will be converted to the desired unit.   Note these are **not** the axis units, but the image data units.  Modifying axis units is not yet implemented.
 
      * *image* (``bool``) whether or not to display the image map (imshow). 
 
@@ -210,7 +210,7 @@ class LineRatioPlot(PlotBase):
         if not kwargs_opts['image'] and kwargs_opts['colors'][0] == 'white':
            kwargs_opts['colors'][0] = 'black'
 
-        if len(self._tool._chisq.shape) != 2:
+        if self._tool.has_maps:
             data = self._tool.chisq(min=True)
             self._plot(data,**kwargs_opts)
         else:
@@ -232,10 +232,12 @@ class LineRatioPlot(PlotBase):
                        'norm': 'zscale',
                        'title': r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof}
         kwargs_opts.update(kwargs)
-        if len(self._tool._reduced_chisq.shape) != 2:
+        if self._tool.has_maps:
             data = self._tool.reduced_chisq(min=True)
+            print("min=True, map inputs, calling plot")
             self._plot(data,**kwargs_opts)
         else:
+            print("min=False, calling plot_no_wcs")
             data = self._tool.reduced_chisq(min=False)
             self._plot_no_wcs(data,header=None,**kwargs_opts)
 
@@ -276,7 +278,7 @@ class LineRatioPlot(PlotBase):
         **Currently only works for single-pixel Measurements**
         '''
 
-        if len(self._tool._chisq.shape) != 2:
+        if self._tool.has_maps:
             raise NotImplementedError("Plotting of confidence intervals is not yet implemented for maps")
 
         kwargs_opts = {'units': None,
@@ -302,7 +304,7 @@ class LineRatioPlot(PlotBase):
         **Currently only works for single-pixel Measurements**
         '''
 
-        if len(self._tool._chisq.shape) != 2:
+        if self._tool.has_maps:
             raise NotImplementedError("Plotting of ratio overlays is not yet implemented for maps")
 
         kwargs_opts = {'units': None,
@@ -337,7 +339,7 @@ class LineRatioPlot(PlotBase):
         **Currently only works for single-pixel Measurements**
         '''
 
-        if len(self._tool._chisq.shape) != 2:
+        if self._tool.has_maps:
             raise NotImplementedError("Plotting of ratio overlays is not yet implemented for maps")
 
         kwargs_opts = {'units': None,
@@ -387,10 +389,18 @@ class LineRatioPlot(PlotBase):
         kwargs_contour.update(kwargs)
         kwargs_opts.update(kwargs)
 
-        if kwargs_opts['units'] is not None:
-            k = to(kwargs_opts['units'], data)
+        if self._tool._modelnaxis == 2 or len(data.shape)==2:
+            if kwargs_opts['units'] is not None:
+                k = to(kwargs_opts['units'], data)
+            else:
+                k = data
+        elif self._tool._modelnaxis == 3:
+            if kwargs_opts['units'] is not None:
+                k = to(kwargs_opts['units'], data[0,:,:])
+            else:
+                k = data[0,:,:]
         else:
-            k = data
+            raise Exception("Unexpected model naxis: %d"%self._tool._modelnaxis)
         km = ma.masked_invalid(k)
         # make sure nans don't affect the color map
         min_ = np.nanmin(km)
@@ -493,10 +503,19 @@ class LineRatioPlot(PlotBase):
         #print("kwargs_opts 2: ",kwargs_opts)
         #print("kwargs 2: ",kwargs)
 
-        if kwargs_opts['units'] is not None:
-            k = to(kwargs_opts['units'], data)
+        if self._tool._modelnaxis == 2:
+            if kwargs_opts['units'] is not None:
+                k = to(kwargs_opts['units'], data)
+            else:
+                k = data
+        elif self._tool._modelnaxis == 3:
+            if kwargs_opts['units'] is not None:
+                k = to(kwargs_opts['units'], data[0,:,:])
+            else:
+                k = data[0,:,:]
         else:
-            k = data
+            raise Exception("Unexpected model naxis: %d"%self._tool._modelnaxis)
+
         km = ma.masked_invalid(k)
         # make sure nans don't affect the color map
         min_ = np.nanmin(km)
@@ -539,18 +558,25 @@ class LineRatioPlot(PlotBase):
         if type(self._axis) is not np.ndarray:
             self._axis = np.array([self._axis])
 
-        xstart=_header['crval1']
-        xstop=xstart+_header['naxis1']*_header['cdelt1']
-        ystart=_header['crval2']
-        ystop=ystart+_header['naxis2']*_header['cdelt2']
+        #if self._modelnaxis==2:
+        #     ax1='1'
+        #     ax2='2'
+        #else:
+        ax1='1'
+        ax2='2'
+            
+        xstart=_header['crval'+ax1]
+        xstop=xstart+_header['naxis'+ax1]*_header['cdelt'+ax1]
+        ystart=_header['crval'+ax2]
+        ystop=ystart+_header['naxis'+ax2]*_header['cdelt'+ax2]
         #print(xstart,xstop,ystart,ystop)
     
-        y = 10**np.linspace(start=ystart, stop=ystop, num=_header['naxis2'])
-        x = 10**np.linspace(start=xstart, stop=xstop, num=_header['naxis1'])
+        y = 10**np.linspace(start=ystart, stop=ystop, num=_header['naxis'+ax2])
+        x = 10**np.linspace(start=xstart, stop=xstop, num=_header['naxis'+ax1])
         locmaj = ticker.LogLocator(base=10.0, subs=(1.0, ),numticks=10)
         locmin = ticker.LogLocator(base=10.0, subs=np.arange(2, 10)*.1,numticks=10) 
-        xlab = _header['ctype1'] + ' ['+_header['cunit1']+']'
-        ylab = _header['ctype2'] + ' ['+_header['cunit2']+']'
+        xlab = _header['ctype'+ax1] + ' ['+_header['cunit'+ax1]+']'
+        ylab = _header['ctype'+ax2] + ' ['+_header['cunit'+ax2]+']'
         self._axis[axidx].set_ylabel(ylab)
         self._axis[axidx].set_xlabel(xlab)
 

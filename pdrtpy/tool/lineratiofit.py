@@ -18,6 +18,7 @@ from ..tool.toolbase import ToolBase
 from ..plot.lineratioplot import LineRatioPlot
 from .. import pdrutils as utils
 from ..modelset import ModelSet
+from ..measurement import Measurement
 
 class LineRatioFit(ToolBase):
     """Tool to fit observations of flux ratios to a set of models"""
@@ -32,7 +33,9 @@ class LineRatioFit(ToolBase):
         else:
             self._init_measurements(measurements)
 
+        self._set_measurementnaxis()
         self._modelratios = None
+        self._modelnaxis = None
         self._set_model_files_used()
         self._observedratios = None
         self._chisq = None
@@ -43,6 +46,10 @@ class LineRatioFit(ToolBase):
         self.density_unit = None
         self._plotter = LineRatioPlot(self)
     
+    def _set_measurementnaxis(self):
+        fk = utils.firstkey(self._measurements)
+        self._measurementnaxis = len(self._measurements[fk].shape)
+
     @property
     def modelset(self):
         """The underlying :class:`ModelSet`"""
@@ -73,6 +80,17 @@ class LineRatioFit(ToolBase):
         :rtype: list of str
         '''
         return list(self._observedratios.keys())
+
+
+    @property
+    def has_maps(self):
+        '''Are the Measurements used map-based or pixel-based?.
+        
+        :returns: True, if the observational inputs are spatial maps, False if they were single-pixel Measurements
+ 
+        :rtype: bool
+        '''
+        return self._measurementnaxis > 1
 
     @property
     def ratiocount(self):
@@ -216,7 +234,8 @@ class LineRatioFit(ToolBase):
     
     def read_models(self,unit=u.dimensionless_unscaled):
         """Given a list of measurement IDs, find and open the FITS files that have matching ratios
-           and populate the _modelratios dictionary.  Use astropy's CCDdata as a storage mechanism. 
+           and populate the _modelratios dictionary.  Uses :class:`pdrtpy.measurement.Measurement` as a 
+storage mechanism. 
 
            :param  m: list of measurement IDS (string)
            :type m: list
@@ -228,16 +247,28 @@ class LineRatioFit(ToolBase):
         self._modelratios = dict()
         for (k,p) in self._modelset.find_files(self.measurementIDs):
             thefile = d+p
-            self._modelratios[k] = CCDData.read(thefile,unit=unit)
-            if True:
+            self._modelratios[k] = Measurement.read(thefile,unit=unit)
+            # Here we assume the model naxis are self-consistent!
+            # If not, something much deeper is wrong.
+            self._modelnaxis = self._modelratios[k].wcs.naxis
+            # fix WK2006 models
+            if self._modelratios[k].wcs.wcs.cunit[0] == "":
                 self._modelratios[k].header["CUNIT1"] = "cm-3"
-                #self._modelratios[k].header["CUNIT2"] = "erg cm-2 s-1"
+                self._modelratios[k].wcs.wcs.cunit[0] = u.Unit("cm-3")
+#todo handle this in Measurement.read
+            else:
+                self._modelratios[k].header["CUNIT1"] = str(self._modelratios[k].wcs.wcs.cunit[0])
+            if self._modelratios[k].wcs.wcs.cunit[1] == "":
                 self._modelratios[k].header["CUNIT2"] = "Habing"
+                # Raises UnitScaleError:
+                # "The FITS unit format is not able to represent scales that are not powers of 10.  Multiply your data by 1.600000e-03."
+                # This causes all sorts of downstream problems
+                #self._modelratios[k].wcs.wcs.cunit[1] = utils.habing_unit
+ 
+            else:
+                self._modelratios[k].header["CUNIT2"] = str(self._modelratios[k].wcs.wcs.cunit[1])
             if not self.density_unit:
-                try:
-                    self.density_unit = u.Unit(self._modelratios[k].header["CUNIT1"])
-                except KeyError:
-                    raise Exception("Keyword CUNIT1 is required in file %s FITS header to describe units of density" % thefile)
+                self.density_unit = self._modelratios[k].wcs.wcs.cunit[0]
             if not self.radiation_field_unit:
                 try:
                     self.radiation_field_unit    = u.Unit(self._modelratios[k].header["CUNIT2"])
@@ -282,6 +313,8 @@ class LineRatioFit(ToolBase):
         self._check_compatibility()
         self.read_models()
         self._compute_valid_ratios()
+        if self.ratiocount == 0 :
+            raise Exception("No models were found that match your data. Check ModelSet.supported_ratios.")
         # eventually need to check that the maps overlap in real space.
         self._compute_delta_sq()
         self._compute_chisq()
@@ -338,7 +371,7 @@ class LineRatioFit(ToolBase):
     def __computeDeltaSq(self):
         '''Compute the difference-squared values from the observed ratios and models - single pixel version'''
         if not self._modelratios: # empty list or None
-            raise Exception("No model data ready.  You need to call read_fits")
+            raise Exception("No model data ready.  Has read_models() been called?")
         if self.ratiocount < 2 :
             raise Exception("Not enough ratios to compute deltasq.  Need 2, got %d"%self.ratiocount)
         self._deltasq = dict()
@@ -516,30 +549,56 @@ class LineRatioFit(ToolBase):
         if self._chisq is None or self._reduced_chisq is None: return
         
         # get the chisq minima of each pixel along the g,n axes
-        rchi_min=np.amin(self._reduced_chisq,(0,1))
-        chi_min=np.amin(self._chisq,(0,1))
+        fk = utils.firstkey(self._modelratios)
+        mshape = self._modelratios[fk].shape
+        # Wolfire 2006 models have NAXIS=2, while 2020+ have NAXIS=3.
+        # Deal with it.
+        if self._modelnaxis == 2:
+            firstindex = 0
+            secondindex = 1
+            thirdindex = 2
+            fourthindex = 3
+        elif self._modelnaxis == 3:
+            if mshape[0] != 1:
+                raise Exception("Unexpected NAXIS3 != 1 in model %s" %fk)
+            firstindex = 1
+            secondindex = 2
+            thirdindex = 3
+            fourthindex = 4
+        rchi_min=np.amin(self._reduced_chisq.data,(firstindex,secondindex))
+        chi_min=np.amin(self._chisq,(firstindex,secondindex))
         gnxy = np.where(self._reduced_chisq==rchi_min)
-        gi = gnxy[0]
-        ni = gnxy[1]
-        if len(gnxy) == 4:
+        gi = gnxy[firstindex]
+        ni = gnxy[secondindex]
+        print("GI ",gi)
+        print("NI ",ni)
+        #print("len(rchimin) shape(rchimin) ",len(rchi_min),rchi_min.shape)
+        print("len(gi) len(ni) ",len(gi),len(ni))
+        print("shape(gi) shape(ni) ",np.shape(gi),np.shape(ni))
+        print("gnxy shape , len(gnxy) ",np.shape(gnxy),len(np.shape(gnxy)))
+        print("chi_min shape, len(shape(chi_min)) ",np.shape(chi_min),len(np.shape(chi_min)))
+        if len(gnxy) >= 4:
             # astronomical spatial indices
-            spatial_idx = (gnxy[2],gnxy[3])
+            spatial_idx = (gnxy[thirdindex],gnxy[fourthindex])
         else:
             spatial_idx = 0
         # model n,g0 indices
         model_idx   = np.transpose(np.array([ni,gi]))
+        if self._modelnaxis == 3:
+            # add 3rd axis to model_idx
+            model_idx = np.insert(model_idx,0,[0],axis=1)
+        print("MODEL INDEX: ",model_idx)
         # qq[:,:2] takes the first two columns of qq
         # [:,[1,0]] swaps those columns
         # np.flip would also swap them.
         #print(qq[:,:2][:,[1,0]])
         #print(np.flip(qq[:,:2]))
-        fk = utils.firstkey(self._modelratios)
         fk2 = utils.firstkey(self._observedratios)
         newshape = self._observedratios[fk2].shape
         g0 =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,1]
         n =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,0]
-        #print("G ",g0)
-        #print("N ",n)
+        print("G ",g0)
+        print("N ",n)
 
         self._radiation_field=deepcopy(self._observedratios[fk2])
         if spatial_idx == 0:
@@ -552,7 +611,7 @@ class LineRatioFit(ToolBase):
             # MaskedArrays to a file. Will get a not implemented error.
             # Therefore just copy the nans over from the input observations.
             self._radiation_field.data[np.isnan(self._observedratios[fk2])] = np.nan
-            # kluge because we dont know how to properly calcultate undertainty on this.
+            # kluge because we dont know how to properly calcultate uncertainty on this.
             #self._radiation_field.uncertainty.array=np.zeroes(self._radiation_field.uncertainty.array)
             self._radiation_field.uncertainty.array[:] = np.nan
 
@@ -580,10 +639,14 @@ class LineRatioFit(ToolBase):
 
         # now save copies of the 2D min chisquares
         self._chisq_min=deepcopy(self._observedratios[fk2])
+        print("chisq_min shape, len(chisq_min) ",np.shape(self._chisq_min),len(np.shape(self._chisq_min)))
         if spatial_idx == 0:
             self._chisq_min.data = chi_min
         else:
-            self._chisq_min.data=chi_min
+            if self._modelnaxis == 2:
+                self._chisq_min.data=chi_min
+            else:
+                self._chisq_min.data=chi_min[0,:,:]
             self._chisq_min.data[np.isnan(self._observedratios[fk2])] = np.nan
         self._chisq_min.unit = u.dimensionless_unscaled
         self._chisq_min.uncertainty.unit = u.dimensionless_unscaled
@@ -592,7 +655,10 @@ class LineRatioFit(ToolBase):
         if spatial_idx == 0:
             self._reduced_chisq_min.data = rchi_min
         else:
-            self._reduced_chisq_min.data=rchi_min
+            if self._modelnaxis == 2:
+                self._reduced_chisq_min.data=rchi_min
+            else:
+                self._reduced_chisq_min.data=rchi_min[0,:,:]
             self._reduced_chisq_min.data[np.isnan(self._observedratios[fk2])] = np.nan
         self._reduced_chisq_min.unit = u.dimensionless_unscaled
         self._reduced_chisq_min.uncertainty.unit = u.dimensionless_unscaled
@@ -641,7 +707,10 @@ class LineRatioFit(ToolBase):
         :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
         '''
         # @TODO make these headers compliant with inputs (e.g. requested units)
-        naxis = len(image.shape)
+        if self._modelnaxis == 2:
+            naxis = len(image.shape)
+        else:
+            naxis = len(image.shape)-1
         ax1=str(naxis-1)
         ax2=str(naxis)
         utils.setkey("CTYPE"+ax1,"Log(Volume Density)",image)
