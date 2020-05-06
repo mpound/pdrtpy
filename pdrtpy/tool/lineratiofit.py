@@ -318,7 +318,7 @@ storage mechanism.
         # eventually need to check that the maps overlap in real space.
         self._compute_delta_sq()
         self._compute_chisq()
-        self._write_chisq()
+        #self._write_chisq()
         self.compute_density_radiation_field()
      
 
