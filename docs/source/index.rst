@@ -37,17 +37,17 @@ Until I work out the errors in getting project uploaded to PyPi.org, the way to 
 .. code-block:: sh
 
    git clone https://github.com/mpound/pdrtpy
-   cd pdrtpy
-   python setup.py install
+   pip install -e pdrtpy
+
 
 or 
 
 .. code-block:: sh
 
-   git clone https://github.com/mpound/pdrtpy
-   cd pdrtpy
-   pip install -e .
-
+  sudo apt-get install python3-venv
+  python -m venv venv
+  source venv/bin/activate
+  pip install -r requirements.txt
 
 Requirements
 ------------
