@@ -17,7 +17,7 @@ print("Found packages ",find_packages(exclude=excludelist))
 
 setup(
     name="pdrtpy",
-    version="2.0b1",
+    version="2.0b2",
     author = "Marc W. Pound",
     author_email  = "mpound@umd.edu",
     description="PhotoDissociation Region Toolbox (PDRT), astrophysics analysis tools",
