@@ -88,7 +88,7 @@ def root_path():
 
     :rtype: :py:mod:`Path`
     """
-    return Path(__file__).parent.parent
+    return Path(__file__).parent
 
 def data_dir():
     """Project test data directory, including trailing slash
