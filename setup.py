@@ -1,28 +1,31 @@
 #!/usr/bin/env python
+# NOTE: if any required diretories are added, put them in MANIFEST.in or
+# readthedocs build will break
+
 from setuptools import setup, find_packages,find_namespace_packages
 
 def readme():
-    with open('README.md') as f:
+    with open('README.rst') as f:
         return f.read()
 
 #print(find_namespace_packages())
 
-excludelist= ["models","tables","notebooks","testdata","build","dist"]
+#excludelist= ["models","tables","notebooks","testdata","build","dist"]
+excludelist= []
 print("Found packages ",find_packages(exclude=excludelist))
-
 
 
 setup(
     name="pdrtpy",
-    version="2.0b0",
+    version="2.0b1",
     author = "Marc W. Pound",
     author_email  = "mpound@umd.edu",
-    description="Photodissociation region analysis tools",
+    description="PhotoDissociation Region Toolbox (PDRT), astrophysics analysis tools",
     keywords="PDR photodissociation",
     long_description=readme(),
+    long_description_content_type='text/x-rst',
     packages=find_packages(exclude=excludelist),
     include_package_data = True,
-    #package_data = {'pdrtpy': ['tables/*', 'notebooks/*', 'models/*','testdata/*'] },
     install_requires = [
         'astropy',
         'numpy',
