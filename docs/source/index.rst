@@ -19,10 +19,10 @@ The underlying model code has improved physics and chemistry. Critical updates i
 `Tran et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018ApJ...854...25T/abstract>`_, 
 and carbon chemistry rates from 
 `Dagdigian 2019 <https://ui.adsabs.harvard.edu/abs/2019MNRAS.487.3427D/abstract>`_. We have also implemented new collisional
-excitation rates for :math:`{\rm [O~I]}` from
+excitation rates for |OI| from
 `Lique et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018MNRAS.474.2313L/abstract>`_ (and Lique private
-communication) and have included |13C|` chemistry along with the
-emitted line intensities for  |13CII| and |13CO| .
+communication) and have included |13C| chemistry along with the
+emitted line intensities for  |13CII| and |13CO|.
 
 
 Getting Started
@@ -31,7 +31,7 @@ Getting Started
 Installation
 ------------
 
-The code is hosted at the `Python Packaging Index <https://pypi.org/project/pdrtpy/`_, so install as:
+The code is hosted at the `Python Packaging Index <https://pypi.org/project/pdrtpy/>`_, so install as:
 
 .. code-block:: sh
 
@@ -95,4 +95,6 @@ For a full review of PDR physics and chemistry, see `Hollenbach & Tielens 1997 <
 .. |13C|    replace:: :sup:`13`\ C
 .. |13CO|   replace:: :sup:`13`\ CO
 .. |13CII|  replace:: [\ :sup:`13`\ C II]
+.. |OI|  replace:: [O I]
+.. |CII|  replace:: [C II]
 
