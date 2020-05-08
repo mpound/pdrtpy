@@ -1,4 +1,7 @@
 include README.md
 include LICENSE
 include *.yml
+recursive-include pdrtpy/models *.tab *.fits
+recursive-include pdrtpy/tables *.tab
+recursive-include pdrtpy/testdata *.fits
 recursive-exclude .ipynb_checkpoints *.ipynb
