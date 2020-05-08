@@ -2,7 +2,6 @@ pdrtpy, a toolbox for analyzing photodissociation regions
 #########################################################
 
 
-***************************************
 PhotoDissociation Region Toolbox Python
 ***************************************
 
@@ -23,10 +22,10 @@ The underlying model code has improved physics and chemistry. Critical updates i
 `Tran et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018ApJ...854...25T/abstract>`_, 
 and carbon chemistry rates from 
 `Dagdigian 2019 <https://ui.adsabs.harvard.edu/abs/2019MNRAS.487.3427D/abstract>`_. We have also implemented new collisional
-excitation rates for :math:`{\rm [O~I]}` from
+excitation rates for [O I] from
 `Lique et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018MNRAS.474.2313L/abstract>`_ (and Lique private
-communication) and have included :math:`{\rm ^{13}C}` chemistry along with the
-emitted line intensities for  :math:`{\rm [^{13}C~II]}` and :math:`{\rm ^{13}CO}`.
+communication) and have included |13C| chemistry along with the
+emitted line intensities for  |13CII] and |13CO|
 
 
 Getting Started
@@ -61,11 +60,14 @@ Photodissociation regions (PDRs) include all of the neutral gas in the
 ISM where far-ultraviolet (FUV) photons dominate the chemistry and/or
 heating.  In regions of massive star formation, PDRS are created at
 the boundaries between the HII regions and neutral molecular cloud,
-as photons with energies :math:`6~{\rm eV} < h\nu < {\rm 13.6~eV}`
+as photons with energies 6 eV < E < 13.6 eV 
 photodissociate molecules and photoionize other elements.  The gas is
 heated from photo-electrons and cools mostly through far-infrared fine
-structure lines like  :math:`{\rm [O~I]}` and  :math:`{\rm [C~II]}`.
+structure lines like [O I] and  [C II].
 
 For a full review of PDR physics and chemistry, see `Hollenbach & Tielens 1997 <https://ui.adsabs.harvard.edu/abs/1997ARA&A..35..179H>`_.
 
 .. |reg|    unicode:: U+000AE .. REGISTERED SIGN
+.. |13C|    replace:: :sup:`13`\ C
+.. |13CO|   replace:: :sup:`13`\ CO
+.. |13CII|  replace:: [\ :sup:`13`\ C II]
