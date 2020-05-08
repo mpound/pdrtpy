@@ -25,7 +25,7 @@ and carbon chemistry rates from
 excitation rates for [O I] from
 `Lique et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018MNRAS.474.2313L/abstract>`_ (and Lique private
 communication) and have included |13C| chemistry along with the
-emitted line intensities for  |13CII] and |13CO|
+emitted line intensities for  |13CII| and |13CO|
 
 
 Getting Started
