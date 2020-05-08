@@ -21,8 +21,8 @@ and carbon chemistry rates from
 `Dagdigian 2019 <https://ui.adsabs.harvard.edu/abs/2019MNRAS.487.3427D/abstract>`_. We have also implemented new collisional
 excitation rates for :math:`{\rm [O~I]}` from
 `Lique et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018MNRAS.474.2313L/abstract>`_ (and Lique private
-communication) and have included :math:`{\rm ^{13}C}` chemistry along with the
-emitted line intensities for  :math:`{\rm [^{13}C~II]}` and :math:`{\rm ^{13}CO}`.
+communication) and have included |13C|` chemistry along with the
+emitted line intensities for  |13CII| and |13CO| .
 
 
 Getting Started
@@ -31,23 +31,26 @@ Getting Started
 Installation
 ------------
 
-Until I work out the errors in getting project uploaded to PyPi.org, the way to install is from the git repository.
-
+The code is hosted at the `Python Packaging Index <https://pypi.org/project/pdrtpy/`_, so install as:
 
 .. code-block:: sh
 
-   git clone https://github.com/mpound/pdrtpy
-   pip install -e pdrtpy
-
+   pip install pdrtpy
 
 or 
 
 .. code-block:: sh
+  
+   git clone https://github.com/mpound/pdrtpy
+   sudo apt-get install python3-venv
+   python -m venv venv
+   source venv/bin/activate
+   pip install -r requirements.txt
 
-  sudo apt-get install python3-venv
-  python -m venv venv
-  source venv/bin/activate
-  pip install -r requirements.txt
+If you want to run the example notebooks, download them separately.
+
+.. code-block:: sh
+   git clone https://github.com/mpound/pdrtpy-nb
 
 Requirements
 ------------
@@ -81,8 +84,12 @@ the boundaries between the HII regions and neutral molecular cloud,
 as photons with energies :math:`6~{\rm eV} < h\nu < {\rm 13.6~eV}`
 photodissociate molecules and photoionize other elements.  The gas is
 heated from photo-electrons and cools mostly through far-infrared fine
-structure lines like  :math:`{\rm [O~I]}` and  :math:`{\rm [C~II]}`.
+structure lines like   [O I` and  [C~II]
 
 For a full review of PDR physics and chemistry, see `Hollenbach & Tielens 1997 <https://ui.adsabs.harvard.edu/abs/1997ARA&A..35..179H>`_.
 
 .. |reg|    unicode:: U+000AE .. REGISTERED SIGN
+.. |13C|    replace:: :sup:`13`\ C
+.. |13CO|   replace:: :sup:`13`\ CO
+.. |13CII|  replace:: [\ :sup:`13`\ C II]
+
