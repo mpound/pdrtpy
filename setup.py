@@ -37,7 +37,7 @@ setup(
         "Source Code": "https://github.com/mpound/pdrtpy",
     },
     classifiers=[
-        "Development Status :: 3 - Alpha",
+        "Development Status :: 4 - Beta",
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Topic :: Scientific/Engineering :: Astronomy",
