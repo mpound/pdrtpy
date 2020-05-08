@@ -40,7 +40,7 @@ Installation
 
    pip install pdrtpy
 
-or 
+or if you plan to tinker with the code,
 
 .. code-block:: sh
 
@@ -48,7 +48,8 @@ or
    sudo apt-get install python3-venv
    python -m venv ~/venv
    source ~/venv/bin/activate
-   pip install -r pdrtpy/requirements.txt
+   cd pdrtpy
+   pip install -r requirements.txt
 
 Then download the example notebooks:
 

@@ -37,7 +37,7 @@ The code is hosted at the `Python Packaging Index <https://pypi.org/project/pdrt
 
    pip install pdrtpy
 
-or 
+or if you plan to tinker with the code,
 
 .. code-block:: sh
   
