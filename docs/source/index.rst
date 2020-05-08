@@ -43,9 +43,9 @@ or
   
    git clone https://github.com/mpound/pdrtpy
    sudo apt-get install python3-venv
-   python -m venv venv
-   source venv/bin/activate
-   pip install -r requirements.txt
+   python -m venv ~/venv
+   source ~/venv/bin/activate
+   pip install -r pdrtpy/requirements.txt
 
 Then download the example notebooks:
 
