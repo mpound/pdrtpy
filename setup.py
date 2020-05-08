@@ -10,20 +10,19 @@ def readme():
 
 #print(find_namespace_packages())
 
-#excludelist= ["models","tables","notebooks","testdata","build","dist"]
+#excludelist= ["build","dist"]
 excludelist= []
 print("Found packages ",find_packages(exclude=excludelist))
 
 
 setup(
     name="pdrtpy",
-    version="2.0b2",
+    version="2.0b3",
     author = "Marc W. Pound",
     author_email  = "mpound@umd.edu",
     description="PhotoDissociation Region Toolbox (PDRT), astrophysics analysis tools",
     keywords="PDR photodissociation",
     long_description=readme(),
-    long_description_content_type='text/x-rst',
     packages=find_packages(exclude=excludelist),
     include_package_data = True,
     install_requires = [
