@@ -50,6 +50,15 @@ or
    source venv/bin/activate
    pip install -r requirements.txt
 
+Then download the example notebooks:
+
+.. code-block:: sh
+
+    git clone https://github.com/mpound/pdrtpy-nb.git
+
+If you don't have git, you can navigate to  https://github.com/mpound/pdrtpy-nb and download the *notebooks* folder by hand.
+
+
 Requirements
 ------------
 Python 3 and recent versions of  astropy, numpy, scipy, matplotlib. And jupyter if you want to run the example notebooks.
