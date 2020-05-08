@@ -47,10 +47,13 @@ or
    source venv/bin/activate
    pip install -r requirements.txt
 
-If you want to run the example notebooks, download them separately.
+Then download the example notebooks:
 
 .. code-block:: sh
-   git clone https://github.com/mpound/pdrtpy-nb
+
+    git clone https://github.com/mpound/pdrtpy-nb.git
+
+If you don't have git, you can navigate to  https://github.com/mpound/pdrtpy-nb and download the *notebooks* folder by hand.
 
 Requirements
 ------------
