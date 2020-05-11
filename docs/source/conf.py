@@ -17,12 +17,16 @@ sys.path.insert(0, os.path.abspath('../../pdrtpy'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'pdrtpy'
-copyright = '2020, Marc W. Pound, Mark G. Wolfire'
-author = 'Marc W. Pound, Mark G. Wolfire'
+import pdrtpy
+from time import localtime
 
+project = 'pdrtpy'
 # The full version, including alpha/beta/rc tags
-release = '2.0b0'
+release = pdrtpy.VERSION
+year = str(localtime().tm_year)
+author = pdrtpy.AUTHORS
+copyright = year+" "+author
+
 
 source_suffix = '.rst'
 master_doc = 'index'

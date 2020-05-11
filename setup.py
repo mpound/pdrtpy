@@ -3,6 +3,7 @@
 # readthedocs build will break
 
 from setuptools import setup, find_packages,find_namespace_packages
+import pdrtpy
 
 def readme():
     with open('README.rst') as f:
@@ -14,16 +15,15 @@ def readme():
 excludelist= []
 print("Found packages ",find_packages(exclude=excludelist))
 
-
 setup(
     name="pdrtpy",
-    version="2.0b4",
-    author = "Marc W. Pound",
-    author_email  = "mpound@umd.edu",
-    description="PhotoDissociation Region Toolbox (PDRT), astrophysics analysis tools",
-    keywords="PDR photodissociation",
-    long_description=readme(),
-    packages=find_packages(exclude=excludelist),
+    version = pdrtpy.VERSION,
+    author  = pdrtpy.AUTHORS,
+    author_email = "mpound@umd.edu",
+    description = pdrtpy.DESCRIPTION,
+    keywords = pdrtpy.KEYWORDS,
+    long_description = readme(),
+    packages = find_packages(exclude=excludelist),
     include_package_data = True,
     install_requires = [
         'astropy',
@@ -31,12 +31,12 @@ setup(
         'scipy',
         'matplotlib',
     ],
-    url="https://dustem.astro.umd.edu",
-    project_urls={
+    url = "https://dustem.astro.umd.edu",
+    project_urls = {
         "Documentation": "https://pdrtpy.readthedocs.io",
         "Source Code": "https://github.com/mpound/pdrtpy",
     },
-    classifiers=[
+    classifiers = [
         "Development Status :: 4 - Beta",
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
@@ -44,6 +44,6 @@ setup(
         "Intended Audience :: Science/Research",
     ],
     license = "GPLv3",
-    zip_safe=False,
-    python_requires='>=3.6'
+    zip_safe = False,
+    python_requires = '>=3.6'
 )
