@@ -5,3 +5,12 @@
           OI_63     CII_158       OI_63/CII_158  OI63_CII158                1   [O I] 63 $\mu$m / [C II] 158 $\mu$m
         CII_158       CO_10       CII_158/CO_10  CII158_CO10                1   [C II] 158 $\mu$m / CO(J=1-0)
   OI_63+CII_158         FIR   OI_63+CII_158/FIR  OI63+CII158_FIR            1   ([O I] 63 $\mu$m + [C II] 158 $\mu$m) / I$_{FIR}$
+         CI_370      CI_609       CI_370/CI_609  CI370_CI609                1   [C I] 370 $\mu$m / [C I] 609 $\mu$m
+        CII_158      CI_609      CII_158/CI_609  CII158_CI609               1   [C II] 158 $\mu$m / [C I] 609 $\mu$m
+        CII_158       CO_10       CII_158/CO_10  CII158_CO10                1   [C II] 158 $\mu$m / CO(J=1-0)
+          CO_21       CO_10         CO_21/CO_10  CO21_CO10                  1   CO(J=2-1) / CO(J=1-0)
+          CO_32       CO_10         CO_32/CO_10  CO32_CO10                  1   CO(J=3-2) / CO(J=1-0)
+          CO_65       CO_10         CO_65/CO_10  CO65_CO10                  1   CO(J=6-5) / CO(J=1-0)
+         OI_145       OI_63        OI_145/OI_63  OI145_OI63                 1   [O I] 145 $\mu$m / [O I] 63 $\mu$m                                    
+         OI_145     CII_158      OI_145/CII_158  OI145_CI158                1   [O I] 145 $\mu$m / [C II] 158 $\mu$m
+          OI_63     CII_158       OI_63/CII_158  OI63_CI158                 1   [O I] 63 $\mu$m / [C II] 158 $\mu$m
