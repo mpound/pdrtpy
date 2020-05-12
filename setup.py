@@ -2,14 +2,12 @@
 # NOTE: if any required diretories are added, put them in MANIFEST.in or
 # readthedocs build will break
 
-from setuptools import setup, find_packages,find_namespace_packages
+from setuptools import setup, find_packages
 import pdrtpy
 
 def readme():
     with open('README.rst') as f:
         return f.read()
-
-#print(find_namespace_packages())
 
 #excludelist= ["build","dist"]
 excludelist= []
