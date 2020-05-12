@@ -14,3 +14,6 @@
          OI_145       OI_63        OI_145/OI_63  OI145_OI63                 1   [O I] 145 $\mu$m / [O I] 63 $\mu$m                                    
          OI_145     CII_158      OI_145/CII_158  OI145_CI158                1   [O I] 145 $\mu$m / [C II] 158 $\mu$m
           OI_63     CII_158       OI_63/CII_158  OI63_CI158                 1   [O I] 63 $\mu$m / [C II] 158 $\mu$m
+         CI_609       CO_43        CI_609/CO_43  CI609_CO43                 1   [C I] 609 $\mu$m / CO(J=4-3)
+          CO_43       CO_21         CO_43/CO_21  CO43_CO21                  1   CO(J=4-3) / CO(J=2-1)
+          CO_65       CO_21         CO_65/CO_21  CO65_CO21                  1   CO(J=6-5) / CO(J=2-1)
