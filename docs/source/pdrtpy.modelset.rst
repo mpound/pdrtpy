@@ -12,7 +12,8 @@ and a wider range of lines and metallicities. Any PDR models can be used
 if they are stored in the correct FITS format. We are currently working
 with Marcus Rollig to import the Kosma-:math:`\tau` models.
 
-For example how to use ModelSets, see the notebook `PDRT_Example_ModelSets.ipynb`.
+For example how to use ModelSets, see the notebook 
+`PDRT_Example_ModelSets.ipynb <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_ModelSets.ipynb>`_
 
 ----------
 

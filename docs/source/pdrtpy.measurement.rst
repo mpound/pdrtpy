@@ -15,7 +15,7 @@ be in intensity units, equivalent to :math:`{\rm erg~s^{-1}~cm^{-2}~sr^{-1}}`
 or can be in K km/s.  PDRT will do appropriate conversion as necessary
 when it uses your images (original Measurement remains unchanged).
 
-For example how to use Measurements, see the notebook `PDRT_Example_Measurements.ipynb`.
+For example how to use Measurements, see the notebook `PDRT_Example_Measurements.ipynb <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Measurements.ipynb>`_.
 
 ----------
 

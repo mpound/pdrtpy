@@ -87,9 +87,12 @@ the boundaries between the HII regions and neutral molecular cloud,
 as photons with energies :math:`6~{\rm eV} < h\nu < {\rm 13.6~eV}`
 photodissociate molecules and photoionize other elements.  The gas is
 heated from photo-electrons and cools mostly through far-infrared fine
-structure lines like   [O I` and  [C~II]
+structure lines like   |OI| and  |CII|.
 
 For a full review of PDR physics and chemistry, see `Hollenbach & Tielens 1997 <https://ui.adsabs.harvard.edu/abs/1997ARA&A..35..179H>`_.
+
+.. toctree:
+   :maxdepth: 2
 
 .. |reg|    unicode:: U+000AE .. REGISTERED SIGN
 .. |13C|    replace:: :sup:`13`\ C
