@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# NOTE: if any required diretories are added, put them in MANIFEST.in or
+# NOTE: If any required directories are added, put them in MANIFEST.in or
 # readthedocs build will break
 
 from setuptools import setup, find_packages
@@ -10,7 +10,7 @@ def check_python(major,minor):
     try:
         assert sys.version_info >= (major,minor)
     except AssertionError:
-        raise Exception("pdrtpy requires you use Python 3.6 or above")
+        raise Exception("pdrtpy requires you use Python %d.%d or above"%(major,minor))
 
 def readme():
     with open('README.rst') as f:
@@ -21,7 +21,7 @@ check_python(3,6)
 
 #excludelist= ["build","dist"]
 excludelist= []
-print("Found packages ",find_packages(exclude=excludelist))
+#print("Found packages ",find_packages(exclude=excludelist))
 
 setup(
     name="pdrtpy",
