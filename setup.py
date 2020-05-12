@@ -3,11 +3,21 @@
 # readthedocs build will break
 
 from setuptools import setup, find_packages
+import sys
 import pdrtpy
+
+def check_python(major,minor):
+    try:
+        assert sys.version_info >= (major,minor)
+    except AssertionError:
+        raise Exception("pdrtpy requires you use Python 3.6 or above")
 
 def readme():
     with open('README.rst') as f:
         return f.read()
+
+# Ensure they are using Python 3.6 or above
+check_python(3,6)
 
 #excludelist= ["build","dist"]
 excludelist= []
