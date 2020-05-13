@@ -270,23 +270,3 @@ class ModelSet(object):
         t.remove_column("path")
         t.remove_column("filename")
         t.pprint_all(align="<")
-
-
-    @staticmethod
-    def WolfireKaufman():
-    #ToDo later upgrade to variable z when 2020 models are available
-        """Easy way to get the latest Wolfire-Kaufman models, z=1
-
-        :returns: :class:`ModelSet` 
-        """
-        return ModelSet("wk2006",z=1)
-
-    @staticmethod
-    def KosmaTau():
-        """Easy way to get the latest KOSMA TAU models, z=1
-         ** not yet fully implemented **
-
-        :returns: :class:`ModelSet` 
-        """
-        raise NotImplementedError
-        #return ModelSet("kosmatau",z=1)
