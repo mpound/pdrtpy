@@ -83,6 +83,13 @@ We have prepared 4 jupyter iPython notebooks with examples of how to use ``pdrtp
 If you don't have git, you can 
 `download a zip file of the repository <https://github.com/mpound/pdrtpy-nb/archive/master.zip>`_.
 
+To familiarize yourself with the capabilities of ``pdrtpy``, we suggest you do the notebooks in this order:
+
+- PDRT_Example_Measurements.ipynb 
+- PDRT_Example_ModelSets.ipynb
+- PDRT_Example_Find_n_G0_Single_Pixel.ipynb  
+- PDRT_Example_Make_n_G0_maps.ipynb       
+
 For Developers
 ==============
 
