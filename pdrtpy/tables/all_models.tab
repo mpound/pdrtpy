@@ -4,7 +4,6 @@
 |          null|       null|               null                                         |             null|null  |  null                                                                                           |
    wk2006            2006    wolfirekaufman/version2006/constant_density/z=1/              models.tab       1     Wolfire/Kaufman 2006 constant density models
    wk2006            2006    wolfirekaufman/version2006/constant_density/z=3/              models.tab       3     Wolfire/Kaufman 2006 constant density models
-   wk2006cpt         2006    wolfirekaufman/version2006/constant_thermal_pressure/z=1/     models.tab       1     Wolfire/Kaufman 2006 constant thermal pressure models
    wk2020            2020    wolfirekaufman/version2020/constant_density/z=1/              models.tab       1     Wolfire/Kaufman 2020 constant density models, small set, Av=7, no freeze-out
      smc             2006    wolfirekaufman/version2006/constant_density/smc/              models.tab      0.1    Wolfire/Kaufman 2006 limited set of constant density models for Small Magellanic Cloud
    kosmatau             X    kosmatau/versionX/z=1/                                        models.tab       1     Test set KOSMA Tau models, Z=1
