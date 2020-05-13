@@ -103,7 +103,7 @@ class LineRatioFit(ToolBase):
 
     @property
     def density(self):
-        '''The computed density value(s).
+        '''The computed hydrogen nucleus density value(s).
 
         :rtype: :class:`~pdrtpy.measurement.Measurement`
         '''

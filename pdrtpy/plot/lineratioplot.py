@@ -136,7 +136,7 @@ class LineRatioPlot(PlotBase):
         self._plot(data=self._tool._observedratios[id],**kwargs_opts)
 
     def density(self,**kwargs):
-        '''Plot the density map that was computed by :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool. Default units: cm :math:`^{-3}`
+        '''Plot the hydrogen nucleus volume density map that was computed by :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool. Default units: cm :math:`^{-3}`
         '''
         kwargs_opts = {'units': 'cm^-3',
                        'image':True,
@@ -242,7 +242,7 @@ class LineRatioPlot(PlotBase):
             self._plot_no_wcs(data,header=None,**kwargs_opts)
 
     def show_both(self,units = ['Habing','cm^-3'], **kwargs):
-        '''Plot both radiation field and density maps computed by the
+        '''Plot both radiation field and volume density maps computed by the
         :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool in a 1x2 panel subplot. Defaul units: ['Habing','cm^-3']
         '''
 
