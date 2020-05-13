@@ -22,7 +22,7 @@ from ..measurement import Measurement
 
 class LineRatioFit(ToolBase):
     """Tool to fit observations of flux ratios to a set of models"""
-    def __init__(self,modelset=ModelSet.WolfireKaufman(),measurements=None):
+    def __init__(self,modelset=ModelSet("wk2006",z=1),measurements=None):
         if type(modelset) == str:
             # may need to disable this
             self._initialize_modelTable(modelset)
