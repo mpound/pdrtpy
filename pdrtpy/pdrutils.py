@@ -13,7 +13,7 @@ import astropy.units as u
 from astropy.constants import k_B
 from astropy.table import Table
 
-_VERSION_ = "2.0-Beta"
+from pdrtpy import version
 
 # Radiation Field Strength units in cgs
 _RFS_UNIT_ = u.erg/(u.second*u.cm*u.cm)
@@ -56,12 +56,6 @@ u.add_enabled_units(mathis_unit)
 
 #@todo check_header_present(list) to return boolean array of keywwords
 # present or not in a FITS header
-def version():
-    """Version of the PDRT code
-
-    :rtype: str
-    """
-    return _VERSION_
 
 #@module_property
 #def _now():
