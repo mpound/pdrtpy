@@ -21,11 +21,17 @@ _OBS_UNIT_ = u.erg/(u.second*u.cm*u.cm*u.sr)
 _CM = u.Unit("cm")
 
 # ISRF in other units
-habing_unit = u.def_unit('Habing',1.6E-3*_RFS_UNIT_)
+#The wavelength of 1110 Ang is the longest wavelength for H2 excitation,
+#but photoelectric heating can occur at longer wavelengths. 
+#We use  6eV to 13.6 eV, or 912 - 2066 Ang. For this range
+#Draine is 1.7G_0, and Mathis is 1.13 G_0.   
+# See Weingartner and Draine 2001, ApJS, 134, 263, section 4.1
+
+habing_unit = u.def_unit('Habing',1.60E-3*_RFS_UNIT_)
 u.add_enabled_units(habing_unit)
-draine_unit = u.def_unit('Draine',2.704E-3*_RFS_UNIT_)
+draine_unit = u.def_unit('Draine',2.72E-3*_RFS_UNIT_)
 u.add_enabled_units(draine_unit)
-mathis_unit = u.def_unit('Mathis',2.028E-3*_RFS_UNIT_)
+mathis_unit = u.def_unit('Mathis',1.81E-3*_RFS_UNIT_)
 u.add_enabled_units(mathis_unit)
     
 #See https://stackoverflow.com/questions/880530/can-modules-have-properties-the-same-way-that-objects-can
@@ -230,7 +236,9 @@ def warn(cls,msg):
        :param msg:  The warning message
        :type msg: str
     """
-    warnings.warn(cls.__class__.__name__+": "+msg)
+    # use stacklevel=3 so we get a reference to the caller of
+    # pdrutils.warn().
+    warnings.warn(cls.__class__.__name__+": "+msg,stacklevel=3)
 
 #@module_property
 ################################################################
@@ -266,11 +274,11 @@ def check_units(input_unit,compare_to):
 
 
 def to(unit,image):
-  """Convert the image values to another unit.
+  r"""Convert the image values to another unit.
      While generally this is intended for converting radiation field
      strength maps between Habing, Draine, cgs, etc, it will work for
      any image that has a unit member variable. So, e.g., it would work
-     to convert density from cm^-3 to m^-3.
+     to convert density from :math:`{\rm cm ^{-3}}` to :math:`{\rm m^{-3}}`.
      If the input image is a :class:`~pdrtpy.measurement.Measurement`, its
      uncertainty will also be converted.
 
@@ -292,10 +300,11 @@ def to(unit,image):
   return newmap
 
 def toHabing(image):
-  """Convert a radiation field strength image to Habing units (G_0).
-     1 Habing = 1.6E-3 erg/s/cm^2
-     See table on page 18 of 
-     https://ism.obspm.fr/files/PDRDocumentation/PDRDoc.pdf
+  r"""Convert a radiation field strength image to Habing units :math:`(G_0)`.
+
+     :math:`{\rm G_0 \equiv 1~Habing = 1.6\times10^{-3}~erg~s^{-1}~cm^{-2}}`
+
+     between 6eV and 13.6eV (912-2066 :math:`\unicode{xC5}`).  See `Weingartner and Draine 2001, ApJS, 134, 263 <https://ui.adsabs.harvard.edu/abs/2001ApJS..134..263W/abstract>`_, section 4.1 
 
      :param image: the image to convert. It must have a `numpy.ndarray`
         data member and `astropy.units.Unit` unit member.
@@ -305,24 +314,25 @@ def toHabing(image):
   return to('Habing',image)
    
 def toDraine(image):
-  """Convert a radiation field strength image to Draine units (\chi).
-     1 Draine = 2.704E-3 erg/s/cm^2
-     See table on page 18 of 
-     https://ism.obspm.fr/files/PDRDocumentation/PDRDoc.pdf
+  r"""Convert a radiation field strength image to Draine units (\chi).
+
+     :math:`{\rm 1~Draine = 2.72\times10^{-3}~erg~s^{-1}~cm^{-2}}`
+
+     between 6eV and 13.6eV (912-2066 :math:`\unicode{xC5}`).  See `Weingartner and Draine 2001, ApJS, 134, 263 <https://ui.adsabs.harvard.edu/abs/2001ApJS..134..263W/abstract>`_, section 4.1 
 
      :param image: the image to convert. It must have a `numpy.ndarray`
         data member and `astropy.units.Unit` unit member.
      :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
      :return: an image with converted values and units
   """
-# 1 Draine = 1.69 G0 (Habing)\n",
   return to('Draine',image)
 
 def toMathis(image):
-  """Convert a radiation field strength image to Mathis units
-     1 Mathis = 2.028E-3 erg/s/cm^2
-     See table on page 18 of 
-     https://ism.obspm.fr/files/PDRDocumentation/PDRDoc.pdf
+  r"""Convert a radiation field strength image to Mathis units
+
+     :math:`{\rm 1~Mathis = 1.81\times10^{-3}~erg~s^{-1}~cm^{-2}}`
+
+     between 6eV and 13.6eV (912-2066 :math:`\unicode{xC5}`).  See `Weingartner and Draine 2001, ApJS, 134, 263 <https://ui.adsabs.harvard.edu/abs/2001ApJS..134..263W/abstract>`_, section 4.1 
 
      :param image: the image to convert. It must have a `numpy.ndarray`
         data member and `astropy.units.Unit` unit member.
@@ -332,7 +342,7 @@ def toMathis(image):
   return to('Mathis',image)
 
 def tocgs(image):
-  """Convert a radiation field strength image to erg/s/cm^2
+  r"""Convert a radiation field strength image to :math:`{\rm erg~s^{-1}~cm^{-2}}`.
 
      :param image: the image to convert. It must have a :class:`numpy.ndarray` data member and `astropy.units.Unit` unit member.
      :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
@@ -344,8 +354,8 @@ def convert_integrated_intensity(image,wavelength=None):
   # cute. Put r in front of docstring to prevent python interpreter from 
   # processing \.  Otherwise \times gets interpreted as tab imes
   #https://stackoverflow.com/questions/8385538/how-to-enable-math-in-sphinx
-  r"""Convert integrated intensity from K km :math:`{\rm s}^{-1}` to 
-  :math:`{\rm erg s^{-1} cm^{-2} sr^{-1}}`, assuming
+  r"""Convert integrated intensity from :math:`{\rm K~km~s}^{-1}` to 
+  :math:`{\rm erg~s^{-1}~cm^{-2}~sr^{-1}}`, assuming
   :math:`B_\lambda d\lambda = 2kT/\lambda^3 dV` where :math:`T dV` is the integrated intensity in K km/s and :math:`\lambda` is the wavelength.  The derivation:
 
   .. math::
@@ -364,7 +374,7 @@ def convert_integrated_intensity(image,wavelength=None):
 
      B_\lambda d\lambda = 2\times10^5~kT/\lambda^3~dV,  
 
-  with :math:`\lambda`  in cm, the factor :math:`10^5` is to convert :math:`dV` in km :math:`{\rm s}^{-1}` to cm :math:`{\rm s}^{-1}`.
+  with :math:`\lambda`  in cm, the factor :math:`10^5` is to convert :math:`dV` in :math:`{\rm km~s}^{-1}` to :math:`{\rm cm~s}^{-1}`.
 
   :param image: the image to convert. It must have a `numpy.ndarray` data member and `astropy.units.Unit` unit member. It's units must be K km/s
   :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
