@@ -39,7 +39,7 @@ setup(
         'scipy',
         'matplotlib',
     ],
-    url = "https://dustem.astro.umd.edu",
+    url = "http://dustem.astro.umd.edu",
     project_urls = {
         "Documentation": "https://pdrtpy.readthedocs.io",
         "Source Code": "https://github.com/mpound/pdrtpy",
