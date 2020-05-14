@@ -17,3 +17,6 @@
          CI_609       CO_43        CI_609/CO_43  CI609_CO43                 1   [C I] 609 $\mu$m / CO(J=4-3)
           CO_43       CO_21         CO_43/CO_21  CO43_CO21                  1   CO(J=4-3) / CO(J=2-1)
           CO_65       CO_21         CO_65/CO_21  CO65_CO21                  1   CO(J=6-5) / CO(J=2-1)
+          CO_76       CO_10         CO_76/CO_10  CO76_CO10                  1   CO(J=7-6) / CO(J=1-0)
+          CO_76       CO_21         CO_76/CO_21  CO76_CO21                  1   CO(J=7-6) / CO(J=2-1)
+          CO_76       CO_43         CO_76/CO_43  CO76_CO43                  1   CO(J=7-6) / CO(J=4-3)
