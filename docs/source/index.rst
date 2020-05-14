@@ -136,6 +136,10 @@ structure lines like   |OI| and  |CII|.
 
 For a full review of PDR physics and chemistry, see `Hollenbach & Tielens 1997 <https://ui.adsabs.harvard.edu/abs/1997ARA&A..35..179H>`_.
 
+Credits
+=======
+``pdrtpy`` is developed by `Marc Pound <https://www.astro.umd.edu/~mpound>`_ and `Mark Wolfire <https://www.astro.umd.edu/~mwolfire>`_.  
+
 .. toctree:
    :maxdepth: 2
 
