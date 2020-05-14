@@ -27,23 +27,79 @@ excitation rates for [O I] from
 communication) and have included |13C| chemistry along with the
 emitted line intensities for  |13CII| and |13CO|
 
-
 Getting Started
 ===============
 
 Installation
 ------------
 
-``pdrtpy`` can be installed with 
+Requirements
+^^^^^^^^^^^^
+
+``pdrtpy`` requires Python 3 and recent versions of  `astropy <https://astropy.org>`_, `numpy <https://numpy.org>`_, `scipy <https://scipy.org>`_, and `matplotlib <https://matplotlib.org/>`_. If you want to run the `Example Notebooks`_, you also need `jupyter <https://jupyter.org>`_.
+
+First make sure you are using Python 3:
+
+.. code-block:: sh
+
+   python --version
+
+should show e.g., *3.7.6*. 
+
+
+.. Also, make sure *setuptools* is up to date:
+
+.. .. code-block:: sh
+
+..   pip install -U setuptools
+
+Install the package
+^^^^^^^^^^^^^^^^^^^
+
+Python has numerous ways to install packages; the easiest is with *pip*. 
+The code is hosted at the `Python Packaging Index <https://pypi.org/project/pdrtpy/>`_, so you can type:
 
 .. code-block:: sh
 
    pip install pdrtpy
 
-or if you plan to tinker with the code,
+If you do not have permission to install into your Python system package area, you will need to do a `user-install <https://pip.pypa.io/en/latest/user_guide/#user-installs>`_, which will install the package locally.
 
 .. code-block:: sh
 
+   pip install --user pdrtpy
+
+
+Then go ahead and install the `Example Notebooks`_.
+
+.. _notebooks:
+
+Example Notebooks
+-----------------
+
+We have prepared 4 jupyter iPython notebooks with examples of how to use ``pdrtpy``.  You can download these as follows.
+
+.. code-block:: sh
+
+    git clone https://github.com/mpound/pdrtpy-nb.git
+
+If you don't have git, you can 
+`download a zip file of the repository <https://github.com/mpound/pdrtpy-nb/archive/master.zip>`_.
+
+To familiarize yourself with the capabilities of ``pdrtpy``, we suggest you do the notebooks in this order:
+
+- PDRT_Example_Measurements.ipynb 
+- PDRT_Example_ModelSets.ipynb
+- PDRT_Example_Find_n_G0_Single_Pixel.ipynb  
+- PDRT_Example_Make_n_G0_maps.ipynb       
+
+For Developers
+==============
+
+If you plan to tinker with the code, you may want to try this installation method.
+
+.. code-block:: sh
+  
    git clone https://github.com/mpound/pdrtpy
    sudo apt-get install python3-venv
    python -m venv ~/venv
@@ -51,18 +107,6 @@ or if you plan to tinker with the code,
    cd pdrtpy
    pip install -r requirements.txt
 
-Then download the example notebooks:
-
-.. code-block:: sh
-
-    git clone https://github.com/mpound/pdrtpy-nb.git
-
-If you don't have git, you can navigate to  https://github.com/mpound/pdrtpy-nb and download the *notebooks* folder by hand.
-
-
-Requirements
-------------
-Python 3 and recent versions of  astropy, numpy, scipy, matplotlib. And jupyter if you want to run the example notebooks.
 
 What is a PDR? 
 ==============
