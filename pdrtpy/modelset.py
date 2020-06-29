@@ -151,8 +151,10 @@ class ModelSet(object):
             # must deal with OI+CII/FIR models. Note we must check for FIR first, since
             # if you check q has OI,CII and m has FIR order you'll miss OI/CII.
             if q[0] == "FIR" and (q[1] == "OI_145" or q[1] == "OI_63") and "CII_158" in m:
+                #print("SPECIAL doing %s %s"%(q[0],q[1]))
                 s = q[1] + "+CII_158/" + q[0]
             else:
+                #print("doing %s %s"%(q[0],q[1]))
                 s = q[0]+"/"+q[1]
             if s in self.table["ratio"]:
                 fullpath = self._tabrow["path"]+self.table.loc[s]["filename"]+"."+ext
