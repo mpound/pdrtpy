@@ -364,7 +364,7 @@ storage mechanism.
                 aa = deepcopy(oi+cii)
                 bb = deepcopy(self._measurements["FIR"])
                 self._observedratios[lab] = aa/bb
-                self._observedratios[lab].meta = deepcopy(b.header)
+                self._observedratios[lab].meta = deepcopy(bb.header)
                 self._ratioHeader("OI_145+CII_158","FIR",lab)
                     
     #deprecated
