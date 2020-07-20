@@ -1,4 +1,6 @@
 #todo: 
+# FIGURE MANAGEMENT -- SAVE FIG! e.g. name a figure and save it by name.
+# 
 # Fix the rows/cols issue in ratios_on_models and overlay_all_ratios
 #
 # keywords for show_both need to be arrays. ugh.
@@ -55,6 +57,8 @@ class LineRatioPlot(PlotBase):
      * *cmap* (``str``) colormap name, Default: 'plasma' 
 
      * *colorbar* (``str``) whether or not to display colorbar
+
+     * *colors* (``str``) color of the contours. Default: 'whitecolor of the contours. Default: 'white'
 
      * *contours* (``bool``), whether or not to plot contours
 
@@ -139,6 +143,7 @@ class LineRatioPlot(PlotBase):
         '''Plot the hydrogen nucleus volume density map that was computed by :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool. Default units: cm :math:`^{-3}`
         '''
         kwargs_opts = {'units': 'cm^-3',
+                       'aspect': 'equal',
                        'image':True,
                        'contours': False,
                        'label': False,
@@ -164,6 +169,7 @@ class LineRatioPlot(PlotBase):
         #fancyunits=self._tool._radiation_field.unit.to_string('latex')
 
         kwargs_opts = {'units': 'Habing',
+                       'aspect': 'equal',
                        'image':True,
                        'contours': False,
                        'label': False,
@@ -198,6 +204,7 @@ class LineRatioPlot(PlotBase):
         '''
 
         kwargs_opts = {'units': None,
+                       'aspect': 'equal',
                        'image':True,
                        'contours': True,
                        'label': False,
@@ -224,6 +231,7 @@ class LineRatioPlot(PlotBase):
         '''
 
         kwargs_opts = {'units': None,
+                       'aspect': 'equal',
                        'image':True,
                        'contours': True,
                        'label': False,
@@ -243,13 +251,14 @@ class LineRatioPlot(PlotBase):
 
     def show_both(self,units = ['Habing','cm^-3'], **kwargs):
         '''Plot both radiation field and volume density maps computed by the
-        :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool in a 1x2 panel subplot. Defaul units: ['Habing','cm^-3']
+        :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool in a 1x2 panel subplot. Default units: ['Habing','cm^-3']
         '''
 
         _index = [1,2]
         _reset = [True,False]
 
         kwargs_opts = {'image':True,
+                       'aspect': 'equal',
                        'contours': False,
                        'label': False,
                        'levels': None,
@@ -282,6 +291,7 @@ class LineRatioPlot(PlotBase):
             raise NotImplementedError("Plotting of confidence intervals is not yet implemented for maps")
 
         kwargs_opts = {'units': None,
+                       'aspect': 'equal',
                        'image':False,
                        'contours': True,
                        'label': True,
