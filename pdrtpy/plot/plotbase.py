@@ -24,6 +24,7 @@ class PlotBase:
         self._figure = None
         self._axis = None
         self._tool = tool
+        self._valid_norms = [ 'simple', 'zscale', 'log' ]
         #print("Done PlotBase")
 
     def _autolevels(self,data,steps='log',numlevels=None,verbose=False):
@@ -70,24 +71,31 @@ class PlotBase:
             print("Computed %d contour autolevels: %s"%(numlevels,levels))
         return levels
         
-    def _zscale(self,image):
+    def _zscale(self,image,contrast=0.25):
         """Normalization object using Zscale algorithm
+           See :mod:`astropy.visualization.ZScaleInterval`
         
         :param image: the image object
         :type image: :mod:`astropy.io.fits` HDU or CCDData
+        :param contrast: The scaling factor (between 0 and 1) for determining the minimum and maximum value. Larger values increase the difference between the minimum and maximum values used for display. Defaults to 0.25.  
+        :type contrast: float
         :returns: :mod:`astropy.visualization.normalization` object
         """
         # clip=False required or NaNs get max color value, see https://github.com/astropy/astropy/issues/8165
-        norm= ImageNormalize(data=image,interval=ZScaleInterval(contrast=0.5),stretch=LinearStretch(),clip=False)
+        norm = ImageNormalize(data=image,interval=ZScaleInterval(contrast=contrast),stretch=LinearStretch(),clip=False)
         return norm
 
     def _get_norm(self,norm,km,min,max):
+        if type(norm) == str: 
+            norm = norm.lower()
+            if norm not in self._valid_norms:
+                raise Exception("Unrecognized normalization %s. Valid values are %s"%(norm,self._valid_norms))
         if norm == 'simple':
             return simple_norm(km, min_cut=min,max_cut=max, stretch='log', clip=False)
         elif norm == 'zscale':
             return self._zscale(km)
         elif norm == 'log':
-            return LogNorm()
+            return LogNorm(vmin=min,vmax=max,clip=False)
         else: 
             return norm
 
