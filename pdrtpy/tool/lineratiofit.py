@@ -368,19 +368,6 @@ storage mechanism.
                 self._ratioHeader("OI_145+CII_158","FIR",lab)
                     
     #deprecated
-    def __computeDeltaSq(self):
-        '''Compute the difference-squared values from the observed ratios and models - single pixel version'''
-        if not self._modelratios: # empty list or None
-            raise Exception("No model data ready.  Has read_models() been called?")
-        if self.ratiocount < 2 :
-            raise Exception("Not enough ratios to compute deltasq.  Need 2, got %d"%self.ratiocount)
-        self._deltasq = dict()
-        for r in self._observedratios:
-            _z = self._modelratios[r].multiply(-1.0)
-            _z._data = _z._data + self._observedratios[r].flux
-            _q = _z.divide(self._observedratios[r].error)
-            self._deltasq[r] = _q.multiply(_q)
-
     def _compute_delta_sq(self):
         '''Compute the difference-squared values from the observed ratios 
            and models - multi-pixel version and store in _deltasq member'''
@@ -427,6 +414,7 @@ storage mechanism.
                     add_term = np.log(s2)
                 #_q = (self._observedratios[r].flux - pix)/self._observedratios[r].error
                 _q = (mf - pix)**2/s2 + add_term
+                _q = ma.masked_invalid(_q)
                 ff.append(_q)
             # result order is g0,n,y,x
             #print("Shape mr1 ",self._modelratios[r].shape,type(self._modelratios[r].shape[0]))
@@ -498,16 +486,16 @@ storage mechanism.
         self._makehistory(self._chisq)
         self._makehistory(self._reduced_chisq)
         
-    def _write_chisq(self,file="chisq.fits",rfile="rchisq.fits"):
+    def write_chisq(self,chi="chisq.fits",rchi="rchisq.fits",overwrite=True):
         '''Write the chisq and reduced-chisq data to a file
          
-           :param file: FITS file to write the chisq map to.
-           :type  file: str
-           :param rfile: FITS file to write the reduced chisq map to.
-           :type rfile: str
+           :param chi: FITS file to write the chisq map to.
+           :type  chi: str
+           :param rchi: FITS file to write the reduced chisq map to.
+           :type rchi: str
         '''
-        self._chisq.write(file,overwrite=True,hdu_mask='MASK')
-        self._reduced_chisq.write(rfile,overwrite=True,hdu_mask='MASK')  
+        self._chisq.write(chi,overwrite=overwrite,hdu_mask='MASK')
+        self._reduced_chisq.write(rchi,overwrite=overwrite,hdu_mask='MASK')  
 
     def _compute_likeliest(self):
         """***Experimental*** 
