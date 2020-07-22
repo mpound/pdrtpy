@@ -402,6 +402,20 @@ def convert_integrated_intensity(image,wavelength=None):
      newmap._uncertainty.unit = _OBS_UNIT_
   return newmap
 
+def mask_union(arrays):
+    """Return the union mask (logical OR) of the input masked arrays.
+    This is useful when doing arithmetic on images that don't have identical masks
+    and you want the most restrictive mask.
+
+    :param arrays: masked arrays to unionize
+    :type arrays: numpy.ma.masked_array
+    :rtype: mask
+    """
+    z = list()
+    for m in arrays:
+       z.append(m.mask)
+    return np.any(z,axis=0)
+   
 def dropaxis(w):
     """ Drop the first single dimension axis from a World Coordiante System.  Returns the modified WCS if it had a single dimension axis or the original WCS if not.
  
