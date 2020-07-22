@@ -398,11 +398,10 @@ storage mechanism.
             _z = np.reshape(self._modelratios[r],sz)
 
             ff = list()
+            mf = ma.masked_invalid(self._observedratios[r].flux)
+            me = ma.masked_invalid(self._observedratios[r].error)  
             for pix in _z:
-                mf = ma.masked_invalid(self._observedratios[r].flux)
-                me = ma.masked_invalid(self._observedratios[r].error)  
                 #optional fractional error correction for log likelihood.
-                #
                 if f == 0:
                     s2 = me**2
                     add_term = 0
