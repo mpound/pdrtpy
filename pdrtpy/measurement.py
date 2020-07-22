@@ -6,9 +6,10 @@ import astropy.units as u
 from astropy.io import fits,registry
 from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
 import numpy as np
+import numpy.ma as ma
 from os import remove
 from os.path import exists
-from .pdrutils import squeeze
+from .pdrutils import squeeze,mask_union
 
 class Measurement(CCDData):
     """Measurement represents one or more observations of a given spectral
@@ -125,7 +126,7 @@ class Measurement(CCDData):
         
 
     @staticmethod
-    def make_measurement(fluxfile,error,outfile,rms=None,overwrite=False):
+    def make_measurement(fluxfile,error,outfile,rms=None,masknan=True,overwrite=False):
         """Create a FITS files with 2 HDUS, the first being the flux and the 2nd being 
         the flux uncertainty. This format makes allows the resulting file to be read into the underlying :class:'~astropy.nddata.CCDData` class.
 
@@ -142,6 +143,8 @@ class Measurement(CCDData):
         :type outfile: str
         :param rms:  If error == 'rms', this value may give the rms in same units as flux.
         :type rms: float or :class:`astropy.units.Unit`
+        :param masknan: Whether to mask any pixel where the flux or the error is NaN. Default:true
+        :type masknan: bool
         :param overwrite: If `True`, overwrite the output file if it exists. Default: `False`.
         :type overwrite: bool
 
@@ -194,6 +197,13 @@ class Measurement(CCDData):
         _out[1].header['extname']='UNCERT'
         _out[1].header['bunit'] = eb
         _out[1].header['utype'] = 'StdDevUncertainty'
+        if masknan:
+            fmasked = ma.masked_invalid(_flux[0].data)
+            emasked = ma.masked_invalid(_error[0].data)
+            final_mask = mask_union([fmasked,emasked])
+            # Convert boolean mask to uint since io.fits cannot handle bool.
+            hduMask = fits.ImageHDU(final_mask.astype(np.uint8), name='MASK')
+            _out.append(hduMask)
         _out.writeto(outfile,overwrite=overwrite)
 
     @property
