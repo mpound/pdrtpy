@@ -395,26 +395,25 @@ storage mechanism.
         returnval = dict()
         for r in self._observedratios:
             sz = self._modelratios[r].size
-            _z = np.reshape(self._modelratios[r],sz)
+            modelpix = np.reshape(self._modelratios[r],sz)
 
-            ff = list()
+            residuals = list()
             mf = ma.masked_invalid(self._observedratios[r].flux)
             me = ma.masked_invalid(self._observedratios[r].error)  
-            for pix in _z:
+            #frac_error = f*modelpix  # this is actually slower than looping over modelpix
+            s2 = me**2
+            add_term = 0
+            for pix in modelpix:
                 #optional fractional error correction for log likelihood.
-                if f == 0:
-                    s2 = me**2
-                    add_term = 0
-                else:
+                if f != 0:
                    #term is actually log(2*pi*s2) but addition of 
                    #constant makes no difference in likelihood.
                     frac_error  = f*pix
-                    s2 = me**2+frac_error**2
-                    add_term = np.log(s2)
-                #_q = (self._observedratios[r].flux - pix)/self._observedratios[r].error
+                    s2 += frac_error**2
+                    add_term += np.log(s2)
                 _q = (mf - pix)**2/s2 + add_term
                 _q = ma.masked_invalid(_q)
-                ff.append(_q)
+                residuals.append(_q)
             # result order is g0,n,y,x
             #print("Shape mr1 ",self._modelratios[r].shape,type(self._modelratios[r].shape[0]))
             #print("Shape or2 ",self._observedratios[r].shape)#,type(self._observedratios[r].shape[0]))
@@ -431,7 +430,7 @@ storage mechanism.
                 _meta= deepcopy(self._observedratios[r].meta)
             # result order is y,x,g0,n
             #newshape = np.hstack((self._observedratios[r].shape,self._modelratios[r].shape))
-            _qq = np.reshape(ff,newshape)
+            _qq = np.reshape(residuals,newshape)
             # WCS will be None for single pixel
             _wcs = deepcopy(self._observedratios[r].wcs)
             returnval[r] = CCDData(_qq,unit="adu",wcs=_wcs,meta=_meta)
@@ -519,11 +518,11 @@ storage mechanism.
         newshape = self._observedratios[fk2].shape
         g0=10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,1]
         n =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,0]
-        self.L_radiation_field=self._observedratios[fk2].copy()
+        self.L_radiation_field=deepcopy(self._observedratios[fk2])
         self.L_radiation_field.data[spatial_idx]=g0
         self.L_radiation_field.unit = self.radiation_field_unit
         self.L_radiation_field.uncertainty.unit = self.radiation_field_unit
-        self.L_density=self._observedratios[fk2].copy()      
+        self.L_density=deepcopy(self._observedratios[fk2])
         self.L_density.data[spatial_idx]=n
         self.L_density.unit = self.density_unit
         self.L_density.uncertainty.unit = self.density_unit
