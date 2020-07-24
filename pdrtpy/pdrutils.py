@@ -444,16 +444,21 @@ def squeeze(image):
   """Remove single-dimensional entries from image data and WCS.
 
   :param image: the image to convert. It must have a `numpy.ndarray` data member and `astropy.units.Unit` unit member. 
-  :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+  :type image: :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
  
   :return: an image with single axes removed
-  :rtype: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement` as input
+  :rtype: :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement` as input
   """
   while has_single_axis(image.wcs):
     image.wcs = dropaxis(image.wcs)
 
-  # this is a no-op if there are no dimensions to squeeze
-  image.data = np.squeeze(image.data)
+  # np.squeeze is a no-op if there are no dimensions to squeeze
+  if image.data is not None:
+      image.data = np.squeeze(image.data)
+  if image.uncertainty is not None:
+      image.uncertainty._array = np.squeeze(image.uncertainty._array)
+  if image.mask is not None:
+      image.mask = np.squeeze(image.mask)
 
   # update the header which can be independent of WCS
   image.header["NAXIS"] = image.wcs.wcs.naxis
