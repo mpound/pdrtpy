@@ -1,8 +1,4 @@
 import unittest
-#import sys
-#sys.path.insert(0, "/lupus2/mpound/pdrtpy")
-
-#import pdrtpy
 from pdrtpy.measurement import Measurement
 from astropy.nddata import StdDevUncertainty
 
