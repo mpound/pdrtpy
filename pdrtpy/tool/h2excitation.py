@@ -11,7 +11,10 @@ from ..pdrutils import get_table, check_units, firstkey
 from ..measurement import Measurement
 
 class H2Excitation(ToolBase):
-    """Tool for fitting temperatures to :math:`H_2` Excitation Diagrams"""
+    """Tool for fitting temperatures to :math:`H_2` Excitation Diagrams
+
+       **This tool is still under development**
+    """
     def __init__(self,measurements=None):
 
         # must be set before call to init_measurements
