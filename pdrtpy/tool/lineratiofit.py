@@ -52,20 +52,20 @@ class LineRatioFit(ToolBase):
 
     @property
     def modelset(self):
-        """The underlying :class:`ModelSet`"""
+        """The underlying :class:`~pdrtpy.modelset.ModelSet`"""
         return self._modelset
 
     @property
     def measurements(self):
-        """The stored :class:`measurements <Measurement>` as dictionary with Measurement IDs as keys
+        """The stored :class:`measurements <pdrtpy.measurement.Measurement>` as a dictionary with Measurement IDs as keys
    
-        :rtype: dict
+        :rtype: dict of :class:`~pdrtpy.measurement.Measurement`
         """
         return self._measurements
     
     @property
     def measurementIDs(self):
-        '''The stored measurement IDs.
+        '''The stored measurement IDs, which are strings.
 
         :rtype: :class:`dict_keys`
         '''
@@ -95,7 +95,7 @@ class LineRatioFit(ToolBase):
     @property
     def ratiocount(self):
         '''The number of ratios that match models available in the 
-           current ModelSet given the current set of measurements
+           current :class:`~pdrtpy.modelset.ModelSet` given the current set of measurements
  
         :rtype: int
         '''
@@ -309,7 +309,10 @@ storage mechanism.
         #if not self._check_header("BUNIT") ...
 
     def run(self):
-        '''Run the full computation'''
+        '''Run the full computation using all the :class:`observations <pdrtpy.measurement.Measurement>` added.   This will check compatibility of input observations (e.g., beam parameters, coordinate types, axes lengths) and raise exceptions if the observations don't match each other.
+
+           :raises Exception: if no models match the input observations.
+        '''
         self._check_compatibility()
         self.read_models()
         self._compute_valid_ratios()
