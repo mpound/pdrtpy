@@ -116,7 +116,7 @@ heating.  In regions of massive star formation, PDRS are created at
 the boundaries between the HII regions and neutral molecular cloud,
 as photons with energies 6 eV < E < 13.6 eV 
 photodissociate molecules and photoionize other elements.  The gas is
-heated from photo-electrons and cools mostly through far-infrared fine
+heated by photo-electrons from grains and cools mostly through far-infrared fine
 structure lines like [O I] and  [C II].
 
 For a full review of PDR physics and chemistry, see `Hollenbach & Tielens 1997 <https://ui.adsabs.harvard.edu/abs/1997ARA&A..35..179H>`_.
