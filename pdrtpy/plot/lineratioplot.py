@@ -602,7 +602,7 @@ class LineRatioPlot(PlotBase):
         #todo: allow unit conversion to cgs or Draine
         if kwargs_opts['yaxis_unit'] is not None:
             yunit = kwargs_opts['yaxis_unit']
-            temp_y= y * u.Unit(_header['cunit'+ax1])
+            temp_y= y * u.Unit(_header['cunit'+ax2])
             y = temp_y.to(yunit).value
             ylab = f"{_header['ctype'+ax2]} [{yunit}]"
         else:
