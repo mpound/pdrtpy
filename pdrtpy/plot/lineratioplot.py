@@ -504,7 +504,8 @@ class LineRatioPlot(PlotBase):
                        'image':True,
                        'colorbar': False,
                        'contours': True,
-                       'label': False
+                       'label': False,
+                       'yaxis_unit': None
                        }
 
         kwargs_contour = {'levels': None, 
@@ -614,7 +615,12 @@ class LineRatioPlot(PlotBase):
                 self._figure.colorbar(im,ax=self._axis[axidx])
                 #self._wcs_colorbar(im,self._axis[axidx])
     #todo: allow unit conversion to cgs or Draine
-    
+        if kwargs_opts['yaxis_unit'] is not None:
+            yunit = kwargs_opts['yaxis_units']
+            temp_y= y * (u.erg/u.cm**2/u.s)
+            y = temp_y.to(yunit).value
+
+
         if kwargs_opts['contours']:
             if kwargs_contour['levels'] is None:
                 # Figure out some autolevels 
