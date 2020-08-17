@@ -576,6 +576,11 @@ class LineRatioPlot(PlotBase):
         if type(self._axis) is not np.ndarray:
             self._axis = np.array([self._axis])
 
+        #When using ncols>1, either the index needs to be 2-d or the axis array needs to be 1-d.
+        #This takes the second approach:
+        if len(self._axis.shape) > 1:
+            self._axis = self._axis.flatten()
+
         #if self._modelnaxis==2:
         #     ax1='1'
         #     ax2='2'
