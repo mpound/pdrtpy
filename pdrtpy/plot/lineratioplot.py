@@ -329,6 +329,8 @@ class LineRatioPlot(PlotBase):
                        'reset': True}
 
         kwargs_opts.update(kwargs)
+        # force this as ncols !=1 makes no sense.
+        kwargs_opts['ncols'] = 1
 
         i =0 
         for key,val in self._tool._modelratios.items():
@@ -367,8 +369,8 @@ class LineRatioPlot(PlotBase):
 
         kwargs_opts.update(kwargs)
 
-        ncols = kwargs_opts["ncols"]
-        kwargs_opts["nrows"] = int(round(self._tool.ratiocount/ncols+0.49,0))
+        kwargs_opts["ncols"] = min(kwargs_opts["ncols"],self._tool.ratiocount)
+        kwargs_opts["nrows"] = int(round(self._tool.ratiocount/kwargs_opts["ncols"]+0.49,0))
         for key,val in self._tool._modelratios.items():
             if kwargs_opts['index'] > 1: kwargs_opts['reset'] = False
             m = self._tool._model_files_used[key]
@@ -377,6 +379,12 @@ class LineRatioPlot(PlotBase):
             kwargs_opts['title'] = key + " model (Observed ratio indicated)"
             self._plot_no_wcs(val,header=None,**kwargs_opts)
             kwargs_opts['index'] = kwargs_opts['index'] + 1
+            print("index %d len(self._axis) %d"%(kwargs_opts['index'],len(self._axis)))
+
+            # Turn off subplots greater than the number available
+            la = len(self._axis)
+            for i in range(self._tool.ratiocount,la):
+                self._axis[i].axis('off')
             
 
     def _plot(self,data,**kwargs):
