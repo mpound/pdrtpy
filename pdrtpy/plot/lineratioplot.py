@@ -345,8 +345,7 @@ class LineRatioPlot(PlotBase):
         self._plt.legend(lines, labels)
 
     def ratios_on_models(self,**kwargs):
-#Will uses Nx3 subplots.  Default ncols: 3. 
-        '''Overlay all the measured ratios and their errors on the individual models for those ratios.
+        '''Overlay all the measured ratios and their errors on the individual models for those ratios.  Plots are displayed in multi-column format, controlled the `ncols` keyword. Default: ncols=2
 
         **Currently only works for single-pixel Measurements**
         '''
@@ -361,7 +360,7 @@ class LineRatioPlot(PlotBase):
                        'levels' : None,
                        'label': False,
                        'linewidths': 1.0,
-                       'ncols': 1,
+                       'ncols': 2,
                        'norm': 'zscale',
                        'title': None,
                        'index': 1,
@@ -379,11 +378,10 @@ class LineRatioPlot(PlotBase):
             kwargs_opts['title'] = key + " model (Observed ratio indicated)"
             self._plot_no_wcs(val,header=None,**kwargs_opts)
             kwargs_opts['index'] = kwargs_opts['index'] + 1
-            print("index %d len(self._axis) %d"%(kwargs_opts['index'],len(self._axis)))
 
-            # Turn off subplots greater than the number available
-            la = len(self._axis)
-            for i in range(self._tool.ratiocount,la):
+            # Turn off subplots greater than the number of
+            # available ratios
+            for i in range(self._tool.ratiocount,len(self._axis)):
                 self._axis[i].axis('off')
             
 
@@ -576,8 +574,8 @@ class LineRatioPlot(PlotBase):
         if type(self._axis) is not np.ndarray:
             self._axis = np.array([self._axis])
 
-        #When using ncols>1, either the index needs to be 2-d or the axis array needs to be 1-d.
-        #This takes the second approach:
+        # When using ncols>1, either the index needs to be 2-d 
+        # or the axis array needs to be 1-d.  This takes the second approach:
         if len(self._axis.shape) > 1:
             self._axis = self._axis.flatten()
 
