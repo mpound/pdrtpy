@@ -616,7 +616,7 @@ class LineRatioPlot(PlotBase):
                 #self._wcs_colorbar(im,self._axis[axidx])
     #todo: allow unit conversion to cgs or Draine
         if kwargs_opts['yaxis_unit'] is not None:
-            yunit = kwargs_opts['yaxis_units']
+            yunit = kwargs_opts['yaxis_unit']
             temp_y= y * (u.erg/u.cm**2/u.s)
             y = temp_y.to(yunit).value
 
