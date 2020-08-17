@@ -597,8 +597,17 @@ class LineRatioPlot(PlotBase):
         x = 10**np.linspace(start=xstart, stop=xstop, num=_header['naxis'+ax1])
         locmaj = ticker.LogLocator(base=10.0, subs=(1.0, ),numticks=10)
         locmin = ticker.LogLocator(base=10.0, subs=np.arange(2, 10)*.1,numticks=10) 
+        
         xlab = _header['ctype'+ax1] + ' ['+_header['cunit'+ax1]+']'
-        ylab = _header['ctype'+ax2] + ' ['+_header['cunit'+ax2]+']'
+        #todo: allow unit conversion to cgs or Draine
+        if kwargs_opts['yaxis_unit'] is not None:
+            yunit = kwargs_opts['yaxis_unit']
+            temp_y= y * u.Unit(_header['cunit'+ax1])
+            y = temp_y.to(yunit).value
+            ylab = f"{_header['ctype'+ax2]} [{yunit}]"
+        else:
+            ylab = _header['ctype'+ax2] + ' ['+_header['cunit'+ax2]+']'
+        
         self._axis[axidx].set_ylabel(ylab)
         self._axis[axidx].set_xlabel(xlab)
 
@@ -614,12 +623,6 @@ class LineRatioPlot(PlotBase):
             if kwargs_opts['colorbar']:
                 self._figure.colorbar(im,ax=self._axis[axidx])
                 #self._wcs_colorbar(im,self._axis[axidx])
-    #todo: allow unit conversion to cgs or Draine
-        if kwargs_opts['yaxis_unit'] is not None:
-            yunit = kwargs_opts['yaxis_unit']
-            temp_y= y * (u.erg/u.cm**2/u.s)
-            y = temp_y.to(yunit).value
-
 
         if kwargs_opts['contours']:
             if kwargs_contour['levels'] is None:
