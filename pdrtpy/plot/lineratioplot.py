@@ -54,6 +54,8 @@ class LineRatioPlot(PlotBase):
 
      * *image* (``bool``) whether or not to display the image map (imshow). 
 
+     * *show* (``str``) which quantity to display in the Measurement, one of 'data', 'error', 'mask'.  For example, this can be used to plot the errors in observed ratios. Default: 'data'
+
      * *cmap* (``str``) colormap name, Default: 'plasma' 
 
      * *colorbar* (``str``) whether or not to display colorbar
@@ -388,6 +390,8 @@ class LineRatioPlot(PlotBase):
     def _plot(self,data,**kwargs):
         '''generic plotting method used by other plot methods'''
 
+        kwargs_plot = {'show' : 'data'} # or 'mask' or 'error'
+
         kwargs_opts = {'units' : None,
                        'image':True,
                        'colorbar': True,
@@ -404,19 +408,32 @@ class LineRatioPlot(PlotBase):
         # Merge in any keys the user provided, overriding defaults.
         kwargs_contour.update(kwargs)
         kwargs_opts.update(kwargs)
+        kwargs_plot.update(kwargs)
 
-        if self._tool._modelnaxis == 2 or len(data.shape)==2:
+        _data = data  # default is show the data
+
+        if kwargs_plot['show'] == 'error':
+            _data = deepcopy(data)
+            _data.data = _data.error
+        if kwargs_plot['show'] == 'mask':
+            _data = deepcopy(data)
+            _data.data = _data.mask
+            # can't contour a boolean
+            kwargs_opts['contours'] = False
+
+        if self._tool._modelnaxis == 2 or len(_data.shape)==2:
             if kwargs_opts['units'] is not None:
-                k = to(kwargs_opts['units'], data)
+                k = to(kwargs_opts['units'], _data)
             else:
-                k = data
+                k = _data
         elif self._tool._modelnaxis == 3:
             if kwargs_opts['units'] is not None:
-                k = to(kwargs_opts['units'], data[0,:,:])
+                k = to(kwargs_opts['units'], _data[0,:,:])
             else:
-                k = data[0,:,:]
+                k = _data[0,:,:]
         else:
             raise Exception("Unexpected model naxis: %d"%self._tool._modelnaxis)
+
         km = ma.masked_invalid(k)
         # make sure nans don't affect the color map
         min_ = np.nanmin(km)
@@ -457,7 +474,7 @@ class LineRatioPlot(PlotBase):
             current_cmap = mcm.get_cmap(kwargs_imshow['cmap'])
             current_cmap.set_bad(color='white',alpha=1)
             # suppress errors and warnings about unused keywords
-            for kx in ['units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols', 'index', 'reset','colors']:
+            for kx in ['units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols', 'index', 'reset','colors','colorbar','show']:
                 kwargs_imshow.pop(kx,None)
             im=self._axis[axidx].imshow(km,**kwargs_imshow)
             if kwargs_opts['colorbar']:
@@ -469,7 +486,7 @@ class LineRatioPlot(PlotBase):
                 kwargs_contour['levels'] = self._autolevels(km,'log')
 
             # suppress errors and warnings about unused keywords
-            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect','colorbar','reset', 'nrows', 'ncols', 'index']:
+            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect','colorbar','reset', 'nrows', 'ncols', 'index','show']:
                 kwargs_contour.pop(kx,None)
 
             contourset = self._axis[axidx].contour(km, **kwargs_contour)
@@ -504,7 +521,8 @@ class LineRatioPlot(PlotBase):
                        'image':True,
                        'colorbar': False,
                        'contours': True,
-                       'label': False
+                       'label': False,
+                       'title':None
                        }
 
         kwargs_contour = {'levels': None, 
