@@ -5,7 +5,9 @@ import collections
 from copy import deepcopy
 import numpy as np
 from astropy.table import Table, unique, vstack
-from .pdrutils import get_table 
+import astropy.units as u
+from .pdrutils import get_table,model_dir
+from .measurement import Measurement
 
 #@ToDo:
 #   addModelSet() - for custom model sets. See model convention white paper
@@ -167,6 +169,35 @@ class ModelSet(object):
             ratios.append(p[0])
         return ratios
     
+    def get_models(self,identifiers,unit=u.dimensionless_unscaled,ext="fits"):
+        #if identifier not in self._identifiers["ID"]:
+        #    raise Exception("There is no model in ModelSet %s with the identifier %s"%(self.name,identifier))
+        models=dict()
+        d = model_dir()
+        for k in self.model_ratios(identifiers):
+            _thefile = d+self._tabrow["path"]+self.table.loc[k]["filename"]+"."+ext
+            _model = Measurement.read(_thefile,unit=unit)
+            _wcs = _model.wcs
+            if self.name == "wk2006":
+            # fix WK2006 model headers
+                if _wcs.wcs.cunit[0] == "":
+                    _model.header["CUNIT1"] = "cm-3"
+                    _wcs.wcs.cunit[0] = u.Unit("cm-3")
+                if _wcs.wcs.cunit[1] == "":
+                    _model.header["CUNIT2"] = "Habing"
+                    # Raises UnitScaleError:
+                    # "The FITS unit format is not able to represent scales that are not powers of 10.  Multiply your data by 1.600000e-03."
+                    # This causes all sorts of downstream problems
+                    #_model.wcs.wcs.cunit[1] = utils.habing_unit
+            else:
+                # copy wcs cunit to header. used later.
+                _model.header["CUNIT1"] = str(_wcs.wcs.cunit[0])
+                _model.header["CUNIT2"] = str(_wcs.wcs.cunit[1])
+            models[k] = _model
+
+        return models
+
+
     def _find_ratio_elements(self,m):
         # TODO handle case of OI+CII/FIR so it is not special cased in lineratiofit.py
         """Find the valid model numerator,denominator pairs in this ModelSet for a given list of measurement IDs. See :meth:`~pdrtpy.measurement.Measurement.id`
