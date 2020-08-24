@@ -102,7 +102,7 @@ class PlotBase:
     def _wcs_colorbar(self,image, axis, pos="right", width="10%",pad=0.15,orientation="vertical"):
         """Create a colorbar for a subplot with WCSAxes 
            (as opposed to matplolib Axes).  There are some side-effects of
-           using WCS procjection that need to be ameliorated.  Also for 
+           using WCS projection that need to be ameliorated.  Also for 
            subplots, we want the colorbars to have the same height as the 
            plot, which is not the default behavior.
 
@@ -125,3 +125,15 @@ class PlotBase:
         cax.yaxis.set_ticks_position(pos)
         return self._figure.colorbar(image,ax=axis,cax=cax)
 
+    def savefig(fname,**kwargs):
+        """Save the current figure to a file.
+
+           :param fname: filename to save in
+           :type fname: str
+
+           :Keyword Arguments:
+
+           Additional arguments (\*\*kwargs) are passed to :meth:`matplotlib.pyplot.savefig`.
+
+        """
+        self._figure.savefig(fname=fname,**kwargs)
