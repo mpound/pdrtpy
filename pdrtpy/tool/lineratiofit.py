@@ -244,36 +244,40 @@ storage mechanism.
         """
         d = utils.model_dir()
 
-        self._modelratios = dict()
-        for (k,p) in self._modelset.find_files(self.measurementIDs):
-            thefile = d+p
-            self._modelratios[k] = Measurement.read(thefile,unit=unit)
-            # Here we assume the model naxis are self-consistent!
-            # If not, something much deeper is wrong.
+        if True:
+            self._modelratios = self._modelset.get_models(self.measurementIDs,unit)
+            k = utils.firstkey(self._modelratios)
             self._modelnaxis = self._modelratios[k].wcs.naxis
-            # fix WK2006 models
-            if self._modelratios[k].wcs.wcs.cunit[0] == "":
-                self._modelratios[k].header["CUNIT1"] = "cm-3"
-                self._modelratios[k].wcs.wcs.cunit[0] = u.Unit("cm-3")
-#todo handle this in Measurement.read
-            else:
-                self._modelratios[k].header["CUNIT1"] = str(self._modelratios[k].wcs.wcs.cunit[0])
-            if self._modelratios[k].wcs.wcs.cunit[1] == "":
-                self._modelratios[k].header["CUNIT2"] = "Habing"
-                # Raises UnitScaleError:
-                # "The FITS unit format is not able to represent scales that are not powers of 10.  Multiply your data by 1.600000e-03."
-                # This causes all sorts of downstream problems
-                #self._modelratios[k].wcs.wcs.cunit[1] = utils.habing_unit
- 
-            else:
-                self._modelratios[k].header["CUNIT2"] = str(self._modelratios[k].wcs.wcs.cunit[1])
-            if not self.density_unit:
-                self.density_unit = self._modelratios[k].wcs.wcs.cunit[0]
-            if not self.radiation_field_unit:
-                try:
-                    self.radiation_field_unit    = u.Unit(self._modelratios[k].header["CUNIT2"])
-                except KeyError:
-                    raise Exception("Keyword CUNIT2 is required in file %s FITS header to describe units of interstellar radiation field"%thefile)
+        if False:
+            for (k,p) in self._modelset.find_files(self.measurementIDs):
+                thefile = d+p
+                self._modelratios[k] = Measurement.read(thefile,unit=unit)
+                # Here we assume the model naxis are self-consistent!
+                # If not, something much deeper is wrong.
+                self._modelnaxis = self._modelratios[k].wcs.naxis
+                # fix WK2006 models
+                if self._modelratios[k].wcs.wcs.cunit[0] == "":
+                    self._modelratios[k].header["CUNIT1"] = "cm-3"
+                    self._modelratios[k].wcs.wcs.cunit[0] = u.Unit("cm-3")
+    #todo handle this in Measurement.read
+                else:
+                    self._modelratios[k].header["CUNIT1"] = str(self._modelratios[k].wcs.wcs.cunit[0])
+                if self._modelratios[k].wcs.wcs.cunit[1] == "":
+                    self._modelratios[k].header["CUNIT2"] = "Habing"
+                    # Raises UnitScaleError:
+                    # "The FITS unit format is not able to represent scales that are not powers of 10.  Multiply your data by 1.600000e-03."
+                    # This causes all sorts of downstream problems
+                    #self._modelratios[k].wcs.wcs.cunit[1] = utils.habing_unit
+     
+                else:
+                    self._modelratios[k].header["CUNIT2"] = str(self._modelratios[k].wcs.wcs.cunit[1])
+        if not self.density_unit:
+            self.density_unit = self._modelratios[k].wcs.wcs.cunit[0]
+        if not self.radiation_field_unit:
+            try:
+                self.radiation_field_unit = u.Unit(self._modelratios[k].header["CUNIT2"])
+            except KeyError:
+                raise Exception("Keyword CUNIT2 is required in file %s FITS header to describe units of interstellar radiation field"%thefile)
     
     def _check_compatibility(self):
         """Check that all Measurements are compatible (beams, coordinate systems, shapes) so that the computation make commence.
@@ -387,10 +391,10 @@ storage mechanism.
            :type f: float
         '''
         if not self._modelratios: # empty list or None
-            raise Exception("No model data ready.  You need to call read_fits")
+            raise Exception("No model data ready.  Was read_models() called?")
             
         if self.ratiocount < 2 :
-            raise Exception("Not enough ratios to compute deltasq.  Need 2, got %d"%self.ratiocount)
+            raise Exception("Not enough ratios.  You need to provide at least 3 observations that can be used to compute 2 ratios that are covered by the ModelSet. From your observations, only %d ratios can be computed."%self.ratiocount)
 
         if not self._check_ratio_shapes():
             raise Exception("Observed ratio maps have different dimensions")
