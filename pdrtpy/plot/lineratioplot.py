@@ -599,13 +599,23 @@ class LineRatioPlot(PlotBase):
         locmin = ticker.LogLocator(base=10.0, subs=np.arange(2, 10)*.1,numticks=10) 
         
         xlab = _header['ctype'+ax1] + ' ['+_header['cunit'+ax1]+']'
-        #todo: allow unit conversion to cgs or Draine
+        
+        #allow unit conversion to cgs or Draine, for Y axis (FUV field):
         if kwargs_opts['yaxis_unit'] is not None:
-            yunit = kwargs_opts['yaxis_unit']
-            temp_y= y * u.Unit(_header['cunit'+ax2])
-            y = temp_y.to(yunit).value
+            yunit = kwargs_opts['yaxis_unit']  
+            # Get desired unit from arguments
+
+            temp_y= y * u.Unit(_header['cunit'+ax2])  
+            # Make FUV axis of the grid into a Quantity using the cunits from the grid header
+
+            y = temp_y.to(yunit).value  
+            # Convert the unit-aware grid to the desired units and set Y to the value (so it's no longer a Quantity)
+
             ylab = f"{_header['ctype'+ax2]} [{yunit}]"
+            # Set the y label appropriately.
+
         else:
+            # Don't do any conversions, instead just use units from grid
             ylab = _header['ctype'+ax2] + ' ['+_header['cunit'+ax2]+']'
         
         self._axis[axidx].set_ylabel(ylab)
