@@ -80,7 +80,7 @@ class LineRatioPlot(PlotBase):
 
      * *vmax*  (``float``) Maximum value for colormap normalization
     
-     * *yaxis_unit* (``str`` or :class: astropy.units.Unit) Y axis (FUV flux) units to use when plotting single pixel data, such as in `overlay_all_ratios` 
+     * *yaxis_unit* (``str`` or :class:`astropy.units.Unit`) Y axis (FUV flux) units to use when plotting single pixel data, such as in :meth:`overlay_all_ratios` 
 
      The following keywords are available, but you probably won't touch.
 
