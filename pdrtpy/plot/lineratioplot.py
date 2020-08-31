@@ -50,7 +50,7 @@ class LineRatioPlot(PlotBase):
 
     To manage the plots, the methods in this class take keywords (\*\*kwargs) that turn on or off various options, specify plot units, or map to matplotlib's :meth:`~matplotlib.axes.Axes.plot`, :meth:`~matplotlib.axes.Axes.imshow`, :meth:`~matplotlib.axes.Axes.contour` keywords.  The methods have reasonable defaults, so try them with no keywords to see what they do before modifying keywords.
 
-     * *units* (``str`` or :class:`astropy.units.Unit`) data units to use in the plot. This can be either a string such as, 'cm^-3' or 'Habing', or it can be an :class:`astropy.units.Unit`.  Data will be converted to the desired unit.   Note these are **not** the axis units, but the image data units.  Modifying axis units is not yet implemented.
+     * *units* (``str`` or :class:`astropy.units.Unit`) data units to use in the plot. This can be either a string such as, 'cm^-3' or 'Habing', or it can be an :class:`astropy.units.Unit`.  Data will be converted to the desired unit.   Note these are **not** the axis units, but the image data units.  Modifying axis units is implemented via the `yaxis_unit` keyword. 
 
      * *image* (``bool``) whether or not to display the image map (imshow). 
 
@@ -79,6 +79,8 @@ class LineRatioPlot(PlotBase):
      * *vmin*  (``float``) Minimum value for colormap normalization
 
      * *vmax*  (``float``) Maximum value for colormap normalization
+    
+     * *yaxis_unit* (``str`` or :class: astropy.units.Unit) Y axis (FUV flux) units to use when plotting single pixel data, such as in `overlay_all_ratios` 
 
      The following keywords are available, but you probably won't touch.
 
