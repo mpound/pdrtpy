@@ -174,9 +174,12 @@ class ModelSet(object):
         #    raise Exception("There is no model in ModelSet %s with the identifier %s"%(self.name,identifier))
         models=dict()
         d = model_dir()
+        self._supported_ratios.remove_indices('ratio label')
+        self._supported_ratios.add_index('ratio label')
         for k in self.model_ratios(identifiers):
             _thefile = d+self._tabrow["path"]+self.table.loc[k]["filename"]+"."+ext
-            _model = Measurement.read(_thefile,unit=unit)
+            _title = self._supported_ratios.loc[k]['title']
+            _model = Measurement.read(_thefile,unit=unit,title=_title)
             _wcs = _model.wcs
             if self.name == "wk2006":
             # fix WK2006 model headers

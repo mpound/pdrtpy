@@ -37,6 +37,9 @@ class Measurement(CCDData):
     :param identifier: string indicating what this is an observation of, e.g., "CO_10" for CO(1-0)
     :type identifier: str
 
+    :param title: formatted string (e.g. LaTeX) describing this observation that can be used for plotting, e.g. r'${^13}$CO(3-2)'
+    :type title: str
+
     :param bmaj: [optional] beam major axis diameter. This will be converted to degrees for storage in FITS header
     :type  bmaj: class:`astropy.units.Quantity`  
 
@@ -69,6 +72,7 @@ class Measurement(CCDData):
             print("args=",*args)
             print("kwargs=",*kwargs)
         self._identifier = kwargs.pop('identifier', 'unknown')
+        self._title      = kwargs.pop('title', None)
         _beam = dict()
         _beam["BMAJ"] = self._beam_convert(kwargs.pop('bmaj', None))
         _beam["BMIN"] = self._beam_convert(kwargs.pop('bmin', None))
@@ -249,6 +253,14 @@ class Measurement(CCDData):
         :type id: str
         '''
         self._identifier = id
+
+    @property
+    def title(self):
+        '''A formatted title (e.g., LaTeX) that can be in plotting.
+        
+        :rtype: str or None
+        '''
+        return self._title
     
     @property
     def filename(self):
@@ -410,6 +422,7 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
     '''
    
     _id = kwd.pop('identifier', 'unknown')
+    _title = kwd.pop('title', None)
     _squeeze = kwd.pop('squeeze', True)
     z = CCDData.read(filename,hdu,unit,hdu_uncertainty,hdu_mask,key_uncertainty_type, **kwd)
     if _squeeze:
@@ -418,7 +431,7 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
     # @TODO if uncertainty plane not present, look for RMS keyword
     # @TODO header values get stuffed into WCS, others may be dropped by CCDData._generate_wcs_and_update_header
     try:
-       z=Measurement(z,unit=z._unit)
+       z=Measurement(z,unit=z._unit,title=_title)
     except Exception:
        raise TypeError('could not convert fits_measurement_reader output to Measurement')
     z.identifier(_id)
