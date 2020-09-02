@@ -340,11 +340,7 @@ class LineRatioPlot(PlotBase):
 
         if kwargs_opts['legend']:
             lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in self._CB_color_cycle[0:i]]
-            # @todo move this to a get_title function in ModelSet
-            sr = self._tool._modelset._supported_ratios
-            sr.remove_indices('ratio label')
-            sr.add_index('ratio label')
-            labels = [sr.loc[k]['title'] for k in self._tool._model_files_used]
+            labels = [self._tool._modelratios[k].title for k in self._tool._modelratios]
             self._plt.legend(lines, labels,loc='upper center')
 
     def ratios_on_models(self,**kwargs):
@@ -360,6 +356,7 @@ class LineRatioPlot(PlotBase):
                        'image':True,
                        'colorbar': True,
                        'contours': True,
+                       'colors': ['white'],
                        'levels' : None,
                        'label': False,
                        'linewidths': 1.0,
@@ -375,20 +372,32 @@ class LineRatioPlot(PlotBase):
         kwargs_opts["ncols"] = min(kwargs_opts["ncols"],self._tool.ratiocount)
         kwargs_opts["nrows"] = int(round(self._tool.ratiocount/kwargs_opts["ncols"]+0.49,0))
         for key,val in self._tool._modelratios.items():
+            axidx = kwargs_opts['index']-1
             if kwargs_opts['index'] > 1: kwargs_opts['reset'] = False
             m = self._tool._model_files_used[key]
             kwargs_opts['measurements'] = [self._tool._observedratios[key]]
             self._ratiocolor='#4daf4a'
             if kwargs_opts['title'] is None:
-                kwargs_opts['title'] = key + " model"
+                kwargs_opts['title'] = self._tool._modelratios[key].title
             self._plot_no_wcs(val,header=None,**kwargs_opts)
             kwargs_opts['index'] = kwargs_opts['index'] + 1
+            if kwargs_opts['legend']:
+                lines = list()
+                labels = list()
+                if kwargs['contours']:
+                    lines.append(Line2D([0], [0], color=kwargs_opts['colors'][0], linewidth=3, linestyle='-'))
+                    #labels.append(self._tool._modelratios[key].title+" model")
+                    labels.append("model")
+                lines.append(Line2D([0], [0], color=self._ratiocolor, linewidth=3, linestyle='-'))
+                #labels.append(self._tool._modelratios[key].title+" observed")
+                labels.append("observed")
+                self._axis[axidx].legend(lines, labels,loc='upper center')
 
             # Turn off subplots greater than the number of
             # available ratios
             for i in range(self._tool.ratiocount,len(self._axis)):
                 self._axis[i].axis('off')
-            
+
 
     def _plot(self,data,**kwargs):
         '''generic plotting method used by other plot methods'''
@@ -704,20 +713,4 @@ class LineRatioPlot(PlotBase):
                 for i in range(0,3):
                     cset = self._axis[axidx].contour(x,y,k.data,levels=m.levels, linestyles=lstyles, colors=colors)
                 
-            lines = list()
-            labels = list()
-            if kwargs_opts['legend']:
-                sr = self._tool._modelset._supported_ratios
-                sr.remove_indices('ratio label')
-                sr.add_index('ratio label')
-                fancyratio = sr.loc[measurements[0].id]['title']
-                print("FANCY: %s"%fancyratio)
-                if kwargs['contours']:
-                    lines.append(Line2D([0], [0], color=kwargs_contour['colors'][0], linewidth=3, linestyle='-'))
-                    labels.append(fancyratio+" model")
-                    #labels.append(" model")
-                lines.append(Line2D([0], [0], color=self._ratiocolor, linewidth=3, linestyle='-'))
-                labels.append(fancyratio+" observed")
-                #labels.append(" observed")
-                self._axis[axidx].legend(lines, labels,loc='upper center')
 
