@@ -242,35 +242,9 @@ storage mechanism.
            :param unit: units of the data 
            :type unit: string or astropy.Unit
         """
-        d = utils.model_dir()
-
-        if True:
-            self._modelratios = self._modelset.get_models(self.measurementIDs,unit)
-            k = utils.firstkey(self._modelratios)
-            self._modelnaxis = self._modelratios[k].wcs.naxis
-        if False:
-            for (k,p) in self._modelset.find_files(self.measurementIDs):
-                thefile = d+p
-                self._modelratios[k] = Measurement.read(thefile,unit=unit)
-                # Here we assume the model naxis are self-consistent!
-                # If not, something much deeper is wrong.
-                self._modelnaxis = self._modelratios[k].wcs.naxis
-                # fix WK2006 models
-                if self._modelratios[k].wcs.wcs.cunit[0] == "":
-                    self._modelratios[k].header["CUNIT1"] = "cm-3"
-                    self._modelratios[k].wcs.wcs.cunit[0] = u.Unit("cm-3")
-    #todo handle this in Measurement.read
-                else:
-                    self._modelratios[k].header["CUNIT1"] = str(self._modelratios[k].wcs.wcs.cunit[0])
-                if self._modelratios[k].wcs.wcs.cunit[1] == "":
-                    self._modelratios[k].header["CUNIT2"] = "Habing"
-                    # Raises UnitScaleError:
-                    # "The FITS unit format is not able to represent scales that are not powers of 10.  Multiply your data by 1.600000e-03."
-                    # This causes all sorts of downstream problems
-                    #self._modelratios[k].wcs.wcs.cunit[1] = utils.habing_unit
-     
-                else:
-                    self._modelratios[k].header["CUNIT2"] = str(self._modelratios[k].wcs.wcs.cunit[1])
+        self._modelratios = self._modelset.get_models(self.measurementIDs,unit)
+        k = utils.firstkey(self._modelratios)
+        self._modelnaxis = self._modelratios[k].wcs.naxis
         if not self.density_unit:
             self.density_unit = self._modelratios[k].wcs.wcs.cunit[0]
         if not self.radiation_field_unit:
