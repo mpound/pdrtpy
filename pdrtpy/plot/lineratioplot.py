@@ -1,16 +1,7 @@
 #todo: 
-# FIGURE MANAGEMENT -- SAVE FIG! e.g. name a figure and save it by name.
-# 
-# Fix the rows/cols issue in ratios_on_models and overlay_all_ratios
-#
 # keywords for show_both need to be arrays. ugh.
-# allo levels to be percent?
 #
-# Allow axis units to be something other than model units
-#
-#use matplotlib contourf to shade the area between +/- error rather than use dashed lines
-#
-# continue to raise appropriate exceptions 
+# allow levels to be percent?
 #
 # Look into seaborn https://seaborn.pydata.org
 # Also https://docs.bokeh.org/en
@@ -50,7 +41,7 @@ class LineRatioPlot(PlotBase):
 
     To manage the plots, the methods in this class take keywords (\*\*kwargs) that turn on or off various options, specify plot units, or map to matplotlib's :meth:`~matplotlib.axes.Axes.plot`, :meth:`~matplotlib.axes.Axes.imshow`, :meth:`~matplotlib.axes.Axes.contour` keywords.  The methods have reasonable defaults, so try them with no keywords to see what they do before modifying keywords.
 
-     * *units* (``str`` or :class:`astropy.units.Unit`) data units to use in the plot. This can be either a string such as, 'cm^-3' or 'Habing', or it can be an :class:`astropy.units.Unit`.  Data will be converted to the desired unit.   Note these are **not** the axis units, but the image data units.  Modifying axis units is implemented via the `yaxis_unit` keyword. 
+     * *units* (``str`` or :class:`astropy.units.Unit`) image data units to use in the plot. This can be either a string such as, 'cm^-3' or 'Habing', or it can be an :class:`astropy.units.Unit`.  Data will be converted to the desired unit.   Note these are **not** the axis units, but the image data units.  Modifying axis units is implemented via the `xaxis_unit` and `yaxis_unit` keywords. 
 
      * *image* (``bool``) whether or not to display the image map (imshow). 
 
@@ -82,7 +73,9 @@ class LineRatioPlot(PlotBase):
 
      * *vmax*  (``float``) Maximum value for colormap normalization
     
-     * *yaxis_unit* (``str`` or :class:`astropy.units.Unit`) Y axis (FUV flux) units to use when plotting single pixel data, such as in :meth:`overlay_all_ratios` 
+     * *xaxis_unit* (``str`` or :class:`astropy.units.Unit`) X axis (density) units to use when plotting models, such as in :meth:`overlay_all_ratios` or :meth:`modelratio`.  If None, the native model axis units are used.
+
+     * *yaxis_unit* (``str`` or :class:`astropy.units.Unit`) Y axis (FUV radiation field flux) units to use when plotting models, such as in :meth:`overlay_all_ratios` or :meth:`modelratio`.  If None, the native model axis units are used.
 
      The following keywords are available, but you probably won't touch.
 
@@ -330,7 +323,8 @@ class LineRatioPlot(PlotBase):
                        'ncols': 1,
                        'norm': None,
                        'title': None,
-                       'reset': True}
+                       'reset': True,
+                       'legend': True}
 
         kwargs_opts.update(kwargs)
         # force this as ncols !=1 makes no sense.
@@ -343,10 +337,15 @@ class LineRatioPlot(PlotBase):
             if i > 0: kwargs_opts['reset']=False
             self._plot_no_wcs(val,header=None,**kwargs_opts)
             i = i+1
-        # do some sort of legend
-        lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in self._CB_color_cycle[0:i]]
-        labels = list(self._tool._model_files_used.keys())
-        self._plt.legend(lines, labels)
+
+        if kwargs_opts['legend']:
+            lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in self._CB_color_cycle[0:i]]
+            # @todo move this to a get_title function in ModelSet
+            sr = self._tool._modelset._supported_ratios
+            sr.remove_indices('ratio label')
+            sr.add_index('ratio label')
+            labels = [sr.loc[k]['title'] for k in self._tool._model_files_used]
+            self._plt.legend(lines, labels,loc='upper center')
 
     def ratios_on_models(self,**kwargs):
         '''Overlay all the measured ratios and their errors on the individual models for those ratios.  Plots are displayed in multi-column format, controlled the `ncols` keyword. Default: ncols=2
@@ -368,7 +367,8 @@ class LineRatioPlot(PlotBase):
                        'norm': 'zscale',
                        'title': None,
                        'index': 1,
-                       'reset': True}
+                       'reset': True,
+                       'legend': True}
 
         kwargs_opts.update(kwargs)
 
@@ -379,7 +379,8 @@ class LineRatioPlot(PlotBase):
             m = self._tool._model_files_used[key]
             kwargs_opts['measurements'] = [self._tool._observedratios[key]]
             self._ratiocolor='#4daf4a'
-            kwargs_opts['title'] = key + " model (Observed ratio indicated)"
+            if kwargs_opts['title'] is None:
+                kwargs_opts['title'] = key + " model"
             self._plot_no_wcs(val,header=None,**kwargs_opts)
             kwargs_opts['index'] = kwargs_opts['index'] + 1
 
@@ -476,7 +477,7 @@ class LineRatioPlot(PlotBase):
             current_cmap = mcm.get_cmap(kwargs_imshow['cmap'])
             current_cmap.set_bad(color='white',alpha=1)
             # suppress errors and warnings about unused keywords
-            for kx in ['units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols', 'index', 'reset','colors','colorbar','show']:
+            for kx in ['units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols', 'index', 'reset','colors','colorbar','show','yaxis_unit','xaxis_unit']:
                 kwargs_imshow.pop(kx,None)
             im=self._axis[axidx].imshow(km,**kwargs_imshow)
             if kwargs_opts['colorbar']:
@@ -488,7 +489,7 @@ class LineRatioPlot(PlotBase):
                 kwargs_contour['levels'] = self._autolevels(km,'log')
 
             # suppress errors and warnings about unused keywords
-            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect','colorbar','reset', 'nrows', 'ncols', 'index','show']:
+            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect','colorbar','reset', 'nrows', 'ncols', 'index','show','yaxis_unit','xaxis_unit','norm']:
                 kwargs_contour.pop(kx,None)
 
             contourset = self._axis[axidx].contour(km, **kwargs_contour)
@@ -504,7 +505,7 @@ class LineRatioPlot(PlotBase):
         
        
     def _plot_no_wcs(self,data,header=None,**kwargs):
-        '''generic plotting method for images with no WCS used by other plot methods'''
+        '''generic plotting method for images with no WCS, used by other plot methods'''
         #print("KWARGS is ",kwargs)
         measurements= kwargs.pop("measurements",None)
         _dataheader = getattr(data,"header",None)
@@ -524,8 +525,10 @@ class LineRatioPlot(PlotBase):
                        'colorbar': False,
                        'contours': True,
                        'label': False,
-                       'title':None
-                       'yaxis_unit': None
+                       'title':None,
+                       'xaxis_unit': None,
+                       'yaxis_unit': None,
+                       'legend': False
                        }
 
         kwargs_contour = {'levels': None, 
@@ -613,35 +616,52 @@ class LineRatioPlot(PlotBase):
         ystop=ystart+_header['naxis'+ax2]*_header['cdelt'+ax2]
         #print(xstart,xstop,ystart,ystop)
     
+        # make the x and y axes.  Since the models are computed on a log grid, we
+        # logarithmic ticks.
         y = 10**np.linspace(start=ystart, stop=ystop, num=_header['naxis'+ax2])
         x = 10**np.linspace(start=xstart, stop=xstop, num=_header['naxis'+ax1])
         locmaj = ticker.LogLocator(base=10.0, subs=(1.0, ),numticks=10)
         locmin = ticker.LogLocator(base=10.0, subs=np.arange(2, 10)*.1,numticks=10) 
         
-        xlab = _header['ctype'+ax1] + ' ['+_header['cunit'+ax1]+']'
+        #allow unit conversion of density axis
+        if kwargs_opts['xaxis_unit'] is not None:
+            # Get desired unit from arguments
+            xunit = kwargs_opts['xaxis_unit']  
+
+            # Make density axis of the grid into a Quantity using the cunits from the grid header
+            temp_x= x * u.Unit(_header['cunit'+ax1])  
+
+            # Convert the unit-aware grid to the desired units and set X to the value (so it's no longer a Quantity)
+            x = temp_x.to(xunit).value  
+
+            # Set the x label appropriately.
+            xlab = f"{_header['ctype'+ax1]} [{xunit}]"
+
+        else:
+            # Don't do any conversions, instead just use units from grid
+            xlab = _header['ctype'+ax1] + ' ['+_header['cunit'+ax1]+']'
         
         #allow unit conversion to cgs or Draine, for Y axis (FUV field):
         if kwargs_opts['yaxis_unit'] is not None:
-            yunit = kwargs_opts['yaxis_unit']  
             # Get desired unit from arguments
+            yunit = kwargs_opts['yaxis_unit']  
 
-            temp_y= y * u.Unit(_header['cunit'+ax2])  
             # Make FUV axis of the grid into a Quantity using the cunits from the grid header
+            temp_y= y * u.Unit(_header['cunit'+ax2])  
 
-            y = temp_y.to(yunit).value  
             # Convert the unit-aware grid to the desired units and set Y to the value (so it's no longer a Quantity)
+            y = temp_y.to(yunit).value  
 
-            ylab = f"{_header['ctype'+ax2]} [{yunit}]"
             # Set the y label appropriately.
+            ylab = f"{_header['ctype'+ax2]} [{yunit}]"
 
         else:
             # Don't do any conversions, instead just use units from grid
             ylab = _header['ctype'+ax2] + ' ['+_header['cunit'+ax2]+']'
         
+        # Finish up axes details.
         self._axis[axidx].set_ylabel(ylab)
         self._axis[axidx].set_xlabel(xlab)
-
-
         self._axis[axidx].set_xscale('log')
         self._axis[axidx].set_yscale('log')
         self._axis[axidx].xaxis.set_major_locator(locmaj)
@@ -649,7 +669,9 @@ class LineRatioPlot(PlotBase):
         self._axis[axidx].xaxis.set_minor_formatter(ticker.NullFormatter())
 
         if kwargs_opts['image']:
-            im = self._axis[axidx].pcolormesh(x,y,km,cmap=kwargs_imshow['cmap'],norm=kwargs_imshow['norm'])
+            # pass shading = auto to avoid deprecation warning
+            # see https://matplotlib.org/3.3.0/gallery/images_contours_and_fields/pcolormesh_grids.html
+            im = self._axis[axidx].pcolormesh(x,y,km,cmap=kwargs_imshow['cmap'],norm=kwargs_imshow['norm'],shading='auto')
             if kwargs_opts['colorbar']:
                 self._figure.colorbar(im,ax=self._axis[axidx])
                 #self._wcs_colorbar(im,self._axis[axidx])
@@ -660,8 +682,9 @@ class LineRatioPlot(PlotBase):
                 kwargs_contour['levels'] = self._autolevels(km,'log')
 
             # suppress warnings about unused keywords and potential error 
-            # about cmap not being None
-            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect','colorbar','reset', 'nrows', 'ncols', 'index']:
+            # about cmap not being None. Also norm being a string will cause an error
+            # in matplotlib==3.3.1+
+            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect','colorbar','reset', 'nrows', 'ncols', 'index','yaxis_unit','xaxis_unit','norm','legend','figsize']:
                 kwargs_contour.pop(kx,None)
 
             contourset = self._axis[axidx].contour(x,y,km.data, **kwargs_contour)
@@ -681,3 +704,20 @@ class LineRatioPlot(PlotBase):
                 for i in range(0,3):
                     cset = self._axis[axidx].contour(x,y,k.data,levels=m.levels, linestyles=lstyles, colors=colors)
                 
+            lines = list()
+            labels = list()
+            if kwargs_opts['legend']:
+                sr = self._tool._modelset._supported_ratios
+                sr.remove_indices('ratio label')
+                sr.add_index('ratio label')
+                fancyratio = sr.loc[measurements[0].id]['title']
+                print("FANCY: %s"%fancyratio)
+                if kwargs['contours']:
+                    lines.append(Line2D([0], [0], color=kwargs_contour['colors'][0], linewidth=3, linestyle='-'))
+                    labels.append(fancyratio+" model")
+                    #labels.append(" model")
+                lines.append(Line2D([0], [0], color=self._ratiocolor, linewidth=3, linestyle='-'))
+                labels.append(fancyratio+" observed")
+                #labels.append(" observed")
+                self._axis[axidx].legend(lines, labels,loc='upper center')
+
