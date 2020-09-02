@@ -48,7 +48,7 @@ class PlotBase:
         max_ =data.max()
         min_ = data.min()
         if min_ == 0: min_ = 1E-10
-        print("autolev min %f max %f"%(min_,max_))
+        #print("Auto contour levels: min %f max %f"%(min_,max_))
         if numlevels is None:
             numlevels = int(0.5+3*(np.log(max_)-np.log(min_))/np.log(10))
         #print("levels start %d levels"%numlevels)
