@@ -43,7 +43,9 @@ class LineRatioFit(ToolBase):
         self._reduced_chisq = None
         self._likelihood = None
         self.radiation_field_unit = None
+        self.radiation_field_type = None
         self.density_unit = None
+        self.density_type = None
         self._plotter = LineRatioPlot(self)
     
     def _set_measurementnaxis(self):
