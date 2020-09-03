@@ -33,6 +33,9 @@ draine_unit = u.def_unit('Draine',2.72E-3*_RFS_UNIT_)
 u.add_enabled_units(draine_unit)
 mathis_unit = u.def_unit('Mathis',1.81E-3*_RFS_UNIT_)
 u.add_enabled_units(mathis_unit)
+# this didn't work
+#density_unit = u.def_unit("1/cm3",1/(u.cm*u.cm*u.cm))
+#u.add_enabled_units(density_unit)
     
 #See https://stackoverflow.com/questions/880530/can-modules-have-properties-the-same-way-that-objects-can
 # only works python 3.8+??
