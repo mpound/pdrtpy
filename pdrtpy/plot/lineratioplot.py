@@ -8,6 +8,7 @@
 # especially for coloring and style
 
 from copy import deepcopy
+import warnings
 
 import numpy as np
 import numpy.ma as ma
@@ -23,6 +24,7 @@ from astropy.nddata.utils import Cutout2D
 from astropy.io import fits
 import astropy.wcs as wcs
 import astropy.units as u
+from astropy.units import UnitsWarning
 from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
 
 from .plotbase import PlotBase
@@ -235,16 +237,52 @@ class LineRatioPlot(PlotBase):
                        'colors': ['white'],
                        'linewidths': 1.0,
                        'norm': 'zscale',
-                       'title': r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof}
+                       'xaxis_unit': None,
+                       'yaxis_unit': None,
+                       'legend': None,
+                       #'title': r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof
+                       'title': None
+                      }
         kwargs_opts.update(kwargs)
         if self._tool.has_maps:
             data = self._tool.reduced_chisq(min=True)
-            #print("min=True, map inputs, calling plot")
             self._plot(data,**kwargs_opts)
         else:
-            #print("min=False, calling plot_no_wcs")
             data = self._tool.reduced_chisq(min=False)
             self._plot_no_wcs(data,header=None,**kwargs_opts)
+
+            # Put a crosshair where the chisq minimum is.
+            # To do this we first get the array index of the minimum
+            # then use WCS to translate to world coordinates.
+            [row,col] = np.where(self._tool._reduced_chisq==self._tool._reduced_chisq_min.flux)
+            mywcs = wcs.WCS(data.header)
+            # Suppress WCS warning about 1/cm3 not being FITS
+            warnings.simplefilter('ignore',category=UnitsWarning)
+            logn,logrf = mywcs.array_index_to_world(row,col)
+            warnings.resetwarnings()
+            # logn, logrf are Quantities of the log(density) and log(radiation field),
+            # respectively.  The model default units are cm^-2 and erg/s/cm^-2. 
+            # These must be converted to plot units based on user input 
+            # xaxis_unit and yaxis_unit. 
+            # Note: multiplying by n.unit causes the ValueError:
+            # "The unit '1/cm3' is unrecognized, so all arithmetic operations with it are invalid."
+            # Yet by all other measures this appears to be a valid unit. 
+            # The workaround is to us to_string() method.
+            n = (10**logn.value[0])*u.Unit(logn.unit.to_string())
+            rf = (10**logrf.value[0])*logrf.unit
+            if kwargs_opts['xaxis_unit'] is not None:
+                x = n.to(kwargs_opts['xaxis_unit']).value
+            else:
+                x = n.value
+            if kwargs_opts['yaxis_unit'] is not None:
+                y = rf.to(kwargs_opts['yaxis_unit']).value
+            else:
+                y = rf.value
+            label = r'$\chi_{\nu,min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)'%(self._tool._reduced_chisq_min.flux,x,y)
+            title = r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof
+            self._axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
+            if kwargs_opts['legend']:
+                legend = self._axis[0].legend(loc='upper center',title=title)
 
     def show_both(self,units = ['Habing','cm^-3'], **kwargs):
         '''Plot both radiation field and volume density maps computed by the
@@ -341,7 +379,7 @@ class LineRatioPlot(PlotBase):
         if kwargs_opts['legend']:
             lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in self._CB_color_cycle[0:i]]
             labels = [self._tool._modelratios[k].title for k in self._tool._modelratios]
-            self._plt.legend(lines, labels,loc='upper center')
+            self._plt.legend(lines, labels,loc='upper center',title='Observed Ratios')
 
     def ratios_on_models(self,**kwargs):
         '''Overlay all the measured ratios and their errors on the individual models for those ratios.  Plots are displayed in multi-column format, controlled the `ncols` keyword. Default: ncols=2
@@ -377,8 +415,9 @@ class LineRatioPlot(PlotBase):
             m = self._tool._model_files_used[key]
             kwargs_opts['measurements'] = [self._tool._observedratios[key]]
             self._ratiocolor='#4daf4a'
-            if kwargs_opts['title'] is None:
+            if 'title' not in kwargs: # then it was None, and we customize it
                 kwargs_opts['title'] = self._tool._modelratios[key].title
+                #print("Using title: %s for key %s"%(kwargs_opts['title'],key))
             self._plot_no_wcs(val,header=None,**kwargs_opts)
             kwargs_opts['index'] = kwargs_opts['index'] + 1
             if kwargs_opts['legend']:
@@ -386,12 +425,11 @@ class LineRatioPlot(PlotBase):
                 labels = list()
                 if kwargs['contours']:
                     lines.append(Line2D([0], [0], color=kwargs_opts['colors'][0], linewidth=3, linestyle='-'))
-                    #labels.append(self._tool._modelratios[key].title+" model")
                     labels.append("model")
                 lines.append(Line2D([0], [0], color=self._ratiocolor, linewidth=3, linestyle='-'))
-                #labels.append(self._tool._modelratios[key].title+" observed")
                 labels.append("observed")
-                self._axis[axidx].legend(lines, labels,loc='upper center')
+                #maybe loc should be 'best' but then it bounces around
+                self._axis[axidx].legend(lines, labels,loc='upper center',title=kwargs_opts['title'])
 
             # Turn off subplots greater than the number of
             # available ratios
