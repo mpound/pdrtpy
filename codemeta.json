@@ -1,0 +1,62 @@
+{
+    "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+    "@type": "SoftwareSourceCode",
+    "license": "https://spdx.org/licenses/GPL-3.0-or-later",
+    "codeRepository": "https://github.com/mpound/pdrtpy",
+    "dateModified": "2020-09-18",
+    "downloadUrl": "https://pypi.org/project/pdrtpy/",
+    "issueTracker": "https://github.com/mpound/pdrtpy/issues",
+    "name": "Photodissociation Region Toolbox",
+    "version": "2.0.7",
+    "description": "Ultraviolet photons from O and B stars strongly influence the structure and emission spectra of the interstellar medium. The UV photons energetic enough to ionize hydrogen (hν>13.6eV ) will create the H II region around the star, but lower energy UV photons escape. These far-UV photons (6 eV<hν<13.6 eV) are still energetic enough to photodissociate molecules and to ionize low ionization-potential atoms such as carbon, silicon, and sulfur. They thus create a photodissociation region (PDR) just outside the H II region. In aggregate, these PDRs dominates the heating and cooling of the neutral interstellar medium. \n\nThe PDR Toolbox is a science-enabling tool for the community, designed to help astronomers determine the physical parameters of photodissociation regions from observations. Typical observations of both Galactic and extragalactic PDRs come from ground- and space-based millimeter, submillimeter, and far-infrared telescopes such as ALMA, SOFIA, JWST, Spitzer, and Herschel. Given a set of observations of spectral line or continuum intensities, PDR Toolbox can compute best-fit FUV incident intensity and cloud density based on our models of PDR emission.",
+    "applicationCategory": "Astronomy",
+    "developmentStatus": "active",
+    "referencePublication": "http://adsabs.harvard.edu/abs/2008ASPC..394..654P  and http://adsabs.harvard.edu/abs/2006ApJ...644..283K",
+    "funder": {
+        "@type": "Organization",
+        "name": "NASA Astrophysics Data Analysis Program"
+    },
+    "keywords": [
+        "PDR",
+        "photodissociation",
+        "H II region"
+    ],
+    "programmingLanguage": [
+        "Python 3"
+    ],
+    "operatingSystem": [
+        "Linux",
+        "Windows",
+        "MacOS"
+    ],
+    "softwareRequirements": [
+        "Python 3"
+    ],
+    "relatedLink": [
+        "http://dustem.astro.umd.edu",
+        "https://pdrtpy.readthedocs.io/en/latest/"
+    ],
+    "author": [
+        {
+            "@type": "Person",
+            "@id": "http://orcid.org/0000-0002-7269-342X",
+            "givenName": "Marc",
+            "familyName": "Pound",
+            "email": "mpound@umd.edu",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Astronomy Department, University of Maryland, College Park, MD 20742"
+            }
+        },
+        {
+            "@type": "Person",
+            "givenName": "Mark",
+            "familyName": "Wolfire",
+            "email": "mwolfire@umd.edu",
+            "affiliation": {
+                "@type": "Organization",
+                "name": "Astronomy Department, University of Maryland, College Park, MD 20742"
+            }
+        }
+    ]
+}
