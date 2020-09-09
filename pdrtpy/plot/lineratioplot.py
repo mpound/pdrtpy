@@ -28,12 +28,8 @@ from astropy.units import UnitsWarning
 from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
 
 from .plotbase import PlotBase
-from ..pdrutils import to
+from ..pdrutils import to, get_rad
 
-rad_title = dict()
-rad_title['Habing'] = '$G_0$'
-rad_title['Draine'] = '$\chi$'
-rad_title['Mathis'] = 'ISRF$_{Mathis}$'
 
 class LineRatioPlot(PlotBase):
     """Class to plot various results from PDR Toolbox model fitting.
@@ -183,11 +179,9 @@ class LineRatioPlot(PlotBase):
             return to(kwargs_opts['units'],self._tool._radiation_field)
 
         if kwargs_opts['title'] is None:
+            rad_title = get_rad(kwargs_opts['units']) 
             fancyunits=u.Unit(kwargs_opts['units']).to_string('latex')
-            if kwargs_opts['units'] not in rad_title:
-                kwargs_opts['title'] = 'Radiation Field ('+fancyunits+')'
-            else:
-                kwargs_opts['title'] = rad_title[kwargs_opts['units']]+' ('+fancyunits+')'
+            kwargs_opts['title'] = rad_title +' ('+fancyunits+')'
 
         self._plot(self._tool._radiation_field,**kwargs_opts)
 
@@ -196,6 +190,8 @@ class LineRatioPlot(PlotBase):
     #    axes = {"G0":0,"n":1}
     #    axis = axes[xaxis] #yep key error if you do it wrong
     #        
+
+    #@TODO refactor this method with reduced_chisq()
     def chisq(self, **kwargs):           
         '''Plot the :math:`\chi^2` map that was computed by the
         :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
@@ -210,7 +206,10 @@ class LineRatioPlot(PlotBase):
                        'colors': ['white'],
                        'linewidths': 1.0,
                        'norm': 'zscale',
-                       'title': r'$\chi^2$' }
+                       'xaxis_unit': None,
+                       'yaxis_unit': None,
+                       'legend': None,
+                       'title': None,}
         kwargs_opts.update(kwargs)
         # make a sensible choice about contours if image is not shown
         if not kwargs_opts['image'] and kwargs_opts['colors'][0] == 'white':
@@ -218,10 +217,38 @@ class LineRatioPlot(PlotBase):
 
         if self._tool.has_maps:
             data = self._tool.chisq(min=True)
+            if kwargs['title'] is None:
+                kwargs_opts['title'] = r'$\chi^2$ (dof=%d)'%self._tool._dof
             self._plot(data,**kwargs_opts)
         else:
             data = self._tool.chisq(min=False)
             self._plot_no_wcs(data,header=None,**kwargs_opts)
+            # Put a crosshair where the chisq minimum is.
+            # To do this we first get the array index of the minimum
+            # then use WCS to translate to world coordinates.
+            [row,col] = np.where(self._tool._chisq==self._tool._chisq_min.flux)
+            mywcs = wcs.WCS(data.header)
+            # Suppress WCS warning about 1/cm3 not being FITS
+            warnings.simplefilter('ignore',category=UnitsWarning)
+            logn,logrf = mywcs.array_index_to_world(row,col)
+            warnings.resetwarnings()
+            n = (10**logn.value[0])*u.Unit(logn.unit.to_string())
+            rf = (10**logrf.value[0])*logrf.unit
+            if kwargs_opts['xaxis_unit'] is not None:
+                x = n.to(kwargs_opts['xaxis_unit']).value
+            else:
+                x = n.value
+            if kwargs_opts['yaxis_unit'] is not None:
+                y = rf.to(kwargs_opts['yaxis_unit']).value
+            else:
+                y = rf.value
+
+            if kwargs_opts['title'] is None:
+                kwargs_opts['title'] = r'$\chi^2$ (dof=%d)'%self._tool._dof
+            label = r'$\chi_{min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)'%(self._tool._chisq_min.flux,x,y)
+            self._axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
+            if kwargs_opts['legend']:
+                legend = self._axis[0].legend(loc='upper center',title=kwargs_opts['title'])
 
     def reduced_chisq(self, **kwargs):
         '''Plot the reduced :math:`\chi^2` map that was computed by the
@@ -240,17 +267,19 @@ class LineRatioPlot(PlotBase):
                        'xaxis_unit': None,
                        'yaxis_unit': None,
                        'legend': None,
-                       #'title': r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof
                        'title': None
                       }
         kwargs_opts.update(kwargs)
         if self._tool.has_maps:
+            if kwargs['title'] is None:
+                kwargs_opts['title'] = r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof
             data = self._tool.reduced_chisq(min=True)
             self._plot(data,**kwargs_opts)
+            # doesn't make sense to point out minimum chisq on a spatial-spatial map,
+            # so no legend
         else:
             data = self._tool.reduced_chisq(min=False)
             self._plot_no_wcs(data,header=None,**kwargs_opts)
-
             # Put a crosshair where the chisq minimum is.
             # To do this we first get the array index of the minimum
             # then use WCS to translate to world coordinates.
@@ -278,11 +307,13 @@ class LineRatioPlot(PlotBase):
                 y = rf.to(kwargs_opts['yaxis_unit']).value
             else:
                 y = rf.value
+
+            if kwargs_opts['title'] is None:
+                kwargs_opts['title'] = r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof
             label = r'$\chi_{\nu,min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)'%(self._tool._reduced_chisq_min.flux,x,y)
-            title = r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof
             self._axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
             if kwargs_opts['legend']:
-                legend = self._axis[0].legend(loc='upper center',title=title)
+                legend = self._axis[0].legend(loc='upper center',title=kwargs_opts['title'])
 
     def show_both(self,units = ['Habing','cm^-3'], **kwargs):
         '''Plot both radiation field and volume density maps computed by the
@@ -334,7 +365,9 @@ class LineRatioPlot(PlotBase):
                        'colors': ['black'],
                        'linewidths': 1.0,
                        'norm': 'simple',
-                       'title': "Confidence Intervals"}
+                       'xaxis_unit': None,
+                       'yaxis_unit': None,
+                       'title':  "Confidence Intervals"}
 
         kwargs_opts.update(kwargs)
 
@@ -415,12 +448,11 @@ class LineRatioPlot(PlotBase):
             m = self._tool._model_files_used[key]
             kwargs_opts['measurements'] = [self._tool._observedratios[key]]
             self._ratiocolor='#4daf4a'
-            if 'title' not in kwargs: # then it was None, and we customize it
-                kwargs_opts['title'] = self._tool._modelratios[key].title
-                #print("Using title: %s for key %s"%(kwargs_opts['title'],key))
             self._plot_no_wcs(val,header=None,**kwargs_opts)
             kwargs_opts['index'] = kwargs_opts['index'] + 1
             if kwargs_opts['legend']:
+                if 'title' not in kwargs: # then it was None, and we customize it
+                    kwargs['title'] = self._tool._modelratios[key].title
                 lines = list()
                 labels = list()
                 if kwargs['contours']:
@@ -429,7 +461,7 @@ class LineRatioPlot(PlotBase):
                 lines.append(Line2D([0], [0], color=self._ratiocolor, linewidth=3, linestyle='-'))
                 labels.append("observed")
                 #maybe loc should be 'best' but then it bounces around
-                self._axis[axidx].legend(lines, labels,loc='upper center',title=kwargs_opts['title'])
+                self._axis[axidx].legend(lines, labels,loc='upper center',title=kwargs['title'])
 
             # Turn off subplots greater than the number of
             # available ratios
@@ -671,40 +703,38 @@ class LineRatioPlot(PlotBase):
         locmin = ticker.LogLocator(base=10.0, subs=np.arange(2, 10)*.1,numticks=10) 
         
         #allow unit conversion of density axis
+        xax_unit = u.Unit(_header['cunit'+ax1])
         if kwargs_opts['xaxis_unit'] is not None:
-            # Get desired unit from arguments
-            xunit = kwargs_opts['xaxis_unit']  
-
             # Make density axis of the grid into a Quantity using the cunits from the grid header
-            temp_x= x * u.Unit(_header['cunit'+ax1])  
+            temp_x = x * xax_unit
+
+            # Get desired unit from arguments
+            xax_unit = u.Unit(kwargs_opts['xaxis_unit'])
 
             # Convert the unit-aware grid to the desired units and set X to the value (so it's no longer a Quantity)
-            x = temp_x.to(xunit).value  
+            x = temp_x.to(xax_unit).value  
 
-            # Set the x label appropriately.
-            xlab = f"{_header['ctype'+ax1]} [{xunit}]"
-
-        else:
-            # Don't do any conversions, instead just use units from grid
-            xlab = _header['ctype'+ax1] + ' ['+_header['cunit'+ax1]+']'
+        # Set the x label appropriately, use LaTeX inline formatting
+        xlab = r"{0} [{1:latex_inline}]".format(_header['ctype'+ax1],xax_unit)
         
         #allow unit conversion to cgs or Draine, for Y axis (FUV field):
+        yax_unit = u.Unit(_header['cunit'+ax2])
+        ytype = _header['ctype'+ax2]
         if kwargs_opts['yaxis_unit'] is not None:
-            # Get desired unit from arguments
-            yunit = kwargs_opts['yaxis_unit']  
-
             # Make FUV axis of the grid into a Quantity using the cunits from the grid header
-            temp_y= y * u.Unit(_header['cunit'+ax2])  
+            temp_y = y * yax_unit
+
+            # Get desired unit from arguments; for special cases, use
+            # the conventional symbol for the label (e.g. G_0 for Habing units)
+            yunit = kwargs_opts['yaxis_unit']
+            ytype = "log({0})".format(get_rad(yunit))
+            yax_unit = u.Unit(yunit)
 
             # Convert the unit-aware grid to the desired units and set Y to the value (so it's no longer a Quantity)
-            y = temp_y.to(yunit).value  
+            y = temp_y.to(yax_unit).value  
 
-            # Set the y label appropriately.
-            ylab = f"{_header['ctype'+ax2]} [{yunit}]"
-
-        else:
-            # Don't do any conversions, instead just use units from grid
-            ylab = _header['ctype'+ax2] + ' ['+_header['cunit'+ax2]+']'
+        # Set the y label appropriately, use LaTeX inline formatting
+        ylab = r"{0} [{1:latex_inline}]".format(ytype,yax_unit)
         
         # Finish up axes details.
         self._axis[axidx].set_ylabel(ylab)
@@ -735,7 +765,7 @@ class LineRatioPlot(PlotBase):
                 kwargs_contour.pop(kx,None)
 
             contourset = self._axis[axidx].contour(x,y,km.data, **kwargs_contour)
-            #print("contourset :",contourset.levels)
+            #print(contourset.__dict__)
 
             if kwargs_opts['label']:
                 drawn = self._axis[axidx].clabel(contourset,contourset.levels,inline=True,fmt='%1.2e')

@@ -1,7 +1,4 @@
-import itertools
-import collections
 from copy import deepcopy
-import datetime
 
 import numpy as np
 import numpy.ma as ma
@@ -12,7 +9,7 @@ from astropy.io.fits.header import Header
 import astropy.wcs as wcs
 import astropy.units as u
 from astropy.table import Table
-from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
+from astropy.nddata import NDDataArray, CCDData, StdDevUncertainty
 
 from ..tool.toolbase import ToolBase
 from ..plot.lineratioplot import LineRatioPlot
@@ -249,12 +246,15 @@ storage mechanism.
         self._modelnaxis = self._modelratios[k].wcs.naxis
         if not self.density_unit:
             self.density_unit = self._modelratios[k].wcs.wcs.cunit[0]
+            self.density_type = self._modelratios[k].wcs.wcs.ctype[0]
         if not self.radiation_field_unit:
-            try:
-                self.radiation_field_unit = u.Unit(self._modelratios[k].header["CUNIT2"])
-            except KeyError:
-                raise Exception("Keyword CUNIT2 is required in file %s FITS header to describe units of interstellar radiation field"%thefile)
-    
+            self.radiation_field_unit = self._modelratios[k].wcs.wcs.cunit[1]
+            self.radiation_field_type = self._modelratios[k].wcs.wcs.ctype[1]
+            #try:
+            #    self.radiation_field_unit = u.Unit(self._modelratios[k].header["CUNIT2"])
+            #except KeyError:
+            #    raise Exception("Keyword CUNIT2 is required in file %s FITS header to describe units of interstellar radiation field"%thefile)
+   # 
     def _check_compatibility(self):
         """Check that all Measurements are compatible (beams, coordinate systems, shapes) so that the computation make commence.
  
@@ -522,6 +522,7 @@ storage mechanism.
         mshape = self._modelratios[fk].shape
         # Wolfire 2006 models have NAXIS=2, while 2020+ have NAXIS=3.
         # Deal with it.
+        # @see Measurement squeeze parameter. This should no longer be needed
         if self._modelnaxis == 2:
             firstindex = 0
             secondindex = 1
@@ -675,15 +676,14 @@ storage mechanism.
         :param image: The image to which to add the header values
         :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
         '''
-        # @TODO make these headers compliant with inputs (e.g. requested units)
         if self._modelnaxis == 2:
             naxis = len(image.shape)
         else:
             naxis = len(image.shape)-1
         ax1=str(naxis-1)
         ax2=str(naxis)
-        utils.setkey("CTYPE"+ax1,"Log(Volume Density)",image)
-        utils.setkey("CTYPE"+ax2,"Log(Radiation Field)",image)
+        utils.setkey("CTYPE"+ax1,self.density_type,image)
+        utils.setkey("CTYPE"+ax2,self.radiation_field_type,image)
         utils.setkey("CUNIT"+ax1,str(self.density_unit),image)
         utils.setkey("CUNIT"+ax2,str(self.radiation_field_unit),image)
 

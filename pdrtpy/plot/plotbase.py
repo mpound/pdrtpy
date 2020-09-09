@@ -12,11 +12,6 @@ from matplotlib.colors import LogNorm
 
 from ..pdrutils import to
 
-rad_title = dict()
-rad_title['Habing'] = '$G_0$'
-rad_title['Draine'] = '$\chi$'
-rad_title['Mathis'] = 'ISRF$_{Mathis}$'
-
 class PlotBase:
     def __init__(self,tool):
         import matplotlib.pyplot 

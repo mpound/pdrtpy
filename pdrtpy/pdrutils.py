@@ -33,6 +33,25 @@ draine_unit = u.def_unit('Draine',2.72E-3*_RFS_UNIT_)
 u.add_enabled_units(draine_unit)
 mathis_unit = u.def_unit('Mathis',1.81E-3*_RFS_UNIT_)
 u.add_enabled_units(mathis_unit)
+
+_rad_title = dict()
+_rad_title['Habing'] = '$G_0$'
+_rad_title['Draine'] = '$\chi$'
+_rad_title['Mathis'] = 'FUV'
+
+def get_rad(key):
+    """Get radiation field symbol (LaTeX) given radiation field unit.
+       If key is unrecognized, 'FUV Radiation Field' is returned.
+
+    :param key: input field unit name, e.g. 'Habing'
+    :type key: str
+    :rtype: str
+    """
+    if key in _rad_title:
+        return _rad_title[key]
+    else:
+        return "FUV"
+
 # this didn't work
 #density_unit = u.def_unit("1/cm3",1/(u.cm*u.cm*u.cm))
 #u.add_enabled_units(density_unit)
