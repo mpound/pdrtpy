@@ -9,7 +9,7 @@ pdrtpy, a toolbox for analyzing photodissociation regions
  :target: http://www.repostatus.org/#active
  :alt: Project Status: Active - The project has reached a stable, usable state and is being actively developed.
 
-.. image:: https://img.shields.io/pypi/pyversions/epdrtpy.svg?style=plastic
+.. image:: https://img.shields.io/pypi/pyversions/pdrtpy.svg?style=plastic
  :target: https://img.shields.io/pypi/pyversions/pdrtpy.svg?style=plastic
  :alt: Python version
 
