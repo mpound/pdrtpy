@@ -8,6 +8,7 @@ from astropy.io import fits
 from astropy.io.fits.header import Header
 import astropy.wcs as wcs
 import astropy.units as u
+import astropy.stats as astats
 from astropy.table import Table
 from astropy.nddata import NDDataArray, CCDData, StdDevUncertainty
 
@@ -250,11 +251,14 @@ storage mechanism.
         if not self.radiation_field_unit:
             self.radiation_field_unit = self._modelratios[k].wcs.wcs.cunit[1]
             self.radiation_field_type = self._modelratios[k].wcs.wcs.ctype[1]
-            #try:
-            #    self.radiation_field_unit = u.Unit(self._modelratios[k].header["CUNIT2"])
-            #except KeyError:
-            #    raise Exception("Keyword CUNIT2 is required in file %s FITS header to describe units of interstellar radiation field"%thefile)
-   # 
+            # for wk2006 models, Habing units in the Y axis cause problems when trying to assign them
+            # to a WCS (see note in modelset.py).  So get from header instead.
+            if self.radiation_field_unit.to_string() == '':
+                try:
+                    self.radiation_field_unit = u.Unit(self._modelratios[k].header["CUNIT2"])
+                except KeyError:
+                    raise Exception("Keyword CUNIT2 is required in file %s FITS header to describe units of interstellar radiation field"%thefile)
+    
     def _check_compatibility(self):
         """Check that all Measurements are compatible (beams, coordinate systems, shapes) so that the computation make commence.
  
@@ -288,22 +292,87 @@ storage mechanism.
                utils.warn(self,"No beam parameters in Measurement headers, assuming they are all equal!")
         #if not self._check_header("BUNIT") ...
 
-    def run(self):
-        '''Run the full computation using all the :class:`observations <pdrtpy.measurement.Measurement>` added.   This will check compatibility of input observations (e.g., beam parameters, coordinate types, axes lengths) and raise exceptions if the observations don't match each other.
+    def run(self,mask=['mad',1.0]):
+        '''Run the full computation using all the :class:`observations <pdrtpy.measurement.Measurement>` added.   This will 
+        check compatibility of input observations (e.g., beam parameters, coordinate types, axes lengths) and 
+        raise exceptions if the observations don't match each other.
 
-           :raises Exception: if no models match the input observations.
+           :param mask: Indicate how to mask image observations (Measurements) before computing the density 
+                        and radiation field. Possible values are:
+
+             ['mad', multiplier]   - compute standard deviation using median absolute deviation (astropy.mad_std),
+                                     and mask out values between +/- multiplier*mad_std
+
+             ['data', (low,high)]  - mask based on data values, mask out data between low and high
+
+             ['clip', (low,high)]  - mask based on data values, mask out data below low and above high
+
+             ['error', (low,high)] - mask based on uncertainty plane, mask out data where the corresponding error pixel value 
+                                     is below low or above high
+                              None - Don't mask data
+
+           :type mask:  list or None
+
+           :raises Exception: if no models match the input observations, observations are not compatible, 
+                              or on unrecognized parameters
         '''
+        #@todo global masking for 'data', 'clip', 'error' not entirely useful unless all data/error have same ranges.
+        #need something like ['data',['key1':(low,hi), 'key2',(low,hi),...], which is very complicated.
+        # or data/error cut based on histogram 
         self._check_compatibility()
         self.read_models()
+        self._mask_measurements(mask)
         self._compute_valid_ratios()
         if self.ratiocount == 0 :
             raise Exception("No models were found that match your data. Check ModelSet.supported_ratios.")
         # eventually need to check that the maps overlap in real space.
         self._compute_delta_sq()
         self._compute_chisq()
-        #self._write_chisq()
         self.compute_density_radiation_field()
      
+
+    def _mask_measurements(self,mask):
+        ''' Set the mask on the measurements based on noise characteristics.  This is so that
+            we don't compute garbage n,G0 where observed ratios are noise divided by noise.
+            
+           :param mask: Indicate how to mask image observations before computing the density and radiation field. See run()>
+        '''
+        if mask is None: return
+        if self._measurementnaxis == 0:
+            utils.warn(self,"Ignoring 'mask' parameter for single pixel observations")
+            return
+        if mask[0] == 'mad':
+            for k,v in self._measurements.items():
+                sigcut = mask[1]*astats.mad_std(v.data,ignore_nan=True)
+                print("Masking %s data between [%.1e,%.1e]"%(k,-sigcut,sigcut))
+                masked_data = ma.masked_inside(v.data,-sigcut,sigcut,copy=True)
+                # CCDData/NDData do not use MaskArrays underneath but two nddata.arrays. Why??
+                # Make a copy so we are keeping references to data copies lying around.
+                v.mask = masked_data.mask.copy()
+        elif mask[0] == 'data':
+            for k,v in self._measurements.items():
+                masked_data=ma.masked_inside(v.data,mask[1][0],mask[1][1],copy=True)
+                v.mask = masked_data.mask.copy()
+                print("Masking %s data between [%.1e,%.1e]"%(k,mask[1][0],mask[1][1]))
+        elif mask[0] == 'clip':
+            for k,v in self._measurements.items():
+                masked_data=ma.masked_outside(v.data,mask[1][0],mask[1][1],copy=True)
+                v.mask = masked_data.mask.copy()
+                print("Masking %s data outside [%.1e,%.1e]"%(k,mask[1][0],mask[1][1]))
+        elif mask[0] == 'error':
+            for k,v in self._measurements.items():
+                # error is StdDevUncertainty so must use _array to get at raw values
+                indices = np.where((v.error <= mask[1][0]) | (v.error >= mask[1][1]))
+                print("%s indices: %s"%(k,indices))
+                if v.mask is not None:
+                    v.mask[indices] = True
+                else:
+                    v.mask = np.full(v.data.shape,False)
+                    v.mask[indices] = True
+                print("Masking %s data where error outside [%.1e,%.1e]"%(k,mask[1][0],mask[1][1]))
+        else:
+            raise ValueError("Unrecognized mask parameter %s. Valid values are 'mad','data','error'"%mask[0])
+            
 
     def _compute_valid_ratios(self):
         '''Compute the valid observed ratio maps for the available model data'''
@@ -319,7 +388,10 @@ storage mechanism.
             # deepcopy workaround for bug: https://github.com/astropy/astropy/issues/9006
             num = self._convert_if_necessary(self._measurements[p["numerator"]])
             denom = self._convert_if_necessary(self._measurements[p["denominator"]])
+            #print("%s mask is None: %s "%(p["numerator"],num.mask is None))
+            #print("%s mask is None: %s "%(p["denominator"],denom.mask is None))
             self._observedratios[label] = deepcopy(num/denom)
+            #print("%s mask is None: %s "%(label,self._observedratios[label].mask is None))
             self._observedratios[label].meta = deepcopy(num.header)
             #@TODO create a meaningful header for the ratio map
             self._ratioHeader(p["numerator"],p["denominator"],label)
