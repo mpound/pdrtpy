@@ -61,7 +61,7 @@ class PlotBase:
             slope = np.log10(max_/min_)/(numlevels - 1)
             levels = np.array([min_ * np.power(10,slope*j) for j in range(0,numlevels)])
         else:
-           raise Exception("steps must be 'lin' or 'log'")
+           raise ValueError("steps must be 'lin' or 'log'")
         if verbose:
             print("Computed %d contour autolevels: %s"%(numlevels,levels))
         return levels
@@ -97,9 +97,9 @@ class PlotBase:
         if type(norm) == str: 
             norm = norm.lower()
             if norm not in self._valid_norms:
-                raise Exception("Unrecognized normalization %s. Valid values are %s"%(norm,self._valid_norms))
+                raise ValueError("Unrecognized normalization %s. Valid values are %s"%(norm,self._valid_norms))
         if stretch not in self._valid_stretch:
-            raise Exception("Unrecognized stretch %s. Valid values are %s"%(stretch,self._valid_stretch))
+            raise ValueError("Unrecognized stretch %s. Valid values are %s"%(stretch,self._valid_stretch))
         #print("norm cut at %.1e %.1e"%(vmin,vmax))
         if norm == 'simple':
             return simple_norm(km, min_cut=vmin,max_cut=vmax, stretch=stretch, clip=False)
