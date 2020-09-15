@@ -6,7 +6,7 @@ from copy import deepcopy
 import numpy as np
 from astropy.table import Table, unique, vstack
 import astropy.units as u
-from .pdrutils import get_table,model_dir
+from .pdrutils import get_table,model_dir,habing_unit,draine_unit,mathis_unit
 from .measurement import Measurement
 
 #@ToDo:
@@ -190,8 +190,8 @@ class ModelSet(object):
                     _model.header["CUNIT2"] = "Habing"
                     # Raises UnitScaleError:
                     # "The FITS unit format is not able to represent scales that are not powers of 10.  Multiply your data by 1.600000e-03."
-                    # This causes all sorts of downstream problems
-                    #_model.wcs.wcs.cunit[1] = utils.habing_unit
+                    # This causes all sorts of downstream problems.  Workaround in LineRatioFit.read_models().
+                    #_model.wcs.wcs.cunit[1] = habing_unit
             else:
                 # copy wcs cunit to header. used later.
                 _model.header["CUNIT1"] = str(_wcs.wcs.cunit[0])
