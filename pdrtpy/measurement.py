@@ -288,7 +288,8 @@ class Measurement(CCDData):
 
     
     def add(self,other):
-        """Add this Measurement to another, propagating errors, units,  and updating identifiers
+        """Add this Measurement to another, propagating errors, units,  and updating identifiers.
+           Masks are logically or'd.
 
         :param other: a Measurement to add
         :type other: :class:`Measurement`
@@ -298,41 +299,45 @@ class Measurement(CCDData):
         # with the default unit "adu" and then units for the operation are
         # not conformable.  I blame astropy CCDData authors for making that
         # class so hard to subclass.
-        z=CCDData.add(self,other)
+        z=CCDData.add(self,other,handle_mask=np.logical_or)
         z=Measurement(z,unit=z._unit)
         z._identifier = self.id + '+' + other.id
         z._unit = self.unit
         return z
    
     def subtract(self,other):
-        '''Subtract another Measurement from this one, propagating errors, units,  and updating identifiers
+        '''Subtract another Measurement from this one, propagating errors, units,  and updating identifiers.
+           Masks are logically or'd.
 
         :param other: a Measurement to subtract
         :type other: :class:`Measurement`
         '''
-        z=CCDData.subtract(self,other)
+        z=CCDData.subtract(self,other,handle_mask=np.logical_or)
         z=Measurement(z,unit=z._unit)
         z._identifier = self.id + '-' + other.id
         return z
     
     def multiply(self,other):
-        '''Multiply this Measurement by another, propagating errors, units,  and updating identifiers
+        '''Multiply this Measurement by another, propagating errors, units,  and updating identifiers.
+           Masks are logically or'd.
 
         :param other: a Measurement to multiply
         :type other: :class:`Measurement`
         '''
-        z=CCDData.multiply(self,other)
+        z=CCDData.multiply(self,other,handle_mask=np.logical_or)
         z=Measurement(z,unit=z._unit)
         z._identifier = self.id + '*' + other.id
         return z
         
     def divide(self,other):
-        '''Divide this Measurement by another, propagating errors, units,  and updating identifiers
+        '''Divide this Measurement by another, propagating errors, units,  and updating identifiers.
+           Masks are logically or'd.
 
         :param other: a Measurement to divide
         :type other: :class:`Measurement`
         '''
-        z=CCDData.divide(self,other)
+        z=CCDData.divide(self,other,handle_mask=np.logical_or)
+        #print("M.divide mask is None: %s"%(z.mask is None))
         z=Measurement(z,unit=z._unit)
         z._identifier = self.id + '/' + other.id
         return z
@@ -432,6 +437,7 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
     # @TODO header values get stuffed into WCS, others may be dropped by CCDData._generate_wcs_and_update_header
     try:
        z=Measurement(z,unit=z._unit,title=_title)
+       #print("created measurement with unit %s"%z._unit)
     except Exception:
        raise TypeError('could not convert fits_measurement_reader output to Measurement')
     z.identifier(_id)
