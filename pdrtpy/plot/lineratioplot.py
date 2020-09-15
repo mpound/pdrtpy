@@ -7,7 +7,7 @@
 # Also https://docs.bokeh.org/en
 # especially for coloring and style
 
-from copy import deepcopy
+from copy import deepcopy,copy
 import warnings
 
 import numpy as np
@@ -59,7 +59,9 @@ class LineRatioPlot(PlotBase):
 
      * *levels* (``int`` or array-like) Determines the number and positions of the contour lines / regions.  If an int n, use n data intervals; i.e. draw n+1 contour lines. The level heights are automatically chosen.  If array-like, draw contour lines at the specified levels. The values must be in increasing order.  
 
-     * *norm* (``str`` or :mod:`astropy.visualization` normalization object) The normalization to use in the image. The string 'simple' will normalize with :func:`~astropy.visualization.simple_norm` with a log stretch and 'zscale' will normalize with IRAF's zscale algorithm.  See :class:`~astropy.visualization.ZScaleInterval`.
+     * *norm* (``str`` or :mod:`astropy.visualization` normalization object) The normalization to use in the image. The string 'simple' will normalize with :func:`~astropy.visualization.simple_norm` and 'zscale' will normalize with IRAF's zscale algorithm.  See :class:`~astropy.visualization.ZScaleInterval`.
+
+     * *stretch* (``str``)  {'linear', 'sqrt', 'power', log', 'asinh'}. The stretch function to apply to the image for simple_norm.  The Default is 'linear'.
 
      * *aspect* (``str``) aspect ratio, 'equal' or 'auto' are typical defaults.
 
@@ -205,7 +207,8 @@ class LineRatioPlot(PlotBase):
                        'label': False,
                        'colors': ['white'],
                        'linewidths': 1.0,
-                       'norm': 'zscale',
+                       'norm': 'simple',
+                       'stretch': 'linear',
                        'xaxis_unit': None,
                        'yaxis_unit': None,
                        'legend': None,
@@ -263,7 +266,8 @@ class LineRatioPlot(PlotBase):
                        'label': False,
                        'colors': ['white'],
                        'linewidths': 1.0,
-                       'norm': 'zscale',
+                       'norm': 'simple',
+                       'stretch': 'linear',
                        'xaxis_unit': None,
                        'yaxis_unit': None,
                        'legend': None,
@@ -365,6 +369,7 @@ class LineRatioPlot(PlotBase):
                        'colors': ['black'],
                        'linewidths': 1.0,
                        'norm': 'simple',
+                       'stretch': 'linear',
                        'xaxis_unit': None,
                        'yaxis_unit': None,
                        'title':  "Confidence Intervals"}
@@ -432,7 +437,8 @@ class LineRatioPlot(PlotBase):
                        'label': False,
                        'linewidths': 1.0,
                        'ncols': 2,
-                       'norm': 'zscale',
+                       'norm': 'simple',
+                       'stretch': 'linear',
                        'title': None,
                        'index': 1,
                        'reset': True,
@@ -472,7 +478,8 @@ class LineRatioPlot(PlotBase):
     def _plot(self,data,**kwargs):
         '''generic plotting method used by other plot methods'''
 
-        kwargs_plot = {'show' : 'data'} # or 'mask' or 'error'
+        kwargs_plot = {'show' : 'data' # or 'mask' or 'error'
+                      } 
 
         kwargs_opts = {'units' : None,
                        'image':True,
@@ -517,12 +524,15 @@ class LineRatioPlot(PlotBase):
             raise Exception("Unexpected model naxis: %d"%self._tool._modelnaxis)
 
         km = ma.masked_invalid(k)
+        #print("Masks equal? %s:"%np.all(k.mask==km.mask))
+        km.mask = np.logical_or(k.mask,km.mask)
         # make sure nans don't affect the color map
         min_ = np.nanmin(km)
         max_ = np.nanmax(km)
 
         kwargs_imshow = { 'origin': 'lower', 
                           'norm': 'simple',
+                          'stretch': 'linear',
                           'vmin': min_, 
                           'vmax': max_,
                           'cmap': 'plasma',
@@ -532,11 +542,12 @@ class LineRatioPlot(PlotBase):
                           'ncols': 1,
                           'index': 1,
                           'reset': True,
+                          'constrained_layout': True
                          }
 
         # delay merge until min_ and max_ are known
         kwargs_imshow.update(kwargs)
-        kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km,min_,max_)
+        kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km,kwargs_imshow['vmin'],kwargs_imshow['vmax'],kwargs_imshow['stretch'])
 
         kwargs_subplot.update(kwargs)
         # swap ncols and nrows in figsize to preserve aspect ratio
@@ -546,18 +557,26 @@ class LineRatioPlot(PlotBase):
 
         axidx = kwargs_subplot['index']-1
         if kwargs_subplot['reset']:
-            self._figure,self._axis = self._plt.subplots(kwargs_subplot['nrows'],kwargs_subplot['ncols'],figsize=kwargs_subplot['figsize'],subplot_kw={'projection':k.wcs,'aspect':kwargs_imshow['aspect']},constrained_layout=True)
+            self._figure,self._axis = self._plt.subplots(kwargs_subplot['nrows'],kwargs_subplot['ncols'],figsize=kwargs_subplot['figsize'],subplot_kw={'projection':k.wcs,'aspect':kwargs_imshow['aspect']},constrained_layout=kwargs_subplot['constrained_layout'])
+            #print("CL=",self._plt.rcParams['figure.constrained_layout.use']) 
+        #self._figure.subplots_adjust(top=0.7)
+        #self._figure.tight_layout()
 
         # Make sure self._axis is an array because we will index it below.
         if type(self._axis) is not np.ndarray:
             self._axis = np.array([self._axis])
         
         if kwargs_opts['image']:
-            current_cmap = mcm.get_cmap(kwargs_imshow['cmap'])
+            current_cmap = copy(mcm.get_cmap(kwargs_imshow['cmap']))
             current_cmap.set_bad(color='white',alpha=1)
             # suppress errors and warnings about unused keywords
-            for kx in ['units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols', 'index', 'reset','colors','colorbar','show','yaxis_unit','xaxis_unit']:
+            #@todo need a better solution for this, it is not scalable.
+            for kx in ['units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols', 'index', 'reset','colors','colorbar','show','yaxis_unit','xaxis_unit','constrained_layout','figsize','stretch']:
                 kwargs_imshow.pop(kx,None)
+            # eliminate deprecation warning.  vmin,vmax are passed to Normalization object.
+            if kwargs['norm'] is not None:
+                kwargs_imshow.pop('vmin',None)
+                kwargs_imshow.pop('vmax',None)
             im=self._axis[axidx].imshow(km,**kwargs_imshow)
             if kwargs_opts['colorbar']:
                 self._wcs_colorbar(im,self._axis[axidx])
@@ -568,7 +587,7 @@ class LineRatioPlot(PlotBase):
                 kwargs_contour['levels'] = self._autolevels(km,'log')
 
             # suppress errors and warnings about unused keywords
-            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect','colorbar','reset', 'nrows', 'ncols', 'index','show','yaxis_unit','xaxis_unit','norm']:
+            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect','colorbar','reset', 'nrows', 'ncols', 'index','show','yaxis_unit','xaxis_unit','norm','constrained_layout','figsize','stretch']:
                 kwargs_contour.pop(kx,None)
 
             contourset = self._axis[axidx].contour(km, **kwargs_contour)
@@ -581,6 +600,7 @@ class LineRatioPlot(PlotBase):
         if k.wcs is not None:
             self._axis[axidx].set_xlabel(k.wcs.wcs.lngtyp)
             self._axis[axidx].set_ylabel(k.wcs.wcs.lattyp)
+
         
        
     def _plot_no_wcs(self,data,header=None,**kwargs):
@@ -636,12 +656,15 @@ class LineRatioPlot(PlotBase):
             raise Exception("Unexpected model naxis: %d"%self._tool._modelnaxis)
 
         km = ma.masked_invalid(k)
+        #print("Masks equal? %s:"%np.all(k.mask==km.mask))
+        km.mask = np.logical_or(k.mask,km.mask)
         # make sure nans don't affect the color map
         min_ = np.nanmin(km)
         max_ = np.nanmax(km)
 
         kwargs_imshow = { 'origin': 'lower', 
                           'norm': 'simple',
+                          'stretch': 'linear',
                           'vmin': min_, 
                           'vmax': max_,
                           'cmap': 'plasma',
@@ -651,13 +674,14 @@ class LineRatioPlot(PlotBase):
                           'ncols': 1,
                           'index': 1,
                           'reset': True,
+                          'constrained_layout': True
                          }
 
         # delay merge until min_ and max_ are known
         #print("plot kwargs 1: ",kwargs_imshow)
         kwargs_imshow.update(kwargs)
         #print("plot kwargs 2: ",kwargs_imshow)
-        kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km,min_,max_)
+        kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km,kwargs_imshow['vmin'],kwargs_imshow['vmax'],kwargs_imshow['stretch'])
 
         kwargs_subplot.update(kwargs)
         # swap ncols and nrows in figsize to preserve aspect ratio
@@ -669,7 +693,7 @@ class LineRatioPlot(PlotBase):
         axidx = kwargs_subplot['index']-1
         if kwargs_subplot['reset']:
 # @todo can probably consolodate this
-            self._figure,self._axis = self._plt.subplots(kwargs_subplot['nrows'],kwargs_subplot['ncols'],figsize=kwargs_subplot['figsize'],subplot_kw={'aspect':kwargs_imshow['aspect']},constrained_layout=True)
+            self._figure,self._axis = self._plt.subplots(kwargs_subplot['nrows'],kwargs_subplot['ncols'],figsize=kwargs_subplot['figsize'],subplot_kw={'aspect':kwargs_imshow['aspect']},constrained_layout=kwargs_subplot['constrained_layout'])
 
         #print(self._figure,self._axis)
 
@@ -761,7 +785,8 @@ class LineRatioPlot(PlotBase):
             # suppress warnings about unused keywords and potential error 
             # about cmap not being None. Also norm being a string will cause an error
             # in matplotlib==3.3.1+
-            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect','colorbar','reset', 'nrows', 'ncols', 'index','yaxis_unit','xaxis_unit','norm','legend','figsize']:
+            #@todo need a better solution for this, it is not scalable.
+            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect','colorbar','reset', 'nrows', 'ncols', 'index','yaxis_unit','xaxis_unit','norm','legend','figsize','constrained_layout','figsize','stretch']:
                 kwargs_contour.pop(kx,None)
 
             contourset = self._axis[axidx].contour(x,y,km.data, **kwargs_contour)

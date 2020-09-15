@@ -6,8 +6,7 @@ import matplotlib.axes as maxes
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from astropy.visualization import simple_norm, ZScaleInterval , ImageNormalize
-from astropy.visualization.stretch import LinearStretch
-from astropy.visualization.stretch import SinhStretch,  LinearStretch
+from astropy.visualization.stretch import LinearStretch, SinhStretch, PowerStretch, AsinhStretch, LogStretch
 from matplotlib.colors import LogNorm
 
 from ..pdrutils import to
@@ -20,6 +19,7 @@ class PlotBase:
         self._axis = None
         self._tool = tool
         self._valid_norms = [ 'simple', 'zscale', 'log' ]
+        self._valid_stretch = [ 'linear', 'sqrt', 'power', 'log', 'asinh']
         #print("Done PlotBase")
 
     def _autolevels(self,data,steps='log',numlevels=None,verbose=False):
@@ -66,7 +66,7 @@ class PlotBase:
             print("Computed %d contour autolevels: %s"%(numlevels,levels))
         return levels
         
-    def _zscale(self,image,contrast=0.25):
+    def _zscale(self,image,vmin,vmax,stretch,contrast=0.25):
         """Normalization object using Zscale algorithm
            See :mod:`astropy.visualization.ZScaleInterval`
         
@@ -77,20 +77,37 @@ class PlotBase:
         :returns: :mod:`astropy.visualization.normalization` object
         """
         # clip=False required or NaNs get max color value, see https://github.com/astropy/astropy/issues/8165
-        norm = ImageNormalize(data=image,interval=ZScaleInterval(contrast=contrast),stretch=LinearStretch(),clip=False)
+        if stretch == 'linear':
+            s=LinearStretch()
+        elif stretch == 'sqrt':
+            s = SqrtStretch()
+        elif stretch == 'power':
+            s = PowerStretch(1)
+        elif stretch == 'log':
+            s = LogStretch(1000)
+        elif s == 'asinh':
+            stretch = AsinhStretch(0.1)
+        else:
+            raise ValueError(f'Unknown stretch: {stretch}.')
+
+        norm = ImageNormalize(data=image,vmin=vmin,vmax=vmax,interval=ZScaleInterval(contrast=contrast),stretch=s,clip=False)
         return norm
 
-    def _get_norm(self,norm,km,min,max):
+    def _get_norm(self,norm,km,vmin,vmax,stretch):
         if type(norm) == str: 
             norm = norm.lower()
             if norm not in self._valid_norms:
                 raise Exception("Unrecognized normalization %s. Valid values are %s"%(norm,self._valid_norms))
+        if stretch not in self._valid_stretch:
+            raise Exception("Unrecognized stretch %s. Valid values are %s"%(stretch,self._valid_stretch))
+        #print("norm cut at %.1e %.1e"%(vmin,vmax))
         if norm == 'simple':
-            return simple_norm(km, min_cut=min,max_cut=max, stretch='log', clip=False)
+            return simple_norm(km, min_cut=vmin,max_cut=vmax, stretch=stretch, clip=False)
         elif norm == 'zscale':
-            return self._zscale(km)
+            return self._zscale(km,vmin,vmax,stretch)
         elif norm == 'log':
-            return LogNorm(vmin=min,vmax=max,clip=False)
+            # stretch ignored in this case
+            return LogNorm(vmin=vmin,vmax=vmax,clip=False)
         else: 
             return norm
 
@@ -120,7 +137,7 @@ class PlotBase:
         cax.yaxis.set_ticks_position(pos)
         return self._figure.colorbar(image,ax=axis,cax=cax)
 
-    def savefig(fname,**kwargs):
+    def savefig(self,fname,**kwargs):
         """Save the current figure to a file.
 
            :param fname: filename to save in
@@ -128,7 +145,8 @@ class PlotBase:
 
            :Keyword Arguments:
 
-           Additional arguments (\*\*kwargs) are passed to :meth:`matplotlib.pyplot.savefig`.
+           Additional arguments (\*\*kwargs) are passed to :meth:`matplotlib.pyplot.savefig`. e.g. bbox_inches='tight' for a tight layout.
 
         """
         self._figure.savefig(fname=fname,**kwargs)
+
