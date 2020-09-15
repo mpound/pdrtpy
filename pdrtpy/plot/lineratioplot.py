@@ -155,8 +155,8 @@ class LineRatioPlot(PlotBase):
         if len( self._tool._density.shape) == 0 :
             return to(kwargs_opts['units'],self._tool._density)
 
-        fancyunits=u.Unit(kwargs_opts['units']).to_string('latex')
-        kwargs_opts['title'] = 'n ('+fancyunits+')'
+        tunit=u.Unit(kwargs_opts['units'])
+        kwargs_opts['title'] = r"n [{0:latex_inline}]".format(tunit)
         self._plot(self._tool._density,**kwargs_opts)
 
     def radiation_field(self,**kwargs):
@@ -182,8 +182,8 @@ class LineRatioPlot(PlotBase):
 
         if kwargs_opts['title'] is None:
             rad_title = get_rad(kwargs_opts['units']) 
-            fancyunits=u.Unit(kwargs_opts['units']).to_string('latex')
-            kwargs_opts['title'] = rad_title +' ('+fancyunits+')'
+            tunit=u.Unit(kwargs_opts['units'])
+            kwargs_opts['title'] = r"{0} [{1:latex_inline}]".format(rad_title,tunit)
 
         self._plot(self._tool._radiation_field,**kwargs_opts)
 
