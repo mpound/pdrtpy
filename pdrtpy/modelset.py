@@ -181,7 +181,7 @@ class ModelSet(object):
             _title = self._supported_ratios.loc[k]['title']
             _model = Measurement.read(_thefile,unit=unit,title=_title)
             _wcs = _model.wcs
-            if self.name == "wk2006":
+            if self.name == "wk2006" or self.name == "smc":
             # fix WK2006 model headers
                 if _wcs.wcs.cunit[0] == "":
                     _model.header["CUNIT1"] = "cm^-3"
