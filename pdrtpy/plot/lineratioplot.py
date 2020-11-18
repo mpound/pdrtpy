@@ -28,7 +28,7 @@ from astropy.units import UnitsWarning
 from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
 
 from .plotbase import PlotBase
-from ..pdrutils import to, get_rad
+from .. import pdrutils as utils
 
 
 class LineRatioPlot(PlotBase):
@@ -153,7 +153,7 @@ class LineRatioPlot(PlotBase):
 
         # handle single pixel case
         if len( self._tool._density.shape) == 0 :
-            return to(kwargs_opts['units'],self._tool._density)
+            return utils.to(kwargs_opts['units'],self._tool._density)
 
         tunit=u.Unit(kwargs_opts['units'])
         kwargs_opts['title'] = r"n [{0:latex_inline}]".format(tunit)
@@ -162,8 +162,6 @@ class LineRatioPlot(PlotBase):
     def radiation_field(self,**kwargs):
         '''Plot the radiation field map that was computed by :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool. Default units: Habing.
         '''
-
-        #fancyunits=self._tool._radiation_field.unit.to_string('latex')
 
         kwargs_opts = {'units': 'Habing',
                        'aspect': 'equal',
@@ -178,10 +176,10 @@ class LineRatioPlot(PlotBase):
 
         # handle single pixel case
         if len( self._tool._radiation_field.shape) == 0 :
-            return to(kwargs_opts['units'],self._tool._radiation_field)
+            return utils.to(kwargs_opts['units'],self._tool._radiation_field)
 
         if kwargs_opts['title'] is None:
-            rad_title = get_rad(kwargs_opts['units']) 
+            rad_title = utils.get_rad(kwargs_opts['units']) 
             tunit=u.Unit(kwargs_opts['units'])
             kwargs_opts['title'] = r"{0} [{1:latex_inline}]".format(rad_title,tunit)
 
@@ -212,7 +210,8 @@ class LineRatioPlot(PlotBase):
                        'xaxis_unit': None,
                        'yaxis_unit': None,
                        'legend': None,
-                       'title': None,}
+                       'title': None}
+
         kwargs_opts.update(kwargs)
         # make a sensible choice about contours if image is not shown
         if not kwargs_opts['image'] and kwargs_opts['colors'][0] == 'white':
@@ -220,7 +219,7 @@ class LineRatioPlot(PlotBase):
 
         if self._tool.has_maps:
             data = self._tool.chisq(min=True)
-            if kwargs['title'] is None:
+            if 'title' not in kwargs:
                 kwargs_opts['title'] = r'$\chi^2$ (dof=%d)'%self._tool._dof
             self._plot(data,**kwargs_opts)
         else:
@@ -230,13 +229,22 @@ class LineRatioPlot(PlotBase):
             # To do this we first get the array index of the minimum
             # then use WCS to translate to world coordinates.
             [row,col] = np.where(self._tool._chisq==self._tool._chisq_min.flux)
+            #print("ROW,COL (Pixel units) = ",row,col)
             mywcs = wcs.WCS(data.header)
             # Suppress WCS warning about 1/cm3 not being FITS
             warnings.simplefilter('ignore',category=UnitsWarning)
             logn,logrf = mywcs.array_index_to_world(row,col)
+            logn,logrf = mywcs.pixel_to_world(col,row)
+            #print("logrf.unit",logrf.unit)
             warnings.resetwarnings()
             n = (10**logn.value[0])*u.Unit(logn.unit.to_string())
-            rf = (10**logrf.value[0])*logrf.unit
+            rf = (10**logrf.value[0])*u.Unit(logrf.unit.to_string())
+            #print("n dn",n,mywcs.wcs.cdelt[0])
+            #print("rf drf",rf,mywcs.wcs.cdelt[0])
+            # x,y are at the bottom corner of the pixel. So add half a pixel in each
+            # dimension?
+            #logn.value[0] += 0.5*mywcs.wcs.cdelt[0]
+            #logrf.value[0] += 0.5*mywcs.wcs.cdelt[1]
             if kwargs_opts['xaxis_unit'] is not None:
                 x = n.to(kwargs_opts['xaxis_unit']).value
             else:
@@ -252,6 +260,37 @@ class LineRatioPlot(PlotBase):
             self._axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
             if kwargs_opts['legend']:
                 legend = self._axis[0].legend(loc='upper center',title=kwargs_opts['title'])
+
+    def cost(self, **kwargs):           
+        '''Plot the cost funtion map that was computed by the
+        :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
+        
+        '''
+
+        kwargs_opts = {'units': None,
+                       'aspect': 'equal',
+                       'image':True,
+                       'contours': True,
+                       'label': False,
+                       'colors': ['white'],
+                       'linewidths': 1.0,
+                       'norm': 'simple',
+                       'stretch': 'linear',
+                       'xaxis_unit': None,
+                       'yaxis_unit': None,
+                       'legend': None,
+                       'title': None}
+
+        kwargs_opts.update(kwargs)
+        # make a sensible choice about contours if image is not shown
+        if not kwargs_opts['image'] and kwargs_opts['colors'][0] == 'white':
+           kwargs_opts['colors'][0] = 'black'
+
+        if self._tool.has_maps:
+            data = self._tool._cost_min
+            if 'title' not in kwargs:
+                kwargs_opts['title'] = "Cost"
+            self._plot(data,**kwargs_opts)
 
     def reduced_chisq(self, **kwargs):
         '''Plot the reduced :math:`\chi^2` map that was computed by the
@@ -275,7 +314,7 @@ class LineRatioPlot(PlotBase):
                       }
         kwargs_opts.update(kwargs)
         if self._tool.has_maps:
-            if kwargs['title'] is None:
+            if 'title' not in kwargs:
                 kwargs_opts['title'] = r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof
             data = self._tool.reduced_chisq(min=True)
             self._plot(data,**kwargs_opts)
@@ -288,6 +327,7 @@ class LineRatioPlot(PlotBase):
             # To do this we first get the array index of the minimum
             # then use WCS to translate to world coordinates.
             [row,col] = np.where(self._tool._reduced_chisq==self._tool._reduced_chisq_min.flux)
+            #print("ROW,COL (Pixel units) = ",row,col)
             mywcs = wcs.WCS(data.header)
             # Suppress WCS warning about 1/cm3 not being FITS
             warnings.simplefilter('ignore',category=UnitsWarning)
@@ -301,8 +341,9 @@ class LineRatioPlot(PlotBase):
             # "The unit '1/cm3' is unrecognized, so all arithmetic operations with it are invalid."
             # Yet by all other measures this appears to be a valid unit. 
             # The workaround is to us to_string() method.
+            #print("logrf.unit",logrf.unit)
             n = (10**logn.value[0])*u.Unit(logn.unit.to_string())
-            rf = (10**logrf.value[0])*logrf.unit
+            rf = (10**logrf.value[0])*u.Unit(logrf.unit.to_string())
             if kwargs_opts['xaxis_unit'] is not None:
                 x = n.to(kwargs_opts['xaxis_unit']).value
             else:
@@ -439,7 +480,6 @@ class LineRatioPlot(PlotBase):
                        'ncols': 2,
                        'norm': 'simple',
                        'stretch': 'linear',
-                       'title': None,
                        'index': 1,
                        'reset': True,
                        'legend': True}
@@ -458,16 +498,18 @@ class LineRatioPlot(PlotBase):
             kwargs_opts['index'] = kwargs_opts['index'] + 1
             if kwargs_opts['legend']:
                 if 'title' not in kwargs: # then it was None, and we customize it
-                    kwargs['title'] = self._tool._modelratios[key].title
+                    _title = self._tool._modelratios[key].title
+                else:
+                    _title = kwargs['title']
                 lines = list()
                 labels = list()
-                if kwargs['contours']:
+                if kwargs_opts['contours']:
                     lines.append(Line2D([0], [0], color=kwargs_opts['colors'][0], linewidth=3, linestyle='-'))
                     labels.append("model")
                 lines.append(Line2D([0], [0], color=self._ratiocolor, linewidth=3, linestyle='-'))
                 labels.append("observed")
                 #maybe loc should be 'best' but then it bounces around
-                self._axis[axidx].legend(lines, labels,loc='upper center',title=kwargs['title'])
+                self._axis[axidx].legend(lines, labels,loc='upper center',title=_title)
 
             # Turn off subplots greater than the number of
             # available ratios
@@ -512,12 +554,12 @@ class LineRatioPlot(PlotBase):
 
         if self._tool._modelnaxis == 2 or len(_data.shape)==2:
             if kwargs_opts['units'] is not None:
-                k = to(kwargs_opts['units'], _data)
+                k = utils.to(kwargs_opts['units'], _data)
             else:
                 k = _data
         elif self._tool._modelnaxis == 3:
             if kwargs_opts['units'] is not None:
-                k = to(kwargs_opts['units'], _data[0,:,:])
+                k = utils.to(kwargs_opts['units'], _data[0,:,:])
             else:
                 k = _data[0,:,:]
         else:
@@ -525,7 +567,8 @@ class LineRatioPlot(PlotBase):
 
         km = ma.masked_invalid(k)
         #print("Masks equal? %s:"%np.all(k.mask==km.mask))
-        km.mask = np.logical_or(k.mask,km.mask)
+        if getattr(k,"mask",None) is not None:
+            km.mask = np.logical_or(k.mask,km.mask)
         # make sure nans don't affect the color map
         min_ = np.nanmin(km)
         max_ = np.nanmax(km)
@@ -571,7 +614,7 @@ class LineRatioPlot(PlotBase):
             current_cmap.set_bad(color='white',alpha=1)
             # suppress errors and warnings about unused keywords
             #@todo need a better solution for this, it is not scalable.
-            for kx in ['units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols', 'index', 'reset','colors','colorbar','show','yaxis_unit','xaxis_unit','constrained_layout','figsize','stretch']:
+            for kx in ['units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols', 'index', 'reset','colors','colorbar','show','yaxis_unit','xaxis_unit','constrained_layout','figsize','stretch','legend']:
                 kwargs_imshow.pop(kx,None)
             # eliminate deprecation warning.  vmin,vmax are passed to Normalization object.
             if kwargs['norm'] is not None:
@@ -587,7 +630,7 @@ class LineRatioPlot(PlotBase):
                 kwargs_contour['levels'] = self._autolevels(km,'log')
 
             # suppress errors and warnings about unused keywords
-            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect','colorbar','reset', 'nrows', 'ncols', 'index','show','yaxis_unit','xaxis_unit','norm','constrained_layout','figsize','stretch']:
+            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect','colorbar','reset', 'nrows', 'ncols', 'index','show','yaxis_unit','xaxis_unit','norm','constrained_layout','figsize','stretch','legend']:
                 kwargs_contour.pop(kx,None)
 
             contourset = self._axis[axidx].contour(km, **kwargs_contour)
@@ -644,12 +687,12 @@ class LineRatioPlot(PlotBase):
 
         if self._tool._modelnaxis == 2:
             if kwargs_opts['units'] is not None:
-                k = to(kwargs_opts['units'], data)
+                k = utils.to(kwargs_opts['units'], data)
             else:
                 k = data
         elif self._tool._modelnaxis == 3:
             if kwargs_opts['units'] is not None:
-                k = to(kwargs_opts['units'], data[0,:,:])
+                k = utils.to(kwargs_opts['units'], data[0,:,:])
             else:
                 k = data[0,:,:]
         else:
@@ -657,7 +700,8 @@ class LineRatioPlot(PlotBase):
 
         km = ma.masked_invalid(k)
         #print("Masks equal? %s:"%np.all(k.mask==km.mask))
-        km.mask = np.logical_or(k.mask,km.mask)
+        if getattr(k,"mask",None) is not None:
+            km.mask = np.logical_or(k.mask,km.mask)
         # make sure nans don't affect the color map
         min_ = np.nanmin(km)
         max_ = np.nanmax(km)
@@ -751,7 +795,7 @@ class LineRatioPlot(PlotBase):
             # Get desired unit from arguments; for special cases, use
             # the conventional symbol for the label (e.g. G_0 for Habing units)
             yunit = kwargs_opts['yaxis_unit']
-            ytype = "log({0})".format(get_rad(yunit))
+            ytype = "log({0})".format(utils.get_rad(yunit))
             yax_unit = u.Unit(yunit)
 
             # Convert the unit-aware grid to the desired units and set Y to the value (so it's no longer a Quantity)
@@ -759,6 +803,8 @@ class LineRatioPlot(PlotBase):
 
         # Set the y label appropriately, use LaTeX inline formatting
         ylab = r"{0} [{1:latex_inline}]".format(ytype,yax_unit)
+        #print("X axis min/max %.2e %.2e"%(x.min(),x.max()))
+        #print("Y axis min/max %.2e %.2e"%(y.min(),y.max()))
         
         # Finish up axes details.
         self._axis[axidx].set_ylabel(ylab)
