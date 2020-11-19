@@ -4,3 +4,4 @@
 |          null|       null|               null|             null  |null | null                                                                     |
           OI_63     CII_158       OI_63/CII_158     oicpsmcwebcut    0.1   [O I] 63 $\mu$m / [C II] 158 $\mu$m
   OI_63+CII_158         FIR   OI_63+CII_158/FIR  ciioifirwebsmccut   0.1   ([O I] 63 $\mu$m + [C II] 158 $\mu$m) / I$_{FIR}$
+        CII_158           1             CII_158       cpsmcwebcut    0.1   [C II] 158 $\mu$m
