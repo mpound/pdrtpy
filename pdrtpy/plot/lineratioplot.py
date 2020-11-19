@@ -106,6 +106,23 @@ class LineRatioPlot(PlotBase):
                   '#f781bf', '#a65628', '#984ea3',
                   '#999999', '#e41a1c', '#dede00']
 
+    def modelintensity(self,id,**kwargs):
+        """Plot one of the model intensities
+
+           :param id: the intensity identifier, such as `CO_32``.
+           :type id: str
+           :param \**kwargs: see class documentation above
+           :raises KeyError: if is id not in existing model intensities
+        """
+        ms = self._tool.modelset
+        if id not in ms.supported_lines["intensity label"]:
+            raise KeyError(f"{id} is not in the ModelSet of your LineRatioFit")
+        
+        model = ms.get_models([id],model_type="intensity")
+        kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'units': u.dimensionless_unscaled , 'colorbar':True}
+        kwargs_opts.update(kwargs)
+        self._plot_no_wcs(model[id],**kwargs_opts)
+
     def modelratio(self,id,**kwargs):
         """Plot one of the model ratios
      
@@ -685,18 +702,26 @@ class LineRatioPlot(PlotBase):
         #print("kwargs_opts 2: ",kwargs_opts)
         #print("kwargs 2: ",kwargs)
 
-        if self._tool._modelnaxis == 2:
+        if self._tool._modelnaxis is None and "NAXIS" not in _header:
+            raise Exception("Image header/WCS has no NAXIS keyword")
+
+        if "NAXIS" in _header:
+            _naxis = _header["NAXIS"]
+        else:
+            _naxis =  self._tool._modelnaxis
+
+        if _naxis == 2:
             if kwargs_opts['units'] is not None:
                 k = utils.to(kwargs_opts['units'], data)
             else:
                 k = data
-        elif self._tool._modelnaxis == 3:
+        elif _naxis == 3:
             if kwargs_opts['units'] is not None:
                 k = utils.to(kwargs_opts['units'], data[0,:,:])
             else:
                 k = data[0,:,:]
         else:
-            raise Exception("Unexpected model naxis: %d"%self._tool._modelnaxis)
+            raise Exception("Unexpected NAXIS value: %d"%_naxis)
 
         km = ma.masked_invalid(k)
         #print("Masks equal? %s:"%np.all(k.mask==km.mask))
