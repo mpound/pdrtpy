@@ -122,6 +122,8 @@ class LineRatioPlot(PlotBase):
         kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'units': u.dimensionless_unscaled , 'colorbar':True}
         kwargs_opts.update(kwargs)
         self._plot_no_wcs(model[id],**kwargs_opts)
+        #if kwargs_opts['legend']:
+        #    legend = self._axis[0].legend(loc='upper center',title=kwargs_opts['title'])
 
     def modelratio(self,id,**kwargs):
         """Plot one of the model ratios
@@ -868,6 +870,9 @@ class LineRatioPlot(PlotBase):
                 #print("drew %s"%drawn)
 
         if kwargs_opts['title'] is not None: 
+            #if kwargs_opts['legend']:
+            #    legend = self._axis[axidx].legend(handles=None,loc='upper center',title=kwargs_opts['title'])
+            #else:
             self._axis[axidx].set_title(kwargs_opts['title'])
 
         if measurements is not None:
