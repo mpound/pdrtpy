@@ -119,7 +119,7 @@ class LineRatioPlot(PlotBase):
             raise KeyError(f"{id} is not in the ModelSet of your LineRatioFit")
         
         model = ms.get_models([id],model_type="intensity")
-        kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'units': u.dimensionless_unscaled , 'colorbar':True}
+        kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'colorbar':True}
         kwargs_opts.update(kwargs)
         self._plot_no_wcs(model[id],**kwargs_opts)
         #if kwargs_opts['legend']:
@@ -609,7 +609,9 @@ class LineRatioPlot(PlotBase):
 
         # delay merge until min_ and max_ are known
         kwargs_imshow.update(kwargs)
-        kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km,kwargs_imshow['vmin'],kwargs_imshow['vmax'],kwargs_imshow['stretch'])
+        kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km,
+                                             kwargs_imshow['vmin'],kwargs_imshow['vmax'],
+                                             kwargs_imshow['stretch'])
 
         kwargs_subplot.update(kwargs)
         # swap ncols and nrows in figsize to preserve aspect ratio
@@ -619,7 +621,11 @@ class LineRatioPlot(PlotBase):
 
         axidx = kwargs_subplot['index']-1
         if kwargs_subplot['reset']:
-            self._figure,self._axis = self._plt.subplots(kwargs_subplot['nrows'],kwargs_subplot['ncols'],figsize=kwargs_subplot['figsize'],subplot_kw={'projection':k.wcs,'aspect':kwargs_imshow['aspect']},constrained_layout=kwargs_subplot['constrained_layout'])
+            self._figure,self._axis = self._plt.subplots(kwargs_subplot['nrows'],kwargs_subplot['ncols'],
+                                                    figsize=kwargs_subplot['figsize'],
+                                                    subplot_kw={'projection':k.wcs,
+                                                                'aspect':kwargs_imshow['aspect']},
+                                                    constrained_layout=kwargs_subplot['constrained_layout'])
             #print("CL=",self._plt.rcParams['figure.constrained_layout.use']) 
         #self._figure.subplots_adjust(top=0.7)
         #self._figure.tight_layout()
@@ -633,7 +639,10 @@ class LineRatioPlot(PlotBase):
             current_cmap.set_bad(color='white',alpha=1)
             # suppress errors and warnings about unused keywords
             #@todo need a better solution for this, it is not scalable.
-            for kx in ['units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols', 'index', 'reset','colors','colorbar','show','yaxis_unit','xaxis_unit','constrained_layout','figsize','stretch','legend']:
+            #push onto a stack?
+            for kx in ['units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols', 
+                       'index', 'reset','colors','colorbar','show','yaxis_unit','xaxis_unit',
+                       'constrained_layout','figsize','stretch','legend']:
                 kwargs_imshow.pop(kx,None)
             # eliminate deprecation warning.  vmin,vmax are passed to Normalization object.
             if kwargs['norm'] is not None:
@@ -649,7 +658,9 @@ class LineRatioPlot(PlotBase):
                 kwargs_contour['levels'] = self._autolevels(km,'log')
 
             # suppress errors and warnings about unused keywords
-            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect','colorbar','reset', 'nrows', 'ncols', 'index','show','yaxis_unit','xaxis_unit','norm','constrained_layout','figsize','stretch','legend']:
+            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect',
+                       'colorbar','reset', 'nrows', 'ncols', 'index','show','yaxis_unit',
+                       'xaxis_unit','norm','constrained_layout','figsize','stretch','legend']:
                 kwargs_contour.pop(kx,None)
 
             contourset = self._axis[axidx].contour(km, **kwargs_contour)
@@ -752,7 +763,9 @@ class LineRatioPlot(PlotBase):
         #print("plot kwargs 1: ",kwargs_imshow)
         kwargs_imshow.update(kwargs)
         #print("plot kwargs 2: ",kwargs_imshow)
-        kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km,kwargs_imshow['vmin'],kwargs_imshow['vmax'],kwargs_imshow['stretch'])
+        kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km,
+                                             kwargs_imshow['vmin'],kwargs_imshow['vmax'],
+                                             kwargs_imshow['stretch'])
 
         kwargs_subplot.update(kwargs)
         # swap ncols and nrows in figsize to preserve aspect ratio
@@ -763,8 +776,11 @@ class LineRatioPlot(PlotBase):
 
         axidx = kwargs_subplot['index']-1
         if kwargs_subplot['reset']:
-# @todo can probably consolodate this
-            self._figure,self._axis = self._plt.subplots(kwargs_subplot['nrows'],kwargs_subplot['ncols'],figsize=kwargs_subplot['figsize'],subplot_kw={'aspect':kwargs_imshow['aspect']},constrained_layout=kwargs_subplot['constrained_layout'])
+# @todo can probably consolidate this
+            self._figure,self._axis = self._plt.subplots(kwargs_subplot['nrows'],kwargs_subplot['ncols'],
+                                        figsize=kwargs_subplot['figsize'],
+                                        subplot_kw={'aspect':kwargs_imshow['aspect']},
+                                        constrained_layout=kwargs_subplot['constrained_layout'])
 
         #print(self._figure,self._axis)
 
@@ -845,7 +861,8 @@ class LineRatioPlot(PlotBase):
         if kwargs_opts['image']:
             # pass shading = auto to avoid deprecation warning
             # see https://matplotlib.org/3.3.0/gallery/images_contours_and_fields/pcolormesh_grids.html
-            im = self._axis[axidx].pcolormesh(x,y,km,cmap=kwargs_imshow['cmap'],norm=kwargs_imshow['norm'],shading='auto')
+            im = self._axis[axidx].pcolormesh(x,y,km,cmap=kwargs_imshow['cmap'],
+                                              norm=kwargs_imshow['norm'],shading='auto')
             if kwargs_opts['colorbar']:
                 self._figure.colorbar(im,ax=self._axis[axidx])
                 #self._wcs_colorbar(im,self._axis[axidx])
@@ -859,7 +876,10 @@ class LineRatioPlot(PlotBase):
             # about cmap not being None. Also norm being a string will cause an error
             # in matplotlib==3.3.1+
             #@todo need a better solution for this, it is not scalable.
-            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect','colorbar','reset', 'nrows', 'ncols', 'index','yaxis_unit','xaxis_unit','norm','legend','figsize','constrained_layout','figsize','stretch']:
+            for kx in ['units', 'image', 'contours', 'label', 'title',
+                       'cmap','aspect','colorbar','reset', 'nrows', 'ncols',
+                       'index','yaxis_unit','xaxis_unit','norm','legend','figsize',
+                       'constrained_layout','figsize','stretch']:
                 kwargs_contour.pop(kx,None)
 
             contourset = self._axis[axidx].contour(x,y,km.data, **kwargs_contour)
@@ -880,6 +900,7 @@ class LineRatioPlot(PlotBase):
                 lstyles = ['--','-','--']
                 colors = [self._ratiocolor,self._ratiocolor,self._ratiocolor]
                 for i in range(0,3):
-                    cset = self._axis[axidx].contour(x,y,k.data,levels=m.levels, linestyles=lstyles, colors=colors)
+                    cset = self._axis[axidx].contour(x,y,k.data,levels=m.levels, 
+                                                     linestyles=lstyles, colors=colors)
                 
 
