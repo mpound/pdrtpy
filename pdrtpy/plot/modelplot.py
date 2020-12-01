@@ -11,7 +11,6 @@ import matplotlib.cm as mcm
 from matplotlib import ticker
 from matplotlib.lines import Line2D
 
-from astropy.nddata.utils import Cutout2D
 from astropy.io import fits
 import astropy.wcs as wcs
 import astropy.units as u
@@ -19,27 +18,65 @@ from astropy.units import UnitsWarning
 from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
 
 from .plotbase import PlotBase
+from ..measurement import Measurement
 from .. import pdrutils as utils
 
 
 class ModelPlot(PlotBase):
     """Class to plot models and optionally Measurements.  It does not LineRatioFit first.
     """
-    def __init__(self,modelset):
+    def __init__(self,modelset,figure=None,axis=None):
         super().__init__(tool=None)
-        self._figure = None
-        self._axis = None
+        self._modelset = modelset
+        self._figure = figure
+        self._axis = axis
+        self._ratiocolor='#4daf4a'
+        # color blind/friendly color cyle courtesy https://gist.github.com/thriveth/8560036
+        self._CB_color_cycle = ['#377eb8', '#ff7f00', '#4daf4a',
+                  '#f781bf', '#a65628', '#984ea3',
+                  '#999999', '#e41a1c', '#dede00']
     """Init method
 
     """
     
-    def plot():
+    def plot(self,id,**kwargs):
+        if '/' in id:
+            self.ratio(id,**kwargs)
+        else:
+            self.intensity(id,**kwargs)
+
+    def ratio(self,id,**kwargs):
+        ms = self._modelset
+        if id not in ms.supported_ratios["ratio label"]:
+            raise KeyError(f"{id} is not in your ModelSet")
+        
+        model = ms.get_models([id],model_type="ratio")
+        
+        kwargs_opts = {'title': ms.table.loc[id]["title"], 'colorbar':True}
+        kwargs_opts.update(kwargs)
+        self._plot_no_wcs(model[id],**kwargs_opts)
+
+    def intensity(self,id,**kwargs):
         # shouldn't need separate model intensity as keyword would tell you.
         # Idea: Put a 'modeltyp' keyword in FITS header whether it is intensity ratio or intensity.
-        pass
+        ms = self._modelset
+        meas = kwargs.get("measurements",None)
+        if id not in ms.supported_lines["intensity label"]:
+            raise KeyError(f"{id} is  in your ModelSet")
+        
+        model = ms.get_models([id],model_type="intensity")
+        if meas is not None:
+            if type(meas[0]) is not Measurement:
+                raise TypeError("measurement keyword value must be a list of Measurements")
+            if (model[id]._unit != meas[0].unit ):
+                raise TypeError(f"Model and Measurement for {id} have different units: ({model._unit},{meas_unit})")
+            if id != meas[0].id:
+                msg = f"Identifiers of model {id} and supplied Measurement {meas[0].id} do not match. Plotting anyway."
+                warnings.warn(msg)
 
-    def _plot():
-        pass
+        kwargs_opts = {'title': ms.table.loc[id]["title"], 'colorbar':True}
+        kwargs_opts.update(kwargs)
+        self._plot_no_wcs(model[id],**kwargs_opts)
 
     def _plot_no_wcs(self,data,header=None,**kwargs):
         '''generic plotting method for images with no WCS, used by other plot methods'''
@@ -76,6 +113,10 @@ class ModelPlot(PlotBase):
         # Merge in any keys the user provided, overriding defaults.
         kwargs_contour.update(kwargs)
         kwargs_opts.update(kwargs)
+
+        #if self._tool is not None:
+        #     if self._tool._modelnaxis is None and "NAXIS" not in _header:
+        #         raise Exception("Image header/WCS has no NAXIS keyword")
 
         if "NAXIS" not in _header:
             raise Exception("Image header/WCS has no NAXIS keyword")
@@ -255,11 +296,13 @@ class ModelPlot(PlotBase):
             self._axis[axidx].set_title(kwargs_opts['title'])
 
         if measurements is not None:
+            j = 0
             for m in measurements:
                 lstyles = ['--','-','--']
-                colors = [self._ratiocolor,self._ratiocolor,self._ratiocolor]
+                cc = self._CB_color_cycle[j]
+                colors = [cc,cc,cc]
                 for i in range(0,3):
                     cset = self._axis[axidx].contour(x,y,k.data,levels=m.levels, 
                                                      linestyles=lstyles, colors=colors)
-                
+                j=j+1
 
