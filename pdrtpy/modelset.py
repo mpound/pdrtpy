@@ -6,7 +6,7 @@ from copy import deepcopy
 import numpy as np
 from astropy.table import Table, unique, vstack
 import astropy.units as u
-from .pdrutils import get_table,model_dir,habing_unit,draine_unit,mathis_unit
+from .pdrutils import get_table,model_dir#,habing_unit,draine_unit,mathis_unit
 from .measurement import Measurement
 
 #@ToDo:
@@ -199,7 +199,7 @@ class ModelSet(object):
         # get intersection of input list and supported lines
         return list(set(m) & set(self._supported_lines["intensity label"])) 
 
-    def get_models(self,identifiers,model_type="ratio",unit=u.dimensionless_unscaled,ext="fits"):
+    def get_models(self,identifiers,model_type="ratio",ext="fits"):
         #if identifier not in self._identifiers["ID"]:
         #    raise Exception("There is no model in ModelSet %s with the identifier %s"%(self.name,identifier))
         models=dict()
@@ -215,7 +215,7 @@ class ModelSet(object):
         for k in a:
             _thefile = d+self._tabrow["path"]+self.table.loc[k]["filename"]+"."+ext
             _title = self._table.loc[k]['title']
-            _model = Measurement.read(_thefile,unit=unit,title=_title)
+            _model = Measurement.read(_thefile,title=_title)
             _wcs = _model.wcs
             if self.name == "wk2006" or self.name == "smc":
             # fix WK2006 model headers
