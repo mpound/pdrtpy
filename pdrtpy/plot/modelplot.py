@@ -47,23 +47,16 @@ class ModelPlot(PlotBase):
 
     def ratio(self,id,**kwargs):
         ms = self._modelset
-        if id not in ms.supported_ratios["ratio label"]:
-            raise KeyError(f"{id} is not in your ModelSet")
-        
-        model = ms.get_models([id],model_type="ratio")
-        
+        model = ms.get_model(id)
         kwargs_opts = {'title': ms.table.loc[id]["title"], 'colorbar':True}
         kwargs_opts.update(kwargs)
-        self._plot_no_wcs(model[id],**kwargs_opts)
+        self._plot_no_wcs(model,**kwargs_opts)
 
     def intensity(self,id,**kwargs):
         # shouldn't need separate model intensity as keyword would tell you.
         # Idea: Put a 'modeltyp' keyword in FITS header whether it is intensity ratio or intensity.
         ms = self._modelset
         meas = kwargs.get("measurements",None)
-        if id not in ms.supported_lines["intensity label"]:
-            raise KeyError(f"{id} is  in your ModelSet")
-        
         model = ms.get_models([id],model_type="intensity")
         if meas is not None:
             if type(meas[0]) is not Measurement:
