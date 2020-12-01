@@ -311,6 +311,7 @@ def to(unit,image):
      :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
      :return: an image with converted values and units
   """
+  #print("converting [%s] in %s to [%s]"%(image.unit,image.header["TITLE"],unit))
   value = image.unit.to(unit)
   newmap = deepcopy(image)
   newmap.data = newmap.data * value
