@@ -200,6 +200,15 @@ class ModelSet(object):
         return list(set(m) & set(self._supported_lines["intensity label"])) 
 
     def get_model(self,identifier,ext="fits"):
+        '''Get a specific model by its identifier
+
+        :param identifier: a :class:`~pdrtpy.measurement.Measurement` ID. It can be an intensity or a ratio,
+         e.g., "CII_158","CI_609/FIR"
+        :type identifier: str
+        :returns: The model matching the identifier
+        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        :raises: KeyError if identifier not found in this ModelSet
+        '''
 
         if identifier not in self.table["ratio"]:
             raise KeyError(f"{identifier} is not in this ModelSet")
@@ -236,6 +245,7 @@ class ModelSet(object):
         :type model_type: str
         :returns: The matching models as a list of class:`~pdrtpy.measurement.Measurement`. 
         :rtype: list
+        :raises: KeyError if identifiers not found in this ModelSet
         '''
 
         #if identifier not in self._identifiers["ID"]:
