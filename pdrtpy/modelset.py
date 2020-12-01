@@ -199,11 +199,48 @@ class ModelSet(object):
         # get intersection of input list and supported lines
         return list(set(m) & set(self._supported_lines["intensity label"])) 
 
+    def get_model(self,identifier,ext="fits"):
+
+        if identifier not in self.table["ratio"]:
+            raise KeyError(f"{identifier} is not in this ModelSet")
+
+        d = model_dir()
+        _thefile = d+self._tabrow["path"]+self.table.loc[identifier]["filename"]+"."+ext
+        _title = self._table.loc[identifier]['title']
+        _model = Measurement.read(_thefile,title=_title)
+        _wcs = _model.wcs
+        if self.name == "wk2006" or self.name == "smc":
+        # fix WK2006 model headers
+            if _wcs.wcs.cunit[0] == "":
+                _model.header["CUNIT1"] = "cm^-3"
+                _wcs.wcs.cunit[0] = u.Unit("cm^-3")
+            if _wcs.wcs.cunit[1] == "":
+                _model.header["CUNIT2"] = "Habing"
+                # Raises UnitScaleError:
+                # "The FITS unit format is not able to represent scales that are not powers of 10.  Multiply your data by 1.600000e-03."
+                # This causes all sorts of downstream problems.  Workaround in LineRatioFit.read_models().
+                #_model.wcs.wcs.cunit[1] = habing_unit
+        else:
+            # copy wcs cunit to header. used later.
+            _model.header["CUNIT1"] = str(_wcs.wcs.cunit[0])
+            _model.header["CUNIT2"] = str(_wcs.wcs.cunit[1])
+
+        return _model
+
     def get_models(self,identifiers,model_type="ratio",ext="fits"):
+        '''get the models from thie ModelSet that match the input list of identifiers
+
+        :param m: list of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g., ["CII_158","OI_145","CS_21"]
+        :type m: list
+        :param model_type: indicates which type of model is requested one of 'ratio' or 'intensity' 
+        :type model_type: str
+        :returns: The matching models as a list of class:`~pdrtpy.measurement.Measurement`. 
+        :rtype: list
+        '''
+
         #if identifier not in self._identifiers["ID"]:
         #    raise Exception("There is no model in ModelSet %s with the identifier %s"%(self.name,identifier))
         models=dict()
-        d = model_dir()
         a = list()
         self._table.remove_indices('ratio')
         self._table.add_index('ratio')
@@ -213,26 +250,7 @@ class ModelSet(object):
             a.extend(self.model_ratios(identifiers))
 
         for k in a:
-            _thefile = d+self._tabrow["path"]+self.table.loc[k]["filename"]+"."+ext
-            _title = self._table.loc[k]['title']
-            _model = Measurement.read(_thefile,title=_title)
-            _wcs = _model.wcs
-            if self.name == "wk2006" or self.name == "smc":
-            # fix WK2006 model headers
-                if _wcs.wcs.cunit[0] == "":
-                    _model.header["CUNIT1"] = "cm^-3"
-                    _wcs.wcs.cunit[0] = u.Unit("cm^-3")
-                if _wcs.wcs.cunit[1] == "":
-                    _model.header["CUNIT2"] = "Habing"
-                    # Raises UnitScaleError:
-                    # "The FITS unit format is not able to represent scales that are not powers of 10.  Multiply your data by 1.600000e-03."
-                    # This causes all sorts of downstream problems.  Workaround in LineRatioFit.read_models().
-                    #_model.wcs.wcs.cunit[1] = habing_unit
-            else:
-                # copy wcs cunit to header. used later.
-                _model.header["CUNIT1"] = str(_wcs.wcs.cunit[0])
-                _model.header["CUNIT2"] = str(_wcs.wcs.cunit[1])
-            models[k] = _model
+            models[k] = self.get_model(k,ext)
 
         return models
 
