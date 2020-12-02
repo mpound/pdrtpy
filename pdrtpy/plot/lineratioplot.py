@@ -62,6 +62,8 @@ class LineRatioPlot(PlotBase):
 
      * *measurements* (array-like) A list of single pixel Measurements that can be contoured over a model ratio or intensity map.
 
+     * *meas_color* (array of str) A list of colors to use when overlaying Measurement contours. There should be one color for each Measurement in the *measurement* keyword.  The Default of None will use a color-blind friendly color cycle.
+
      * *norm* (``str`` or :mod:`astropy.visualization` normalization object) The normalization to use in the image. The string 'simple' will normalize with :func:`~astropy.visualization.simple_norm` and 'zscale' will normalize with IRAF's zscale algorithm.  See :class:`~astropy.visualization.ZScaleInterval`.
 
      * *stretch* (``str``)  {'linear', 'sqrt', 'power', log', 'asinh'}. The stretch function to apply to the image for simple_norm.  The Default is 'linear'.
@@ -106,7 +108,7 @@ class LineRatioPlot(PlotBase):
         self._axis = None
         self._modelplot = ModelPlot(self._tool._modelset,self._figure,self._axis)
         self._ratiocolor=[]
-        self._CB_color_cycle = ['#377eb8', '#ff7f00', '#4daf4a',
+        self._CB_color_cycle = [ '#4daf4a', '#377eb8', '#ff7f00', 
                   '#f781bf', '#a65628', '#984ea3',
                   '#999999', '#e41a1c', '#dede00']
 
@@ -457,6 +459,7 @@ class LineRatioPlot(PlotBase):
         kwargs_opts = {'units': None,
                        'image':False,
                        'contours': False,
+                       'meas_color': None,
                        'levels' : None,
                        'label': False,
                        'linewidths': 1.0,
@@ -472,14 +475,20 @@ class LineRatioPlot(PlotBase):
 
         i =0 
         for key,val in self._tool._modelratios.items():
-            self._ratiocolor = self._CB_color_cycle[i]
+            if kwargs_opts['meas_color'] is None:
+                self._modelplot._meascolor = self._CB_color_cycle[i]
+            else:
+                self._modelplot._meascolor =  kwargs_opts['meas_color'][i] 
             kwargs_opts['measurements'] = [self._tool._observedratios[key]]
             if i > 0: kwargs_opts['reset']=False
             self._modelplot._plot_no_wcs(val,header=None,**kwargs_opts)
             i = i+1
 
         if kwargs_opts['legend']:
-            lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in self._CB_color_cycle[0:i]]
+            if kwargs_opts['meas_color'] is None:
+                lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in self._CB_color_cycle[0:i]]
+            else:
+                lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in kwargs_opts['meas_color'][0:i]]
             labels = [self._tool._modelratios[k].title for k in self._tool._modelratios]
             self._plt.legend(lines, labels,loc='upper center',title='Observed Ratios')
 
@@ -517,7 +526,9 @@ class LineRatioPlot(PlotBase):
             m = self._tool._model_files_used[key]
             kwargs_opts['measurements'] = [self._tool._observedratios[key]]
             self._ratiocolor='#4daf4a'
-            self._plot_no_wcs(val,header=None,**kwargs_opts)
+            self._modelplot._plot_no_wcs(val,header=None,**kwargs_opts)
+            self._axis = self._modelplot._axis
+            self._figure = self._modelplot._figure
             kwargs_opts['index'] = kwargs_opts['index'] + 1
             if kwargs_opts['legend']:
                 if 'title' not in kwargs: # then it was None, and we customize it
