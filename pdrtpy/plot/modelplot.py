@@ -30,7 +30,7 @@ class ModelPlot(PlotBase):
         self._modelset = modelset
         self._figure = figure
         self._axis = axis
-        self._ratiocolor='#4daf4a'
+        self._meascolor='#4daf4a'
         # color blind/friendly color cyle courtesy https://gist.github.com/thriveth/8560036
         self._CB_color_cycle = ['#377eb8', '#ff7f00', '#4daf4a',
                   '#f781bf', '#a65628', '#984ea3',
@@ -289,13 +289,10 @@ class ModelPlot(PlotBase):
             self._axis[axidx].set_title(kwargs_opts['title'])
 
         if measurements is not None:
-            j = 0
+            lstyles = ['--','-','--']
+            colors = [self._meascolor,self._meascolor,self._meascolor]
             for m in measurements:
-                lstyles = ['--','-','--']
-                cc = self._CB_color_cycle[j]
-                colors = [cc,cc,cc]
                 for i in range(0,3):
                     cset = self._axis[axidx].contour(x,y,k.data,levels=m.levels, 
                                                      linestyles=lstyles, colors=colors)
-                j=j+1
 
