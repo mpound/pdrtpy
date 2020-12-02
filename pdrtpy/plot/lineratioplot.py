@@ -128,8 +128,6 @@ class LineRatioPlot(PlotBase):
         kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'colorbar':True}
         kwargs_opts.update(kwargs)
         self._modelplot._plot_no_wcs(model[id],**kwargs_opts)
-        #if kwargs_opts['legend']:
-        #    legend = self._axis[0].legend(loc='upper center',title=kwargs_opts['title'])
 
     def modelratio(self,id,**kwargs):
         """Plot one of the model ratios
@@ -283,6 +281,7 @@ class LineRatioPlot(PlotBase):
                 kwargs_opts['title'] = r'$\chi^2$ (dof=%d)'%self._tool._dof
             label = r'$\chi_{min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)'%(self._tool._chisq_min.flux,x,y)
             self._axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
+            # handle legend locally
             if kwargs_opts['legend']:
                 legend = self._axis[0].legend(loc='upper center',title=kwargs_opts['title'])
 
@@ -382,6 +381,7 @@ class LineRatioPlot(PlotBase):
                 kwargs_opts['title'] = r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof
             label = r'$\chi_{\nu,min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)'%(self._tool._reduced_chisq_min.flux,x,y)
             self._axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
+            # handle legend locally
             if kwargs_opts['legend']:
                 legend = self._axis[0].legend(loc='upper center',title=kwargs_opts['title'])
 
