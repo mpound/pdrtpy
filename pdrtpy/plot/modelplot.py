@@ -32,7 +32,7 @@ class ModelPlot(PlotBase):
         self._axis = axis
         self._meascolor='#4daf4a'
         # color blind/friendly color cyle courtesy https://gist.github.com/thriveth/8560036
-        self._CB_color_cycle = ['#377eb8', '#ff7f00', '#4daf4a',
+        self._CB_color_cycle = ['#4daf4a', '#377eb8', '#ff7f00',
                   '#f781bf', '#a65628', '#984ea3',
                   '#999999', '#e41a1c', '#dede00']
     """Init method
@@ -48,9 +48,31 @@ class ModelPlot(PlotBase):
     def ratio(self,id,**kwargs):
         ms = self._modelset
         model = ms.get_model(id)
-        kwargs_opts = {'title': ms.table.loc[id]["title"], 'colorbar':True}
+        kwargs_opts = {'title': ms.table.loc[id]["title"], 
+                       'colorbar':True, 
+                       'contours':True,
+                       'colors':['white'],
+                       'meas_color': [self._CB_color_cycle[0]],
+                       'legend':True,
+                       'image':True
+                      }
         kwargs_opts.update(kwargs)
+
+        # make a sensible choice about contours if image is not shown
+        if not kwargs_opts['image'] and kwargs_opts['colors'][0] == 'white':
+           kwargs_opts['colors'][0] = 'black'
+
         self._plot_no_wcs(model,**kwargs_opts)
+        if kwargs_opts['legend']:
+            lines = list()
+            labels = list()
+            if kwargs_opts['contours']:
+                lines.append(Line2D([0], [0], color=kwargs_opts['colors'][0], linewidth=3, linestyle='-'))
+                labels.append("model")
+            lines.append(Line2D([0], [0], color=kwargs_opts['meas_color'][0], linewidth=3, linestyle='-'))
+            labels.append("observed")
+            #maybe loc should be 'best' but then it bounces around
+            self._axis[0].legend(lines, labels,loc='upper center',title=kwargs_opts['title'])
 
     def intensity(self,id,**kwargs):
         # shouldn't need separate model intensity as keyword would tell you.
@@ -67,9 +89,29 @@ class ModelPlot(PlotBase):
                 msg = f"Identifiers of model {id} and supplied Measurement {meas[0].id} do not match. Plotting anyway."
                 warnings.warn(msg)
 
-        kwargs_opts = {'title': ms.table.loc[id]["title"], 'colorbar':True}
+        kwargs_opts = {'title': ms.table.loc[id]["title"], 
+                       'colorbar':True, 
+                       'contours':True,
+                       'colors':['white'],
+                       'meas_color': [self._CB_color_cycle[0]],
+                       'legend':True,
+                       'image':True
+                      }
+
         kwargs_opts.update(kwargs)
+        if not kwargs_opts['image'] and kwargs_opts['colors'][0] == 'white':
+           kwargs_opts['colors'][0] = 'black'
         self._plot_no_wcs(model[id],**kwargs_opts)
+        if kwargs_opts['legend']:
+            lines = list()
+            labels = list()
+            if kwargs_opts['contours']:
+                lines.append(Line2D([0], [0], color=kwargs_opts['colors'][0], linewidth=3, linestyle='-'))
+                labels.append("model")
+            lines.append(Line2D([0], [0], color=kwargs_opts['meas_color'][0], linewidth=3, linestyle='-'))
+            labels.append("observed")
+            #maybe loc should be 'best' but then it bounces around
+            self._axis[0].legend(lines, labels,loc='upper center',title=kwargs_opts['title'])
 
     def _plot_no_wcs(self,data,header=None,**kwargs):
         '''generic plotting method for images with no WCS, used by other plot methods'''
@@ -280,19 +322,22 @@ class ModelPlot(PlotBase):
 
             if kwargs_opts['label']:
                 drawn = self._axis[axidx].clabel(contourset,contourset.levels,inline=True,fmt='%1.2e')
-                #print("drew %s"%drawn)
 
-        if kwargs_opts['title'] is not None: 
-            #if kwargs_opts['legend']:
-            #    legend = self._axis[axidx].legend(handles=None,loc='upper center',title=kwargs_opts['title'])
-            #else:
+        if kwargs_opts['title'] is not None and not kwargs_opts['legend']:
             self._axis[axidx].set_title(kwargs_opts['title'])
 
+        if kwargs_opts['meas_color'] is not None:
+            self._meascolor = kwargs_opts['meas_color'][0]
         if measurements is not None:
             lstyles = ['--','-','--']
             colors = [self._meascolor,self._meascolor,self._meascolor]
+            kwargs_contour['colors'].append(self._meascolor)
             for m in measurements:
                 for i in range(0,3):
                     cset = self._axis[axidx].contour(x,y,k.data,levels=m.levels, 
                                                      linestyles=lstyles, colors=colors)
 
+#def legend(self,labels,colors,loc='upper center',title=None,axindex=0):
+#    lw = 3
+#    ls = '-'
+#    self._axis[axindex].legend(lin
