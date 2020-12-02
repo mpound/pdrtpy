@@ -239,8 +239,8 @@ class ModelSet(object):
     def get_models(self,identifiers,model_type="ratio",ext="fits"):
         '''get the models from thie ModelSet that match the input list of identifiers
 
-        :param m: list of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g., ["CII_158","OI_145","CS_21"]
-        :type m: list
+        :param identifiers: list of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g., ["CII_158","OI_145","CS_21"]
+        :type identifiers: list
         :param model_type: indicates which type of model is requested one of 'ratio' or 'intensity' 
         :type model_type: str
         :returns: The matching models as a list of class:`~pdrtpy.measurement.Measurement`. 
