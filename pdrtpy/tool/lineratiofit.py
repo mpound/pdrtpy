@@ -242,7 +242,7 @@ storage mechanism.
            :param unit: units of the data 
            :type unit: string or astropy.Unit
         """
-        self._modelratios = self._modelset.get_models(self.measurementIDs,unit)
+        self._modelratios = self._modelset.get_models(self.measurementIDs,model_type='ratio')
         k = utils.firstkey(self._modelratios)
         self._modelnaxis = self._modelratios[k].wcs.naxis
         if not self.density_unit:
@@ -363,7 +363,7 @@ storage mechanism.
             for k,v in self._measurements.items():
                 # error is StdDevUncertainty so must use _array to get at raw values
                 indices = np.where((v.error <= mask[1][0]) | (v.error >= mask[1][1]))
-                print("%s indices: %s"%(k,indices))
+                #print("%s indices: %s"%(k,indices))
                 if v.mask is not None:
                     v.mask[indices] = True
                 else:
