@@ -509,6 +509,7 @@ class LineRatioPlot(PlotBase):
                        'levels' : None,
                        'label': False,
                        'linewidths': 1.0,
+                       'meas_color': None,
                        'ncols': 2,
                        'norm': 'simple',
                        'stretch': 'linear',
@@ -525,7 +526,10 @@ class LineRatioPlot(PlotBase):
             if kwargs_opts['index'] > 1: kwargs_opts['reset'] = False
             m = self._tool._model_files_used[key]
             kwargs_opts['measurements'] = [self._tool._observedratios[key]]
-            self._ratiocolor='#4daf4a'
+            if kwargs_opts['meas_color'] is None:
+                self._modelplot._meascolor='#4daf4a'
+            else:
+                self._modelplot._meascolor= kwargs_opts['meas_color'][0]
             self._modelplot._plot_no_wcs(val,header=None,**kwargs_opts)
             self._axis = self._modelplot._axis
             self._figure = self._modelplot._figure
@@ -540,7 +544,7 @@ class LineRatioPlot(PlotBase):
                 if kwargs_opts['contours']:
                     lines.append(Line2D([0], [0], color=kwargs_opts['colors'][0], linewidth=3, linestyle='-'))
                     labels.append("model")
-                lines.append(Line2D([0], [0], color=self._ratiocolor, linewidth=3, linestyle='-'))
+                lines.append(Line2D([0], [0], color=self._modelplot._meascolor, linewidth=3, linestyle='-'))
                 labels.append("observed")
                 #maybe loc should be 'best' but then it bounces around
                 self._axis[axidx].legend(lines, labels,loc='upper center',title=_title)
