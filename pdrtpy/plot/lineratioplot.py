@@ -58,6 +58,8 @@ class LineRatioPlot(PlotBase):
 
      * *linewidths* (``float or sequence of float``), the line width in points, Default: 1.0
 
+     * *legend* (``bool``) Draw a legend on the plot. If False, a title is drawn above the plot with the value of the *title* keyword
+
      * *levels* (``int`` or array-like) Determines the number and positions of the contour lines / regions.  If an int n, use n data intervals; i.e. draw n+1 contour lines. The level heights are automatically chosen.  If array-like, draw contour lines at the specified levels. The values must be in increasing order.  
 
      * *measurements* (array-like) A list of single pixel Measurements that can be contoured over a model ratio or intensity map.
