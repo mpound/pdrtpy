@@ -30,7 +30,6 @@ class ModelPlot(PlotBase):
         self._modelset = modelset
         self._figure = figure
         self._axis = axis
-        self._meascolor='#4daf4a'
         # color blind/friendly color cyle courtesy https://gist.github.com/thriveth/8560036
         self._CB_color_cycle = ['#4daf4a', '#377eb8', '#ff7f00',
                   '#f781bf', '#a65628', '#984ea3',
@@ -113,6 +112,36 @@ class ModelPlot(PlotBase):
             #maybe loc should be 'best' but then it bounces around
             self._axis[0].legend(lines, labels,loc='upper center',title=kwargs_opts['title'])
 
+    def overlay(self,measurements,**kwargs):
+        kwargs_opts = {'units': None,
+                       'image':False,
+                       'contours': False,
+                       'meas_color': self._CB_color_cycle,
+                       'levels' : None,
+                       'label': False,
+                       'linewidths': 1.0,
+                       'ncols': 1,
+                       'norm': None,
+                       'title': None,
+                       'reset': True,
+                       'legend': True}
+
+        ids = [m.id for m in measurements]
+        meas = dict(zip(ids,measurements))
+        models = [self._modelset.get_model(i) for i in ids]
+        i =0 
+        for val in models:
+            if i > 0: kwargs_opts['reset']=False
+            # pass the index of the contour color to use via the "secret" colorcounter keyword.
+            self._plot_no_wcs(val,header=None,measurements=[meas[val.id]],colorcounter=i,**kwargs_opts)
+            i = i+1
+        if kwargs_opts['legend']:
+            lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in kwargs_opts['meas_color'][0:i]]
+            labels = [k.title for k in models]
+            self._plt.legend(lines, labels,loc='upper center',title='Observed Ratios')
+
+
+    #@todo allow data to be an array? see overlay()
     def _plot_no_wcs(self,data,header=None,**kwargs):
         '''generic plotting method for images with no WCS, used by other plot methods'''
         #print("KWARGS is ",kwargs)
@@ -137,7 +166,8 @@ class ModelPlot(PlotBase):
                        'title':None,
                        'xaxis_unit': None,
                        'yaxis_unit': None,
-                       'legend': False
+                       'legend': False,
+                       'meas_color': ['#4daf4a']
                        }
 
         kwargs_contour = {'levels': None, 
@@ -326,16 +356,30 @@ class ModelPlot(PlotBase):
         if kwargs_opts['title'] is not None and not kwargs_opts['legend']:
             self._axis[axidx].set_title(kwargs_opts['title'])
 
-        if kwargs_opts['meas_color'] is not None:
-            self._meascolor = kwargs_opts['meas_color'][0]
+        if measurements is None:
+            mlen = 0
+        else:
+            mlen =  len(measurements)
+        if len(kwargs_opts['meas_color']) < mlen:
+            raise ValueError(f"Number of measurement colors (meas_color keyword) must match number of measurements ({mlen})")
+
         if measurements is not None:
             lstyles = ['--','-','--']
-            colors = [self._meascolor,self._meascolor,self._meascolor]
-            kwargs_contour['colors'].append(self._meascolor)
+            # for serial calls to plot_no_wcs in an outside method (i.e. lineratioplot.overlay_all_ratios),
+            # we need to keep track of the index for the measurement color, otherwise we always 
+            # select color index 0, resulting in all measurements contours having the same color.
+            # this is a kluge but it's all I can think of right now.
+            if 'colorcounter' in kwargs:
+                jj = kwargs['colorcounter']
+            else:
+                jj = 0
             for m in measurements:
-                for i in range(0,3):
-                    cset = self._axis[axidx].contour(x,y,k.data,levels=m.levels, 
-                                                     linestyles=lstyles, colors=colors)
+                # for the case of colorcounter kluge len(m) will always be 1, so we don't
+                # run into issues with incrementing of jj interfering with colorcounter.
+                colors = kwargs_opts['meas_color'][jj]*mlen
+                cset = self._axis[axidx].contour(x,y,k.data,levels=m.levels, 
+                                                 linestyles=lstyles, colors=colors)
+                jj=jj+1
 
 #def legend(self,labels,colors,loc='upper center',title=None,axindex=0):
 #    lw = 3

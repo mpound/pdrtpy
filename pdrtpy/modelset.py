@@ -35,6 +35,9 @@ class ModelSet(object):
         self._table.add_index("ratio")
         self._set_identifiers()
         self._set_ratios()
+        self._default_unit = dict()
+        self._default_unit["ratio"] = u.dimensionless_unscaled
+        self._default_unit["intensity"] = u.Unit("erg cm-2 s-1 sr-1")
 
     @property
     def description(self):
@@ -199,7 +202,7 @@ class ModelSet(object):
         # get intersection of input list and supported lines
         return list(set(m) & set(self._supported_lines["intensity label"])) 
 
-    def get_model(self,identifier,ext="fits"):
+    def get_model(self,identifier,unit=None,ext="fits"):
         '''Get a specific model by its identifier
 
         :param identifier: a :class:`~pdrtpy.measurement.Measurement` ID. It can be an intensity or a ratio,
@@ -216,7 +219,13 @@ class ModelSet(object):
         d = model_dir()
         _thefile = d+self._tabrow["path"]+self.table.loc[identifier]["filename"]+"."+ext
         _title = self._table.loc[identifier]['title']
-        _model = Measurement.read(_thefile,title=_title)
+        if unit is None:
+            # make a guess at the unit
+            if '/' in identifier:
+                unit = self._default_unit["ratio"]
+            else:
+                unit = self._default_unit['intensity']
+        _model = Measurement.read(_thefile,title=_title,unit=unit,identifier=identifier)
         _wcs = _model.wcs
         if self.name == "wk2006" or self.name == "smc":
         # fix WK2006 model headers
@@ -250,6 +259,8 @@ class ModelSet(object):
 
         #if identifier not in self._identifiers["ID"]:
         #    raise Exception("There is no model in ModelSet %s with the identifier %s"%(self.name,identifier))
+        if model_type != "intensity" and model_type != "ratio" and model_type != "both":
+            raise ValueError("Unrecognized model_type: must be one of 'intensity', 'ratio', or 'both'")
         models=dict()
         a = list()
         self._table.remove_indices('ratio')
@@ -258,9 +269,13 @@ class ModelSet(object):
             a.extend(self.model_intensities(identifiers))
         if model_type == "ratio" or model_type == "both":
             a.extend(self.model_ratios(identifiers))
-
+            
+        if model_type == "intensity" or model_type == "ratio":
+            _unit = self._default_unit[model_type]
+        else:
+            _unit = None
         for k in a:
-            models[k] = self.get_model(k,ext)
+            models[k] = self.get_model(k,unit=_unit,ext=ext)
 
         return models
 

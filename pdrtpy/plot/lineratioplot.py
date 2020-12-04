@@ -108,7 +108,7 @@ class LineRatioPlot(PlotBase):
         self._axis = None
         self._modelplot = ModelPlot(self._tool._modelset,self._figure,self._axis)
         self._ratiocolor=[]
-        self._CB_color_cycle = [ '#4daf4a', '#377eb8', '#ff7f00', 
+        self._CB_color_cycle = [ '#377eb8', '#ff7f00', '#4daf4a',
                   '#f781bf', '#a65628', '#984ea3',
                   '#999999', '#e41a1c', '#dede00']
 
@@ -198,15 +198,15 @@ class LineRatioPlot(PlotBase):
         kwargs_opts.update(kwargs)
 
         # handle single pixel case
-        if len( self._tool._radiation_field.shape) == 0 :
-            return utils.to(kwargs_opts['units'],self._tool._radiation_field)
+        if len( self._tool.radiation_field.shape) == 0 :
+            return utils.to(kwargs_opts['units'],self._tool.radiation_field)
 
         if kwargs_opts['title'] is None:
             rad_title = utils.get_rad(kwargs_opts['units']) 
             tunit=u.Unit(kwargs_opts['units'])
             kwargs_opts['title'] = r"{0} [{1:latex_inline}]".format(rad_title,tunit)
 
-        self._plot(self._tool._radiation_field,**kwargs_opts)
+        self._plot(self._tool.radiation_field,**kwargs_opts)
 
     #def chisq(self,xaxis,xpix,ypix):
     #    """Make a line plot of chisq as a function of G0 or n for a given pixel"""
@@ -459,7 +459,7 @@ class LineRatioPlot(PlotBase):
         kwargs_opts = {'units': None,
                        'image':False,
                        'contours': False,
-                       'meas_color': None,
+                       'meas_color': self._CB_color_cycle,
                        'levels' : None,
                        'label': False,
                        'linewidths': 1.0,
@@ -475,20 +475,14 @@ class LineRatioPlot(PlotBase):
 
         i =0 
         for key,val in self._tool._modelratios.items():
-            if kwargs_opts['meas_color'] is None:
-                self._modelplot._meascolor = self._CB_color_cycle[i]
-            else:
-                self._modelplot._meascolor =  kwargs_opts['meas_color'][i] 
             kwargs_opts['measurements'] = [self._tool._observedratios[key]]
             if i > 0: kwargs_opts['reset']=False
-            self._modelplot._plot_no_wcs(val,header=None,**kwargs_opts)
+            # pass the index of the contour color to use via the "secret" colorcounter keyword.
+            self._modelplot._plot_no_wcs(val,header=None,colorcounter=i,**kwargs_opts)
             i = i+1
 
         if kwargs_opts['legend']:
-            if kwargs_opts['meas_color'] is None:
-                lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in self._CB_color_cycle[0:i]]
-            else:
-                lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in kwargs_opts['meas_color'][0:i]]
+            lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in kwargs_opts['meas_color'][0:i]]
             labels = [self._tool._modelratios[k].title for k in self._tool._modelratios]
             self._plt.legend(lines, labels,loc='upper center',title='Observed Ratios')
 
@@ -509,7 +503,7 @@ class LineRatioPlot(PlotBase):
                        'levels' : None,
                        'label': False,
                        'linewidths': 1.0,
-                       'meas_color': None,
+                       'meas_color':  ['#4daf4a'],
                        'ncols': 2,
                        'norm': 'simple',
                        'stretch': 'linear',
@@ -521,15 +515,16 @@ class LineRatioPlot(PlotBase):
 
         kwargs_opts["ncols"] = min(kwargs_opts["ncols"],self._tool.ratiocount)
         kwargs_opts["nrows"] = int(round(self._tool.ratiocount/kwargs_opts["ncols"]+0.49,0))
+        # defend against meas_color not being a list
+        if type(kwargs_opts['meas_color']) == str:
+            #warnings.warn("meas_color should be a list")
+            kwargs_opts['meas_color']=[kwargs_opts['meas_color']]
+
         for key,val in self._tool._modelratios.items():
             axidx = kwargs_opts['index']-1
             if kwargs_opts['index'] > 1: kwargs_opts['reset'] = False
             m = self._tool._model_files_used[key]
             kwargs_opts['measurements'] = [self._tool._observedratios[key]]
-            if kwargs_opts['meas_color'] is None:
-                self._modelplot._meascolor='#4daf4a'
-            else:
-                self._modelplot._meascolor= kwargs_opts['meas_color'][0]
             self._modelplot._plot_no_wcs(val,header=None,**kwargs_opts)
             self._axis = self._modelplot._axis
             self._figure = self._modelplot._figure
@@ -544,7 +539,7 @@ class LineRatioPlot(PlotBase):
                 if kwargs_opts['contours']:
                     lines.append(Line2D([0], [0], color=kwargs_opts['colors'][0], linewidth=3, linestyle='-'))
                     labels.append("model")
-                lines.append(Line2D([0], [0], color=self._modelplot._meascolor, linewidth=3, linestyle='-'))
+                lines.append(Line2D([0], [0], color=kwargs_opts['meas_color'][0], linewidth=3, linestyle='-'))
                 labels.append("observed")
                 #maybe loc should be 'best' but then it bounces around
                 self._axis[axidx].legend(lines, labels,loc='upper center',title=_title)
