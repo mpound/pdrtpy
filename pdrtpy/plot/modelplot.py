@@ -120,11 +120,17 @@ class ModelPlot(PlotBase):
 
     def overlay(self,measurements,**kwargs):
         '''Overlay one or more single-pixel measurements in the model space ($n,G_0). 
-        Measurements will be drawn in solid contour for the value and dashed for the +/- errors.
-        @todo shading
-        
+
         :param measurements: a list of one or more :class:`pdrtpy.measurement.Measurement` to overlay.
         :type measurements: list
+        :param shading: Controls how measurements and errors are drawn.
+        If shading is zero, Measurements will be drawn in solid contour for
+        the value and dashed for the +/- errors. If shading is between 0
+        and 1, Measurements are drawn with as filled contours representing
+        the size of the errors (see :meth:`~matplotlib.pyplot.contourf`)
+        with alpha set to the shading value.
+        :type shading: float
+        
         '''
 
         kwargs_opts = {'units': None,
@@ -140,6 +146,9 @@ class ModelPlot(PlotBase):
                        'reset': True,
                        'legend': True}
 
+        kwargs_opts.update(kwargs)
+        if kwargs_opts['shading'] <0 or kwargs_opts['shading']>1:
+            raise ValueError("Shading must be between 0 and 1 inclusive")
         ids = [m.id for m in measurements]
         meas = dict(zip(ids,measurements))
         models = [self._modelset.get_model(i) for i in ids]
@@ -183,7 +192,8 @@ class ModelPlot(PlotBase):
                        'xaxis_unit': None,
                        'yaxis_unit': None,
                        'legend': False,
-                       'meas_color': ['#4daf4a']
+                       'meas_color': ['#4daf4a'],
+                       'shading': 0,
                        }
 
         kwargs_contour = {'levels': None, 
@@ -393,8 +403,11 @@ class ModelPlot(PlotBase):
                 # for the case of colorcounter kluge len(m) will always be 1, so we don't
                 # run into issues with incrementing of jj interfering with colorcounter.
                 colors = kwargs_opts['meas_color'][jj]*mlen
-                cset = self._axis[axidx].contour(x,y,k.data,levels=m.levels, 
-                                                 linestyles=lstyles, colors=colors)
+                if kwargs_opts['shading'] != 0:
+                    cset = self._axis[axidx].contourf(x,y,k.data,levels=m.levels, colors=colors,alpha=kwargs_opts['shading'])
+                else:
+                    cset = self._axis[axidx].contour(x,y,k.data,levels=m.levels, 
+                                                     linestyles=lstyles, colors=colors)
                 jj=jj+1
 
 #def legend(self,labels,colors,loc='upper center',title=None,axindex=0):
