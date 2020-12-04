@@ -23,9 +23,15 @@ from .. import pdrutils as utils
 
 
 class ModelPlot(PlotBase):
-    """Class to plot models and optionally Measurements.  It does not LineRatioFit first.
+    """Class to plot models and optionally Measurements.  It does not require LineRatioFit first.
+        The methods of this class can take a variety of optional keywords. See the doc for LineRatioPlot for a description of these keywords. @todo move doc someplace more useful
     """
     def __init__(self,modelset,figure=None,axis=None):
+        """Init method
+
+           :param modelset: The set of models to use in these plots.
+           :type modelset: `~pdrtpy.modelset.ModelSet`
+        """
         super().__init__(tool=None)
         self._modelset = modelset
         self._figure = figure
@@ -113,6 +119,14 @@ class ModelPlot(PlotBase):
             self._axis[0].legend(lines, labels,loc='upper center',title=kwargs_opts['title'])
 
     def overlay(self,measurements,**kwargs):
+        '''Overlay one or more single-pixel measurements in the model space ($n,G_0). 
+        Measurements will be drawn in solid contour for the value and dashed for the +/- errors.
+        @todo shading
+        
+        :param measurements: a list of one or more :class:`pdrtpy.measurement.Measurement` to overlay.
+        :type measurements: list
+        '''
+
         kwargs_opts = {'units': None,
                        'image':False,
                        'contours': False,
@@ -131,6 +145,8 @@ class ModelPlot(PlotBase):
         models = [self._modelset.get_model(i) for i in ids]
         i =0 
         for val in models:
+            if len(meas[val.id].data) != 1:
+                raise ValueError(f"Can't plot {val.id}. This method only works with single pixel Measurements [len(measurement.data) must be 1]")
             if i > 0: kwargs_opts['reset']=False
             # pass the index of the contour color to use via the "secret" colorcounter keyword.
             self._plot_no_wcs(val,header=None,measurements=[meas[val.id]],colorcounter=i,**kwargs_opts)
