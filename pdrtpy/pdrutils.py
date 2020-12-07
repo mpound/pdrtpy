@@ -19,6 +19,7 @@ from pdrtpy import version
 _RFS_UNIT_ = u.erg/(u.second*u.cm*u.cm)
 _OBS_UNIT_ = u.erg/(u.second*u.cm*u.cm*u.sr)
 _CM = u.Unit("cm")
+_KKMS = u.Unit("K km s-1")
 
 # ISRF in other units
 #The wavelength of 1110 Ang is the longest wavelength for H2 excitation,
@@ -399,7 +400,7 @@ def convert_integrated_intensity(image,wavelength=None):
 
   with :math:`\lambda`  in cm, the factor :math:`10^5` is to convert :math:`dV` in :math:`{\rm km~s}^{-1}` to :math:`{\rm cm~s}^{-1}`.
 
-  :param image: the image to convert. It must have a `numpy.ndarray` data member and `astropy.units.Unit` unit member. It's units must be K km/s
+  :param image: the image to convert. It must have a `numpy.ndarray` data member and `astropy.units.Unit` unit member or header BUNIT keyword. It's units must be K km/s
   :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
   :param wavelength: the wavelength of the observation. The default is to determine wavelength from the image header RESTFREQ keyword
   :type wavelength: :class:`astropy.units.Quantity`
@@ -411,7 +412,9 @@ def convert_integrated_intensity(image,wavelength=None):
   if f is not None and wavelength is None:
      # FITS restfreq's are in Hz
      wavelength = u.Quantity(f,"Hz").to(_CM,equivalencies=u.spectral())
-  if image.header.get("BUNIT",None) != "K km/s":
+  if image.header.get("BUNIT",None) is None:
+     raise Exception("Image BUNIT must be present and equal to 'K km/s'")
+  if u.Unit(image.header.get("BUNIT")) != _KKMS:
      raise Exception("Image BUNIT must be 'K km/s'")
   factor = 2E5*k_B/wavelength**3
   print("Converting K km/s to %s using Factor = %s"%(_OBS_UNIT_, "{0:+0.3E}".format(factor.decompose(u.cgs.bases))))
@@ -424,6 +427,24 @@ def convert_integrated_intensity(image,wavelength=None):
      newmap._uncertainty.array = newmap.uncertainty.array * value
      newmap._uncertainty.unit = _OBS_UNIT_
   return newmap
+
+def convert_if_necessary(image):
+    """Helper method to convert integrated intensity units in an image or Measurement 
+       from :math:`{\rm K~km~s}^{-1}` to :math:`{\rm erg~s^{-1}~cm^{-2}~sr^{-1}}`. If a
+       conversion is necessary, the :meth:`convert_integrated_intensity` is called. 
+       If not, the image is returned unchanged.
+
+     :param image: the image to convert. It must have a `numpy.ndarray` data member and `astropy.units.Unit` unit member or a header BUNIT keyword. It's units must be K km/s.  It must also have a header RESTFREQ keyword.
+     :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+
+     :return: an image with converted values and units
+     """
+    _u1 = u.Unit(image.header["BUNIT"])
+    _u2 = u.Unit("K km s-1")
+    if _u1 == _u2:
+        return convert_integrated_intensity(image)
+    else:
+        return image
 
 def mask_union(arrays):
     """Return the union mask (logical OR) of the input masked arrays.

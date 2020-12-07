@@ -223,10 +223,19 @@ class ModelSet(object):
             # make a guess at the unit
             if '/' in identifier:
                 unit = self._default_unit["ratio"]
+                modeltype = "ratio"
             else:
                 unit = self._default_unit['intensity']
+                modeltype = "intensity"
+        else:
+            if unit == u.dimensionless_unscaled:
+                modeltype = "ratio"
+            else:
+                modeltype = "intensity"
         _model = Measurement.read(_thefile,title=_title,unit=unit,identifier=identifier)
         _wcs = _model.wcs
+        _model.header["MODELTYP"] = modeltype
+        _model.modeltype = modeltype
         if self.name == "wk2006" or self.name == "smc":
         # fix WK2006 model headers
             if _wcs.wcs.cunit[0] == "":

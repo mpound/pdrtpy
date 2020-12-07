@@ -386,8 +386,8 @@ storage mechanism.
         for p in z:
             label = p["numerator"]+"/"+p["denominator"]
             # deepcopy workaround for bug: https://github.com/astropy/astropy/issues/9006
-            num = self._convert_if_necessary(self._measurements[p["numerator"]])
-            denom = self._convert_if_necessary(self._measurements[p["denominator"]])
+            num = utils.convert_if_necessary(self._measurements[p["numerator"]])
+            denom = utils.convert_if_necessary(self._measurements[p["denominator"]])
             #print("%s mask is None: %s "%(p["numerator"],num.mask is None))
             #print("%s mask is None: %s "%(p["denominator"],denom.mask is None))
             self._observedratios[label] = deepcopy(num/denom)
@@ -404,8 +404,8 @@ storage mechanism.
             if "OI_63" in m:
                 lab="OI_63+CII_158/FIR"
                 #print(l)
-                oi = self._convert_if_necessary(self._measurements["OI_63"])
-                cii = self._convert_if_necessary(self._measurements["CII_158"])
+                oi = utils.convert_if_necessary(self._measurements["OI_63"])
+                cii = utils.convert_if_necessary(self._measurements["CII_158"])
                 a = deepcopy(oi+cii)
                 b = deepcopy(self._measurements["FIR"])
                 self._observedratios[lab] = a/b
@@ -414,8 +414,8 @@ storage mechanism.
             if "OI_145" in m:
                 lab="OI_145+CII_158/FIR"
                 #print(ll)
-                oi = self._convert_if_necessary(self._measurements["OI_145"])
-                cii = self._convert_if_necessary(self._measurements["CII_158"])
+                oi = utils.convert_if_necessary(self._measurements["OI_145"])
+                cii = utils.convert_if_necessary(self._measurements["CII_158"])
                 aa = deepcopy(oi+cii)
                 bb = deepcopy(self._measurements["FIR"])
                 self._observedratios[lab] = aa/bb
@@ -785,16 +785,3 @@ storage mechanism.
         # convert from OrderedDict to astropy.io.fits.header.Header
         self._density.header = Header(self._density.header)
         self._radiation_field.header = Header(self._radiation_field.header)
-
-       
-    def _convert_if_necessary(self,image):
-        """If the input image has units of K km/s convert it to intensity
-
-        :param image: The image to which to add the header values
-        :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
-        """
-        if image.header["BUNIT"] == "K km/s":
-            return utils.convert_integrated_intensity(image)
-        else:
-            return image
-

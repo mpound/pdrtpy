@@ -37,7 +37,7 @@ class ModelPlot(PlotBase):
         self._figure = figure
         self._axis = axis
         # color blind/friendly color cyle courtesy https://gist.github.com/thriveth/8560036
-        self._CB_color_cycle = ['#4daf4a', '#377eb8', '#ff7f00',
+        self._CB_color_cycle = ['#377eb8', '#ff7f00','#4daf4a',
                   '#f781bf', '#a65628', '#984ea3',
                   '#999999', '#e41a1c', '#dede00']
     """Init method
@@ -45,10 +45,12 @@ class ModelPlot(PlotBase):
     """
     
     def plot(self,id,**kwargs):
+        kwargs_opts = { 'measurements': None}
+        kwargs_opts.update(kwargs)
         if '/' in id:
-            self.ratio(id,**kwargs)
+            self.ratio(id,**kwargs_opts)
         else:
-            self.intensity(id,**kwargs)
+            self.intensity(id,**kwargs_opts)
 
     def ratio(self,id,**kwargs):
         ms = self._modelset
@@ -59,7 +61,7 @@ class ModelPlot(PlotBase):
                        'colors':['white'],
                        'meas_color': [self._CB_color_cycle[0]],
                        'legend':True,
-                       'image':True
+                       'image':True,
                       }
         kwargs_opts.update(kwargs)
 
@@ -74,8 +76,9 @@ class ModelPlot(PlotBase):
             if kwargs_opts['contours']:
                 lines.append(Line2D([0], [0], color=kwargs_opts['colors'][0], linewidth=3, linestyle='-'))
                 labels.append("model")
-            lines.append(Line2D([0], [0], color=kwargs_opts['meas_color'][0], linewidth=3, linestyle='-'))
-            labels.append("observed")
+            if kwargs_opts['measurements'] is not None:
+                lines.append(Line2D([0], [0], color=kwargs_opts['meas_color'][0], linewidth=3, linestyle='-'))
+                labels.append("observed")
             #maybe loc should be 'best' but then it bounces around
             self._axis[0].legend(lines, labels,loc='upper center',title=kwargs_opts['title'])
 
@@ -113,10 +116,12 @@ class ModelPlot(PlotBase):
             if kwargs_opts['contours']:
                 lines.append(Line2D([0], [0], color=kwargs_opts['colors'][0], linewidth=3, linestyle='-'))
                 labels.append("model")
-            lines.append(Line2D([0], [0], color=kwargs_opts['meas_color'][0], linewidth=3, linestyle='-'))
-            labels.append("observed")
+            if kwargs_opts['measurements'] is not None:
+                lines.append(Line2D([0], [0], color=kwargs_opts['meas_color'][0], linewidth=3, linestyle='-'))
+                labels.append("observed")
             #maybe loc should be 'best' but then it bounces around
             self._axis[0].legend(lines, labels,loc='upper center',title=kwargs_opts['title'])
+
 
     def overlay(self,measurements,**kwargs):
         '''Overlay one or more single-pixel measurements in the model space ($n,G_0). 
@@ -128,7 +133,7 @@ class ModelPlot(PlotBase):
         the value and dashed for the +/- errors. If shading is between 0
         and 1, Measurements are drawn with as filled contours representing
         the size of the errors (see :meth:`~matplotlib.pyplot.contourf`)
-        with alpha set to the shading value.
+        with alpha set to the shading value.  Default value: 0.4
         :type shading: float
         
         '''
@@ -144,7 +149,8 @@ class ModelPlot(PlotBase):
                        'norm': None,
                        'title': None,
                        'reset': True,
-                       'legend': True}
+                       'legend': True,
+                       'shading': 0.4}
 
         kwargs_opts.update(kwargs)
         if kwargs_opts['shading'] <0 or kwargs_opts['shading']>1:
@@ -153,17 +159,29 @@ class ModelPlot(PlotBase):
         meas = dict(zip(ids,measurements))
         models = [self._modelset.get_model(i) for i in ids]
         i =0 
+        nratio = 0
+        nintensity = 0
         for val in models:
             if len(meas[val.id].data) != 1:
                 raise ValueError(f"Can't plot {val.id}. This method only works with single pixel Measurements [len(measurement.data) must be 1]")
             if i > 0: kwargs_opts['reset']=False
             # pass the index of the contour color to use via the "secret" colorcounter keyword.
-            self._plot_no_wcs(val,header=None,measurements=[meas[val.id]],colorcounter=i,**kwargs_opts)
+            self._plot_no_wcs(val,header=None,
+                              measurements=[utils.convert_if_necessary(meas[val.id])],
+                              colorcounter=i,**kwargs_opts)
+            if val.modeltype == "ratio": nratio=nratio+1
+            if val.modeltype == "intensity": nintensity=nintensity+1
             i = i+1
         if kwargs_opts['legend']:
+            if nratio == 0 and nintensity >0:
+                word = "Intensities"
+            elif nratio >0 and nintensity == 0:
+                word = "Ratios"
+            else:
+                word = "Values"
             lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in kwargs_opts['meas_color'][0:i]]
             labels = [k.title for k in models]
-            self._plt.legend(lines, labels,loc='upper center',title='Observed Ratios')
+            self._plt.legend(lines, labels,loc='upper center',title='Observed '+word)
 
 
     #@todo allow data to be an array? see overlay()
@@ -193,7 +211,7 @@ class ModelPlot(PlotBase):
                        'yaxis_unit': None,
                        'legend': False,
                        'meas_color': ['#4daf4a'],
-                       'shading': 0,
+                       'shading': 0.4
                        }
 
         kwargs_contour = {'levels': None, 
@@ -373,7 +391,9 @@ class ModelPlot(PlotBase):
                        'constrained_layout','figsize','stretch']:
                 kwargs_contour.pop(kx,None)
 
+            warnings.simplefilter('ignore',category=UserWarning)
             contourset = self._axis[axidx].contour(x,y,km.data, **kwargs_contour)
+            warnings.resetwarnings()
             #print(contourset.__dict__)
 
             if kwargs_opts['label']:
