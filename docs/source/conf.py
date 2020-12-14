@@ -18,6 +18,7 @@ sys.path.insert(0, os.path.abspath('../../pdrtpy'))
 # -- Project information -----------------------------------------------------
 
 import pdrtpy
+#import sphinx_automodapi
 from time import localtime
 
 project = 'pdrtpy'
@@ -46,9 +47,9 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.intersphinx',
     'numpydoc',
-    'sphinx_automodapi.automodapi',
 ]
 numpydoc_show_class_members = True
+#autosummary_generate = True
 
 intersphinx_mapping = { 
     'python': ('https://docs.python.org/3', None),

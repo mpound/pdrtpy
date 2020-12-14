@@ -74,7 +74,7 @@ Then go ahead and install the `Example Notebooks`_.
 Example Notebooks
 -----------------
 
-We have prepared 4 jupyter iPython notebooks with examples of how to use ``pdrtpy``.  You can download these as follows.
+We have prepared jupyter iPython notebooks with examples of how to use ``pdrtpy``.  You can download these as follows.
 
 .. code-block:: sh
 
@@ -87,6 +87,7 @@ To familiarize yourself with the capabilities of ``pdrtpy``, we suggest you do t
 
 - PDRT_Example_Measurements.ipynb 
 - PDRT_Example_ModelSets.ipynb
+- PDRT_Example_Model_Plotting.ipynb
 - PDRT_Example_Find_n_G0_Single_Pixel.ipynb  
 - PDRT_Example_Make_n_G0_maps.ipynb       
 
