@@ -23,7 +23,7 @@ from .. import pdrutils as utils
 
 
 class ModelPlot(PlotBase):
-    """Class to plot models and optionally Measurements.  It does not require LineRatioFit first.
+    """Class to plot models and optionally Measurements.  It does not require :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` first.
         The methods of this class can take a variety of optional keywords. See the doc for LineRatioPlot for a description of these keywords. @todo move doc someplace more useful
     """
     def __init__(self,modelset,figure=None,axis=None):
@@ -44,18 +44,32 @@ class ModelPlot(PlotBase):
 
     """
     
-    def plot(self,id,**kwargs):
+    def plot(self,identifier,**kwargs):
+        """Plot a model intensity or ratio
+
+        :param identifier: Identifier tag for the model to plot, e.g., "CII_158","OI_145","CO_43/CO_21']
+        :type identifier: str
+
+        :SeeAlso: `meth:~pdrtpy.modelset.ModelSet.supported_lines` for a list of available identifer tags
+        """
         kwargs_opts = { 'measurements': None}
         kwargs_opts.update(kwargs)
-        if '/' in id:
-            self.ratio(id,**kwargs_opts)
+        if '/' in identifier:
+            self.ratio(identifier,**kwargs_opts)
         else:
-            self.intensity(id,**kwargs_opts)
+            self.intensity(identifier,**kwargs_opts)
 
-    def ratio(self,id,**kwargs):
+    def ratio(self,identifier,**kwargs):
+        """Plot a model ratio
+
+        :param identifier: Identifier tag for the model to plot, e.g., "OI_63+CII_158/FIR", "CO_43/CO_21']
+        :type identifier: str
+
+        :SeeAlso: `meth:~pdrtpy.modelset.ModelSet.supported_ratios` for a list of available identifer tags
+        """
         ms = self._modelset
-        model = ms.get_model(id)
-        kwargs_opts = {'title': ms.table.loc[id]["title"], 
+        model = ms.get_model(identifier)
+        kwargs_opts = {'title': ms.table.loc[identifier]["title"], 
                        'colorbar':True, 
                        'contours':True,
                        'colors':['white'],
@@ -82,22 +96,29 @@ class ModelPlot(PlotBase):
             #maybe loc should be 'best' but then it bounces around
             self._axis[0].legend(lines, labels,loc='upper center',title=kwargs_opts['title'])
 
-    def intensity(self,id,**kwargs):
+    def intensity(self,identifier,**kwargs):
+        """Plot a model ratio
+
+        :param identifier: Identifier tag for the model to plot, e.g., "OI_63", "CII_158", "CO_10"]
+        :type identifier: str
+
+        :SeeAlso: `meth:~pdrtpy.modelset.ModelSet.supported_intensities` for a list of available identifer tags
+        """
         # shouldn't need separate model intensity as keyword would tell you.
         # Idea: Put a 'modeltyp' keyword in FITS header whether it is intensity ratio or intensity.
         ms = self._modelset
         meas = kwargs.get("measurements",None)
-        model = ms.get_models([id],model_type="intensity")
+        model = ms.get_models([identifier],model_type="intensity")
         if meas is not None:
             if type(meas[0]) is not Measurement:
                 raise TypeError("measurement keyword value must be a list of Measurements")
-            if (model[id]._unit != meas[0].unit ):
-                raise TypeError(f"Model and Measurement for {id} have different units: ({model._unit},{meas_unit})")
-            if id != meas[0].id:
-                msg = f"Identifiers of model {id} and supplied Measurement {meas[0].id} do not match. Plotting anyway."
+            if (model[identifier]._unit != meas[0].unit ):
+                raise TypeError(f"Model and Measurement for {identifier} have different units: ({model._unit},{meas_unit})")
+            if identifier != meas[0].id:
+                msg = f"Identifiers of model {identifier} and supplied Measurement {meas[0].id} do not match. Plotting anyway."
                 warnings.warn(msg)
 
-        kwargs_opts = {'title': ms.table.loc[id]["title"], 
+        kwargs_opts = {'title': ms.table.loc[identifier]["title"], 
                        'colorbar':True, 
                        'contours':True,
                        'colors':['white'],
@@ -109,7 +130,7 @@ class ModelPlot(PlotBase):
         kwargs_opts.update(kwargs)
         if not kwargs_opts['image'] and kwargs_opts['colors'][0] == 'white':
            kwargs_opts['colors'][0] = 'black'
-        self._plot_no_wcs(model[id],**kwargs_opts)
+        self._plot_no_wcs(model[identifier],**kwargs_opts)
         if kwargs_opts['legend']:
             lines = list()
             labels = list()
@@ -209,6 +230,8 @@ class ModelPlot(PlotBase):
                        'title':None,
                        'xaxis_unit': None,
                        'yaxis_unit': None,
+                       'xlim':None,
+                       'ylim':None,
                        'legend': False,
                        'meas_color': ['#4daf4a'],
                        'shading': 0.4
@@ -361,6 +384,12 @@ class ModelPlot(PlotBase):
         # Finish up axes details.
         self._axis[axidx].set_ylabel(ylab)
         self._axis[axidx].set_xlabel(xlab)
+        if kwargs_opts['xlim'] is not None:
+            xlim = kwargs_opts['xlim']
+            self._axis[axidx].set_xlim(left=xlim[0],right=xlim[1])
+        if kwargs_opts['ylim'] is not None:
+            ylim = kwargs_opts['ylim']
+            self._axis[axidx].set_ylim(bottom=ylim[0],top=ylim[1])
         self._axis[axidx].set_xscale('log')
         self._axis[axidx].set_yscale('log')
         self._axis[axidx].xaxis.set_major_locator(locmaj)
