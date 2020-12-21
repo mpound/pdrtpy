@@ -205,6 +205,59 @@ class ModelPlot(PlotBase):
             self._plt.legend(lines, labels,loc='upper center',title='Observed '+word)
 
 
+    def rvr(self,identifiers,
+                 dens_clip=[10,1E7]*u.Unit("cm-3"),
+                 rad_clip=[10,1E5]*utils.habing_unit,
+                 reciprocal=[False,False]):
+        '''Plot lines of constant density and radiation field on a ratio-ratio, ratio-intensity, or intensity-intensity map
+
+        :param identifiers: list of two identifier tags for the model to plot, e.g., ["OI_63/CO_21", "CII_158"]
+        :type identifier: list of str
+
+        '''
+        if len(list(identifiers)) != 2:
+            raise ValueError("Length of identifiers list must be exactly 2")
+        models = [self._modelset.get_model(i) for i in identifiers]
+        x,y=self._get_from_wcs(models[0],quantity=True)
+        dens_clip = dens_clip.to(x.unit)
+        rad_clip = rad_clip.to(y.unit)
+        # model axis units are in log space, so set clipping to log.
+        # Can't take log of Quanities, so do it the long way.
+        dc = [np.log10(dens_clip[0].value),np.log10(dens_clip[1].value)]*x.unit
+        rc = [np.log10(rad_clip[0].value),np.log10(rad_clip[1].value)]*y.unit
+        
+    def _get_xy_from_wcs(self,data,quantity=False,linear=False):
+        w = data.wcs
+        xind=np.arange(w._naxis[0])
+        yind=np.arange(w._naxis[1])
+        # wcs methods want broadcastable arrays, but in our
+        # case naxis1 != naxis2, so make two 
+        # calls and take x from the one and y from the other.
+        if quantity:
+            x=w.array_index_to_world(xind,xind)[0]
+            y=w.array_index_to_world(yind,yind)[1]
+            # Need to handle Habing units which are non-standard FITS.
+            # Can't apply them to a WCS because it will raise an Exception.
+            # See ModelSet.get_model
+            cunit=data.header.get("CUNIT2",None) 
+            if cunit == "Habing":
+               y._unit=utils.habing_unit     
+            if linear:
+               j = 10*np.ones(len(x.value))
+               k = 10*np.ones(len(y.value))
+               x = np.power(j,x.value)*x.unit
+               y = np.power(k,y.value)*y.unit
+        else:
+            x=w.array_index_to_world_values(xind,xind)[0]
+            y=w.array_index_to_world_values(yind,yind)[1]
+            if linear:
+               j = 10*np.ones(len(x))
+               k = 10*np.ones(len(y))
+               x = np.power(j,x)
+               y = np.power(k,y)
+        return (x,y)
+    
+        
     #@todo allow data to be an array? see overlay()
     def _plot_no_wcs(self,data,header=None,**kwargs):
         '''generic plotting method for images with no WCS, used by other plot methods'''
@@ -332,16 +385,10 @@ class ModelPlot(PlotBase):
         ax1='1'
         ax2='2'
             
-        xstart=_header['crval'+ax1]
-        xstop=xstart+_header['naxis'+ax1]*_header['cdelt'+ax1]
-        ystart=_header['crval'+ax2]
-        ystop=ystart+_header['naxis'+ax2]*_header['cdelt'+ax2]
-        #print(xstart,xstop,ystart,ystop)
-    
         # make the x and y axes.  Since the models are computed on a log grid, we
-        # logarithmic ticks.
-        y = 10**np.linspace(start=ystart, stop=ystop, num=_header['naxis'+ax2])
-        x = 10**np.linspace(start=xstart, stop=xstop, num=_header['naxis'+ax1])
+        # use logarithmic ticks.
+        x,y = self._get_xy_from_wcs(data,quantity=True,linear=True)
+        print(x,y)
         locmaj = ticker.LogLocator(base=10.0, subs=(1.0, ),numticks=10)
         locmin = ticker.LogLocator(base=10.0, subs=np.arange(2, 10)*.1,numticks=10) 
         
@@ -349,13 +396,14 @@ class ModelPlot(PlotBase):
         xax_unit = u.Unit(_header['cunit'+ax1])
         if kwargs_opts['xaxis_unit'] is not None:
             # Make density axis of the grid into a Quantity using the cunits from the grid header
-            temp_x = x * xax_unit
+            #temp_x = x * xax_unit
 
             # Get desired unit from arguments
             xax_unit = u.Unit(kwargs_opts['xaxis_unit'])
 
             # Convert the unit-aware grid to the desired units and set X to the value (so it's no longer a Quantity)
-            x = temp_x.to(xax_unit).value  
+            #x = temp_x.to(xax_unit).value  
+            x = x.to(xax_unit)
 
         # Set the x label appropriately, use LaTeX inline formatting
         xlab = r"{0} [{1:latex_inline}]".format(_header['ctype'+ax1],xax_unit)
@@ -365,7 +413,7 @@ class ModelPlot(PlotBase):
         ytype = _header['ctype'+ax2]
         if kwargs_opts['yaxis_unit'] is not None:
             # Make FUV axis of the grid into a Quantity using the cunits from the grid header
-            temp_y = y * yax_unit
+            #temp_y = y * yax_unit
 
             # Get desired unit from arguments; for special cases, use
             # the conventional symbol for the label (e.g. G_0 for Habing units)
@@ -374,12 +422,13 @@ class ModelPlot(PlotBase):
             yax_unit = u.Unit(yunit)
 
             # Convert the unit-aware grid to the desired units and set Y to the value (so it's no longer a Quantity)
-            y = temp_y.to(yax_unit).value  
+            #y = temp_y.to(yax_unit).value  
+            y = y.to(yunit)
 
         # Set the y label appropriately, use LaTeX inline formatting
         ylab = r"{0} [{1:latex_inline}]".format(ytype,yax_unit)
-        #print("X axis min/max %.2e %.2e"%(x.min(),x.max()))
-        #print("Y axis min/max %.2e %.2e"%(y.min(),y.max()))
+        print("X axis min/max %.2e %.2e"%(x.value.min(),x.value.max()))
+        print("Y axis min/max %.2e %.2e"%(y.value.min(),y.value.max()))
         
         # Finish up axes details.
         self._axis[axidx].set_ylabel(ylab)
@@ -399,7 +448,7 @@ class ModelPlot(PlotBase):
         if kwargs_opts['image']:
             # pass shading = auto to avoid deprecation warning
             # see https://matplotlib.org/3.3.0/gallery/images_contours_and_fields/pcolormesh_grids.html
-            im = self._axis[axidx].pcolormesh(x,y,km,cmap=kwargs_imshow['cmap'],
+            im = self._axis[axidx].pcolormesh(x.value,y.value,km,cmap=kwargs_imshow['cmap'],
                                               norm=kwargs_imshow['norm'],shading='auto')
             if kwargs_opts['colorbar']:
                 self._figure.colorbar(im,ax=self._axis[axidx])
@@ -421,7 +470,7 @@ class ModelPlot(PlotBase):
                 kwargs_contour.pop(kx,None)
 
             warnings.simplefilter('ignore',category=UserWarning)
-            contourset = self._axis[axidx].contour(x,y,km.data, **kwargs_contour)
+            contourset = self._axis[axidx].contour(x.value,y.value,km.data, **kwargs_contour)
             warnings.resetwarnings()
             #print(contourset.__dict__)
 
@@ -453,9 +502,9 @@ class ModelPlot(PlotBase):
                 # run into issues with incrementing of jj interfering with colorcounter.
                 colors = kwargs_opts['meas_color'][jj]*mlen
                 if kwargs_opts['shading'] != 0:
-                    cset = self._axis[axidx].contourf(x,y,k.data,levels=m.levels, colors=colors,alpha=kwargs_opts['shading'])
+                    cset = self._axis[axidx].contourf(x.value,y.value,k.data,levels=m.levels, colors=colors,alpha=kwargs_opts['shading'])
                 else:
-                    cset = self._axis[axidx].contour(x,y,k.data,levels=m.levels, 
+                    cset = self._axis[axidx].contour(x.value,y.value,k.data,levels=m.levels, 
                                                      linestyles=lstyles, colors=colors)
                 jj=jj+1
 
