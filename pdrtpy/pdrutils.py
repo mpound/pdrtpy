@@ -513,3 +513,17 @@ def squeeze(image):
     nax = "NAXIS"+str(i)
   
   return image
+
+def fliplabel(label):
+    """Given a label that has a numerator and a denominator separated by a '/', return the 
+    reciprocal label.  For example, if the input label is '(x+y)/z' return 'z/(x+y)'.  This 
+    method simply looks for the '/' and swaps the substrings before and after it.
+    
+    :param label: the label to flip
+    :type label: str
+    :return: the reciprocal label
+    :rtype: str
+    :raises ValueError: if the input label has no '/'
+    """
+    ii = label.index('/')
+    return label[ii+1:]+'/'+label[0:ii]
