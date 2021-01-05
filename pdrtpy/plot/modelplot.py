@@ -218,12 +218,13 @@ class ModelPlot(PlotBase):
         if len(list(identifiers)) != 2:
             raise ValueError("Length of identifiers list must be exactly 2")
         models = [self._modelset.get_model(i) for i in identifiers]
+
         xlog,ylog=self._get_xy_from_wcs(models[0],quantity=True,linear=False)
         xlin,ylin=self._get_xy_from_wcs(models[0],quantity=True,linear=True)
 
         dcc=dens_clip.to(xlog.unit)
         rcc=rad_clip.to(ylog.unit)
-
+        
         xi=np.where((xlin>=dcc[0]) & (xlin<=dcc[1]))[0]
         yi=np.where((ylin>=rcc[0]) & (ylin<=rcc[1]))[0]
         x2= np.hstack([np.where((np.round(xlog.value,1))==i)[0] for i in np.arange(-5,12)])
@@ -232,23 +233,33 @@ class ModelPlot(PlotBase):
         y2 = np.hstack([np.where((np.round(ylog.value,1))==i)[0] for i in np.arange(-5,12)])
         xi2=np.intersect1d(xi,x2)
         yi2=np.intersect1d(yi,y2)
+        
+        self._figure,self._axis = self._plt.subplots(nrows=1,ncols=1)
         linesN=[]
         linesG=[]
         for j in xi2:
             label=np.round(np.log10(xlin[j].to(dens_clip.unit).value),1)
+            if models[0].unit == '':
+                m0label = models[0].title
+            else:
+                m0label = models[0].title + ' ['+u.Unit(models[0].unit).to_string('latex_inline')+']'
+            if models[1].unit == '':
+                m1label = models[1].title
+            else:
+                m1label = models[1].title + ' ['+u.Unit(models[1].unit).to_string('latex_inline')+']'
             if reciprocal[0]:
                 xx=1/models[0][yi2[0]:yi2[-1]+1,j]
-                self._plt.xlabel(utils.fliplabel(models[0].title))
+                self._axis.set_xlabel(utils.fliplabel(m0label))
             else:
                 xx=models[0][yi2[0]:yi2[-1]+1,j]
-                self._plt.xlabel(models[0].title)
+                self._axis.set_xlabel(m0label)
             if reciprocal[1]:
                 yy=1/models[1][yi2[0]:yi2[-1]+1,j]
-                self._plt.ylabel(utils.fliplabel(models[1].title))
+                self._axis.set_ylabel(utils.fliplabel(m1label))
             else:
                 yy=models[1][yi2[0]:yi2[-1]+1,j]
-                self._plt.ylabel(models[1].title)
-            linesN.extend(self._plt.loglog(xx,yy,label=label,lw=2))
+                self._axis.set_ylabel(m1label)
+            linesN.extend(self._axis.loglog(xx,yy,label=label,lw=2))
 
         for j in yi2:
             label=np.round(np.log10(ylin[j].to(rad_clip.unit).value),1)
@@ -260,7 +271,7 @@ class ModelPlot(PlotBase):
                 yy=1/models[1][j,xi2[0]:xi2[-1]+1]
             else:
                 yy=models[1][j,xi2[0]:xi2[-1]+1]
-            linesG.extend(self._plt.loglog(xx,yy,label=label,lw=2,ls='--'))
+            linesG.extend(self._axis.loglog(xx,yy,label=label,lw=2,ls='--'))
             
         # create the column headers for the legend
         # and blank handles and labels to take up space for the headers and
@@ -272,13 +283,13 @@ class ModelPlot(PlotBase):
         rsl = rad_clip.unit.to_string("latex_inline")
         title2 = "log("+utils.get_rad(rs)+")"
         unit2="["+rsl+"]"
-        handles,labels=self._plt.gca().get_legend_handles_labels()
-        phantom = [self._plt.plot([],marker="", markersize=0,ls="",lw=0)[0]]*2
+        handles,labels=self._axis.get_legend_handles_labels()
+        phantom = [self._axis.plot([],marker="", markersize=0,ls="",lw=0)[0]]*2
         lN = len(linesN)
         lG = len(linesG)
         diff = lN-lG
         adiff=abs(diff)
-        phantom2 = [self._plt.plot([],marker="", markersize=0,ls="",lw=0)[0]]*adiff
+        phantom2 = [self._axis.plot([],marker="", markersize=0,ls="",lw=0)[0]]*adiff
         blank = ['']*adiff
 
         if diff == 0:
@@ -304,7 +315,7 @@ class ModelPlot(PlotBase):
         #for kk in range(len(handles)):
         #    print(handles[kk],labels[kk])
 
-        leg=self._plt.legend(handles,labels,ncol=2,markerfirst=True,bbox_to_anchor=(1.024,1))
+        leg=self._axis.legend(handles,labels,ncol=2,markerfirst=True,bbox_to_anchor=(1.024,1),loc="upper left")
         #leg._legend_box.align = "left"
         # trick to remove extra left side space in legend column headers.
         # doesn't completely center the headers, but gets as close as possible
@@ -312,6 +323,8 @@ class ModelPlot(PlotBase):
         for vpack in leg._legend_handle_box.get_children():
             for hpack in vpack.get_children()[:2]:
                 hpack.get_children()[0].set_width(0)
+        #self._figure = self._plt.gcf()
+        #self._axis = self._plt.gca()
         
     def _get_xy_from_wcs(self,data,quantity=False,linear=False):
         w = data.wcs
