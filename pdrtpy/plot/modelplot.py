@@ -207,7 +207,7 @@ class ModelPlot(PlotBase):
 
     def rvr(self,identifiers,
                  dens_clip=[10,1E7]*u.Unit("cm-3"),
-                 rad_clip=[10,1E5]*utils.habing_unit,
+                 rad_clip=[10,1E6]*utils.habing_unit,
                  reciprocal=[False,False]):
         '''Plot lines of constant density and radiation field on a ratio-ratio, ratio-intensity, or intensity-intensity map
 
@@ -218,13 +218,100 @@ class ModelPlot(PlotBase):
         if len(list(identifiers)) != 2:
             raise ValueError("Length of identifiers list must be exactly 2")
         models = [self._modelset.get_model(i) for i in identifiers]
-        x,y=self._get_from_wcs(models[0],quantity=True)
-        dens_clip = dens_clip.to(x.unit)
-        rad_clip = rad_clip.to(y.unit)
-        # model axis units are in log space, so set clipping to log.
-        # Can't take log of Quanities, so do it the long way.
-        dc = [np.log10(dens_clip[0].value),np.log10(dens_clip[1].value)]*x.unit
-        rc = [np.log10(rad_clip[0].value),np.log10(rad_clip[1].value)]*y.unit
+        xlog,ylog=self._get_xy_from_wcs(models[0],quantity=True,linear=False)
+        xlin,ylin=self._get_xy_from_wcs(models[0],quantity=True,linear=True)
+
+        dcc=dens_clip.to(xlog.unit)
+        rcc=rad_clip.to(ylog.unit)
+
+        xi=np.where((xlin>=dcc[0]) & (xlin<=dcc[1]))[0]
+        yi=np.where((ylin>=rcc[0]) & (ylin<=rcc[1]))[0]
+        x2= np.hstack([np.where((np.round(xlog.value,1))==i)[0] for i in np.arange(-5,12)])
+        # for 2020 models Y is not an integral value in erg s-1 cm-2
+        # so rounding is necessary.
+        y2 = np.hstack([np.where((np.round(ylog.value,1))==i)[0] for i in np.arange(-5,12)])
+        xi2=np.intersect1d(xi,x2)
+        yi2=np.intersect1d(yi,y2)
+        linesN=[]
+        linesG=[]
+        for j in xi2:
+            label=np.round(np.log10(xlin[j].to(dens_clip.unit).value),1)
+            if reciprocal[0]:
+                xx=1/models[0][yi2[0]:yi2[-1]+1,j]
+                self._plt.xlabel(utils.fliplabel(models[0].title))
+            else:
+                xx=models[0][yi2[0]:yi2[-1]+1,j]
+                self._plt.xlabel(models[0].title)
+            if reciprocal[1]:
+                yy=1/models[1][yi2[0]:yi2[-1]+1,j]
+                self._plt.ylabel(utils.fliplabel(models[1].title))
+            else:
+                yy=models[1][yi2[0]:yi2[-1]+1,j]
+                self._plt.ylabel(models[1].title)
+            linesN.extend(self._plt.loglog(xx,yy,label=label,lw=2))
+
+        for j in yi2:
+            label=np.round(np.log10(ylin[j].to(rad_clip.unit).value),1)
+            if reciprocal[0]:
+                xx=1/models[0][j,xi2[0]:xi2[-1]+1]
+            else:
+                xx=models[0][j,xi2[0]:xi2[-1]+1]
+            if reciprocal[1]:
+                yy=1/models[1][j,xi2[0]:xi2[-1]+1]
+            else:
+                yy=models[1][j,xi2[0]:xi2[-1]+1]
+            linesG.extend(self._plt.loglog(xx,yy,label=label,lw=2,ls='--'))
+            
+        # create the column headers for the legend
+        # and blank handles and labels to take up space for the headers and
+        # when the number of density traces and radiation field traces
+        # are not equal. 
+        title1 = "log(n)"
+        unit1="["+dens_clip.unit.to_string("latex_inline")+"]" 
+        rs = rad_clip.unit.to_string()
+        rsl = rad_clip.unit.to_string("latex_inline")
+        title2 = "log("+utils.get_rad(rs)+")"
+        unit2="["+rsl+"]"
+        handles,labels=self._plt.gca().get_legend_handles_labels()
+        phantom = [self._plt.plot([],marker="", markersize=0,ls="",lw=0)[0]]*2
+        lN = len(linesN)
+        lG = len(linesG)
+        diff = lN-lG
+        adiff=abs(diff)
+        phantom2 = [self._plt.plot([],marker="", markersize=0,ls="",lw=0)[0]]*adiff
+        blank = ['']*adiff
+
+        if diff == 0:
+            labels.insert(lN,unit2)
+            labels.insert(lN,title2)
+            labels = [title1,unit1]+labels
+            linesN = phantom + linesN
+            linesG = phantom + linesG
+        elif diff > 0: # more densities than radiation fields
+            labels.insert(lN,unit2)
+            labels.insert(lN,title2)
+            labels = [title1,unit1]+labels + blank
+            linesN = phantom + linesN
+            linesG = phantom + linesG + phantom2  
+        elif diff < 0: # more radiation fields than densities
+            labels = labels[0:lN]+blank+labels[lN:]
+            labels.insert(lN+adiff,unit2)
+            labels.insert(lN+adiff,title2)
+            labels = [title1,unit1]+labels
+            linesN = phantom + linesN + phantom2
+            linesG = phantom + linesG
+        handles = linesN+linesG
+        #for kk in range(len(handles)):
+        #    print(handles[kk],labels[kk])
+
+        leg=self._plt.legend(handles,labels,ncol=2,markerfirst=True,bbox_to_anchor=(1.024,1))
+        #leg._legend_box.align = "left"
+        # trick to remove extra left side space in legend column headers.
+        # doesn't completely center the headers, but gets as close as possible
+        # See https://stackoverflow.com/questions/44071525/matplotlib-add-titles-to-the-legend-rows/44072076
+        for vpack in leg._legend_handle_box.get_children():
+            for hpack in vpack.get_children()[:2]:
+                hpack.get_children()[0].set_width(0)
         
     def _get_xy_from_wcs(self,data,quantity=False,linear=False):
         w = data.wcs
@@ -388,7 +475,6 @@ class ModelPlot(PlotBase):
         # make the x and y axes.  Since the models are computed on a log grid, we
         # use logarithmic ticks.
         x,y = self._get_xy_from_wcs(data,quantity=True,linear=True)
-        print(x,y)
         locmaj = ticker.LogLocator(base=10.0, subs=(1.0, ),numticks=10)
         locmin = ticker.LogLocator(base=10.0, subs=np.arange(2, 10)*.1,numticks=10) 
         
@@ -429,6 +515,7 @@ class ModelPlot(PlotBase):
         ylab = r"{0} [{1:latex_inline}]".format(ytype,yax_unit)
         print("X axis min/max %.2e %.2e"%(x.value.min(),x.value.max()))
         print("Y axis min/max %.2e %.2e"%(y.value.min(),y.value.max()))
+        print("AXIndex=%d"%axidx)
         
         # Finish up axes details.
         self._axis[axidx].set_ylabel(ylab)
