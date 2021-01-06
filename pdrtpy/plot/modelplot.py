@@ -10,6 +10,7 @@ import matplotlib.colors as mpcolors
 import matplotlib.cm as mcm
 from matplotlib import ticker
 from matplotlib.lines import Line2D
+from cycler import cycler
 
 from astropy.io import fits
 import astropy.wcs as wcs
@@ -40,6 +41,7 @@ class ModelPlot(PlotBase):
         self._CB_color_cycle = ['#377eb8', '#ff7f00','#4daf4a',
                   '#f781bf', '#a65628', '#984ea3',
                   '#999999', '#e41a1c', '#dede00']
+        self._plt.rc('axes', prop_cycle=(cycler('color',  self._CB_color_cycle)))
     """Init method
 
     """
@@ -204,15 +206,24 @@ class ModelPlot(PlotBase):
             labels = [k.title for k in models]
             self._plt.legend(lines, labels,loc='upper center',title='Observed '+word)
 
-
-    def rvr(self,identifiers,
+    # note when plotting the units as axis labels, the order is not what we specify in _OBS_UNIT because astropy's Unit class 
+    # sorts by power .  They have a good reason for this (hashing), but it does mean we get sub-optimal unit ordering.  
+    # There is a possible workaround, but it must be custom for each CompositeUnit.https://github.com/astropy/astropy/issues/1578
+    def phasespace(self,identifiers,
                  dens_clip=[10,1E7]*u.Unit("cm-3"),
                  rad_clip=[10,1E6]*utils.habing_unit,
                  reciprocal=[False,False]):
         '''Plot lines of constant density and radiation field on a ratio-ratio, ratio-intensity, or intensity-intensity map
 
         :param identifiers: list of two identifier tags for the model to plot, e.g., ["OI_63/CO_21", "CII_158"]
-        :type identifier: list of str
+        :type identifiers: list of str
+        :param dens_clip: The range of model densities to show in the plot.  Must be given as a range of astropy quanitities.  Default: [10,1E7]*Unit("cm-3")
+        :type dens_clip: array like, must contain Quantity
+        :param rad_clip: The range of model radiation field intensities to show in the plot.  Must be given as a range of astropy quantities.  Default: rad_clip=[10,1E6]*utils.habing_unit
+        :type rad_clip:  array like, must contain Quantity
+        :param reciprocal: Whether or not the plot the reciprocal of the model on each axis.  Given as a pair of booleans.  e.g. [False,True] means don't flip the quantity X axis, but flip quantity the Y axis.  i.e. if the model is "CII/OI", and reciprocal=True then the axis will be "OI/CII".  Default: [False, False]
+        :type reciprocal: list of bool
+        NEED TO SET CBC_COLORCYLE
 
         '''
         if len(list(identifiers)) != 2:
