@@ -1,5 +1,5 @@
-ModelSets
-=========
+ModelSets: The interface to models in the Toolbox
+=================================================
 
 PDRT supports a variety of PDR models to be used to fit your data. These are
 represented in the Python class `ModelSet`. The

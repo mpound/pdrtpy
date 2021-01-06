@@ -1,5 +1,5 @@
-Plotting Tools
-==============
+Plotting Tools: Display models and data
+=======================================
 
 The :mod:`~pdrtpy.plot` module provides mechanisms for plotting models, observations, and model fits.
 

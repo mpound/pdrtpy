@@ -23,6 +23,18 @@ excitation rates for |OI| from
 communication) and have included |13C| chemistry along with the
 emitted line intensities for  |13CII| and |13CO|.
 
+What is a PDR? 
+==============
+Photodissociation regions (PDRs) include all of the neutral gas in the
+ISM where far-ultraviolet (FUV) photons dominate the chemistry and/or
+heating.  In regions of massive star formation, PDRS are created at
+the boundaries between the HII regions and neutral molecular cloud,
+as photons with energies :math:`6~{\rm eV} < h\nu < {\rm 13.6~eV}`
+photodissociate molecules and photoionize other elements.  The gas is
+heated from photo-electrons and cools mostly through far-infrared fine
+structure lines like   |OI| and  |CII|.
+
+For a full review of PDR physics and chemistry, see `Hollenbach & Tielens 1997 <https://ui.adsabs.harvard.edu/abs/1997ARA&A..35..179H>`_.
 
 Getting Started
 ===============
@@ -91,6 +103,17 @@ To familiarize yourself with the capabilities of ``pdrtpy``, we suggest you do t
 - PDRT_Example_Find_n_G0_Single_Pixel.ipynb  
 - PDRT_Example_Make_n_G0_maps.ipynb       
 
+Module Descriptions and APIs
+============================
+
+.. toctree::
+
+   pdrtpy.measurement
+   pdrtpy.modelset
+   pdrtpy.pdrutils
+   pdrtpy.plot  
+   pdrtpy.tool
+
 For Developers
 ==============
 
@@ -105,37 +128,12 @@ If you plan to tinker with the code, you may want to try this installation metho
    cd pdrtpy
    pip install -r requirements.txt
 
-Module API
-==========
-
-.. autosummary::
-   :toctree: 
-
-   pdrtpy.measurement
-   pdrtpy.modelset
-   pdrtpy.pdrutils
-   pdrtpy.plot
-   pdrtpy.tool
-
 Indices
 =======
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
-
-What is a PDR? 
-==============
-Photodissociation regions (PDRs) include all of the neutral gas in the
-ISM where far-ultraviolet (FUV) photons dominate the chemistry and/or
-heating.  In regions of massive star formation, PDRS are created at
-the boundaries between the HII regions and neutral molecular cloud,
-as photons with energies :math:`6~{\rm eV} < h\nu < {\rm 13.6~eV}`
-photodissociate molecules and photoionize other elements.  The gas is
-heated from photo-electrons and cools mostly through far-infrared fine
-structure lines like   |OI| and  |CII|.
-
-For a full review of PDR physics and chemistry, see `Hollenbach & Tielens 1997 <https://ui.adsabs.harvard.edu/abs/1997ARA&A..35..179H>`_.
 
 Credits
 =======

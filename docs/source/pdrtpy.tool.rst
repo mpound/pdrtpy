@@ -1,5 +1,5 @@
-Analysis Tools
-==============
+Analysis Tools: Fit models to data
+==================================
 
 The :mod:`~pdrtpy.tool` module contains the analysis tools in the `PDR Toolbox <http://dustem.astro.umd.edu>`_.  All tools are derived from :class:`~pdrtpy.tool.toolbase.ToolBase`.
 
