@@ -1,5 +1,4 @@
-"""Utility code for PDR Toolbox.
-"""
+### Utility code for PDR Toolbox.
 
 import datetime
 import os.path
@@ -29,10 +28,22 @@ _KKMS = u.Unit("K km s-1")
 # See Weingartner and Draine 2001, ApJS, 134, 263, section 4.1
 
 habing_unit = u.def_unit('Habing',1.60E-3*_RFS_UNIT_)
+r"""The Habing radiation field unit 
+
+   :math:`{\rm 1~Habing = 1.6\times 10^{-3}~erg~s^{-1}~cm^{-2}}`
+"""
 u.add_enabled_units(habing_unit)
 draine_unit = u.def_unit('Draine',2.72E-3*_RFS_UNIT_)
+r"""The Draine radiation field unit
+
+    :math:`{\rm 1~Draine = 2.72\times10^{-3}~erg~s^{-1}~cm^{-2}}`
+"""
 u.add_enabled_units(draine_unit)
 mathis_unit = u.def_unit('Mathis',1.81E-3*_RFS_UNIT_)
+r"""The Mathis radiation field unit
+
+    :math:`{\rm 1~Mathis = 1.81\times10^{-3}~erg~s^{-1}~cm^{-2}}`
+"""
 u.add_enabled_units(mathis_unit)
 
 _rad_title = dict()
@@ -42,9 +53,10 @@ _rad_title['Mathis'] = 'FUV'
 
 def get_rad(key):
     """Get radiation field symbol (LaTeX) given radiation field unit.
-       If key is unrecognized, 'FUV Radiation Field' is returned.
+    If key is unrecognized, 'FUV Radiation Field' is returned.
 
-    :param key: input field unit name, e.g. 'Habing'
+    :param key: input field unit name, e.g. 'Habing', 'Draine' 
+    :returns: LaTeX string for the radiation field symbol e.g., :math:`G_0`, :math:`\chi`
     :type key: str
     :rtype: str
     """
