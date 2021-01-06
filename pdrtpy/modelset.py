@@ -6,7 +6,8 @@ from copy import deepcopy
 import numpy as np
 from astropy.table import Table, unique, vstack
 import astropy.units as u
-from .pdrutils import get_table,model_dir, _OBS_UNIT_, _RFS_UNIT#,habing_unit,draine_unit,mathis_unit
+from .pdrutils import get_table,model_dir, _OBS_UNIT_
+#,habing_unit,draine_unit,mathis_unit
 from .measurement import Measurement
 
 #@ToDo:
