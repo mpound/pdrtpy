@@ -104,7 +104,7 @@ class ModelPlot(PlotBase):
         :param identifier: Identifier tag for the model to plot, e.g., "OI_63", "CII_158", "CO_10"]
         :type identifier: str
 
-        :SeeAlso: `meth:~pdrtpy.modelset.ModelSet.supported_intensities` for a list of available identifer tags
+        :SeeAlso: :meth:`~pdrtpy.modelset.ModelSet.supported_intensities` for a list of available identifer tags
         """
         # shouldn't need separate model intensity as keyword would tell you.
         # Idea: Put a 'modeltyp' keyword in FITS header whether it is intensity ratio or intensity.
