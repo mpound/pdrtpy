@@ -6,7 +6,7 @@ from copy import deepcopy
 import numpy as np
 from astropy.table import Table, unique, vstack
 import astropy.units as u
-from .pdrutils import get_table,model_dir#,habing_unit,draine_unit,mathis_unit
+from .pdrutils import get_table,model_dir, _OBS_UNIT_, _RFS_UNIT#,habing_unit,draine_unit,mathis_unit
 from .measurement import Measurement
 
 #@ToDo:
@@ -37,7 +37,7 @@ class ModelSet(object):
         self._set_ratios()
         self._default_unit = dict()
         self._default_unit["ratio"] = u.dimensionless_unscaled
-        self._default_unit["intensity"] = u.Unit("erg cm-2 s-1 sr-1")
+        self._default_unit["intensity"] = _OBS_UNIT_
 
     @property
     def description(self):
