@@ -55,13 +55,14 @@ def get_rad(key):
     """Get radiation field symbol (LaTeX) given radiation field unit.
     If key is unrecognized, 'FUV Radiation Field' is returned.
 
-    :param key: input field unit name, e.g. 'Habing', 'Draine' 
+    :param key: input field unit name, e.g. 'Habing', 'Draine' or an :class:`astropy.units.Unit`
     :returns: LaTeX string for the radiation field symbol e.g., :math:`G_0`, :math:`\chi`
-    :type key: str
+    :type key: str or :class:`astropy.units.Unit`
     :rtype: str
     """
-    if key in _rad_title:
-        return _rad_title[key]
+    skey = str(key) # in case the passed key was a Unit
+    if skey in _rad_title:
+        return _rad_title[skey]
     else:
         return "FUV"
 
