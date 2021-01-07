@@ -15,8 +15,10 @@ class PlotBase:
     def __init__(self,tool):
         import matplotlib.pyplot 
         self._plt = matplotlib.pyplot
-        # use latex in text labels etc by default. 
-        self._plt.rcParams["text.usetex"] = True
+        # don't use latex in text labels etc by default. 
+        # because legends and titles wind up using a different font than axes
+        # @TODO figure out how to make them all use the same font (e.g. CMBright)
+        self._plt.rcParams["text.usetex"] = False
         self._figure = None
         self._axis = None
         self._tool = tool
