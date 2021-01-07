@@ -1,5 +1,3 @@
-"""Base class for tool plotters
-"""
 import numpy as np
 
 import matplotlib.axes as maxes
@@ -12,6 +10,11 @@ from matplotlib.colors import LogNorm
 from ..pdrutils import to
 
 class PlotBase:
+    """Base class for plotting.  
+
+    :param tool:  Reference to a :mod:`~pdrtpy.tool` object or `None`.  This is used for classes that inherit from PlotBase and are coupled to a specific tool, e.g. :class:`~pdrtpy.plot.LineRatioPlot` and :class:`~pdrtpy.tool.LineRatioFit`.
+    :type tool: Any class derived from :class:`~pdrtpy.tool.toolbase.ToolBase`
+    """
     def __init__(self,tool):
         import matplotlib.pyplot 
         self._plt = matplotlib.pyplot

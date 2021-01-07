@@ -262,7 +262,7 @@ class ModelSet(object):
         :type identifiers: list
         :param model_type: indicates which type of model is requested one of 'ratio' or 'intensity' 
         :type model_type: str
-        :returns: The matching models as a list of class:`~pdrtpy.measurement.Measurement`. 
+        :returns: The matching models as a list of :class:`~pdrtpy.measurement.Measurement`. 
         :rtype: list
         :raises: KeyError if identifiers not found in this ModelSet
         '''

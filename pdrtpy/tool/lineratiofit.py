@@ -94,8 +94,7 @@ class LineRatioFit(ToolBase):
 
     @property
     def ratiocount(self):
-        '''The number of ratios that match models available in the 
-           current :class:`~pdrtpy.modelset.ModelSet` given the current set of measurements
+        '''The number of ratios that match models available in the current :class:`~pdrtpy.modelset.ModelSet` given the current set of measurements
  
         :rtype: int
         '''
@@ -234,8 +233,8 @@ class LineRatioFit(ToolBase):
     
     def read_models(self,unit=u.dimensionless_unscaled):
         """Given a list of measurement IDs, find and open the FITS files that have matching ratios
-           and populate the _modelratios dictionary.  Uses :class:`pdrtpy.measurement.Measurement` as a 
-storage mechanism. 
+        and populate the _modelratios dictionary.  Uses :class:`pdrtpy.measurement.Measurement` as 
+        a storage mechanism. 
 
            :param  m: list of measurement IDS (string)
            :type m: list
@@ -309,6 +308,7 @@ storage mechanism.
 
              ['error', (low,high)] - mask based on uncertainty plane, mask out data where the corresponding error pixel value 
                                      is below low or above high
+
                               None - Don't mask data
 
            :type mask:  list or None
@@ -585,7 +585,7 @@ storage mechanism.
         #self._density_radiation_field_header() 
         
     def compute_density_radiation_field(self):
-        '''Compute the best-fit density n and radiation field spatial maps 
+        '''Compute the best-fit density and radiation field spatial maps 
            by searching for the minimum chi-squared at each spatial pixel.'''
         if self._chisq is None or self._reduced_chisq is None: return
         

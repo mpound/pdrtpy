@@ -320,8 +320,8 @@ def to(unit,image):
 
      :param unit: identifying the unit to convert to 
      :type unit: string or `astropy.units.Unit` 
-     :param image: the image to convert. It must have a `numpy.ndarray`
-        data member and `astropy.units.Unit` unit member.
+     :param image: the image to convert. It must have a :class:`numpy.ndarray`
+        data member and :class:`astropy.units.Unit` unit member.
      :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
      :return: an image with converted values and units
   """
@@ -343,8 +343,8 @@ def toHabing(image):
 
      between 6eV and 13.6eV (912-2066 :math:`\unicode{xC5}`).  See `Weingartner and Draine 2001, ApJS, 134, 263 <https://ui.adsabs.harvard.edu/abs/2001ApJS..134..263W/abstract>`_, section 4.1 
 
-     :param image: the image to convert. It must have a `numpy.ndarray`
-        data member and `astropy.units.Unit` unit member.
+     :param image: the image to convert. It must have a :class:`numpy.ndarray`
+        data member and :class:`astropy.units.Unit` unit member.
      :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
      :return: an image with converted values and units
   """
@@ -357,8 +357,8 @@ def toDraine(image):
 
      between 6eV and 13.6eV (912-2066 :math:`\unicode{xC5}`).  See `Weingartner and Draine 2001, ApJS, 134, 263 <https://ui.adsabs.harvard.edu/abs/2001ApJS..134..263W/abstract>`_, section 4.1 
 
-     :param image: the image to convert. It must have a `numpy.ndarray`
-        data member and `astropy.units.Unit` unit member.
+     :param image: the image to convert. It must have a :class:`numpy.ndarray`
+        data member and :class:`astropy.units.Unit` unit member.
      :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
      :return: an image with converted values and units
   """
@@ -371,8 +371,8 @@ def toMathis(image):
 
      between 6eV and 13.6eV (912-2066 :math:`\unicode{xC5}`).  See `Weingartner and Draine 2001, ApJS, 134, 263 <https://ui.adsabs.harvard.edu/abs/2001ApJS..134..263W/abstract>`_, section 4.1 
 
-     :param image: the image to convert. It must have a `numpy.ndarray`
-        data member and `astropy.units.Unit` unit member.
+     :param image: the image to convert. It must have a :class:`numpy.ndarray`
+        data member and :class:`astropy.units.Unit` unit member.
      :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
      :return: an image with converted values and units
   """
@@ -381,7 +381,7 @@ def toMathis(image):
 def tocgs(image):
   r"""Convert a radiation field strength image to :math:`{\rm erg~s^{-1}~cm^{-2}}`.
 
-     :param image: the image to convert. It must have a :class:`numpy.ndarray` data member and `astropy.units.Unit` unit member.
+     :param image: the image to convert. It must have a :class:`numpy.ndarray` data member and :class:`astropy.units.Unit` unit member.
      :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
      :return: an image with converted values and units
   """
@@ -413,7 +413,7 @@ def convert_integrated_intensity(image,wavelength=None):
 
   with :math:`\lambda`  in cm, the factor :math:`10^5` is to convert :math:`dV` in :math:`{\rm km~s}^{-1}` to :math:`{\rm cm~s}^{-1}`.
 
-  :param image: the image to convert. It must have a `numpy.ndarray` data member and `astropy.units.Unit` unit member or header BUNIT keyword. It's units must be K km/s
+  :param image: the image to convert. It must have a :class:`numpy.ndarray` data member and :class:`astropy.units.Unit` unit member or header BUNIT keyword. It's units must be K km/s
   :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
   :param wavelength: the wavelength of the observation. The default is to determine wavelength from the image header RESTFREQ keyword
   :type wavelength: :class:`astropy.units.Quantity`
@@ -442,16 +442,17 @@ def convert_integrated_intensity(image,wavelength=None):
   return newmap
 
 def convert_if_necessary(image):
-    """Helper method to convert integrated intensity units in an image or Measurement 
-       from :math:`{\rm K~km~s}^{-1}` to :math:`{\rm erg~s^{-1}~cm^{-2}~sr^{-1}}`. If a
-       conversion is necessary, the :meth:`convert_integrated_intensity` is called. 
-       If not, the image is returned unchanged.
+    r"""Helper method to convert integrated intensity units in an
+    image or Measurement from :math:`{\rm K~km~s}^{-1}` to :math:`{\rm
+    erg~s^{-1}~cm^{-2}~sr^{-1}}`. If a conversion is necessary, the
+    :meth:`convert_integrated_intensity` is called.  If not, the image
+    is returned unchanged.
 
-     :param image: the image to convert. It must have a `numpy.ndarray` data member and `astropy.units.Unit` unit member or a header BUNIT keyword. It's units must be K km/s.  It must also have a header RESTFREQ keyword.
-     :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+    :param image: the image to convert. It must have a :class:`numpy.ndarray` data member and :class:`astropy.units.Unit` unit member or a header BUNIT keyword. It's units must be :math:`{\rm K~km~s}^{-1}`. It must also have a header RESTFREQ keyword.
+    :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
 
-     :return: an image with converted values and units
-     """
+    :return: an image with converted values and units
+    """
     _u1 = u.Unit(image.header["BUNIT"])
     _u2 = u.Unit("K km s-1")
     if _u1 == _u2:
@@ -465,7 +466,7 @@ def mask_union(arrays):
     and you want the most restrictive mask.
 
     :param arrays: masked arrays to unionize
-    :type arrays: numpy.ma.masked_array
+    :type arrays: :class:`numpy.ma.masked_array`
     :rtype: mask
     """
     z = list()
@@ -500,7 +501,7 @@ def has_single_axis(w):
 def squeeze(image):
   """Remove single-dimensional entries from image data and WCS.
 
-  :param image: the image to convert. It must have a `numpy.ndarray` data member and `astropy.units.Unit` unit member. 
+  :param image: the image to convert. It must have a :class:`numpy.ndarray` data member and :class:`astropy.units.Unit` unit member. 
   :type image: :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
  
   :return: an image with single axes removed

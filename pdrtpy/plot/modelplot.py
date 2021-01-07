@@ -52,7 +52,7 @@ class ModelPlot(PlotBase):
         :param identifier: Identifier tag for the model to plot, e.g., "CII_158","OI_145","CO_43/CO_21']
         :type identifier: str
 
-        :SeeAlso: `meth:~pdrtpy.modelset.ModelSet.supported_lines` for a list of available identifer tags
+        .. seealso:: :meth:`~pdrtpy.modelset.ModelSet.supported_lines` for a list of available identifer tags
         """
         kwargs_opts = { 'measurements': None}
         kwargs_opts.update(kwargs)
@@ -67,7 +67,7 @@ class ModelPlot(PlotBase):
         :param identifier: Identifier tag for the model to plot, e.g., "OI_63+CII_158/FIR", "CO_43/CO_21']
         :type identifier: str
 
-        :SeeAlso: `meth:~pdrtpy.modelset.ModelSet.supported_ratios` for a list of available identifer tags
+        .. seealso:: :meth:`~pdrtpy.modelset.ModelSet.supported_ratios` for a list of available identifer tags
         """
         ms = self._modelset
         model = ms.get_model(identifier)
@@ -104,7 +104,7 @@ class ModelPlot(PlotBase):
         :param identifier: Identifier tag for the model to plot, e.g., "OI_63", "CII_158", "CO_10"]
         :type identifier: str
 
-        :SeeAlso: :meth:`~pdrtpy.modelset.ModelSet.supported_intensities` for a list of available identifer tags
+        .. seealso::  :meth:`~pdrtpy.modelset.ModelSet.supported_intensities` for a list of available identifer tags
         """
         # shouldn't need separate model intensity as keyword would tell you.
         # Idea: Put a 'modeltyp' keyword in FITS header whether it is intensity ratio or intensity.
@@ -151,12 +151,7 @@ class ModelPlot(PlotBase):
 
         :param measurements: a list of one or more :class:`pdrtpy.measurement.Measurement` to overlay.
         :type measurements: list
-        :param shading: Controls how measurements and errors are drawn.
-        If shading is zero, Measurements will be drawn in solid contour for
-        the value and dashed for the +/- errors. If shading is between 0
-        and 1, Measurements are drawn with as filled contours representing
-        the size of the errors (see :meth:`~matplotlib.pyplot.contourf`)
-        with alpha set to the shading value.  Default value: 0.4
+        :param shading: Controls how measurements and errors are drawn.  If shading is zero, Measurements will be drawn in solid contour for the value and dashed for the +/- errors. If shading is between 0 and 1, Measurements are drawn with as filled contours representing the size of the errors (see :meth:`~matplotlib.pyplot.contourf`) with alpha set to the shading value.  Default value: 0.4
         :type shading: float
         
         '''
