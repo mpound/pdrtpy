@@ -15,6 +15,8 @@ class PlotBase:
     def __init__(self,tool):
         import matplotlib.pyplot 
         self._plt = matplotlib.pyplot
+        # use latex in text labels etc by default. 
+        self._plt.rcParams["text.usetex"] = True
         self._figure = None
         self._axis = None
         self._tool = tool
@@ -150,3 +152,11 @@ class PlotBase:
         """
         self._figure.savefig(fname=fname,**kwargs)
 
+    def usetex(self,use):
+        """Control whether plots use LaTeX formatting in axis labels and other text components. This method sets
+           matplotlib parameter `rcParams["text.usetex"]` in the local pyplot instance.
+
+           :param use: whether to use LaTeX or not
+           :type use: bool
+        """
+        self._plt.rcParams["text.usetex"] = use
