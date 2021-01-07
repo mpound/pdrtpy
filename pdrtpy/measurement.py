@@ -2,6 +2,7 @@
 
 from copy import deepcopy
 
+from astropy import log
 import astropy.units as u
 from astropy.io import fits,registry
 from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
@@ -429,6 +430,9 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
     _id = kwd.pop('identifier', 'unknown')
     _title = kwd.pop('title', None)
     _squeeze = kwd.pop('squeeze', True)
+    # suppress INFO messages about units in FITS file. e.g. useless ones like:
+    # "INFO: using the unit erg / (cm2 s sr) passed to the FITS reader instead of the unit erg s-1 cm-2 sr-1 in the FITS file."
+    log.setLevel('WARNING')
     z = CCDData.read(filename,hdu,unit,hdu_uncertainty,hdu_mask,key_uncertainty_type, **kwd)
     if _squeeze:
         z = squeeze(z)
@@ -444,6 +448,7 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
     # astropy.io.registry.read creates a FileIO object before calling the registered
     # reader (this method), so the filename is FileIO.name. 
     z._filename=filename.name
+    log.setLevel('INFO') # set back to default
     return z
 
     
