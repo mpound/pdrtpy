@@ -223,7 +223,6 @@ class ModelPlot(PlotBase):
         :type rad_clip:  array like, must contain Quantity
         :param reciprocal: Whether or not the plot the reciprocal of the model on each axis.  Given as a pair of booleans.  e.g. [False,True] means don't flip the quantity X axis, but flip quantity the Y axis.  i.e. if the model is "CII/OI", and reciprocal=True then the axis will be "OI/CII".  Default: [False, False]
         :type reciprocal: list of bool
-        NEED TO SET CBC_COLORCYLE
 
         '''
         if len(list(identifiers)) != 2:
@@ -537,9 +536,9 @@ class ModelPlot(PlotBase):
 
         # Set the y label appropriately, use LaTeX inline formatting
         ylab = r"{0} [{1:latex_inline}]".format(ytype,yax_unit)
-        print("X axis min/max %.2e %.2e"%(x.value.min(),x.value.max()))
-        print("Y axis min/max %.2e %.2e"%(y.value.min(),y.value.max()))
-        print("AXIndex=%d"%axidx)
+        #print("X axis min/max %.2e %.2e"%(x.value.min(),x.value.max()))
+        #print("Y axis min/max %.2e %.2e"%(y.value.min(),y.value.max()))
+        #print("AXIndex=%d"%axidx)
         
         # Finish up axes details.
         self._axis[axidx].set_ylabel(ylab)
@@ -562,8 +561,14 @@ class ModelPlot(PlotBase):
             im = self._axis[axidx].pcolormesh(x.value,y.value,km,cmap=kwargs_imshow['cmap'],
                                               norm=kwargs_imshow['norm'],shading='auto')
             if kwargs_opts['colorbar']:
-                self._figure.colorbar(im,ax=self._axis[axidx])
-                #self._wcs_colorbar(im,self._axis[axidx])
+            #@TODO figure out how to have $\times 10^power$ instead of 1epower
+            # in scale factor.  See https://stackoverflow.com/questions/43324152/python-matplotlib-colorbar-scientific-notation-base
+                cbar = self._figure.colorbar(im,ax=self._axis[axidx])
+                if "BUNIT" in _header:
+                    lstr = u.Unit(_header["BUNIT"]).to_string('latex_inline')
+                    #cbar.formatter.set_powerlimits((0, 0))
+                    #AttributeError: 'LogFormatterSciNotation' object has no attribute 'set_powerlimits'
+                    cbar.ax.set_ylabel(lstr,rotation=90)
 
         if kwargs_opts['contours']:
             if kwargs_contour['levels'] is None:
