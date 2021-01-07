@@ -517,9 +517,9 @@ class ModelPlot(PlotBase):
         # Set the x label appropriately, use LaTeX inline formatting
         xlab = r"{0} [{1:latex_inline}]".format(_header['ctype'+ax1],xax_unit)
         
-        #allow unit conversion to cgs or Draine, for Y axis (FUV field):
         yax_unit = u.Unit(_header['cunit'+ax2])
-        ytype = _header['ctype'+ax2]
+        ytype = "log({0})".format(utils.get_rad(yax_unit))
+        #allow unit conversion to cgs or Draine, for Y axis (FUV field):
         if kwargs_opts['yaxis_unit'] is not None:
             # Make FUV axis of the grid into a Quantity using the cunits from the grid header
             #temp_y = y * yax_unit
