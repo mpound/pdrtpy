@@ -332,7 +332,20 @@ class ModelPlot(PlotBase):
         #self._axis = self._plt.gca()
         
     def _get_xy_from_wcs(self,data,quantity=False,linear=False):
+        """Get the x,y axis vectors from the WCS of the input data.
+       
+        :param data: the input image
+        :type data: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+        :param quantity: If True, return the arrays as :class:`astropy.units.Quantity`. If False, the returned arrays are :class:`numpy.ndarray`.
+        :type quantity: bool
+        :param linear: If True, returned arrays are in linear space, if False they are in log space.
+        :type linear: bool
+        :return: The axis values as arrays.  Values are center of pixel.
+        :rtype: :class:`numpy.ndarray` or :class:`astropy.units.Quantity`
+        """
         w = data.wcs
+        if w is None:
+            raise Exception("No WCS in the input image")
         xind=np.arange(w._naxis[0])
         yind=np.arange(w._naxis[1])
         # wcs methods want broadcastable arrays, but in our
@@ -374,11 +387,20 @@ class ModelPlot(PlotBase):
         # input header supercedes data header, under assumption user knows what they are doing.
         if header is not None: 
             _header = deepcopy(header)
+            if data.wcs is None:
+                data.wcs = wcs.WCS(data.header)
         else:
             _header = deepcopy(_dataheader)
             # CRxxx might be in wcs and not in header
             if data.wcs is not None:
                 _header.update(data.wcs.to_header())
+            else:
+                # needed for get_xy_from_wcs call later.
+                data.wcs = wcs.WCS(_header)
+                # however, get the usual complaint about non-FITS units
+                # in WCS, so remove them here because they aren't needed.
+                data.wcs.wcs.cunit = ["",""]
+
 
         kwargs_opts = {'units' : None,
                        'image':True,
