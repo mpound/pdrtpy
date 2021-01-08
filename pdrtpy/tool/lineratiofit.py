@@ -94,8 +94,7 @@ class LineRatioFit(ToolBase):
 
     @property
     def ratiocount(self):
-        '''The number of ratios that match models available in the 
-           current :class:`~pdrtpy.modelset.ModelSet` given the current set of measurements
+        '''The number of ratios that match models available in the current :class:`~pdrtpy.modelset.ModelSet` given the current set of measurements
  
         :rtype: int
         '''
@@ -234,15 +233,15 @@ class LineRatioFit(ToolBase):
     
     def read_models(self,unit=u.dimensionless_unscaled):
         """Given a list of measurement IDs, find and open the FITS files that have matching ratios
-           and populate the _modelratios dictionary.  Uses :class:`pdrtpy.measurement.Measurement` as a 
-storage mechanism. 
+        and populate the _modelratios dictionary.  Uses :class:`pdrtpy.measurement.Measurement` as 
+        a storage mechanism. 
 
            :param  m: list of measurement IDS (string)
            :type m: list
            :param unit: units of the data 
            :type unit: string or astropy.Unit
         """
-        self._modelratios = self._modelset.get_models(self.measurementIDs,unit)
+        self._modelratios = self._modelset.get_models(self.measurementIDs,model_type='ratio')
         k = utils.firstkey(self._modelratios)
         self._modelnaxis = self._modelratios[k].wcs.naxis
         if not self.density_unit:
@@ -309,6 +308,7 @@ storage mechanism.
 
              ['error', (low,high)] - mask based on uncertainty plane, mask out data where the corresponding error pixel value 
                                      is below low or above high
+
                               None - Don't mask data
 
            :type mask:  list or None
@@ -363,7 +363,7 @@ storage mechanism.
             for k,v in self._measurements.items():
                 # error is StdDevUncertainty so must use _array to get at raw values
                 indices = np.where((v.error <= mask[1][0]) | (v.error >= mask[1][1]))
-                print("%s indices: %s"%(k,indices))
+                #print("%s indices: %s"%(k,indices))
                 if v.mask is not None:
                     v.mask[indices] = True
                 else:
@@ -386,8 +386,8 @@ storage mechanism.
         for p in z:
             label = p["numerator"]+"/"+p["denominator"]
             # deepcopy workaround for bug: https://github.com/astropy/astropy/issues/9006
-            num = self._convert_if_necessary(self._measurements[p["numerator"]])
-            denom = self._convert_if_necessary(self._measurements[p["denominator"]])
+            num = utils.convert_if_necessary(self._measurements[p["numerator"]])
+            denom = utils.convert_if_necessary(self._measurements[p["denominator"]])
             #print("%s mask is None: %s "%(p["numerator"],num.mask is None))
             #print("%s mask is None: %s "%(p["denominator"],denom.mask is None))
             self._observedratios[label] = deepcopy(num/denom)
@@ -404,8 +404,8 @@ storage mechanism.
             if "OI_63" in m:
                 lab="OI_63+CII_158/FIR"
                 #print(l)
-                oi = self._convert_if_necessary(self._measurements["OI_63"])
-                cii = self._convert_if_necessary(self._measurements["CII_158"])
+                oi = utils.convert_if_necessary(self._measurements["OI_63"])
+                cii = utils.convert_if_necessary(self._measurements["CII_158"])
                 a = deepcopy(oi+cii)
                 b = deepcopy(self._measurements["FIR"])
                 self._observedratios[lab] = a/b
@@ -414,8 +414,8 @@ storage mechanism.
             if "OI_145" in m:
                 lab="OI_145+CII_158/FIR"
                 #print(ll)
-                oi = self._convert_if_necessary(self._measurements["OI_145"])
-                cii = self._convert_if_necessary(self._measurements["CII_158"])
+                oi = utils.convert_if_necessary(self._measurements["OI_145"])
+                cii = utils.convert_if_necessary(self._measurements["CII_158"])
                 aa = deepcopy(oi+cii)
                 bb = deepcopy(self._measurements["FIR"])
                 self._observedratios[lab] = aa/bb
@@ -585,7 +585,7 @@ storage mechanism.
         #self._density_radiation_field_header() 
         
     def compute_density_radiation_field(self):
-        '''Compute the best-fit density n and radiation field spatial maps 
+        '''Compute the best-fit density and radiation field spatial maps 
            by searching for the minimum chi-squared at each spatial pixel.'''
         if self._chisq is None or self._reduced_chisq is None: return
         
@@ -785,16 +785,3 @@ storage mechanism.
         # convert from OrderedDict to astropy.io.fits.header.Header
         self._density.header = Header(self._density.header)
         self._radiation_field.header = Header(self._radiation_field.header)
-
-       
-    def _convert_if_necessary(self,image):
-        """If the input image has units of K km/s convert it to intensity
-
-        :param image: The image to which to add the header values
-        :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
-        """
-        if image.header["BUNIT"] == "K km/s":
-            return utils.convert_integrated_intensity(image)
-        else:
-            return image
-

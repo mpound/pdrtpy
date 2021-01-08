@@ -1,5 +1,1 @@
-"""Specialized Plots Related to Tools
-   ==================================
-"""
-
-__all__ = [ "plotbase", "lineratioplot", "h2excitationplot"]
+__all__ = [ "plotbase", "modelplot", "lineratioplot", "h2excitationplot"]

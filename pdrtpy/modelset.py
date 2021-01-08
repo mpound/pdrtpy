@@ -6,7 +6,8 @@ from copy import deepcopy
 import numpy as np
 from astropy.table import Table, unique, vstack
 import astropy.units as u
-from .pdrutils import get_table,model_dir,habing_unit,draine_unit,mathis_unit
+from .pdrutils import get_table,model_dir, _OBS_UNIT_
+#,habing_unit,draine_unit,mathis_unit
 from .measurement import Measurement
 
 #@ToDo:
@@ -35,6 +36,9 @@ class ModelSet(object):
         self._table.add_index("ratio")
         self._set_identifiers()
         self._set_ratios()
+        self._default_unit = dict()
+        self._default_unit["ratio"] = u.dimensionless_unscaled
+        self._default_unit["intensity"] = _OBS_UNIT_
 
     @property
     def description(self):
@@ -62,7 +66,7 @@ class ModelSet(object):
 
     @property
     def z(self):
-        """The metallicity of this model
+        """The metallicity of this ModelSet
 
         :rtype: float
         """
@@ -70,7 +74,7 @@ class ModelSet(object):
 
     @property
     def metallicity(self):
-        """The metallicity of this model
+        """The metallicity of this ModelSet
 
         :rtype: float
         """
@@ -82,19 +86,28 @@ class ModelSet(object):
 
     @property
     def table(self):
-        """The table containing details of the models
+        """The table containing details of the models in this ModelSet.
 
         :rtype: :class:`astropy.table.Table` 
         """
         return self._table
 
     @property
-    def supported_lines(self):
-        """Table of lines and continuum that are covered by this ModelSet
+    def supported_intensities(self):
+        """Table of lines and continuum that are included in ratios models of this ModelSet. 
 
         :rtype: :class:`astropy.table.Table` 
         """
         return self._identifiers
+
+    @property
+    def supported_lines(self):
+        """Table of lines that are covered by this ModelSet and have models separate from 
+        the any ratio model they might be in.
+
+        :rtype: :class:`astropy.table.Table` 
+        """
+        return self._supported_lines
 
     @property
     def supported_ratios(self):
@@ -164,39 +177,115 @@ class ModelSet(object):
                 yield(tup)
             
     def model_ratios(self,m):
+        '''Return the model ratios that match the input Measurement ID list.  You must provide at least 2 Measurements IDs
+
+        :param m: list of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g., ["CII_158","OI_145","FIR"]
+        :type m: list
+        :returns: list of string identifiers of ratios IDs, e.g., ['OI_145/CII_158', 'OI_145+CII_158/FIR']
+        :rtype: list
+        '''
         ratios = list()
+        if len(m) < 2:
+            raise Exception("m most contain at least two strings")
         for p in self.find_files(m):
             ratios.append(p[0])
         return ratios
-    
-    def get_models(self,identifiers,unit=u.dimensionless_unscaled,ext="fits"):
+
+    def model_intensities(self,m):
+        '''Return the model intensities in this ModelSet that match the input Measurement ID list.  
+        This method will return the intersection of the input list and the list of supported lines.
+
+        :param m: list of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g., ["CII_158","OI_145","CS_21"]
+        :type m: list
+        :returns: list of string identifiers of ratios IDs, e.g., ['CII_158','OI_145']
+        :rtype: list
+        '''
+        # get intersection of input list and supported lines
+        return list(set(m) & set(self._supported_lines["intensity label"])) 
+
+    def get_model(self,identifier,unit=None,ext="fits"):
+        '''Get a specific model by its identifier
+
+        :param identifier: a :class:`~pdrtpy.measurement.Measurement` ID. It can be an intensity or a ratio,
+         e.g., "CII_158","CI_609/FIR"
+        :type identifier: str
+        :returns: The model matching the identifier
+        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        :raises: KeyError if identifier not found in this ModelSet
+        '''
+
+        if identifier not in self.table["ratio"]:
+            raise KeyError(f"{identifier} is not in this ModelSet")
+
+        d = model_dir()
+        _thefile = d+self._tabrow["path"]+self.table.loc[identifier]["filename"]+"."+ext
+        _title = self._table.loc[identifier]['title']
+        if unit is None:
+            # make a guess at the unit
+            if '/' in identifier:
+                unit = self._default_unit["ratio"]
+                modeltype = "ratio"
+            else:
+                unit = self._default_unit['intensity']
+                modeltype = "intensity"
+        else:
+            if unit == u.dimensionless_unscaled:
+                modeltype = "ratio"
+            else:
+                modeltype = "intensity"
+        _model = Measurement.read(_thefile,title=_title,unit=unit,identifier=identifier)
+        _wcs = _model.wcs
+        _model.header["MODELTYP"] = modeltype
+        _model.modeltype = modeltype
+        if self.name == "wk2006" or self.name == "smc":
+        # fix WK2006 model headers
+            if _wcs.wcs.cunit[0] == "":
+                _model.header["CUNIT1"] = "cm^-3"
+                _wcs.wcs.cunit[0] = u.Unit("cm^-3")
+            if _wcs.wcs.cunit[1] == "":
+                _model.header["CUNIT2"] = "Habing"
+                # Raises UnitScaleError:
+                # "The FITS unit format is not able to represent scales that are not powers of 10.  Multiply your data by 1.600000e-03."
+                # This causes all sorts of downstream problems.  Workaround in LineRatioFit.read_models().
+                #_model.wcs.wcs.cunit[1] = habing_unit
+        else:
+            # copy wcs cunit to header. used later.
+            _model.header["CUNIT1"] = str(_wcs.wcs.cunit[0])
+            _model.header["CUNIT2"] = str(_wcs.wcs.cunit[1])
+
+        return _model
+
+    def get_models(self,identifiers,model_type="ratio",ext="fits"):
+        '''get the models from thie ModelSet that match the input list of identifiers
+
+        :param identifiers: list of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g., ["CII_158","OI_145","CS_21"]
+        :type identifiers: list
+        :param model_type: indicates which type of model is requested one of 'ratio' or 'intensity' 
+        :type model_type: str
+        :returns: The matching models as a list of :class:`~pdrtpy.measurement.Measurement`. 
+        :rtype: list
+        :raises: KeyError if identifiers not found in this ModelSet
+        '''
+
         #if identifier not in self._identifiers["ID"]:
         #    raise Exception("There is no model in ModelSet %s with the identifier %s"%(self.name,identifier))
+        if model_type != "intensity" and model_type != "ratio" and model_type != "both":
+            raise ValueError("Unrecognized model_type: must be one of 'intensity', 'ratio', or 'both'")
         models=dict()
-        d = model_dir()
-        self._supported_ratios.remove_indices('ratio label')
-        self._supported_ratios.add_index('ratio label')
-        for k in self.model_ratios(identifiers):
-            _thefile = d+self._tabrow["path"]+self.table.loc[k]["filename"]+"."+ext
-            _title = self._supported_ratios.loc[k]['title']
-            _model = Measurement.read(_thefile,unit=unit,title=_title)
-            _wcs = _model.wcs
-            if self.name == "wk2006" or self.name == "smc":
-            # fix WK2006 model headers
-                if _wcs.wcs.cunit[0] == "":
-                    _model.header["CUNIT1"] = "cm^-3"
-                    _wcs.wcs.cunit[0] = u.Unit("cm^-3")
-                if _wcs.wcs.cunit[1] == "":
-                    _model.header["CUNIT2"] = "Habing"
-                    # Raises UnitScaleError:
-                    # "The FITS unit format is not able to represent scales that are not powers of 10.  Multiply your data by 1.600000e-03."
-                    # This causes all sorts of downstream problems.  Workaround in LineRatioFit.read_models().
-                    #_model.wcs.wcs.cunit[1] = habing_unit
-            else:
-                # copy wcs cunit to header. used later.
-                _model.header["CUNIT1"] = str(_wcs.wcs.cunit[0])
-                _model.header["CUNIT2"] = str(_wcs.wcs.cunit[1])
-            models[k] = _model
+        a = list()
+        self._table.remove_indices('ratio')
+        self._table.add_index('ratio')
+        if model_type == "intensity" or model_type == "both":
+            a.extend(self.model_intensities(identifiers))
+        if model_type == "ratio" or model_type == "both":
+            a.extend(self.model_ratios(identifiers))
+            
+        if model_type == "intensity" or model_type == "ratio":
+            _unit = self._default_unit[model_type]
+        else:
+            _unit = None
+        for k in a:
+            models[k] = self.get_model(k,unit=_unit,ext=ext)
 
         return models
 
@@ -264,19 +353,26 @@ class ModelSet(object):
 
     def _set_ratios(self):
         """make a useful table of ratios covered by this model"""
-        self._supported_ratios = Table( [ self.table["title"], self.table["ratio"] ],copy=True)
+        self._supported_ratios = Table( [ self.table["title"], self.table["denominator"], self.table["ratio"] ],copy=True)
+        matching_rows = np.where(self._supported_ratios["denominator"]=="1")[0]
+        self._supported_lines = Table(self._supported_ratios[matching_rows],copy=True)
+        self._supported_lines.remove_column("denominator")
+        self._supported_ratios.remove_rows(matching_rows)
         self._supported_ratios['title'].unit = None
         self._supported_ratios['ratio'].unit = None
         self._supported_ratios.rename_column("ratio","ratio label")
+        self._supported_lines.rename_column("ratio","intensity label")
 
     def _set_identifiers(self):
         """make a useful table of identifiers of lines covered by this model"""
-        n=deepcopy(self._table['numerator'])
+        # remove the single line intensity models from the list.
+        matching_rows = np.where((self._table['denominator'] != "1"))[0]
+        n=deepcopy(self._table['numerator'][matching_rows])
         n.name = 'ID'
-        d=deepcopy(self._table['denominator'])
+        d=deepcopy(self._table['denominator'][matching_rows])
         d.name='ID'
 
-        t1 = Table([self._table['title'],n],copy=True)
+        t1 = Table([self._table['title'][matching_rows],n],copy=True)
         # discard the summed fluxes as user would input them individually
         for id in ['OI_145+CII_158','OI_63+CII_158']:
             a = np.where(t1['ID']==id)[0]
@@ -284,12 +380,14 @@ class ModelSet(object):
                 t1.remove_row(z)
         # now remove denominator from title (everything from / onwards)
         for i in range(len(t1['title'])):
-            t1['title'][i] = t1['title'][i][0:t1['title'][i].index('/')]
+            if '/' in t1['title'][i]:
+                t1['title'][i] = t1['title'][i][0:t1['title'][i].index('/')]
         
-        t2 = Table([self._table['title'],d],copy=True)
-        # remove numermator from title (everything before and including /)
+        t2 = Table([self._table['title'][matching_rows],d],copy=True)
+        # remove numerator from title (everything before and including /)
         for i in range(len(t2['title'])):
-            t2['title'][i] = t2['title'][i][t2['title'][i].index('/')+1:]
+            if '/' in t2['title'][i]:
+                t2['title'][i] = t2['title'][i][t2['title'][i].index('/')+1:]
         t = vstack([t1,t2])
         t = unique(t,keys=['ID'],keep='first',silent=True)
         t['title'].unit = None

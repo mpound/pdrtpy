@@ -1,7 +1,13 @@
-Plotting
-========
+Plotting Tools: Display models and data
+=======================================
 
-The :mod:`~pdrtpy.plot` module provides classes that are paired with tools in the :mod:`~pdrtpy.tool` module.   Currently, there are 2 classes :class:`~pdrtpy.plot.lineratioplot.LineRatioPlot` which is used to plot the results of :class:`~pdrtpy.tool.lineratiofit.LineRatioFit`, and :class:`~pdrtpy.plot.h2excitationplot.H2ExcitationPlot` that is used in :class:`~pdrtpy.tool.h2excitation.H2Excitation`.  All plots are derived from :class:`~pdrtpy.plot.plotbase.ToolBase`.
+The :mod:`~pdrtpy.plot` module provides mechanisms for plotting models, observations, and model fits.
+
+The :class:`~pdrtpy.plot.modelplot.ModelPlot` class can be used plotting models and observations without any :math:`\chi^2` fitting.  
+An example notebook for using `ModelPlot` is 
+`PDRT_Example_ModelPlotting.ipynb <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_ModelPlotting.ipynb>`_  .
+
+Some classes are paired with analysis tools in the :mod:`~pdrtpy.tool` module.  :class:`~pdrtpy.plot.lineratioplot.LineRatioPlot` which is used to plot the results of :class:`~pdrtpy.tool.lineratiofit.LineRatioFit`, and :class:`~pdrtpy.plot.h2excitationplot.H2ExcitationPlot` that is used in :class:`~pdrtpy.tool.h2excitation.H2Excitation`.  All plot classes are derived from :class:`~pdrtpy.plot.plotbase.PlotBase`.
 
 ---------------------
 
@@ -32,6 +38,14 @@ LineRatioPlot
 -------------
 
 .. automodule:: pdrtpy.plot.lineratioplot
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+ModelPlot
+-------------
+
+.. automodule:: pdrtpy.plot.modelplot
    :members:
    :undoc-members:
    :show-inheritance:

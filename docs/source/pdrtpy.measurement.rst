@@ -1,5 +1,5 @@
-Measurements
-============
+Measurements: How you put observations to the Toolbox
+========================================================
 
 To use PDR Toolbox, you need to create `Measurements` from your
 observations. A Measurement consists of a value and an error.

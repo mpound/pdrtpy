@@ -2,6 +2,7 @@
 
 from copy import deepcopy
 
+from astropy import log
 import astropy.units as u
 from astropy.io import fits,registry
 from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
@@ -12,7 +13,7 @@ from os.path import exists
 from .pdrutils import squeeze,mask_union
 
 class Measurement(CCDData):
-    """Measurement represents one or more observations of a given spectral
+    r"""Measurement represents one or more observations of a given spectral
     line or continuum.  It is made up of a value array, an
     uncertainty array, units, and a string identifier It is based
     on :class:`astropy.nddata.CCDData`.  It can represent a single pixel
@@ -37,17 +38,17 @@ class Measurement(CCDData):
     :param identifier: string indicating what this is an observation of, e.g., "CO_10" for CO(1-0)
     :type identifier: str
 
-    :param title: formatted string (e.g. LaTeX) describing this observation that can be used for plotting, e.g. r'${^13}$CO(3-2)'
+    :param title: formatted string (e.g. LaTeX) describing this observation that can be used for plotting, e.g., r'$^{13}$CO(3-2)'
     :type title: str
 
     :param bmaj: [optional] beam major axis diameter. This will be converted to degrees for storage in FITS header
-    :type  bmaj: class:`astropy.units.Quantity`  
+    :type  bmaj: :class:`astropy.units.Quantity`  
 
     :param bmin: [optional] beam minor axis diameter. This will be converted to degrees for storage in FITS header
-    :type  bmin: class:`astropy.units.Quantity`  
+    :type  bmin: :class:`astropy.units.Quantity`  
 
     :param bpa: [optional] beam position angle. This will be converted to degrees for storage in FITS header
-    :type  bpa: class:`astropy.units.Quantity`  
+    :type  bpa: :class:`astropy.units.Quantity`  
 
     :raises TypeError: if beam parameters are not Quantities
     
@@ -271,7 +272,7 @@ class Measurement(CCDData):
         return self._filename
     
     def write(self,filename,**kwd):
-        '''Write this Measurement to a FITS file with flux in 1st HDU and error in 2nd HDU. See astropy.nddata.CCDData.write
+        '''Write this Measurement to a FITS file with flux in 1st HDU and error in 2nd HDU. See :meth:`astropy.nddata.CCDData.write`.
         
         :param filename:  Name of file.
         :type filename: str
@@ -288,8 +289,7 @@ class Measurement(CCDData):
 
     
     def add(self,other):
-        """Add this Measurement to another, propagating errors, units,  and updating identifiers.
-           Masks are logically or'd.
+        """Add this Measurement to another, propagating errors, units,  and updating identifiers.  Masks are logically or'd.
 
         :param other: a Measurement to add
         :type other: :class:`Measurement`
@@ -306,8 +306,7 @@ class Measurement(CCDData):
         return z
    
     def subtract(self,other):
-        '''Subtract another Measurement from this one, propagating errors, units,  and updating identifiers.
-           Masks are logically or'd.
+        '''Subtract another Measurement from this one, propagating errors, units,  and updating identifiers.  Masks are logically or'd.
 
         :param other: a Measurement to subtract
         :type other: :class:`Measurement`
@@ -318,8 +317,7 @@ class Measurement(CCDData):
         return z
     
     def multiply(self,other):
-        '''Multiply this Measurement by another, propagating errors, units,  and updating identifiers.
-           Masks are logically or'd.
+        '''Multiply this Measurement by another, propagating errors, units,  and updating identifiers.  Masks are logically or'd.
 
         :param other: a Measurement to multiply
         :type other: :class:`Measurement`
@@ -330,8 +328,7 @@ class Measurement(CCDData):
         return z
         
     def divide(self,other):
-        '''Divide this Measurement by another, propagating errors, units,  and updating identifiers.
-           Masks are logically or'd.
+        '''Divide this Measurement by another, propagating errors, units,  and updating identifiers.  Masks are logically or'd.
 
         :param other: a Measurement to divide
         :type other: :class:`Measurement`
@@ -429,6 +426,9 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
     _id = kwd.pop('identifier', 'unknown')
     _title = kwd.pop('title', None)
     _squeeze = kwd.pop('squeeze', True)
+    # suppress INFO messages about units in FITS file. e.g. useless ones like:
+    # "INFO: using the unit erg / (cm2 s sr) passed to the FITS reader instead of the unit erg s-1 cm-2 sr-1 in the FITS file."
+    log.setLevel('WARNING')
     z = CCDData.read(filename,hdu,unit,hdu_uncertainty,hdu_mask,key_uncertainty_type, **kwd)
     if _squeeze:
         z = squeeze(z)
@@ -444,6 +444,7 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
     # astropy.io.registry.read creates a FileIO object before calling the registered
     # reader (this method), so the filename is FileIO.name. 
     z._filename=filename.name
+    log.setLevel('INFO') # set back to default
     return z
 
     

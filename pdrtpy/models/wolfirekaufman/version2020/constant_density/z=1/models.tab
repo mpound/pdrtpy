@@ -19,3 +19,8 @@
           CO_76       CO_10         CO_76/CO_10  CO76_CO10                  1   CO(J=7-6) / CO(J=1-0)
           CO_76       CO_21         CO_76/CO_21  CO76_CO21                  1   CO(J=7-6) / CO(J=2-1)
           CO_76       CO_43         CO_76/CO_43  CO76_CO43                  1   CO(J=7-6) / CO(J=4-3)
+         CI_609           1              CI_609     CI609                   1   [C I] 609 $\mu$m
+          OI_63           1              OI_63       OI63                   1   [O I] 63 $\mu$m
+          CO_10           1              CO_10       CO10                   1   CO(J=1-0)
+          CO_21           1              CO_21       CO21                   1   CO(J=2-1)
+          CO_76           1              CO_76       CO76                   1   CO(J=7-6)

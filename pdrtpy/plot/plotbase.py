@@ -1,5 +1,3 @@
-"""Base class for tool plotters
-"""
 import numpy as np
 
 import matplotlib.axes as maxes
@@ -12,9 +10,18 @@ from matplotlib.colors import LogNorm
 from ..pdrutils import to
 
 class PlotBase:
+    """Base class for plotting.  
+
+    :param tool:  Reference to a :mod:`~pdrtpy.tool` object or `None`.  This is used for classes that inherit from PlotBase and are coupled to a specific tool, e.g. :class:`~pdrtpy.plot.LineRatioPlot` and :class:`~pdrtpy.tool.LineRatioFit`.
+    :type tool: Any class derived from :class:`~pdrtpy.tool.toolbase.ToolBase`
+    """
     def __init__(self,tool):
         import matplotlib.pyplot 
         self._plt = matplotlib.pyplot
+        # don't use latex in text labels etc by default. 
+        # because legends and titles wind up using a different font than axes
+        # @TODO figure out how to make them all use the same font (e.g. CMBright)
+        self._plt.rcParams["text.usetex"] = False
         self._figure = None
         self._axis = None
         self._tool = tool
@@ -150,3 +157,11 @@ class PlotBase:
         """
         self._figure.savefig(fname=fname,**kwargs)
 
+    def usetex(self,use):
+        """Control whether plots use LaTeX formatting in axis labels and other text components. This method sets
+           matplotlib parameter `rcParams["text.usetex"]` in the local pyplot instance.
+
+           :param use: whether to use LaTeX or not
+           :type use: bool
+        """
+        self._plt.rcParams["text.usetex"] = use
