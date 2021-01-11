@@ -47,3 +47,7 @@
 - typos
 
 - new style
+
+#### __Issues__
+
+- issues 4, 8, 10, 15, 17, 19 closed
