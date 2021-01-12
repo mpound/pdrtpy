@@ -25,7 +25,9 @@ from .. import pdrutils as utils
 
 class ModelPlot(PlotBase):
     """Class to plot models and optionally Measurements.  It does not require :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` first.
-        The methods of this class can take a variety of optional keywords. See the doc for LineRatioPlot for a description of these keywords. @todo move doc someplace more useful
+
+    :Keyword Arguments:
+    The methods of this class can take a variety of optional keywords.  See the general `Plot Keywords`_ documentation
     """
     def __init__(self,modelset,figure=None,axis=None):
         """Init method
