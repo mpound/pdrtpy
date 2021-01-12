@@ -37,64 +37,7 @@ class LineRatioPlot(PlotBase):
     
 
     :Keyword Arguments:
-
-    To manage the plots, the methods in this class take keywords (\*\*kwargs) that turn on or off various options, specify plot units, or map to matplotlib's :meth:`~matplotlib.axes.Axes.plot`, :meth:`~matplotlib.axes.Axes.imshow`, :meth:`~matplotlib.axes.Axes.contour` keywords.  The methods have reasonable defaults, so try them with no keywords to see what they do before modifying keywords.
-
-     * *units* (``str`` or :class:`astropy.units.Unit`) image data units to use in the plot. This can be either a string such as, 'cm^-3' or 'Habing', or it can be an :class:`astropy.units.Unit`.  Data will be converted to the desired unit.   Note these are **not** the axis units, but the image data units.  Modifying axis units is implemented via the `xaxis_unit` and `yaxis_unit` keywords. 
-
-     * *image* (``bool``) whether or not to display the image map (imshow). 
-
-     * *show* (``str``) which quantity to display in the Measurement, one of 'data', 'error', 'mask'.  For example, this can be used to plot the errors in observed ratios. Default: 'data'
-
-     * *cmap* (``str``) colormap name, Default: 'plasma' 
-
-     * *colorbar* (``str``) whether or not to display colorbar
-
-     * *colors* (``str``) color of the contours. Default: 'whitecolor of the contours. Default: 'white'
-
-     * *contours* (``bool``), whether or not to plot contours
-
-     * *label* (``bool``), whether or not to label contours 
-
-     * *linewidths* (``float or sequence of float``), the line width in points, Default: 1.0
-
-     * *legend* (``bool``) Draw a legend on the plot. If False, a title is drawn above the plot with the value of the *title* keyword
-
-     * *levels* (``int`` or array-like) Determines the number and positions of the contour lines / regions.  If an int n, use n data intervals; i.e. draw n+1 contour lines. The level heights are automatically chosen.  If array-like, draw contour lines at the specified levels. The values must be in increasing order.  
-
-     * *measurements* (array-like) A list of single pixel Measurements that can be contoured over a model ratio or intensity map.
-
-     * *meas_color* (array of str) A list of colors to use when overlaying Measurement contours. There should be one color for each Measurement in the *measurement* keyword.  The Default of None will use a color-blind friendly color cycle.
-
-     * *norm* (``str`` or :mod:`astropy.visualization` normalization object) The normalization to use in the image. The string 'simple' will normalize with :func:`~astropy.visualization.simple_norm` and 'zscale' will normalize with IRAF's zscale algorithm.  See :class:`~astropy.visualization.ZScaleInterval`.
-
-     * *stretch* (``str``)  {'linear', 'sqrt', 'power', log', 'asinh'}. The stretch function to apply to the image for simple_norm.  The Default is 'linear'.
-
-     * *aspect* (``str``) aspect ratio, 'equal' or 'auto' are typical defaults.
-
-     * *origin* (``str``) Origin of the image. Default: 'lower'
-
-     * *title* (``str``) A title for the plot.  LaTeX allowed.
-
-     * *vmin*  (``float``) Minimum value for colormap normalization
-
-     * *vmax*  (``float``) Maximum value for colormap normalization
-    
-     * *xaxis_unit* (``str`` or :class:`astropy.units.Unit`) X axis (density) units to use when plotting models, such as in :meth:`overlay_all_ratios` or :meth:`modelratio`.  If None, the native model axis units are used.
-
-     * *yaxis_unit* (``str`` or :class:`astropy.units.Unit`) Y axis (FUV radiation field flux) units to use when plotting models, such as in :meth:`overlay_all_ratios` or :meth:`modelratio`.  If None, the native model axis units are used.
-
-     The following keywords are available, but you probably won't touch.
-
-     * *nrows* (``int``) Number of rows in the subplot
-
-     * *ncols* (``int``) Number of columns in the subplot
-
-     * *index* (``int``) Index of the subplot
-
-     * *reset* (``bool``) Whether or not to reset the figure.
-
-     Providing keywords other than these has undefined results, but may just work!
+    The methods of this class can take a variety of optional keywords.  See the general `Plot Keywords`_ documentation
        
     """
 
@@ -259,17 +202,15 @@ class LineRatioPlot(PlotBase):
             # Suppress WCS warning about 1/cm3 not being FITS
             warnings.simplefilter('ignore',category=UnitsWarning)
             logn,logrf = mywcs.array_index_to_world(row,col)
-            logn,logrf = mywcs.pixel_to_world(col,row)
+            #print("AI n,rf:",logn,logrf)
+            #logn,logrf = mywcs.pixel_to_world(col,row)
+            ##print("PW n,rf:",logn,logrf)
             #print("logrf.unit",logrf.unit)
             warnings.resetwarnings()
             n = (10**logn.value[0])*u.Unit(logn.unit.to_string())
             rf = (10**logrf.value[0])*u.Unit(logrf.unit.to_string())
             #print("n dn",n,mywcs.wcs.cdelt[0])
             #print("rf drf",rf,mywcs.wcs.cdelt[0])
-            # x,y are at the bottom corner of the pixel. So add half a pixel in each
-            # dimension?
-            #logn.value[0] += 0.5*mywcs.wcs.cdelt[0]
-            #logrf.value[0] += 0.5*mywcs.wcs.cdelt[1]
             if kwargs_opts['xaxis_unit'] is not None:
                 x = n.to(kwargs_opts['xaxis_unit']).value
             else:
@@ -278,45 +219,18 @@ class LineRatioPlot(PlotBase):
                 y = rf.to(kwargs_opts['yaxis_unit']).value
             else:
                 y = rf.value
+            #print("Plot x,y %s,%s"%(x,y))
 
             if kwargs_opts['title'] is None:
                 kwargs_opts['title'] = r'$\chi^2$ (dof=%d)'%self._tool._dof
             label = r'$\chi_{min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)'%(self._tool._chisq_min.flux,x,y)
-            self._axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
+            self._modelplot._axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
             # handle legend locally
             if kwargs_opts['legend']:
-                legend = self._axis[0].legend(loc='upper center',title=kwargs_opts['title'])
-
-    def cost(self, **kwargs):           
-        '''Plot the cost funtion map that was computed by the
-        :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
-        
-        '''
-
-        kwargs_opts = {'units': None,
-                       'aspect': 'equal',
-                       'image':True,
-                       'contours': True,
-                       'label': False,
-                       'colors': ['white'],
-                       'linewidths': 1.0,
-                       'norm': 'simple',
-                       'stretch': 'linear',
-                       'xaxis_unit': None,
-                       'yaxis_unit': None,
-                       'legend': None,
-                       'title': None}
-
-        kwargs_opts.update(kwargs)
-        # make a sensible choice about contours if image is not shown
-        if not kwargs_opts['image'] and kwargs_opts['colors'][0] == 'white':
-           kwargs_opts['colors'][0] = 'black'
-
-        if self._tool.has_maps:
-            data = self._tool._cost_min
-            if 'title' not in kwargs:
-                kwargs_opts['title'] = "Cost"
-            self._plot(data,**kwargs_opts)
+                #print("doing legend")
+                legend = self._modelplot._axis[0].legend(loc='upper center',title=kwargs_opts['title'])
+            self._figure = self._modelplot.figure
+            self._axis = self._modelplot.axis
 
     def reduced_chisq(self, **kwargs):
         '''Plot the reduced :math:`\chi^2` map that was computed by the
