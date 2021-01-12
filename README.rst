@@ -10,13 +10,17 @@ PhotoDissociation Region Toolbox Python
    :target: http://ascl.net/1102.022
    :alt: Astrophysics Source Code Library 1102.022
 
-.. image:: http://www.repostatus.org/badges/latest/active.svg
+.. image:: http://www.repostatus.org/badges/latest/active.svg?style=plastic
  :target: http://www.repostatus.org/#active
  :alt: Project Status: Active - The project has reached a stable, usable state and is being actively developed.
 
 .. image:: https://img.shields.io/pypi/pyversions/pdrtpy.svg?style=plastic
  :target: https://img.shields.io/pypi/pyversions/pdrtpy.svg?style=plastic
  :alt: Python version
+
+.. image:: https://img.shields.io/badge/License-GPLv3-blue.svg?style=plastic
+ :target: https://www.gnu.org/licenses/gpl-3.0
+ :alt: GNU GPL v3 License
 
 ``pdrtpy`` is the new and improved version of the classic `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/pdrt>`_, rewritten in Python with new capabilities and giving more flexibility to end users. 
 
