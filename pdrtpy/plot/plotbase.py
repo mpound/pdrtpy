@@ -73,6 +73,22 @@ class PlotBase:
             print("Computed %d contour autolevels: %s"%(numlevels,levels))
         return levels
         
+    @property 
+    def figure(self):
+        """The last figure that was drawn.
+
+           :rtype: :class:`matplotlib.figure.Figure`
+        """
+        return self._figure
+
+    @property
+    def axis(self):
+        """The last axis that was drawn.
+
+           :rtype: :class:`matplotlib.axes._subplots.AxesSubplot`
+        """
+        return self._axis
+
     def _zscale(self,image,vmin,vmax,stretch,contrast=0.25):
         """Normalization object using Zscale algorithm
            See :mod:`astropy.visualization.ZScaleInterval`
