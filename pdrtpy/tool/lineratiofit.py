@@ -534,8 +534,8 @@ class LineRatioFit(ToolBase):
         self._reduced_chisq.header =  Header(deepcopy(self._chisq.header))
         self._fixheader(self._chisq)
         self._fixheader(self._reduced_chisq)
-        utils.setkey("BUNIT","Chi-squared",self._chisq)
-        utils.setkey("BUNIT",("Reduced Chi-squared (DOF=%d)"%self._dof),self._reduced_chisq)
+        utils.comment("Chi-squared",self._chisq)
+        utils.comment(("Reduced Chi-squared (DOF=%d)"%self._dof),self._reduced_chisq)
         self._makehistory(self._chisq)
         self._makehistory(self._reduced_chisq)
         
