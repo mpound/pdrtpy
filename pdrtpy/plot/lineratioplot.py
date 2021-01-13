@@ -358,9 +358,10 @@ class LineRatioPlot(PlotBase):
 
         kwargs_opts.update(kwargs)
 
-        chidata = self._tool._chisq.data
-        chi2_stat = 100*stats.distributions.chi2.cdf(chidata,self._tool._dof)
-        self._modelplot._plot_no_wcs(data=chi2_stat,header=self._tool._chisq.header,**kwargs_opts)
+        confidence = deepcopy(self._tool._chisq)
+        confidence.data = 100*stats.distributions.chi2.cdf(confidence.data,self._tool._dof)
+        #self._modelplot._plot_no_wcs(data=chi2_stat,header=self._tool._chisq.header,**kwargs_opts)
+        self._modelplot._plot_no_wcs(data=confidence,header=None,**kwargs_opts)
         #print("CF min max ",np.min(chi2_stat),np.max(chi2_stat))
     
     def overlay_all_ratios(self,**kwargs):
