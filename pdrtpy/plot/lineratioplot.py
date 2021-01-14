@@ -330,6 +330,7 @@ class LineRatioPlot(PlotBase):
         kwargs_opts['reset'] = _reset[1]
  
         d = self.density(units=units[1],**kwargs_opts)
+        # @todo don't return for plots.  print for non-plots
         return (rf,d)
 
     def confidence_intervals(self,**kwargs):
@@ -535,7 +536,7 @@ class LineRatioPlot(PlotBase):
                           'ncols': 1,
                           'index': 1,
                           'reset': True,
-                          'constrained_layout': True
+                          'constrained_layout': False # this appears to have no effect
                          }
 
         # delay merge until min_ and max_ are known
@@ -558,13 +559,15 @@ class LineRatioPlot(PlotBase):
                                                                 'aspect':kwargs_imshow['aspect']},
                                                     constrained_layout=kwargs_subplot['constrained_layout'])
             #print("CL=",self._plt.rcParams['figure.constrained_layout.use']) 
-        #self._figure.subplots_adjust(top=0.7)
-        #self._figure.tight_layout()
+  
 
         # Make sure self._axis is an array because we will index it below.
         if type(self._axis) is not np.ndarray:
             self._axis = np.array([self._axis])
-        
+        for a in self._axis:
+            a.tick_params(axes='both',direction='in')
+            for c in a.coords:
+                c.display_minor_ticks(True)
         if kwargs_opts['image']:
             current_cmap = copy(mcm.get_cmap(kwargs_imshow['cmap']))
             current_cmap.set_bad(color='white',alpha=1)
@@ -599,8 +602,15 @@ class LineRatioPlot(PlotBase):
                 self._axis[axidx].clabel(contourset,contourset.levels,inline=True,fmt='%1.1e')
 
         if kwargs_opts['title'] is not None: 
-            self._axis[axidx].set_title(kwargs_opts['title'])
+            #self.figure.subplots_adjust(top=0.95)
+            #self._axis[axidx].set_title(kwargs_opts['title'])
+            # Using ax.set_title causes the title to be cut off.  No amount of
+            # diddling with tight_layout, constrained_layout, subplot adjusting, etc
+            # would affect this.  However using Figure.suptitle seems to work.
+            self.figure.suptitle(kwargs_opts['title'],y=0.95)
 
         if k.wcs is not None:
             self._axis[axidx].set_xlabel(k.wcs.wcs.lngtyp)
             self._axis[axidx].set_ylabel(k.wcs.wcs.lattyp)
+     
+        #self._figure.tight_layout()
