@@ -1,6 +1,6 @@
-***************************************
-PhotoDissociation Region Toolbox Python
-***************************************
+*******************************************
+PhotoDissociation Region Toolbox --- Python
+*******************************************
 
 *Reliable astrophysics at everyday low, low prices!* |reg| 
 
@@ -22,11 +22,11 @@ PhotoDissociation Region Toolbox Python
  :target: https://www.gnu.org/licenses/gpl-3.0
  :alt: GNU GPL v3 License
 
-``pdrtpy`` is the new and improved version of the classic `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/pdrt>`_, rewritten in Python with new capabilities and giving more flexibility to end users. 
+``pdrtpy`` is the new and improved version of the classic `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/pdrt>`_, rewritten in Python with new capabilities and giving more flexibility to end users.  (The Perl/CGI version of PDRT is deprecated and no longer supported).
 
 The new PDR Toolbox will cover many more spectral lines and metallicities
 and allows map-based analysis so users can quickly compute spatial images
-of density and radiation field from map data.  We provide :ref:`example Jupyter notebooks <notebooks>` for data analysis.  It also can support other PDR model codes
+of density and radiation field from map data.  We provide :ref:`example Jupyter notebooks <notebooks>` for data analysis.  It also can support models from other PDR codes
 enabling comparison of derived properties between codes.
 
 The underlying model code has improved physics and chemistry. Critical updates include those discussed in 
@@ -170,5 +170,4 @@ This project is supported by `NASA Astrophysics Data Analysis Program <https://s
 .. |CII|  replace:: [C II]
 
 #########################################################
-
 
