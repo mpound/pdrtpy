@@ -126,20 +126,20 @@ def root_path():
     """
     return Path(__file__).parent
 
-def data_dir():
+def testdata_dir():
     """Project test data directory, including trailing slash
 
     :rtype: str
     """
     return os.path.join(root_dir(),'testdata/')
 
-def get_data(filename):
+def get_testdata(filename):
     """Get fully qualified pathname to FITS test data file.
 
     :param filename: input filename, no path
     :type filename: str
     """
-    return data_dir()+filename
+    return testdata_dir()+filename
 
 def model_dir():
     """Project model directory, including trailing slash
