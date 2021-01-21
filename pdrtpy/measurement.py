@@ -32,6 +32,7 @@ class Measurement(CCDData):
     :type uncertainty: :class:`astropy.nddata.StdDevUncertainty`, \
             :class:`astropy.nddata.VarianceUncertainty`, \
             :class:`astropy.nddata.InverseVariance` or :class:`numpy.ndarray`
+
     :param unit: The units of the data.  Required.
     :type unit: :class:`astropy.units.Unit` or str
         
@@ -93,7 +94,9 @@ class Measurement(CCDData):
         # The side-effect of this is that Measurement not instantiated from 
         # an image and with no unit given gets "adu" as the unit.  
         self._defunit = "adu"
+        unitpresent = 'unit' in kwargs
         _unit = kwargs.pop('unit', self._defunit)
+        print("Measurement constructor using unit %s"%_unit)
 
         # Also works: super().__init__(*args, **kwargs, unit=_unit)
         CCDData.__init__(self,*args, **kwargs, unit=_unit)
@@ -105,9 +108,10 @@ class Measurement(CCDData):
             #print("new restfreq: %s Hz"%rf)
             self.header["RESTFREQ"] = rf
         # Set unit to header BUNIT or put BUNIT into header if it 
-        # wasn't present 
-        if "BUNIT" in self.header:
+        # wasn't present AND if unit wasn't given in the constructor
+        if not unitpresent and "BUNIT" in self.header:
             self._unit = u.Unit(self.header["BUNIT"])
+            print("overriding unit with BUNIT %s"% self.header["BUNIT"])
             if self.uncertainty is not None:
                 self.uncertainty._unit = u.Unit(self.header["BUNIT"])
         else: 
@@ -131,7 +135,7 @@ class Measurement(CCDData):
         
 
     @staticmethod
-    def make_measurement(fluxfile,error,outfile,rms=None,masknan=True,overwrite=False):
+    def make_measurement(fluxfile,error,outfile,rms=None,masknan=True,overwrite=False,unit="adu"):
         """Create a FITS files with 2 HDUS, the first being the flux and the 2nd being 
         the flux uncertainty. This format makes allows the resulting file to be read into the underlying :class:'~astropy.nddata.CCDData` class.
 
@@ -152,6 +156,8 @@ class Measurement(CCDData):
         :type masknan: bool
         :param overwrite: If `True`, overwrite the output file if it exists. Default: `False`.
         :type overwrite: bool
+        :param unit: Intensity unit to use for the data, this will override BUNIT in header if present.
+        :type unit: :class:`astropy.units.Unit` or str
 
         :raises Exception: on various FITS header issues
         :raises OSError: if `overwrite` is `False` and the output file exists.
@@ -188,8 +194,8 @@ class Measurement(CCDData):
             needsclose = True
         #print(_error[0].data.shape)
  
-        fb = _flux[0].header.get('bunit','adu')
-        eb = _error[0].header.get('bunit','adu')
+        fb = _flux[0].header.get('bunit',str(unit)) #use str in case Unit was given
+        eb = _error[0].header.get('bunit',str(unit))
         if fb != eb:
             raise Exception("BUNIT must be the same in both flux (%s) and error (%s) maps"%(fb,eb))
         # Sigh, this is necessary since there is no mode available in
@@ -432,16 +438,18 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
     _squeeze = kwd.pop('squeeze', True)
     # suppress INFO messages about units in FITS file. e.g. useless ones like:
     # "INFO: using the unit erg / (cm2 s sr) passed to the FITS reader instead of the unit erg s-1 cm-2 sr-1 in the FITS file."
-    log.setLevel('WARNING')
-    z = CCDData.read(filename,hdu,unit,hdu_uncertainty,hdu_mask,key_uncertainty_type, **kwd)
+    #log.setLevel('WARNING')
+    z = CCDData.read(filename,unit=unit)#,hdu,uu,hdu_uncertainty,hdu_mask,hdu_flags,key_uncertainty_type, **kwd)
+    print(unit,z.unit,z._unit)
     if _squeeze:
         z = squeeze(z)
         
     # @TODO if uncertainty plane not present, look for RMS keyword
     # @TODO header values get stuffed into WCS, others may be dropped by CCDData._generate_wcs_and_update_header
     try:
+       print("trying measurement with unit %s"%z._unit)
        z=Measurement(z,unit=z._unit,title=_title)
-       #print("created measurement with unit %s"%z._unit)
+       print("created measurement with unit %s"%z._unit)
     except Exception:
        raise TypeError('could not convert fits_measurement_reader output to Measurement')
     z.identifier(_id)
