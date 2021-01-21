@@ -96,7 +96,6 @@ class Measurement(CCDData):
         self._defunit = "adu"
         unitpresent = 'unit' in kwargs
         _unit = kwargs.pop('unit', self._defunit)
-        print("Measurement constructor using unit %s"%_unit)
 
         # Also works: super().__init__(*args, **kwargs, unit=_unit)
         CCDData.__init__(self,*args, **kwargs, unit=_unit)
@@ -105,13 +104,11 @@ class Measurement(CCDData):
         # FITS standard is Hz
         if self._restfreq is not None:
             rf = u.Unit(self._restfreq).to("Hz")
-            #print("new restfreq: %s Hz"%rf)
             self.header["RESTFREQ"] = rf
         # Set unit to header BUNIT or put BUNIT into header if it 
         # wasn't present AND if unit wasn't given in the constructor
         if not unitpresent and "BUNIT" in self.header:
             self._unit = u.Unit(self.header["BUNIT"])
-            print("overriding unit with BUNIT %s"% self.header["BUNIT"])
             if self.uncertainty is not None:
                 self.uncertainty._unit = u.Unit(self.header["BUNIT"])
         else: 
@@ -119,7 +116,6 @@ class Measurement(CCDData):
             self.header["BUNIT"] = str(_unit) 
         # Ditto beam parameters
         if "BMAJ" not in self.header:
-            #print("setting BMAJ to ",_beam["BMAJ"])
             self.header["BMAJ"] = _beam["BMAJ"]
         if "BMIN" not in self.header:
             self.header["BMIN"] = _beam["BMIN"]
@@ -171,7 +167,7 @@ class Measurement(CCDData):
 
             # example with measurement in units of K km/s and error 
             # indicated by RMS keyword in input file.
-            Measurement.make_measurement("my_infile.fits",error='rms',outfile="my_outfile.fits",units="K km/s",overwrite=True)
+            Measurement.make_measurement("my_infile.fits",error='rms',outfile="my_outfile.fits",unit="K km/s",overwrite=True)
         """
         _flux = fits.open(fluxfile)
         needsclose = False
@@ -192,7 +188,6 @@ class Measurement(CCDData):
         else:
             _error = fits.open(error)
             needsclose = True
-        #print(_error[0].data.shape)
  
         fb = _flux[0].header.get('bunit',str(unit)) #use str in case Unit was given
         eb = _error[0].header.get('bunit',str(unit))
@@ -344,7 +339,6 @@ class Measurement(CCDData):
         :type other: :class:`Measurement`
         '''
         z=CCDData.divide(self,other,handle_mask=np.logical_or)
-        #print("M.divide mask is None: %s"%(z.mask is None))
         z=Measurement(z,unit=z._unit)
         z._identifier = self.id + '/' + other.id
         return z
@@ -438,18 +432,15 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
     _squeeze = kwd.pop('squeeze', True)
     # suppress INFO messages about units in FITS file. e.g. useless ones like:
     # "INFO: using the unit erg / (cm2 s sr) passed to the FITS reader instead of the unit erg s-1 cm-2 sr-1 in the FITS file."
-    #log.setLevel('WARNING')
+    log.setLevel('WARNING')
     z = CCDData.read(filename,unit=unit)#,hdu,uu,hdu_uncertainty,hdu_mask,hdu_flags,key_uncertainty_type, **kwd)
-    print(unit,z.unit,z._unit)
     if _squeeze:
         z = squeeze(z)
         
     # @TODO if uncertainty plane not present, look for RMS keyword
     # @TODO header values get stuffed into WCS, others may be dropped by CCDData._generate_wcs_and_update_header
     try:
-       print("trying measurement with unit %s"%z._unit)
        z=Measurement(z,unit=z._unit,title=_title)
-       print("created measurement with unit %s"%z._unit)
     except Exception:
        raise TypeError('could not convert fits_measurement_reader output to Measurement')
     z.identifier(_id)
