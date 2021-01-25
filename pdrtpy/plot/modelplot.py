@@ -39,14 +39,6 @@ class ModelPlot(PlotBase):
         self._modelset = modelset
         self._figure = figure
         self._axis = axis
-        # color blind/friendly color cyle courtesy https://gist.github.com/thriveth/8560036
-        self._CB_color_cycle = ['#377eb8', '#ff7f00','#4daf4a',
-                  '#f781bf', '#a65628', '#984ea3',
-                  '#999999', '#e41a1c', '#dede00']
-        self._plt.rc('axes', prop_cycle=(cycler('color',  self._CB_color_cycle)))
-    """Init method
-
-    """
     
     def plot(self,identifier,**kwargs):
         """Plot a model intensity or ratio
@@ -207,17 +199,17 @@ class ModelPlot(PlotBase):
     # sorts by power .  They have a good reason for this (hashing), but it does mean we get sub-optimal unit ordering.  
     # There is a possible workaround, but it must be custom for each CompositeUnit.https://github.com/astropy/astropy/issues/1578
     def phasespace(self,identifiers,
-                 dens_clip=[10,1E7]*u.Unit("cm-3"),
-                 rad_clip=[10,1E6]*utils.habing_unit,
+                 nax1_clip=[10,1E7]*u.Unit("cm-3"),
+                 nax2_clip=[10,1E6]*utils.habing_unit,
                  reciprocal=[False,False]):
-        '''Plot lines of constant density and radiation field on a ratio-ratio, ratio-intensity, or intensity-intensity map
+        r'''Plot lines of constant density and radiation field on a ratio-ratio, ratio-intensity, or intensity-intensity map
 
         :param identifiers: list of two identifier tags for the model to plot, e.g., ["OI_63/CO_21", "CII_158"]
         :type identifiers: list of str
-        :param dens_clip: The range of model densities to show in the plot.  Must be given as a range of astropy quanitities.  Default: [10,1E7]*Unit("cm-3")
-        :type dens_clip: array like, must contain Quantity
-        :param rad_clip: The range of model radiation field intensities to show in the plot.  Must be given as a range of astropy quantities.  Default: rad_clip=[10,1E6]*utils.habing_unit
-        :type rad_clip:  array like, must contain Quantity
+        :param nax1_clip: The range of model densities on NAXIS1 to show in the plot. For most model NAXIS1 is hydrogen number density $n_H$ in cm$^{-3}$.  For ionized gas models, it is electron temperature $T_e$ in K.  Must be given as a range of astropy quanitities.  Default: [10,1E7]*Unit("cm-3")
+        :type nax1_clip: array like, must contain Quantity
+        :param nax2_clip: The range of model parameters on NAXIS2 to show in the plot.  For most models NAXIS2 is radiation field intensities in Habing or cgs units.  For ionized gas models, it is electron volume density $n_e$.  Must be given as a range of astropy quantities.  Default: nax1_clip=[10,1E6]*utils.habing_unit. 
+        :type nax2_clip:  array like, must contain Quantity
         :param reciprocal: Whether or not the plot the reciprocal of the model on each axis.  Given as a pair of booleans.  e.g. [False,True] means don't flip the quantity X axis, but flip quantity the Y axis.  i.e. if the model is "CII/OI", and reciprocal=True then the axis will be "OI/CII".  Default: [False, False]
         :type reciprocal: list of bool
 
@@ -228,24 +220,45 @@ class ModelPlot(PlotBase):
 
         xlog,ylog=self._get_xy_from_wcs(models[0],quantity=True,linear=False)
         xlin,ylin=self._get_xy_from_wcs(models[0],quantity=True,linear=True)
-
+        
+        x_is_log = False
+        y_is_log = False
+        if 'log' in models[0].wcs.wcs.ctype[0]: x_is_log = True
+        if 'log' in models[0].wcs.wcs.ctype[1]: y_is_log = True
+        
+        # lin and log units are same so doesn't matter which is used for conversion
         dcc=dens_clip.to(xlog.unit)
         rcc=rad_clip.to(ylog.unit)
         
         xi=np.where((xlin>=dcc[0]) & (xlin<=dcc[1]))[0]
         yi=np.where((ylin>=rcc[0]) & (ylin<=rcc[1]))[0]
-        x2= np.hstack([np.where((np.round(xlog.value,1))==i)[0] for i in np.arange(-5,12)])
+        if x_is_log:
+            x2= np.hstack([np.where((np.round(xlog.value,1))==i)[0] for i in np.arange(-5,12)])
+        else:
+            x2 = np.arange(len(xlin))
+        #print("xlin: ",xlin)
+        #print("xi: ",xi)
+        #print("X2: ",x2)
         # for 2020 models Y is not an integral value in erg s-1 cm-2
         # so rounding is necessary.
-        y2 = np.hstack([np.where((np.round(ylog.value,1))==i)[0] for i in np.arange(-5,12)])
+        if y_is_log:
+            y2 = np.hstack([np.where((np.round(ylog.value,1))==i)[0] for i in np.arange(-5,12)])
+        else:
+            y2 = np.arange(len(ylin))
         xi2=np.intersect1d(xi,x2)
         yi2=np.intersect1d(yi,y2)
+        #print("ylin: ",ylin)
+        #print("yi: ",yi)
+        #print("Y2: ",y2)
         
         self._figure,self._axis = self._plt.subplots(nrows=1,ncols=1)
         linesN=[]
         linesG=[]
         for j in xi2:
-            label=np.round(np.log10(xlin[j].to(dens_clip.unit).value),1)
+            if x_is_log:
+                label=np.round(np.log10(xlin[j].to(dens_clip.unit).value),1)
+            else:
+                label='{0:.0f}'.format(np.round(xlin[j].to(dens_clip.unit).value,0))
             if models[0].unit == '':
                 m0label = models[0].title
             else:
@@ -269,7 +282,10 @@ class ModelPlot(PlotBase):
             linesN.extend(self._axis.loglog(xx,yy,label=label,lw=2))
 
         for j in yi2:
-            label=np.round(np.log10(ylin[j].to(rad_clip.unit).value),1)
+            if y_is_log:
+                label=np.round(np.log10(ylin[j].to(rad_clip.unit).value),1)
+            else:
+                label='{0:.0f}'.format(np.round(ylin[j].to(rad_clip.unit).value,0))
             if reciprocal[0]:
                 xx=1/models[0][j,xi2[0]:xi2[-1]+1]
             else:
@@ -284,12 +300,20 @@ class ModelPlot(PlotBase):
         # and blank handles and labels to take up space for the headers and
         # when the number of density traces and radiation field traces
         # are not equal. 
-        title1 = "log(n)"
+        title1 = models[0].wcs.wcs.ctype[0]
+        if "_" in title1:
+            title1 = r"${\rm "+title1+"}$"
         unit1="["+dens_clip.unit.to_string("latex_inline")+"]" 
         rs = rad_clip.unit.to_string()
         rsl = rad_clip.unit.to_string("latex_inline")
-        title2 = "log("+utils.get_rad(rs)+")"
+        if "G0" in  models[0].wcs.wcs.ctype[1] or "FUV" in models[0].wcs.wcs.ctype[1]:
+            title2 = "log("+utils.get_rad(rs)+")"
+        else:
+            title2 = models[0].wcs.wcs.ctype[1]
+            if "_" in title2:
+                title2 = r"${\rm "+title2+"}$"
         unit2="["+rsl+"]"
+
         handles,labels=self._axis.get_legend_handles_labels()
         phantom = [self._axis.plot([],marker="", markersize=0,ls="",lw=0)[0]]*2
         lN = len(linesN)
@@ -363,16 +387,21 @@ class ModelPlot(PlotBase):
             if linear:
                j = 10*np.ones(len(x.value))
                k = 10*np.ones(len(y.value))
-               x = np.power(j,x.value)*x.unit
-               y = np.power(k,y.value)*y.unit
+               #ugh we are depending on CTYPE being properly indicated as log(whatever)
+               if 'log' in w.wcs.ctype[0]:
+                   x = np.power(j,x.value)*x.unit
+               if 'log' in w.wcs.ctype[1]:
+                   y = np.power(k,y.value)*y.unit
         else:
             x=w.array_index_to_world_values(xind,xind)[0]
             y=w.array_index_to_world_values(yind,yind)[1]
             if linear:
                j = 10*np.ones(len(x))
                k = 10*np.ones(len(y))
-               x = np.power(j,x)
-               y = np.power(k,y)
+               if 'log' in w.wcs.ctype[0]:
+                   x = np.power(j,x)
+               if 'log' in w.wcs.ctype[1]:
+                   y = np.power(k,y)
         return (x,y)
     
         
