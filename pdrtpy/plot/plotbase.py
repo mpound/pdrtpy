@@ -6,6 +6,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from astropy.visualization import simple_norm, ZScaleInterval , ImageNormalize
 from astropy.visualization.stretch import LinearStretch, SinhStretch, PowerStretch, AsinhStretch, LogStretch
 from matplotlib.colors import LogNorm
+from cycler import cycler
 
 from ..pdrutils import to
 
