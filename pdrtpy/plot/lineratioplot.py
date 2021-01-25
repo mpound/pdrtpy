@@ -53,9 +53,6 @@ class LineRatioPlot(PlotBase):
         self._axis = None
         self._modelplot = ModelPlot(self._tool._modelset,self._figure,self._axis)
         self._ratiocolor=[]
-        self._CB_color_cycle = [ '#377eb8', '#ff7f00', '#4daf4a',
-                  '#f781bf', '#a65628', '#984ea3',
-                  '#999999', '#e41a1c', '#dede00']
 
     def modelintensity(self,id,**kwargs):
         """Plot one of the model intensities

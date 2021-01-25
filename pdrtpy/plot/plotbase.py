@@ -27,6 +27,11 @@ class PlotBase:
         self._tool = tool
         self._valid_norms = [ 'simple', 'zscale', 'log' ]
         self._valid_stretch = [ 'linear', 'sqrt', 'power', 'log', 'asinh']
+        # color blind/friendly color cyle courtesy https://gist.github.com/thriveth/8560036
+        self._CB_color_cycle = ['#377eb8', '#ff7f00','#4daf4a',
+                  '#f781bf', '#a65628', '#984ea3',
+                  '#999999', '#e41a1c', '#dede00']
+        self._plt.rc('axes', prop_cycle=(cycler('color',  self._CB_color_cycle)))
         #print("Done PlotBase")
 
     def _autolevels(self,data,steps='log',numlevels=None,verbose=False):
