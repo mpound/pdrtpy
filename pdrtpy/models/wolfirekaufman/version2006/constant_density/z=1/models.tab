@@ -72,3 +72,5 @@
         FEII_26           1             FEII_26       feii26z1web    1   [Fe II] 26 $\mu$m
         SIII_35           1             SIII_35       siii35z1web    1   [S III] 35 $\mu$m 
              TS           1                  TS             tsweb    1   Surface Temperature
+      FEII_1.60   FEII_1.64 FEII_1.60/FEII_1.64 FEII1p60_FEII1p64    1   [Fe II] 1.60 $\mu$m/[Fe II] 1.64 $\mu$m
+      FEII_1.64   FEII_5.34 FEII_1.64/FEII_5.34 FEII1p64_FEII5p34    1   [Fe II] 1.64 $\mu$m/[Fe II] 5.34 $\mu$m
