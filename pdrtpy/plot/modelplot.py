@@ -6,8 +6,6 @@ import numpy.ma as ma
 import scipy.stats as stats
 
 import matplotlib.figure
-import matplotlib.colors as mpcolors
-import matplotlib.cm as mcm
 from matplotlib import ticker
 from matplotlib.lines import Line2D
 from cycler import cycler
@@ -227,8 +225,8 @@ class ModelPlot(PlotBase):
         if 'log' in models[0].wcs.wcs.ctype[1]: y_is_log = True
         
         # lin and log units are same so doesn't matter which is used for conversion
-        dcc=dens_clip.to(xlog.unit)
-        rcc=rad_clip.to(ylog.unit)
+        dcc=nax1_clip.to(xlog.unit)
+        rcc=nax2_clip.to(ylog.unit)
         
         xi=np.where((xlin>=dcc[0]) & (xlin<=dcc[1]))[0]
         yi=np.where((ylin>=rcc[0]) & (ylin<=rcc[1]))[0]
@@ -256,9 +254,9 @@ class ModelPlot(PlotBase):
         linesG=[]
         for j in xi2:
             if x_is_log:
-                label=np.round(np.log10(xlin[j].to(dens_clip.unit).value),1)
+                label=np.round(np.log10(xlin[j].to(nax1_clip.unit).value),1)
             else:
-                label='{0:.0f}'.format(np.round(xlin[j].to(dens_clip.unit).value,0))
+                label='{0:.0f}'.format(np.round(xlin[j].to(nax1_clip.unit).value,0))
             if models[0].unit == '':
                 m0label = models[0].title
             else:
@@ -283,9 +281,9 @@ class ModelPlot(PlotBase):
 
         for j in yi2:
             if y_is_log:
-                label=np.round(np.log10(ylin[j].to(rad_clip.unit).value),1)
+                label=np.round(np.log10(ylin[j].to(nax2_clip.unit).value),1)
             else:
-                label='{0:.0f}'.format(np.round(ylin[j].to(rad_clip.unit).value,0))
+                label='{0:.0f}'.format(np.round(ylin[j].to(nax2_clip.unit).value,0))
             if reciprocal[0]:
                 xx=1/models[0][j,xi2[0]:xi2[-1]+1]
             else:
@@ -303,9 +301,9 @@ class ModelPlot(PlotBase):
         title1 = models[0].wcs.wcs.ctype[0]
         if "_" in title1:
             title1 = r"${\rm "+title1+"}$"
-        unit1="["+dens_clip.unit.to_string("latex_inline")+"]" 
-        rs = rad_clip.unit.to_string()
-        rsl = rad_clip.unit.to_string("latex_inline")
+        unit1="["+nax1_clip.unit.to_string("latex_inline")+"]" 
+        rs = nax2_clip.unit.to_string()
+        rsl = nax2_clip.unit.to_string("latex_inline")
         if "G0" in  models[0].wcs.wcs.ctype[1] or "FUV" in models[0].wcs.wcs.ctype[1]:
             title2 = "log("+utils.get_rad(rs)+")"
         else:
