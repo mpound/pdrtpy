@@ -171,6 +171,11 @@ class PlotBase:
            Additional arguments (\*\*kwargs) are passed to :meth:`matplotlib.pyplot.savefig`. e.g. bbox_inches='tight' for a tight layout.
 
         """
+        kwargs_opts = {'bbox_inches':'tight',
+                       'transparent':False,
+                       'facecolor':'white'
+                      }
+        kwargs_opts.update(kwargs)
         self._figure.savefig(fname=fname,**kwargs)
 
     def usetex(self,use):
