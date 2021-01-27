@@ -176,7 +176,7 @@ class PlotBase:
                        'facecolor':'white'
                       }
         kwargs_opts.update(kwargs)
-        self._figure.savefig(fname=fname,**kwargs)
+        self._figure.savefig(fname=fname,**kwargs_opts)
 
     def usetex(self,use):
         """Control whether plots use LaTeX formatting in axis labels and other text components. This method sets
