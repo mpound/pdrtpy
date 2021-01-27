@@ -47,7 +47,7 @@ Photodissociation regions (PDRs) include all of the neutral gas in the
 ISM where far-ultraviolet (FUV) photons dominate the chemistry and/or
 heating.  In regions of massive star formation, PDRS are created at
 the boundaries between the HII regions and neutral molecular cloud,
-as photons with energies :math:`6~{\rm eV} < h\nu < {\rm 13.6~eV}`
+as photons with energies 6 eV < h \nu < 13.6 eV.
 photodissociate molecules and photoionize other elements.  The gas is
 heated from photo-electrons and cools mostly through far-infrared fine
 structure lines like   |OI| and  |CII|.
@@ -127,4 +127,4 @@ To familiarize yourself with the capabilities of ``pdrtpy``, we suggest you do t
 .. |13CII|  replace:: [\ :sup:`13`\ C II]
 .. |OI|  replace:: [O I]
 .. |CII|  replace:: [C II]
-
+.. |nu|     unicode:: 0x3bd .. greek nu
