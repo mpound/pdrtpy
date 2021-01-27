@@ -9,8 +9,9 @@ An example notebook for using `ModelPlot` is
 
 Some classes are paired with analysis tools in the :mod:`~pdrtpy.tool` module.  :class:`~pdrtpy.plot.lineratioplot.LineRatioPlot` which is used to plot the results of :class:`~pdrtpy.tool.lineratiofit.LineRatioFit`, and :class:`~pdrtpy.plot.h2excitationplot.H2ExcitationPlot` that is used in :class:`~pdrtpy.tool.h2excitation.H2Excitation`.  All plot classes are derived from :class:`~pdrtpy.plot.plotbase.PlotBase`.
 
----------------------
+.. include:: plotkeywords.rst
 
+--------------
 
 .. automodule:: pdrtpy.plot
    :members:

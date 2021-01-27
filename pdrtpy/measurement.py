@@ -168,7 +168,7 @@ class Measurement(CCDData):
             Measurement.make_measurement("my_infile.fits",error='rms',outfile="my_outfile.fits",units="K km/s",overwrite=True)
         """
         _flux = fits.open(fluxfile)
-            
+        needsclose = False
         if error == 'rms':
             _error = deepcopy(_flux)
             if rms is None:
@@ -185,6 +185,7 @@ class Measurement(CCDData):
             _error[0].data = _flux[0].data*percent
         else:
             _error = fits.open(error)
+            needsclose = True
         #print(_error[0].data.shape)
  
         fb = _flux[0].header.get('bunit','adu')
@@ -210,6 +211,9 @@ class Measurement(CCDData):
             hduMask = fits.ImageHDU(final_mask.astype(np.uint8), name='MASK')
             _out.append(hduMask)
         _out.writeto(outfile,overwrite=overwrite)
+        _flux.close()
+        _out.close()
+        if needsclose: _error.close()
 
     @property
     def flux(self):

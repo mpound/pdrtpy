@@ -25,7 +25,9 @@ from .. import pdrutils as utils
 
 class ModelPlot(PlotBase):
     """Class to plot models and optionally Measurements.  It does not require :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` first.
-        The methods of this class can take a variety of optional keywords. See the doc for LineRatioPlot for a description of these keywords. @todo move doc someplace more useful
+
+    :Keyword Arguments:
+    The methods of this class can take a variety of optional keywords.  See the general `Plot Keywords`_ documentation
     """
     def __init__(self,modelset,figure=None,axis=None):
         """Init method
@@ -317,8 +319,6 @@ class ModelPlot(PlotBase):
             linesN = phantom + linesN + phantom2
             linesG = phantom + linesG
         handles = linesN+linesG
-        #for kk in range(len(handles)):
-        #    print(handles[kk],labels[kk])
 
         leg=self._axis.legend(handles,labels,ncol=2,markerfirst=True,bbox_to_anchor=(1.024,1),loc="upper left")
         #leg._legend_box.align = "left"
@@ -379,7 +379,6 @@ class ModelPlot(PlotBase):
     #@todo allow data to be an array? see overlay()
     def _plot_no_wcs(self,data,header=None,**kwargs):
         '''generic plotting method for images with no WCS, used by other plot methods'''
-        #print("KWARGS is ",kwargs)
         measurements= kwargs.pop("measurements",None)
         _dataheader = getattr(data,"header",None)
         if _dataheader is None  and header is None:
@@ -387,18 +386,19 @@ class ModelPlot(PlotBase):
         # input header supercedes data header, under assumption user knows what they are doing.
         if header is not None: 
             _header = deepcopy(header)
-            if data.wcs is None:
-                data.wcs = wcs.WCS(data.header)
+            if getattr(data,"wcs",None) is None:
+                data.wcs = wcs.WCS(_dataheader)
         else:
             _header = deepcopy(_dataheader)
             # CRxxx might be in wcs and not in header
-            if data.wcs is not None:
+            if getattr(data,"wcs",None) is not None:
                 _header.update(data.wcs.to_header())
             else:
                 # needed for get_xy_from_wcs call later.
                 data.wcs = wcs.WCS(_header)
                 # however, get the usual complaint about non-FITS units
                 # in WCS, so remove them here because they aren't needed.
+                # We have to convolute ourselves later to add them back in!
                 data.wcs.wcs.cunit = ["",""]
 
 
@@ -449,7 +449,6 @@ class ModelPlot(PlotBase):
             raise Exception("Unexpected NAXIS value: %d"%_naxis)
 
         km = ma.masked_invalid(k)
-        #print("Masks equal? %s:"%np.all(k.mask==km.mask))
         if getattr(k,"mask",None) is not None:
             km.mask = np.logical_or(k.mask,km.mask)
         # make sure nans don't affect the color map
@@ -472,9 +471,7 @@ class ModelPlot(PlotBase):
                          }
 
         # delay merge until min_ and max_ are known
-        #print("plot kwargs 1: ",kwargs_imshow)
         kwargs_imshow.update(kwargs)
-        #print("plot kwargs 2: ",kwargs_imshow)
         kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km,
                                              kwargs_imshow['vmin'],kwargs_imshow['vmax'],
                                              kwargs_imshow['stretch'])
@@ -482,9 +479,6 @@ class ModelPlot(PlotBase):
         kwargs_subplot.update(kwargs)
         # swap ncols and nrows in figsize to preserve aspect ratio
         kwargs_subplot['figsize'] = kwargs.get("figsize",(kwargs_subplot["ncols"]*5,kwargs_subplot["nrows"]*5))
-        #print("subplot kwargs : ",kwargs_subplot)
-
-        #print("Got non-default kwargs: ", kwargs)
 
         axidx = kwargs_subplot['index']-1
         if kwargs_subplot['reset']:
@@ -494,7 +488,6 @@ class ModelPlot(PlotBase):
                                         subplot_kw={'aspect':kwargs_imshow['aspect']},
                                         constrained_layout=kwargs_subplot['constrained_layout'])
 
-        #print(self._figure,self._axis)
 
         # Make sure self._axis is an array because we will index it below.
         if type(self._axis) is not np.ndarray:
@@ -505,10 +498,6 @@ class ModelPlot(PlotBase):
         if len(self._axis.shape) > 1:
             self._axis = self._axis.flatten()
 
-        #if self._modelnaxis==2:
-        #     ax1='1'
-        #     ax2='2'
-        #else:
         ax1='1'
         ax2='2'
             
@@ -520,6 +509,9 @@ class ModelPlot(PlotBase):
         
         #allow unit conversion of density axis
         xax_unit = u.Unit(_header['cunit'+ax1])
+        # cover the base where we had to erase the wcs unit to avoid FITS error
+        if x._unit is None or x._unit is u.dimensionless_unscaled:
+            x._unit = xax_unit
         if kwargs_opts['xaxis_unit'] is not None:
             # Make density axis of the grid into a Quantity using the cunits from the grid header
             #temp_x = x * xax_unit
@@ -535,6 +527,8 @@ class ModelPlot(PlotBase):
         xlab = r"{0} [{1:latex_inline}]".format(_header['ctype'+ax1],xax_unit)
         
         yax_unit = u.Unit(_header['cunit'+ax2])
+        if y._unit is None or y._unit is u.dimensionless_unscaled:
+            y._unit = yax_unit
         ytype = "log({0})".format(utils.get_rad(yax_unit))
         #allow unit conversion to cgs or Draine, for Y axis (FUV field):
         if kwargs_opts['yaxis_unit'] is not None:
@@ -553,10 +547,7 @@ class ModelPlot(PlotBase):
 
         # Set the y label appropriately, use LaTeX inline formatting
         ylab = r"{0} [{1:latex_inline}]".format(ytype,yax_unit)
-        #print("X axis min/max %.2e %.2e"%(x.value.min(),x.value.max()))
-        #print("Y axis min/max %.2e %.2e"%(y.value.min(),y.value.max()))
-        #print("AXIndex=%d"%axidx)
-        
+
         # Finish up axes details.
         self._axis[axidx].set_ylabel(ylab)
         self._axis[axidx].set_xlabel(xlab)
@@ -605,7 +596,6 @@ class ModelPlot(PlotBase):
             warnings.simplefilter('ignore',category=UserWarning)
             contourset = self._axis[axidx].contour(x.value,y.value,km.data, **kwargs_contour)
             warnings.resetwarnings()
-            #print(contourset.__dict__)
 
             if kwargs_opts['label']:
                 drawn = self._axis[axidx].clabel(contourset,contourset.levels,inline=True,fmt='%1.2e')
