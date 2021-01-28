@@ -177,7 +177,12 @@ class PlotBase:
            Additional arguments (\*\*kwargs) are passed to :meth:`matplotlib.pyplot.savefig`. e.g. bbox_inches='tight' for a tight layout.
 
         """
-        self._figure.savefig(fname=fname,**kwargs)
+        kwargs_opts = {'bbox_inches':'tight',
+                       'transparent':False,
+                       'facecolor':'white'
+                      }
+        kwargs_opts.update(kwargs)
+        self._figure.savefig(fname=fname,**kwargs_opts)
 
     def usetex(self,use):
         """Control whether plots use LaTeX formatting in axis labels and other text components. This method sets
