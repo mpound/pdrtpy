@@ -25,46 +25,10 @@ from ..pdrutils import to
 class H2ExcitationPlot(PlotBase):
     """Class to plot various results from H2 Excitation diagram fitting.
     """
-    def __init__(self,tool,**kwargs):
+    def __init__(self,tool):
         super().__init__(tool)
-        self.figure = None
-        self.axis = None
-        self._xlim = [None,None]
-        self._ylim = [None,None]
-        self._plotkwargs = kwargs
-
-    def _plotimage(self,data,units,cmap,image,contours,levels,norm):
-        k=to(units,data)
-        km = ma.masked_invalid(k)
-        min_ = km.min()
-        max_ = km.max()
-        ax=self._plt.subplot(111,projection=k.wcs,aspect='equal')
-        if norm == 'simple':
-            normalizer = simple_norm(km, min_cut=min_,max_cut=max_, stretch='log', clip=false)
-        elif norm == 'zscale':
-            normalizer = self._zscale(km)
-        else: 
-            normalizer = norm
-        
-        if image: 
-            current_cmap = mcm.get_cmap(cmap)
-            current_cmap.set_bad(color='white',alpha=1)
-            self._plt.imshow(km,cmap=current_cmap,origin='lower',norm=normalizer)
-            self._plt.colorbar()
-        if contours:
-            if image==false: colors='black'
-            else: colors='white'
-            if levels is none:
-                # figure out some autolevels 
-                steps='log'
-                contourset = ax.contour(km, levels=self._autolevels(km,steps),colors=colors)
-            else:
-                contourset = ax.contour(km, levels=levels, colors=colors)
-                # todo: add contour level labelling
-                # See https://matplotlib.org/3.1.1/gallery/images_contours_and_fields/contour_label_demo.html
-        if title is not None: self._plt.title(title)
-        self._plt.xlabel(k.wcs.wcs.lngtyp)
-        self._plt.ylabel(k.wcs.wcs.lattyp)
+        self._xlim = []
+        self._ylim = []
 
     def plot_diagram(self,x,y,xsize,ysize,norm=True):
         """Plot the excitation diagram
