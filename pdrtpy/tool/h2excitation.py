@@ -1,13 +1,12 @@
-from astropy.table import Table
+from astropy.nddata import Cutout2D
 import astropy.units as u
 import astropy.constants as constants
 import math
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import curve_fit
 
 from .toolbase import ToolBase
-from ..pdrutils import get_table, check_units, firstkey
+from .. import pdrutils as utils
 from ..measurement import Measurement
 
 class H2Excitation(ToolBase):
@@ -27,7 +26,7 @@ class H2Excitation(ToolBase):
             self._init_measurements(measurements)
 
         # default intensity units
-        self._ac = get_table("atomic_constants.tab")
+        self._ac = utils.get_table("atomic_constants.tab")
         self._ac.add_index("Line")
         self._ac.add_index("J_u")
         self._column_density = dict()
@@ -41,7 +40,7 @@ class H2Excitation(ToolBase):
         return self._measurements
 
 
-    def column_densities(self,norm=False):
+    def column_densities(self,norm=False,unit=utils._CM2):
         '''The computed upper state column densities of stored intensities
 
            :param norm: if True, normalize the column densities by the 
@@ -57,7 +56,7 @@ class H2Excitation(ToolBase):
         # Measurement in place, rather than replaceMeasurement(), the colden 
         # won't get recomputed. But we warned them!
         if not self._column_density or (len(self._column_density) != len(self._measurements)):
-            self._compute_column_densities()
+            self._compute_column_densities(unit=unit)
         if norm:
             cdnorm = dict()
             for cd in self._column_density:
@@ -95,8 +94,8 @@ class H2Excitation(ToolBase):
         '''
         self._measurements = dict()
         for mm in m:
-            if not check_units(mm.unit,self._intensity_units):
-                raise TypeError("Measurement " +mm.id + " must be in intensity units equivalent to "+self._intensity_units)
+            if not utils.check_units(mm.unit,self._intensity_units):
+                raise TypeError("Measurement " +mm.id + " units "+mm.unit.to_string()+" are not in intensity units equivalent to "+self._intensity_units)
             self._measurements[mm.id] = mm
         # re-initialize column densities
         self._column_densities = dict()
@@ -108,7 +107,7 @@ class H2Excitation(ToolBase):
 
            :param m: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
         '''
-        if not check_units(m.unit,self._intensity_units):
+        if not utils.check_units(m.unit,self._intensity_units):
             raise TypeError("Measurement " +m.id + " must be in intensity units equivalent to "+self._intensity_units)
 
         if self._measurements:
@@ -127,8 +126,14 @@ class H2Excitation(ToolBase):
         '''
         self.add_measurement(self,m)
 
+    def run(self):
+        cdavg = self.average_column_density(norm=True)
+        energy = self.energies(line=False)
+        z=np.array([np.hstack([cdavg[key],energy[key]]) for key in cdavg.keys()])
+        x = Measurement(z[:,0],unit="K")
+        y = Measurement(z[:1],unit=utils._CM2)
 
-    def colden(self,intensity):
+    def colden(self,intensity,unit):
         '''Compute the column density in upper state :math:`N_u`, given an 
            intensity :math:`I` and assuming optically thin emission.  
            Units of :math:`I` need to be equivalent to 
@@ -141,67 +146,68 @@ class H2Excitation(ToolBase):
 
            where :math:`A` is the Einstein A coefficient and :math:`\Delta E` is the energy of the transition.
 
-           :param m: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
+           :param intensity: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
            :type intensity: :class:`~pdrtpy.measurement.Measurement`
+           :param unit: The units in which to return the column density. Default: cm-2
+           :type unit: str or :class:`astropy.unit.Unit`
            :returns: a :class:`~pdrtpy.measurement.Measurement` of the column density.
            :rtype: :class:`~pdrtpy.measurement.Measurement` 
         '''
         dE = self._ac.loc[intensity.id]["dE/k"]*constants.k_B.cgs*self._ac["dE/k"].unit
         A = self._ac.loc[intensity.id]["A"]*self._ac["A"].unit
-        val = Measurement(4.0*math.pi*u.sr/(A*dE))
-        #print(val)
-        ##print(val.value)
-        #print(intensity.unit)
-        #print(intensity)
+        v = 4.0*math.pi*u.sr/(A*dE)
+        val = Measurement(data=v.value,unit=v.unit)
         N_upper = intensity * val
-        if not check_units(N_upper.unit,self._cd_units):
-          print("##### Warning: colden did not come out in correct units ("+N_upper.unit.to_string()+")")
-        return N_upper
+        return N_upper.convert_unit_to(unit)
 
-    def _compute_column_densities(self):
-        '''Compute all column densities for stored intensity measurements'''
+    def _compute_column_densities(self,unit):
+        '''Compute all column densities for stored intensity measurements
+           :param unit: The units in which to return the column density. Default: cm-2
+           :type unit: str or :class:`astropy.unit.Unit`
+           :returns: a :class:`~pdrtpy.measurement.Measurement` of the column density.
+        '''
         for m in self._measurements:
-            self._column_density[m] = self.colden(self._measurements[m])
+            self._column_density[m] = self.colden(self._measurements[m],unit)
 
-    def average_column_density(self,norm,x,y,xsize,ysize,line):
-        """Compute the average column density over a spatial box.
 
-           :param norm: if True, normalize the column densities by the 
+    def average_column_density(self,position,size,norm=True,unit=utils._CM2,line=False):
+        r'''Compute the average column density over a spatial box.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.
+
+        :param position: The position of the cutout array's center with respect to the data array. The position can be specified either as a `(x, y)` tuple of pixel coordinates or a :class:`~astropy.coordinates.SkyCoord`, which will use the :class:`~astropy.wcs.WCS` of the ::class:`~pdrtpy.measurement.Measurement`s added to this tool. See :class:`~astropy.nddata.utils.Cutout2D`.
+        :type x: tuple or :class:`astropy.coordinates.SkyCoord`
+        :param size: The size of the cutout array along each axis. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(ny, nx)` order. Scalar numbers in size are assumed to be in units of pixels. `size` can also be a :class:`~astropy.units.Quantity` object or contain :class:`~astropy.units.Quantity` objects. Such :class:`~astropy.units.Quantity` objects must be in pixel or angular units. For all cases, size will be converted to an integer number of pixels, rounding the the nearest integer. See the mode keyword for additional details on the final cutout size.
+        :type size: int, array_like, or :class:`astropy.units.Quantity`
+        :param norm: if True, normalize the column densities by the 
                        statistical weight of the upper state, :math:`g_u`.  
-           :type norm: bool
-           :param x: bottom left corner x 
-           :type x: int
-           :param y: bottom left corner y 
-           :type y: int
-           :param xsize: box width, pixels
-           :type xsize: int
-           :param ysize: box height, pixels
-           :type ysize: int
-           :param line: if True, the returned dictionary index is the Line name, otherwise it is the upper state :math:`J` number.  
-           :type line: bool
-           :returns: dictionary of column densities       
-           :rtype:  dict
- 
-       """
+        :type norm: bool
+        :param unit: The units in which to return the column density. Default: math:`{\rm cm}^{-2}` 
+        :type unit: str or :class:`astropy.unit.Unit`
+        :param line: if True, the returned dictionary index is the Line name, otherwise it is the upper state :math:`J` number.  
+        :type line: bool
+        :returns: dictionary of column density values, with keys as :math:`J` number or Line name
+        :rtype:  dict
+        '''
 
-        cdnorm = self.column_densities(norm=norm)
-        cdunit = cdnorm[firstkey(cdnorm)].unit
+        cdnorm = self.column_densities(norm=norm,unit=unit)
         cdavg = dict()
         for cd in cdnorm:
-            w = cdnorm[cd].uncertainty.array[y:y+ysize,x:x+xsize]
-            weights = np.ma.masked_array(w,np.isnan(w))
-            #print("weights[%s]: %s"%(cd,weights))
+            ca = cdnorm[cd]
+            cutout = Cutout2D(ca.data,position,size,ca.wcs,mode='partial',fill_value=np.nan)
+            w= Cutout2D(ca.uncertainty.array,position,size,ca.wcs,mode='partial',fill_value=np.nan)
+            cddata = np.ma.masked_array(cutout.data,np.isnan(cutout.data))
+            weights = np.ma.masked_array(w.data,np.isnan(w.data))
             if line:
                 index = cd
             else:
                 index = self._ac.loc[cd]["J_u"]
+            cdavg[index] = np.average(cddata,weights=weights)
             if norm:
-                d = cdnorm[cd].data[y:y+ysize,x:x+xsize]
-                data =  np.ma.masked_array(d,np.isnan(d))
-                cdavg[index] = np.average(data,weights=weights)/self._ac.loc[cd]["g_u"]
+                cdavg[index] = cdavg[index] /self._ac.loc[cd]["g_u"]
+                #d = cdnorm[cd].data[y:y+ysize,x:x+xsize]
+                #data =  np.ma.masked_array(d,np.isnan(d))
                 #print("dividing %s by %.1f"%(cd,self._ac.loc[cd]["g_u"]))
-            else:
-                cdavg[index] = np.average(a=cdnorm[cd].data[y:y+ysize,x:x+xsize],weights=weights)
+            #else:
+            #    cdavg[index] = np.average(a=cdnorm[cd].data[y:y+ysize,x:x+xsize],weights=weights)
              
         return cdavg
 
@@ -213,20 +219,27 @@ class H2Excitation(ToolBase):
     def excitation_diagram(self,**kwargs):
         pass
 
-    def fit_excitation(self,**kwargs):
+    def fit_excitation(self,energy,colden,**kwargs):
         """Fit the :math:`log N_u-E` diagram with two excitation temperatures,
         a ``warm`` :math:`T_{ex}` and a ``cold`` :math:`T_{ex}`.  A first
         pass guess is initially made using data partitioning and two
         linear fits.
+        :param energy: Eu/k
+        :type energy: :class:`~pdrtpy.measurement.Measurement` containing list of values.
+        :param colden: list of log(Nu/gu)
+        :type colden: :class:`~pdrtpy.measurement.Measurement` containing list of values and errors
 
         :returns: The fit parameters as in :mod:`scipy.optimize.curve_fit`
         :rtype: list
         """
-
-
-        fit_param, pcov = curve_fit(two_lin, x, y,sigma=sigma)
-        tcold=-np.log10(math.e)/m1
-        thot=-np.log10(math.e)/m2
+        x = energy.data
+        y = np.log10(colden.data)
+        sigma = np.log10(colden.error)
+        fit_param, pcov = curve_fit(self._two_lines, x, y,sigma=sigma)
+        m1, n1, m2, n2 = fit_param
+        le = -np.log10(math.e)
+        tcold=le/m1
+        thot=le/m2
         print("First guess at excitation temperatures: T_cold = %.1f, T_hot = %.1f"%(tcold,thot))
         #if m1 != m2:
         #    x_intersect = (n2 - n1) / (m1 - m2)
@@ -237,14 +250,14 @@ class H2Excitation(ToolBase):
         # Now do second pass fit to full curve using first pass as initial guess
         fit_par2,pcov2 = curve_fit(x_lin,x,y,p0=fit_param,sigma=sigma)
         ma1, na1, ma2, na2 = fit_par2
-        tcolda=-np.log10(math.e)/ma1
-        thota=-np.log10(math.e)/ma2
+        tcolda=le/ma1
+        thota=le/ma2
         print("Fitted excitation temperatures: T_cold = %.1f, T_hot = %.1f"%(tcolda,thota))
         r = y - x_lin(x, *fit_par2)
         print("Residuals: ",np.sum(np.square(r)))
         return [fit_param, pcov, fit_par2, pcov2]
 
-    def _two_lines(x, m1, n1, m2, n2):
+    def _two_lines(self,x, m1, n1, m2, n2):
         '''This function is used to partition a fit to data using two lines and 
            an inflection point.  Second slope is steeper because slopes are 
            negative in excitation diagram.
