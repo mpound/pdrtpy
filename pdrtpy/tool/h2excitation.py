@@ -1,9 +1,11 @@
 from astropy.nddata import Cutout2D
 import astropy.units as u
 import astropy.constants as constants
+from astropy.nddata import StdDevUncertainty
 import math
 import numpy as np
 from scipy.optimize import curve_fit
+#from statsmodels.stats.weightstats import DescrStatsW
 
 from .toolbase import ToolBase
 from .. import pdrutils as utils
@@ -30,6 +32,8 @@ class H2Excitation(ToolBase):
         self._ac.add_index("Line")
         self._ac.add_index("J_u")
         self._column_density = dict()
+        # Most recent cutout selected by user for computation area.
+        self._cutout = None
 
     @property 
     def intensities(self):
@@ -156,8 +160,9 @@ class H2Excitation(ToolBase):
         dE = self._ac.loc[intensity.id]["dE/k"]*constants.k_B.cgs*self._ac["dE/k"].unit
         A = self._ac.loc[intensity.id]["A"]*self._ac["A"].unit
         v = 4.0*math.pi*u.sr/(A*dE)
+        error = intensity.error * v.value
         val = Measurement(data=v.value,unit=v.unit)
-        N_upper = intensity * val
+        N_upper = intensity * val # error will get propagated
         return N_upper.convert_unit_to(unit)
 
     def _compute_column_densities(self,unit):
@@ -184,32 +189,38 @@ class H2Excitation(ToolBase):
         :type unit: str or :class:`astropy.unit.Unit`
         :param line: if True, the returned dictionary index is the Line name, otherwise it is the upper state :math:`J` number.  
         :type line: bool
-        :returns: dictionary of column density values, with keys as :math:`J` number or Line name
+        :returns: dictionary of column density Measurements, with keys as :math:`J` number or Line name
         :rtype:  dict
         '''
 
+        # Possibly modify error calculation, see https://pypi.org/project/statsmodels/
+        # https://stackoverflow.com/questions/2413522/weighted-standard-deviation-in-numpy
+        # Doesn't come out too different from np.sqrt(np.cov(values, aweights=weights))
         cdnorm = self.column_densities(norm=norm,unit=unit)
-        cdavg = dict()
+        cdmeas = dict()
         for cd in cdnorm:
             ca = cdnorm[cd]
-            cutout = Cutout2D(ca.data,position,size,ca.wcs,mode='partial',fill_value=np.nan)
+            self._cutout = Cutout2D(ca.data,position,size,ca.wcs,mode='partial',fill_value=np.nan)
             w= Cutout2D(ca.uncertainty.array,position,size,ca.wcs,mode='partial',fill_value=np.nan)
-            cddata = np.ma.masked_array(cutout.data,np.isnan(cutout.data))
+            cddata = np.ma.masked_array(self._cutout.data,np.isnan(self._cutout.data))
             weights = np.ma.masked_array(w.data,np.isnan(w.data))
+            #print("W Shape %s data shape %s"%(w.shape,cddata.shape))
+            cdavg = np.average(cddata,weights=weights)
+            error = np.sqrt(np.cov(cddata.flatten(),aweights=weights.flatten()))
+            #weighted_stats = DescrStatsW(cddata.flatten(), weights=weights.flatten(), ddof=0)
+            #print("NP %e %e"%(cdavg, error))
+            #print("Stats %e %e %e"%(weighted_stats.mean, weighted_stats.std ,  weighted_stats.std_mean))
             if line:
                 index = cd
             else:
                 index = self._ac.loc[cd]["J_u"]
-            cdavg[index] = np.average(cddata,weights=weights)
             if norm:
-                cdavg[index] = cdavg[index] /self._ac.loc[cd]["g_u"]
-                #d = cdnorm[cd].data[y:y+ysize,x:x+xsize]
-                #data =  np.ma.masked_array(d,np.isnan(d))
-                #print("dividing %s by %.1f"%(cd,self._ac.loc[cd]["g_u"]))
-            #else:
-            #    cdavg[index] = np.average(a=cdnorm[cd].data[y:y+ysize,x:x+xsize],weights=weights)
+                #print("dividing by %f"%self._ac.loc[cd]["g_u"])
+                cdavg /= self._ac.loc[cd]["g_u"]
+                error /= self._ac.loc[cd]["g_u"]
+            cdmeas[index] = Measurement(data=cdavg,uncertainty=StdDevUncertainty(error),unit=ca.unit,identifier=cd)
              
-        return cdavg
+        return cdmeas
 
     def plot_intensities(self,**kwargs):
         pass
@@ -234,13 +245,17 @@ class H2Excitation(ToolBase):
         """
         x = energy.data
         y = np.log10(colden.data)
-        sigma = np.log10(colden.error)
-        fit_param, pcov = curve_fit(self._two_lines, x, y,sigma=sigma)
-        m1, n1, m2, n2 = fit_param
-        le = -np.log10(math.e)
-        tcold=le/m1
-        thot=le/m2
-        print("First guess at excitation temperatures: T_cold = %.1f, T_hot = %.1f"%(tcold,thot))
+        loge=math.log10(math.e)
+        sigma =loge*colden.error/colden.data
+        #print("Energy = ",x,type(x))
+        #print("Colden = ",y,type(y))
+        #print("SIGMA = ",sigma,type(sigma))
+        fit_param, pcov = curve_fit(self._two_lines, xdata=x, ydata=y,sigma=sigma,maxfev=100000)
+        #am1, an1, am2, an2 = fit_param
+        #print("fit: ",fit_param)
+        tcold=-loge/fit_param[0]
+        thot=-loge/fit_param[2]
+        print("First guess at excitation temperatures: T_cold = %.1f, T_hot = %.1f "%(tcold,thot))
         #if m1 != m2:
         #    x_intersect = (n2 - n1) / (m1 - m2)
         #    print(x_intersect)
@@ -248,14 +263,24 @@ class H2Excitation(ToolBase):
         #    print("did not find two linear components")
 
         # Now do second pass fit to full curve using first pass as initial guess
-        fit_par2,pcov2 = curve_fit(x_lin,x,y,p0=fit_param,sigma=sigma)
+        fit_par2,pcov2 = curve_fit(self._x_lin,x,y,p0=fit_param,sigma=sigma)
         ma1, na1, ma2, na2 = fit_par2
-        tcolda=le/ma1
-        thota=le/ma2
+        tcolda=-loge/ma1
+        thota=-loge/ma2
         print("Fitted excitation temperatures: T_cold = %.1f, T_hot = %.1f"%(tcolda,thota))
-        r = y - x_lin(x, *fit_par2)
+        r = y - self._x_lin(x, *fit_par2)
         print("Residuals: ",np.sum(np.square(r)))
-        return [fit_param, pcov, fit_par2, pcov2]
+        self._fitted_params = [fit_param, pcov, fit_par2, pcov2]
+        if False:
+            txdata=np.array([509.8,1015.0,1682.0,2504.0,4586.0])
+            tydata=np.array([19.575,18.75, 18.1 , 17.56, 16.2  ])
+            tsigma=np.array([0.86858896, 0.86858896, 0.86858896, 0.86858896, 0.86858896])
+            test_fp,tp = curve_fit(self._two_lines,xdata=txdata,ydata=tydata,sigma=tsigma)
+            print(np.all(x==txdata))
+            print(np.all(y==tydata))
+            print(np.all(np.round(sigma,2)==np.round(tsigma,2)))
+            print("TESTFP: ",test_fp)
+        return  self._fitted_params
 
     def _two_lines(self,x, m1, n1, m2, n2):
         '''This function is used to partition a fit to data using two lines and 
@@ -277,7 +302,7 @@ class H2Excitation(ToolBase):
         ''' 
         return np.max([m1 * x + n1, m2 * x + n2], axis = 0)
 
-    def _one_line(x,m1,n1):
+    def _one_line(self,x,m1,n1):
         '''Return a line.
 
            :param x: array of x values
@@ -292,7 +317,7 @@ class H2Excitation(ToolBase):
     #def x_exp(x,m1,n1,m2,m2):
     #    return n1*np.exp(x*m1)+n2*np.exp(x*m2)
 #
-    def x_lin(x, m1, n1, m2, n2):
+    def _x_lin(self,x, m1, n1, m2, n2):
         zz1 = 10**(x*m1+n1)
         zz2 = 10**(x*m2+n2)
         retval = np.log10(zz1+zz2)
