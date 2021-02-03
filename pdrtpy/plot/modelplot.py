@@ -199,7 +199,7 @@ class ModelPlot(PlotBase):
     def phasespace(self,identifiers,
                  nax1_clip=[10,1E7]*u.Unit("cm-3"),
                  nax2_clip=[10,1E6]*utils.habing_unit,
-                 reciprocal=[False,False]):
+                 reciprocal=[False,False],measurements=None):
         r'''Plot lines of constant density and radiation field on a ratio-ratio, ratio-intensity, or intensity-intensity map
 
         :param identifiers: list of two identifier tags for the model to plot, e.g., ["OI_63/CO_21", "CII_158"]
@@ -211,10 +211,24 @@ class ModelPlot(PlotBase):
         :param reciprocal: Whether or not the plot the reciprocal of the model on each axis.  Given as a pair of booleans.  e.g. [False,True] means don't flip the quantity X axis, but flip quantity the Y axis.  i.e. if the model is "CII/OI", and reciprocal=True then the axis will be "OI/CII".  Default: [False, False]
         :type reciprocal: list of bool
 
+        :param measurements: A list of two :class:`pdrtpy.measurement.Measurement`, one for each `identifier`, that will be used to plot a data point on the grid.
+        :type measurements: list
+
         '''
         if len(list(identifiers)) != 2:
             raise ValueError("Length of identifiers list must be exactly 2")
         models = [self._modelset.get_model(i) for i in identifiers]
+        mids = [m.id for m in models]
+        mdict = dict(zip(mids,models))
+        if measurements is not None:
+            for m in measurements:
+                if type(m) is not Measurement:
+                    raiseTypeError("measurement keyword value must be a list of Measurements")
+                if m.id not in mids:
+                    raise TypeError(f"Can't find measurement identifier {m.id} in model list {mids}.")
+                if mdict[m.id]._unit != m.unit:
+                    raise TypeError(f"Model and Measurement for {m.im.idd} have different units: ({mdict[m.id]._unit},{m.unit})")
+
 
         xlog,ylog=self._get_xy_from_wcs(models[0],quantity=True,linear=False)
         xlin,ylin=self._get_xy_from_wcs(models[0],quantity=True,linear=True)
@@ -294,6 +308,21 @@ class ModelPlot(PlotBase):
                 yy=models[1][j,xi2[0]:xi2[-1]+1]
             linesG.extend(self._axis.loglog(xx,yy,label=label,lw=2,ls='--'))
             
+        # plot the input measurement with error bar
+            if measurements is not None:
+                if measurements[0].id == identifiers[0]:
+                    _x = measurements[0]
+                    _y = measurements[1]
+                else:
+                    _x = measurements[1]
+                    _y = measurements[0]
+                # the data point
+                dataline = self._axis.loglog(_x,_y,marker="s", color='k')
+                self._axis.set_xscale('log')
+                self._axis.set_yscale('log')
+                # the error bars
+                self._axis.errorbar(x=_x.data,y=_y.data,xerr=_x.error,yerr=_y.error,capsize=5.0,color='k',capthick=2)
+                
         # create the column headers for the legend
         # and blank handles and labels to take up space for the headers and
         # when the number of density traces and radiation field traces
@@ -342,6 +371,11 @@ class ModelPlot(PlotBase):
             linesG = phantom + linesG
         handles = linesN+linesG
 
+        # add a second legend if user supplied measurements
+        if measurements is not None:
+            dl = self._axis.legend(dataline,["data"],loc='best')
+            self._axis.add_artist(dl)
+
         leg=self._axis.legend(handles,labels,ncol=2,markerfirst=True,bbox_to_anchor=(1.024,1),loc="upper left")
         #leg._legend_box.align = "left"
         # trick to remove extra left side space in legend column headers.
@@ -350,8 +384,6 @@ class ModelPlot(PlotBase):
         for vpack in leg._legend_handle_box.get_children():
             for hpack in vpack.get_children()[:2]:
                 hpack.get_children()[0].set_width(0)
-        #self._figure = self._plt.gcf()
-        #self._axis = self._plt.gca()
         
     def _get_xy_from_wcs(self,data,quantity=False,linear=False):
         """Get the x,y axis vectors from the WCS of the input data.

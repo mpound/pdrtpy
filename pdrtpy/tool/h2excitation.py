@@ -137,6 +137,16 @@ class H2Excitation(ToolBase):
         x = Measurement(z[:,0],unit="K")
         y = Measurement(z[:1],unit=utils._CM2)
 
+    def intensity(self,colden):
+        # colden is N_upper
+        dE = self._ac.loc[colden.id]["dE/k"]*constants.k_B.cgs*self._ac["dE/k"].unit
+        A = self._ac.loc[colden.id]["A"]*self._ac["A"].unit
+        v = A*dE/(4.0*math.pi*u.sr)
+        val = Measurement(data=v.value,unit=v.unit)
+        intensity = val*colden # error will get propagated
+        #print(intensity.unit,self._intensity_units)
+        return intensity.convert_unit_to(self._intensity_units)
+
     def colden(self,intensity,unit):
         '''Compute the column density in upper state :math:`N_u`, given an 
            intensity :math:`I` and assuming optically thin emission.  
@@ -160,7 +170,7 @@ class H2Excitation(ToolBase):
         dE = self._ac.loc[intensity.id]["dE/k"]*constants.k_B.cgs*self._ac["dE/k"].unit
         A = self._ac.loc[intensity.id]["A"]*self._ac["A"].unit
         v = 4.0*math.pi*u.sr/(A*dE)
-        error = intensity.error * v.value
+        #print("dE ",dE.unit,' A ',A.unit,' v ',v.unit)
         val = Measurement(data=v.value,unit=v.unit)
         N_upper = intensity * val # error will get propagated
         return N_upper.convert_unit_to(unit)
@@ -175,11 +185,11 @@ class H2Excitation(ToolBase):
             self._column_density[m] = self.colden(self._measurements[m],unit)
 
 
-    def average_column_density(self,position,size,norm=True,unit=utils._CM2,line=False):
+    def average_column_density(self,position,size,norm=True,unit=utils._CM2,line=False,test=False):
         r'''Compute the average column density over a spatial box.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.
 
         :param position: The position of the cutout array's center with respect to the data array. The position can be specified either as a `(x, y)` tuple of pixel coordinates or a :class:`~astropy.coordinates.SkyCoord`, which will use the :class:`~astropy.wcs.WCS` of the ::class:`~pdrtpy.measurement.Measurement`s added to this tool. See :class:`~astropy.nddata.utils.Cutout2D`.
-        :type x: tuple or :class:`astropy.coordinates.SkyCoord`
+        :type position: tuple or :class:`astropy.coordinates.SkyCoord`
         :param size: The size of the cutout array along each axis. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(ny, nx)` order. Scalar numbers in size are assumed to be in units of pixels. `size` can also be a :class:`~astropy.units.Quantity` object or contain :class:`~astropy.units.Quantity` objects. Such :class:`~astropy.units.Quantity` objects must be in pixel or angular units. For all cases, size will be converted to an integer number of pixels, rounding the the nearest integer. See the mode keyword for additional details on the final cutout size.
         :type size: int, array_like, or :class:`astropy.units.Quantity`
         :param norm: if True, normalize the column densities by the 
@@ -206,7 +216,10 @@ class H2Excitation(ToolBase):
             weights = np.ma.masked_array(w.data,np.isnan(w.data))
             #print("W Shape %s data shape %s"%(w.shape,cddata.shape))
             cdavg = np.average(cddata,weights=weights)
-            error = np.sqrt(np.cov(cddata.flatten(),aweights=weights.flatten()))
+            if test:
+                error = np.nanmean(ca.error)
+            else:
+                error = np.sqrt(np.cov(cddata.flatten(),aweights=weights.flatten()))
             #weighted_stats = DescrStatsW(cddata.flatten(), weights=weights.flatten(), ddof=0)
             #print("NP %e %e"%(cdavg, error))
             #print("Stats %e %e %e"%(weighted_stats.mean, weighted_stats.std ,  weighted_stats.std_mean))
@@ -243,19 +256,32 @@ class H2Excitation(ToolBase):
         :returns: The fit parameters as in :mod:`scipy.optimize.curve_fit`
         :rtype: list
         """
-        x = energy.data
-        y = np.log10(colden.data)
+        if type(energy) is dict:
+            _ee = np.array([c for c in energy.values()])
+            _energy = Measurement(_ee,unit="K")
+        else:
+            _energy = energy
+        x = _energy.data
+        if type(colden) is dict:
+            _cd = np.array([c.data for c in colden.values()])
+            _er  = np.array([c.error for c in colden.values()])
+            _colden = Measurement(_cd,uncertainty=StdDevUncertainty(_er),unit="cm-2")
+        else:
+            _colden = colden
+            _error = error
+
+        y = np.log10(_colden.data)
         loge=math.log10(math.e)
-        sigma =loge*colden.error/colden.data
+        sigma =loge*_colden.error/_colden.data
         #print("Energy = ",x,type(x))
         #print("Colden = ",y,type(y))
         #print("SIGMA = ",sigma,type(sigma))
         fit_param, pcov = curve_fit(self._two_lines, xdata=x, ydata=y,sigma=sigma,maxfev=100000)
         #am1, an1, am2, an2 = fit_param
         #print("fit: ",fit_param)
-        tcold=-loge/fit_param[0]
-        thot=-loge/fit_param[2]
-        print("First guess at excitation temperatures: T_cold = %.1f, T_hot = %.1f "%(tcold,thot))
+        self._tcold=-loge/fit_param[0]*u.Unit("K")
+        self._thot=-loge/fit_param[2]*u.Unit("K")
+        print("First guess at excitation temperatures: T_cold = %.1f, T_hot = %.1f "%(self._tcold.value,self._thot.value))
         #if m1 != m2:
         #    x_intersect = (n2 - n1) / (m1 - m2)
         #    print(x_intersect)
@@ -265,11 +291,11 @@ class H2Excitation(ToolBase):
         # Now do second pass fit to full curve using first pass as initial guess
         fit_par2,pcov2 = curve_fit(self._x_lin,x,y,p0=fit_param,sigma=sigma)
         ma1, na1, ma2, na2 = fit_par2
-        tcolda=-loge/ma1
-        thota=-loge/ma2
-        print("Fitted excitation temperatures: T_cold = %.1f, T_hot = %.1f"%(tcolda,thota))
+        self._tcold=-loge/ma1*u.Unit("K")
+        self._thot=-loge/ma2*u.Unit("K")
+        print("Fitted excitation temperatures: T_cold = %.1f, T_hot = %.1f"%(self._tcold.value,self._thot.value))
         r = y - self._x_lin(x, *fit_par2)
-        print("Residuals: ",np.sum(np.square(r)))
+        print("Residuals: %.3e"%np.sum(np.square(r)))
         self._fitted_params = [fit_param, pcov, fit_par2, pcov2]
         if False:
             txdata=np.array([509.8,1015.0,1682.0,2504.0,4586.0])
