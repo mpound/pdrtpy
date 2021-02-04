@@ -279,8 +279,8 @@ class H2Excitation(ToolBase):
         fit_param, pcov = curve_fit(self._two_lines, xdata=x, ydata=y,sigma=sigma,maxfev=100000)
         #am1, an1, am2, an2 = fit_param
         #print("fit: ",fit_param)
-        self._tcold=-loge/fit_param[0]*u.Unit("K")
-        self._thot=-loge/fit_param[2]*u.Unit("K")
+        self._tcold=-loge/fit_param[2]*u.Unit("K")
+        self._thot=-loge/fit_param[1]*u.Unit("K")
         print("First guess at excitation temperatures: T_cold = %.1f, T_hot = %.1f "%(self._tcold.value,self._thot.value))
         #if m1 != m2:
         #    x_intersect = (n2 - n1) / (m1 - m2)
@@ -291,8 +291,8 @@ class H2Excitation(ToolBase):
         # Now do second pass fit to full curve using first pass as initial guess
         fit_par2,pcov2 = curve_fit(self._x_lin,x,y,p0=fit_param,sigma=sigma)
         ma1, na1, ma2, na2 = fit_par2
-        self._tcold=-loge/ma1*u.Unit("K")
-        self._thot=-loge/ma2*u.Unit("K")
+        self._tcold=-loge/ma2*u.Unit("K")
+        self._thot=-loge/ma1*u.Unit("K")
         print("Fitted excitation temperatures: T_cold = %.1f, T_hot = %.1f"%(self._tcold.value,self._thot.value))
         r = y - self._x_lin(x, *fit_par2)
         print("Residuals: %.3e"%np.sum(np.square(r)))
