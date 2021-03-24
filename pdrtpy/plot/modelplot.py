@@ -685,6 +685,9 @@ class ModelPlot(PlotBase):
                 colors = kwargs_opts['meas_color'][jj]*mlen
                 if kwargs_opts['shading'] != 0:
                     cset = self._axis[axidx].contourf(x.value,y.value,k.data,levels=m.levels, colors=colors,alpha=kwargs_opts['shading'])
+                # Add extra call to plot contour because savefig("file.pdf") gets zorder of shading vs. contour wrong and contour lines don't show up. Only a bug when output is pdf. Harumph.
+                # See https://github.com/mpound/pdrtpy/issues/23
+                    cset2 = self._axis[axidx].contour(x.value,y.value,k.data,levels=[m.levels[1]], colors=colors, alpha=kwargs_opts['shading'])
                 else:
                     cset = self._axis[axidx].contour(x.value,y.value,k.data,levels=m.levels, 
                                                      linestyles=lstyles, colors=colors)
