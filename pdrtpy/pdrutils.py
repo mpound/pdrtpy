@@ -11,6 +11,7 @@ from copy import deepcopy
 import astropy.units as u
 from astropy.constants import k_B
 from astropy.table import Table
+from astropy.units.format.latex import Latex
 
 from pdrtpy import version
 
@@ -544,3 +545,11 @@ def fliplabel(label):
     """
     ii = label.index('/')
     return label[ii+1:]+'/'+label[0:ii]
+
+# partly stolen from astropy.quanity.to_string
+def float_formatter(quantity,precision):
+    format_spec = '.{}g'.format(precision)
+    number = Latex.format_exponential_notation(quantity.value, format_spec=format_spec)
+    # strip the $ signs
+    unit = quantity.unit.to_string('latex_inline')[1:-1]
+    return f'{number}~{unit}'
