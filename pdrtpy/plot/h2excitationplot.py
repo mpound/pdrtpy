@@ -22,7 +22,7 @@ from astropy.visualization.stretch import SinhStretch,  LinearStretch
 from matplotlib.colors import LogNorm
 
 from .plotbase import PlotBase
-from ..pdrutils import to
+from ..pdrutils import to,float_formatter
 
 class H2ExcitationPlot(PlotBase):
     """Class to plot various results from H2 Excitation diagram fitting.
@@ -63,6 +63,7 @@ class H2ExcitationPlot(PlotBase):
             else: 
                 ss=str(lab)
             self._axis.text(x=energies[lab]+100,y=np.log10(cdavg[lab]),s=ss)
+        handles,labels=self._axis.get_legend_handles_labels()
         if show_fit:
             tt = self._tool
             x_fit = np.linspace(1, 5100, 30)  
@@ -70,10 +71,17 @@ class H2ExcitationPlot(PlotBase):
             om1, on1, om2, on2 = tt._fitted_params[0]
             labcold = r"$T_{cold}=$"+f"{tt._tcold:3.0f}"
             labhot= r"$T_{hot}=$"+f"{tt._thot:3.0f}"
+            labnh = r"$N(H_2)="+float_formatter(tt._totalcolden,2)+"$"
 
             self._axis.plot(x_fit,tt._one_line(x_fit, ma1,na1),'.',label=labcold)
             self._axis.plot(x_fit,tt._one_line(x_fit, ma2,na2),'.',label=labhot)
             self._axis.plot(x_fit,tt._x_lin(x_fit,*tt._fitted_params[2]),label="sum")
+            handles,labels=self._axis.get_legend_handles_labels()
+
+            #kluge to ensure N(H2) label is last
+            phantom = self._axis.plot([],marker="", markersize=0,ls="",lw=0)
+            handles.append(phantom[0])
+            labels.append(labnh)
 
             self._axis.set_xlim(0,5000)
             self._axis.set_ylim(15,22)
@@ -82,7 +90,4 @@ class H2ExcitationPlot(PlotBase):
             self._axis.xaxis.set_minor_locator(MultipleLocator(200))
             self._axis.yaxis.set_minor_locator(MultipleLocator(0.2))
             
-        
-        self._axis.legend()
-        
-
+        self._axis.legend(handles,labels)
