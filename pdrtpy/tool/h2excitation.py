@@ -277,8 +277,6 @@ class H2Excitation(ToolBase):
         #print("Colden = ",y,type(y))
         #print("SIGMA = ",sigma,type(sigma))
         fit_param, pcov = curve_fit(self._two_lines, xdata=x, ydata=y,sigma=sigma,maxfev=100000)
-        #am1, an1, am2, an2 = fit_param
-        #print("fit: ",fit_param)
         self._tcold=-loge/fit_param[2]*u.Unit("K")
         self._thot=-loge/fit_param[1]*u.Unit("K")
         print("First guess at excitation temperatures: T_cold = %.1f, T_hot = %.1f "%(self._tcold.value,self._thot.value))
@@ -293,9 +291,13 @@ class H2Excitation(ToolBase):
         ma1, na1, ma2, na2 = fit_par2
         self._tcold=-loge/ma2*u.Unit("K")
         self._thot=-loge/ma1*u.Unit("K")
-        print("Fitted excitation temperatures: T_cold = %.1f, T_hot = %.1f"%(self._tcold.value,self._thot.value))
+        self._totalcolden = 10**na2*u.Unit("cm-2")
+        text = f'Fitted excitation temperatures:T_cold = {self._tcold:0.1f}, T_hot={self._thot:0.1f}'
+        print(text)
+        text2 = rf'Fitted total column density: N(H_2) = {self._totalcolden:.1e}'
+        print(text2)
         r = y - self._x_lin(x, *fit_par2)
-        print("Residuals: %.3e"%np.sum(np.square(r)))
+        #print("Residuals: %.3e"%np.sum(np.square(r)))
         self._fitted_params = [fit_param, pcov, fit_par2, pcov2]
         if False:
             txdata=np.array([509.8,1015.0,1682.0,2504.0,4586.0])
