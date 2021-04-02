@@ -34,6 +34,8 @@ class H2Excitation(ToolBase):
         self._column_density = dict()
         # Most recent cutout selected by user for computation area.
         self._cutout = None
+        self._canonical_opr = True
+        self._opr_mask = None
 
     @property 
     def intensities(self):
@@ -193,7 +195,7 @@ class H2Excitation(ToolBase):
         :param size: The size of the cutout array along each axis. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(ny, nx)` order. Scalar numbers in size are assumed to be in units of pixels. `size` can also be a :class:`~astropy.units.Quantity` object or contain :class:`~astropy.units.Quantity` objects. Such :class:`~astropy.units.Quantity` objects must be in pixel or angular units. For all cases, size will be converted to an integer number of pixels, rounding the the nearest integer. See the mode keyword for additional details on the final cutout size.
         :type size: int, array_like, or :class:`astropy.units.Quantity`
         :param norm: if True, normalize the column densities by the 
-                       statistical weight of the upper state, :math:`g_u`.  
+                       statistical weight of the upper state, :math:`g_u`.  For ortho-$H_2$ $g_u = 3(2J+1)$, for para-$H_2$ $g_u=2J+1$.
         :type norm: bool
         :param unit: The units in which to return the column density. Default: math:`{\rm cm}^{-2}` 
         :type unit: str or :class:`astropy.unit.Unit`
@@ -243,7 +245,12 @@ class H2Excitation(ToolBase):
     def excitation_diagram(self,**kwargs):
         pass
 
-    def fit_excitation(self,energy,colden,**kwargs):
+    def _set_opr_mask(self,ids):
+        # need to figure out which measurements are odd J and set mask=True for those, False for even J
+        # Do this by lookup in atomic_constants.tab
+        self._opr_mask = self._ac.loc[ids]["J_u"]%2!=0
+
+    def fit_excitation(self,energy,colden,fit_opr=False,**kwargs):
         """Fit the :math:`log N_u-E` diagram with two excitation temperatures,
         a ``warm`` :math:`T_{ex}` and a ``cold`` :math:`T_{ex}`.  A first
         pass guess is initially made using data partitioning and two
@@ -259,8 +266,13 @@ class H2Excitation(ToolBase):
         if type(energy) is dict:
             _ee = np.array([c for c in energy.values()])
             _energy = Measurement(_ee,unit="K")
+            _ids = list(energy.keys())
         else:
             _energy = energy
+            _ids = []
+            for e in _energy:
+                _ids.append(e.id)
+        self._set_opr_mask(_ids)
         x = _energy.data
         if type(colden) is dict:
             _cd = np.array([c.data for c in colden.values()])
@@ -273,12 +285,19 @@ class H2Excitation(ToolBase):
         y = np.log10(_colden.data)
         loge=math.log10(math.e)
         sigma =loge*_colden.error/_colden.data
-        #print("Energy = ",x,type(x))
-        #print("Colden = ",y,type(y))
+        print("Energy = ",x,type(x))
+        print("Colden = ",y,type(y))
         #print("SIGMA = ",sigma,type(sigma))
         fit_param, pcov = curve_fit(self._two_lines, xdata=x, ydata=y,sigma=sigma,maxfev=100000)
-        self._tcold=-loge/fit_param[2]*u.Unit("K")
-        self._thot=-loge/fit_param[1]*u.Unit("K")
+        print("FIT_PARAM [slope,intercept,slope,intercept] :",fit_param)
+        # There is no guarantee of order in fit_param except it will be [slope, intercept, slope, intercept].
+        # Thus we have to check which slope is actually more steeply negative to discover which is T_cold.
+        if fit_param[2] < fit_param[0]:
+            self._tcold=-loge/fit_param[2]*u.Unit("K")
+            self._thot=-loge/fit_param[0]*u.Unit("K")
+        else:
+            self._tcold=-loge/fit_param[0]*u.Unit("K")
+            self._thot=-loge/fit_param[2]*u.Unit("K")
         print("First guess at excitation temperatures: T_cold = %.1f, T_hot = %.1f "%(self._tcold.value,self._thot.value))
         #if m1 != m2:
         #    x_intersect = (n2 - n1) / (m1 - m2)
@@ -287,18 +306,38 @@ class H2Excitation(ToolBase):
         #    print("did not find two linear components")
 
         # Now do second pass fit to full curve using first pass as initial guess
-        fit_par2,pcov2 = curve_fit(self._x_lin,x,y,p0=fit_param,sigma=sigma)
-        ma1, na1, ma2, na2 = fit_par2
-        self._tcold=-loge/ma2*u.Unit("K")
-        self._thot=-loge/ma1*u.Unit("K")
-        self._totalcolden = 10**na2*u.Unit("cm-2")
+        if fit_opr:
+            fit_param=np.append(fit_param,3) # add opr
+            fit_param2,pcov2 = curve_fit(self._exc_func_opr,x,y,p0=fit_param,sigma=sigma)
+            self._opr = fit_param2[4]
+        else:
+            fit_param2,pcov2 = curve_fit(self._exc_func,x,y,p0=fit_param,sigma=sigma)
+        print("FIT_PARAM2 [slope,intercept,slope,intercept] :",fit_param2)
+        if fit_param2[2] < fit_param2[0]:
+            _a =  [fit_param2[2], fit_param2[3], fit_param2[0], fit_param2[1]]
+            if fit_opr:
+                _a.append(fit_param2[4])
+            self._fitted_params = [ _a, pcov2 ]
+            self._tcold=-loge/fit_param2[2]*u.Unit("K")
+            self._thot=-loge/fit_param2[0]*u.Unit("K")
+        else:
+            self._tcold=-loge/fit_param2[0]*u.Unit("K")
+            self._thot=-loge/fit_param2[2]*u.Unit("K")
+            self._fitted_params = [ fit_param2, pcov2]
+        self._totalcolden = 10**self._fitted_params[0][3]*u.Unit("cm-2")
         text = f'Fitted excitation temperatures:T_cold = {self._tcold:0.1f}, T_hot={self._thot:0.1f}'
         print(text)
+        if fit_opr:
+            texto = f'Fitted Ortho-to-para ratio:{self._opr:0.2f}'
+            print(texto)
         text2 = rf'Fitted total column density: N(H_2) = {self._totalcolden:.1e}'
         print(text2)
-        r = y - self._x_lin(x, *fit_par2)
-        #print("Residuals: %.3e"%np.sum(np.square(r)))
-        self._fitted_params = [fit_param, pcov, fit_par2, pcov2]
+        if fit_opr:
+            r = y - self._exc_func_opr(x, *fit_param2)
+        else:
+            r = y - self._exc_func(x, *fit_param2)
+        print("Residuals: %.3e"%np.sum(np.square(r)))
+        self._fitted_params.append(r)
         if False:
             txdata=np.array([509.8,1015.0,1682.0,2504.0,4586.0])
             tydata=np.array([19.575,18.75, 18.1 , 17.56, 16.2  ])
@@ -342,11 +381,59 @@ class H2Excitation(ToolBase):
         '''
         return m1*x+n1
 
-    #def x_exp(x,m1,n1,m2,m2):
-    #    return n1*np.exp(x*m1)+n2*np.exp(x*m2)
-#
-    def _x_lin(self,x, m1, n1, m2, n2):
-        zz1 = 10**(x*m1+n1)
-        zz2 = 10**(x*m2+n2)
-        retval = np.log10(zz1+zz2)
+    def _exc_func(self,x, m1, n1, m2, n2):
+        '''Function for fitting the excitation curve as sum of two linear functions.
+
+           :param x: array of x values
+           :type x: :class:`numpy.ndarray` 
+           :param m1: slope of first line
+           :type m1: float
+           :param n1: intercept of first line
+           :type n1: float
+           :param m2: slope of second line
+           :type m2: float
+           :param n2: intercept of second line
+           :type n2: float
+
+           :return: Sum of lines in log space: log10(10**(x*m1+n1) + 10**(x*m2+n2))
+           :rtype: :class:`numpy.ndarray` 
+        '''
+        y1 = 10**(x*m1+n1)
+        y2 = 10**(x*m2+n2)
+        retval = np.log10(y1+y2)
+        return retval
+
+    def _exc_func_opr(self,x, m1, n1, m2, n2,opr):
+#@TODO if enough values, compute separate OPRs Tcold and Thot. (See Neufeld et al 2006)
+        '''Function for fitting the excitation curve as sum of two linear functions 
+           and allowing ortho-to-para ratio to vary.  Para is even J, ortho is odd J.
+           A single OPR value 
+
+           :param x: masked array of x values where mask is TRUE indicates the x value is an odd J transition and the OPR can vary.  Even J transitions have OPR=1 always.
+           :type x: :class:`numpy.ma.masked_array`
+           :param m1: slope of first line
+           :type m1: float
+           :param n1: intercept of first line
+           :type n1: float
+           :param m2: slope of second line
+           :type m2: float
+           :param n2: intercept of second line
+           :type n2: float
+           :param opr: ortho-to-para ratio
+           :type opr: float
+
+           :return: Sum of lines in log space: log10(10**(x*m1+n1) + 10**(x*m2+n2))
+           :rtype: :class:`numpy.ndarray` 
+        '''
+        #print("XTYPE ",type(x))
+        #print("opr %g"%opr)
+        rat = opr / self._canonical_opr
+        print(opr)
+        opr_array = np.ma.masked_array(rat*np.ones(x.size),mask=self._opr_mask)
+        y1 = 10**(x.data*m1+n1)*opr_array
+        #print(y1)
+        y2 = 10**(x.data*m2+n2)*opr_array
+        #print(y2)
+        retval = np.log10(y1.data+y2.data)
+        print(retval)
         return retval
