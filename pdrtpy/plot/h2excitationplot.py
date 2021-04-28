@@ -67,14 +67,22 @@ class H2ExcitationPlot(PlotBase):
         if show_fit:
             tt = self._tool
             x_fit = np.linspace(1, 5100, 30)  
-            ma1, na1, ma2, na2 = tt._fitted_params[0]
+            opr=None
+            if len(tt._fitted_params[0]) == 4:
+                ma1, na1, ma2, na2 = tt._fitted_params[0]
+            else:
+                ma1, na1, ma2, na2, opr = tt._fitted_params[0]
             labcold = r"$T_{cold}=$"+f"{tt._tcold:3.0f}"
             labhot= r"$T_{hot}=$"+f"{tt._thot:3.0f}"
             labnh = r"$N(H_2)="+float_formatter(tt._totalcolden,2)+"$"
 
             self._axis.plot(x_fit,tt._one_line(x_fit, ma1,na1),'.',label=labcold)
             self._axis.plot(x_fit,tt._one_line(x_fit, ma2,na2),'.',label=labhot)
-            self._axis.plot(x_fit,tt._exc_func(x_fit,*tt._fitted_params[0]),label="sum")
+            if opr is None:
+                self._axis.plot(x_fit,tt._exc_func(x_fit,*tt._fitted_params[0]),label="sum")
+            else:
+                tt._opr_mask = False*np.ones(x_fit.size)
+                self._axis.plot(x_fit,tt._exc_func_opr(x_fit,*tt._fitted_params[0]),label="sum")
             handles,labels=self._axis.get_legend_handles_labels()
 
             #kluge to ensure N(H2) label is last

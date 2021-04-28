@@ -287,7 +287,8 @@ class H2Excitation(ToolBase):
         sigma =loge*_colden.error/_colden.data
         print("Energy = ",x,type(x))
         print("Colden = ",y,type(y))
-        #print("SIGMA = ",sigma,type(sigma))
+        print("SIGMA = ",sigma,type(sigma))
+        print("MASK = ",self._opr_mask)
         fit_param, pcov = curve_fit(self._two_lines, xdata=x, ydata=y,sigma=sigma,maxfev=100000)
         print("FIT_PARAM [slope,intercept,slope,intercept] :",fit_param)
         # There is no guarantee of order in fit_param except it will be [slope, intercept, slope, intercept].
@@ -307,8 +308,9 @@ class H2Excitation(ToolBase):
 
         # Now do second pass fit to full curve using first pass as initial guess
         if fit_opr:
-            fit_param=np.append(fit_param,3) # add opr
-            fit_param2,pcov2 = curve_fit(self._exc_func_opr,x,y,p0=fit_param,sigma=sigma)
+            fit_param=np.append(fit_param,[3]) # add opr
+            bounds = ([-np.inf,-np.inf,-np.inf,-np.inf,0],[np.inf,np.inf,np.inf,np.inf,3])
+            fit_param2,pcov2 = curve_fit(self._exc_func_opr,xdata=x,ydata=y,p0=fit_param,sigma=sigma,maxfev=1000000,bounds=bounds)
             self._opr = fit_param2[4]
         else:
             fit_param2,pcov2 = curve_fit(self._exc_func,x,y,p0=fit_param,sigma=sigma)
@@ -338,15 +340,6 @@ class H2Excitation(ToolBase):
             r = y - self._exc_func(x, *fit_param2)
         print("Residuals: %.3e"%np.sum(np.square(r)))
         self._fitted_params.append(r)
-        if False:
-            txdata=np.array([509.8,1015.0,1682.0,2504.0,4586.0])
-            tydata=np.array([19.575,18.75, 18.1 , 17.56, 16.2  ])
-            tsigma=np.array([0.86858896, 0.86858896, 0.86858896, 0.86858896, 0.86858896])
-            test_fp,tp = curve_fit(self._two_lines,xdata=txdata,ydata=tydata,sigma=tsigma)
-            print(np.all(x==txdata))
-            print(np.all(y==tydata))
-            print(np.all(np.round(sigma,2)==np.round(tsigma,2)))
-            print("TESTFP: ",test_fp)
         return  self._fitted_params
 
     def _two_lines(self,x, m1, n1, m2, n2):
@@ -428,12 +421,12 @@ class H2Excitation(ToolBase):
         #print("XTYPE ",type(x))
         #print("opr %g"%opr)
         rat = opr / self._canonical_opr
-        print(opr)
+        #print(opr)
         opr_array = np.ma.masked_array(rat*np.ones(x.size),mask=self._opr_mask)
         y1 = 10**(x.data*m1+n1)*opr_array
         #print(y1)
         y2 = 10**(x.data*m2+n2)*opr_array
         #print(y2)
         retval = np.log10(y1.data+y2.data)
-        print(retval)
+        print(retval,opr)
         return retval
