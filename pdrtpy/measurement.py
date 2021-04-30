@@ -5,6 +5,7 @@ from copy import deepcopy
 from astropy import log
 import astropy.units as u
 from astropy.io import fits,registry
+from astropy.table import Table
 from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
 import numpy as np
 import numpy.ma as ma
@@ -378,11 +379,52 @@ class Measurement(CCDData):
         '''
         return self._data[index]
     
+    @staticmethod
+    def from_table(filename,format='ipac'):
+        '''Table file reader for Measurement class.
+        For each row in the table one Measurement instance will be created. 
+        The input table header must identify the columns: 
+            data - the data value
+            error - the error on the data, can be absolute error or percent. If percent, the header unit row entry for this column must be "%"
+            identifier.
+         The following columns are optional:
+             bmaj - beam major axis size
+             bmin - beam minor axis size
+             bpa  - beam position angle
+        The table must specify the units of each column, e.g. a unit row in the header for IPAC format.  Leave column entry blank if unitless.  Units of value and error should be the same or conformable. Units must be transformable to a valid astropy.unit.Unit.
+
+        :param filename: Name of table file.
+        :type filename: str
+        :param format: Table format see https://docs.astropy.org/en/stable/table/io.html.r. Supported formats are ascii, ipac, votable. Default is IPAC format https://docs.astropy.org/en/stable/api/astropy.io.ascii.Ipac.html#astropy.io.ascii.Ipac
+        :type format: str
+        :returns: array of Measurements, with length equal to number of rows in the table.
+        '''
+        t = Table.read(filename,format=format)
+        required = ["data","error","identifier"]
+        options = ["bmaj","bmin","bpa"]
+        errmsg = ""
+        for r in required:
+            if r not in t.colnames:
+                errmsg += "{0} is a required column. ".format(r)
+        if errmsg != "":
+            raise Exception("Insufficient information in table to create Measurement. {0}".format(errmsg))
+        a = list()
+        for x in t:
+            if t.columns["error"].unit == "%":
+                err = StdDevUncertainty(x["error"]*x["data"]/100.0)
+            else:
+                err = StdDevUncertainty(x["error"])
+            m = Measurement(data=x["data"],identifier=x["identifier"],
+                            unit=t.columns["data"].unit,
+                            uncertainty=err)
+            a.append(m)
+        return a
+        
 def fits_measurement_reader(filename, hdu=0, unit=None, 
                         hdu_uncertainty='UNCERT',
                         hdu_mask='MASK', hdu_flags=None,
                         key_uncertainty_type='UTYPE', **kwd):
-    '''Reader for Measurement class, which will be called by :meth:`Measurement.read`.
+    '''FITS file reader for Measurement class, which will be called by :meth:`Measurement.read`.
     
     :param filename: Name of FITS file.
     :type filename: str
@@ -449,6 +491,7 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
     z._filename=filename.name
     log.setLevel('INFO') # set back to default
     return z
+
 
     
 with registry.delay_doc_updates(Measurement):
