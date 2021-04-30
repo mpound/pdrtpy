@@ -1,12 +1,11 @@
-|identifier | data | error    |
-|char       | float|  float   | 
-|           | K    |  K       |
-| null      | null |   null   |
- H200S0      2e5       123.4  
- H200S1      3e5       432.1   
- H200S2      4e5       1000.   
- H200S3      5e5       2000.0   
- H200S4      6e5       8000.0   
- H200S5      7e5       1.8e3
- H200S6      8e5       0.29E4   
- H200S7      9e5       3333   
+|identifier | data | error    |  bmaj | bmin  | bpa    |
+|char       | float|  float   | float | float | float  |
+|           | K    |  K       | arcsec| arcsec| degree |
+ H200S0      2e5       123.4     10       4     23.2
+ H200S1      3e5       432.1     25      25     0.0
+ H200S2      4e5       1000.     5.2     3.3     -78.0
+ H200S3      5e5       2000.0    1.1E2  1.1e2    0
+ H200S4      6e5       8000.0    14.7      24.3  -16.99
+ H200S5      7e5       1.8e3     31.4     19.26  53.59   
+ H200S6      8e5       0.29E4     1        1      1
+ H200S7      9e5       3333      48       49      50
