@@ -408,13 +408,30 @@ class Measurement(CCDData):
                 errmsg += "{0} is a required column. ".format(r)
         if errmsg != "":
             raise Exception("Insufficient information in table to create Measurement. {0}".format(errmsg))
-        a = list()
+ 
+        # check for beam parameters in table.
+        # IFF all beam parameters present, they will be added to the Measurements.
+        if sorted(list(set(options)& set(t.colnames))) == sorted(options):
+            hasBeams = True
+        else:
+            hasBeams = False
+            
+        a = list()    
         for x in t:
             if t.columns["error"].unit == "%":
                 err = StdDevUncertainty(x["error"]*x["data"]/100.0)
             else:
                 err = StdDevUncertainty(x["error"])
-            m = Measurement(data=x["data"],identifier=x["identifier"],
+            if hasBeams:
+                # NB: I tried to do something tricky here with Qtable, but it actually became *more* complicated
+                m = Measurement(data=x["data"],identifier=x["identifier"],
+                            unit=t.columns["data"].unit,
+                            uncertainty=err,
+                            bmaj=x["bmaj"]*t["bmaj"].unit, 
+                            bmin=x["bmin"]*t["bmaj"].unit,
+                            bpa=x["bpa"]*t["bpa"].unit)
+            else:
+                m = Measurement(data=x["data"],identifier=x["identifier"],
                             unit=t.columns["data"].unit,
                             uncertainty=err)
             a.append(m)
