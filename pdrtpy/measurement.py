@@ -418,7 +418,7 @@ class Measurement(CCDData):
             
         a = list()    
         for x in t:
-            if t.columns["error"].unit == "%":
+            if t.columns["uncertainty"].unit == "%":
                 err = StdDevUncertainty(x["uncertainty"]*x["data"]/100.0)
             else:
                 err = StdDevUncertainty(x["uncertainty"])
