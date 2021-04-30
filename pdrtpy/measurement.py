@@ -381,13 +381,13 @@ class Measurement(CCDData):
     
     @staticmethod
     def from_table(filename,format='ipac'):
-        '''Table file reader for Measurement class.
+        r'''Table file reader for Measurement class.
         For each row in the table one Measurement instance will be created. 
-        The input table header must identify the columns: 
+        The input table header must contain the columns: 
             data - the data value
-            error - the error on the data, can be absolute error or percent. If percent, the header unit row entry for this column must be "%"
-            identifier.
-         The following columns are optional:
+            uncertainty - the error on the data, can be absolute error or percent. If percent, the header unit row entry for this column must be "%"
+            identifier - the identifier of this Measurement which should match a model in the ModelSet you are using, e.g., "CII_158" for [C II] 158 $mu$m
+        The following columns are optional:
              bmaj - beam major axis size
              bmin - beam minor axis size
              bpa  - beam position angle
@@ -400,7 +400,7 @@ class Measurement(CCDData):
         :returns: array of Measurements, with length equal to number of rows in the table.
         '''
         t = Table.read(filename,format=format)
-        required = ["data","error","identifier"]
+        required = ["data","uncertainty","identifier"]
         options = ["bmaj","bmin","bpa"]
         errmsg = ""
         for r in required:
@@ -419,9 +419,9 @@ class Measurement(CCDData):
         a = list()    
         for x in t:
             if t.columns["error"].unit == "%":
-                err = StdDevUncertainty(x["error"]*x["data"]/100.0)
+                err = StdDevUncertainty(x["uncertainty"]*x["data"]/100.0)
             else:
-                err = StdDevUncertainty(x["error"])
+                err = StdDevUncertainty(x["uncertainty"])
             if hasBeams:
                 # NB: I tried to do something tricky here with Qtable, but it actually became *more* complicated
                 m = Measurement(data=x["data"],identifier=x["identifier"],
