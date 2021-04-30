@@ -1,6 +1,6 @@
 |identifier | data |uncertainty|  bmaj | bmin  | bpa    |
 |char       | float|  float    | float | float | float  |
-|           | K    |  K        | arcsec| arcsec| degree |
+|           | Jy/bm|  Jy/bm    | arcsec| arcsec| degree |
  H200S0      2e5       123.4     10       4     23.2
  H200S1      3e5       432.1     25      25     0.0
  H200S2      4e5       1000.     5.2     3.3     -78.0
