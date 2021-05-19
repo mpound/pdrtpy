@@ -199,35 +199,56 @@ class ModelPlot(PlotBase):
     def phasespace(self,identifiers,
                  nax1_clip=[10,1E7]*u.Unit("cm-3"),
                  nax2_clip=[10,1E6]*utils.habing_unit,
-                 reciprocal=[False,False],measurements=None):
+                 reciprocal=[False,False],**kwargs):
         r'''Plot lines of constant density and radiation field on a ratio-ratio, ratio-intensity, or intensity-intensity map
 
         :param identifiers: list of two identifier tags for the model to plot, e.g., ["OI_63/CO_21", "CII_158"]
         :type identifiers: list of str
         :param nax1_clip: The range of model densities on NAXIS1 to show in the plot. For most model NAXIS1 is hydrogen number density $n_H$ in cm$^{-3}$.  For ionized gas models, it is electron temperature $T_e$ in K.  Must be given as a range of astropy quanitities.  Default: [10,1E7]*Unit("cm-3")
-        :type nax1_clip: array like, must contain Quantity
+        :type nax1_clip: array-like, must contain Quantity
         :param nax2_clip: The range of model parameters on NAXIS2 to show in the plot.  For most models NAXIS2 is radiation field intensities in Habing or cgs units.  For ionized gas models, it is electron volume density $n_e$.  Must be given as a range of astropy quantities.  Default: nax1_clip=[10,1E6]*utils.habing_unit. 
-        :type nax2_clip:  array like, must contain Quantity
+        :type nax2_clip:  array-like, must contain Quantity
         :param reciprocal: Whether or not the plot the reciprocal of the model on each axis.  Given as a pair of booleans.  e.g. [False,True] means don't flip the quantity X axis, but flip quantity the Y axis.  i.e. if the model is "CII/OI", and reciprocal=True then the axis will be "OI/CII".  Default: [False, False]
-        :type reciprocal: list of bool
+        :type reciprocal: array-like bool
 
-        :param measurements: A list of two :class:`pdrtpy.measurement.Measurement`, one for each `identifier`, that will be used to plot a data point on the grid.
-        :type measurements: list
+        The following keywords are supported as \*\*kwargs:
 
+        :param measurements: A list of two :class:`~pdrtpy.measurement.Measurement`, one for each `identifier`, that will be used to plot a data point on the grid. At least two Measurements, one for x and one for y, must be given.  Subsequent Measurements must also be paired since they represent x and y, e.g `[m1x, m1y, m2x, m2y,...]`. Measurement *data* and *uncertainty* members may be arrays.  Default: None
+        :type measurements: array-like of :class:`~pdrtpy.measurment.Measurement`.  
+
+        :param errorbar: Plot error bars when given measurements. Default: True
+        :type errorbar: bool
+        :param fmt: The format to use when plotting Measurement data. There should be one for each pair of Measurements. See :meth:`matplotlib.axes.Axes.plot` for examples. Default is 'sk' for all points.
+        :type fmt: array of str
+        :param label: The label(s) to use the Measurement data legend. There should be one for each pair of Measurements.  Default is 'data' for all points.
+        :type label: array of str
+        :param legend: Draw a legend on the plot. Default: True
+        :type legend: bool
+        :param title: Title to draw on the plot.  Default: None
+        :type title: str
         '''
+        kwargs_opts = {'errorbar':False,
+                       'fmt': None,
+                       'label': None,
+                       'legend': True,
+                       'measurements':None,
+                       'title': None,
+                       }
+    
+        kwargs_opts.update(kwargs)
         if len(list(identifiers)) != 2:
             raise ValueError("Length of identifiers list must be exactly 2")
         models = [self._modelset.get_model(i) for i in identifiers]
         mids = [m.id for m in models]
         mdict = dict(zip(mids,models))
-        if measurements is not None:
-            for m in measurements:
+        if kwargs_opts['measurements'] is not None:
+            for m in kwargs_opts['measurements']:
                 if type(m) is not Measurement:
-                    raiseTypeError("measurement keyword value must be a list of Measurements")
+                    raise TypeError("measurement keyword value must be a list of Measurements")
                 if m.id not in mids:
                     raise TypeError(f"Can't find measurement identifier {m.id} in model list {mids}.")
                 if mdict[m.id]._unit != m.unit:
-                    raise TypeError(f"Model and Measurement for {m.im.idd} have different units: ({mdict[m.id]._unit},{m.unit})")
+                    raise TypeError(f"Model and Measurement for {m.id} have different units: ({mdict[m.id]._unit},{m.unit})")
 
 
         xlog,ylog=self._get_xy_from_wcs(models[0],quantity=True,linear=False)
@@ -309,81 +330,118 @@ class ModelPlot(PlotBase):
             linesG.extend(self._axis.loglog(xx,yy,label=label,lw=2,ls='--'))
             
         # plot the input measurement with error bar
-            if measurements is not None:
-                if measurements[0].id == identifiers[0]:
-                    _x = measurements[0]
-                    _y = measurements[1]
+        # [measurement,measurement,fmt,label,measurement,measurement,fmt,label ...]
+        # or 
+        # [m1x,m1y,m2x,m2y,...]
+        # [fmt1,fmt2,...]
+        # [label1,label2,label3]
+
+        if kwargs_opts['measurements'] is not None:
+            l_meas = len(kwargs_opts['measurements'])
+            if l_meas %2 != 0:
+                msg = f"Number of Measurements must be even. You provided {l_meas}"
+                raise ValueError(msg)
+            n_meas = int(l_meas/2)
+            fmt = kwargs_opts['fmt']
+            if fmt is None:
+                fmt = np.full([n_meas],"sk")
+            elif len(fmt) != n_meas:
+                msg = f"Number of plot formats {len(fmt)} doesn't match number of Measurement pairs {n_meas}."
+                raise ValueError(msg)
+            label = kwargs_opts['label']
+            if label is None:
+                label = ["data"]
+            elif len(label) != n_meas:
+                msg = f"Number of data labels {len(label)} doesn't match number of Measurement pairs {n_meas}."
+                raise ValueError(msg)
+
+            args = []
+            i=0
+            for k in range(0,l_meas,2):
+                kk=k+1
+                if kwargs_opts['measurements'][k].id == identifiers[0]:
+                    _x = kwargs_opts['measurements'][k]
+                    _y = kwargs_opts['measurements'][kk]
                 else:
-                    _x = measurements[1]
-                    _y = measurements[0]
-                # the data point
-                dataline = self._axis.loglog(_x,_y,marker="s", color='k')
-                self._axis.set_xscale('log')
-                self._axis.set_yscale('log')
+                    _x = kwargs_opts['measurements'][kk]
+                    _y = kwargs_opts['measurements'][k]
+                # collect the args
+                args.extend([_x,_y,fmt[i]])
                 # the error bars
-                self._axis.errorbar(x=_x.data,y=_y.data,xerr=_x.error,yerr=_y.error,capsize=5.0,color='k',capthick=2)
-                
-        # create the column headers for the legend
-        # and blank handles and labels to take up space for the headers and
-        # when the number of density traces and radiation field traces
-        # are not equal. 
-        title1 = models[0].wcs.wcs.ctype[0]
-        if "_" in title1:
-            title1 = r"${\rm "+title1+"}$"
-        unit1="["+nax1_clip.unit.to_string("latex_inline")+"]" 
-        rs = nax2_clip.unit.to_string()
-        rsl = nax2_clip.unit.to_string("latex_inline")
-        if "G0" in  models[0].wcs.wcs.ctype[1] or "FUV" in models[0].wcs.wcs.ctype[1]:
-            title2 = "log("+utils.get_rad(rs)+")"
-        else:
-            title2 = models[0].wcs.wcs.ctype[1]
-            if "_" in title2:
-                title2 = r"${\rm "+title2+"}$"
-        unit2="["+rsl+"]"
+                if kwargs_opts['errorbar']:
+                    self._axis.errorbar(x=_x.data,y=_y.data,xerr=_x.error,yerr=_y.error,
+                                        capsize=5.0,fmt=fmt[i],capthick=2,ls=None,zorder=6)
+                i=i+1
+            # the data points
+            dataline = self._axis.loglog(*args,zorder=5)#marker="s", color='k')
+            self._axis.set_xscale('log')
+            self._axis.set_yscale('log')
+            
+        if kwargs_opts['legend']:            
+            # create the column headers for the legend
+            # and blank handles and labels to take up space for the headers and
+            # when the number of density traces and radiation field traces
+            # are not equal. 
+            title1 = models[0].wcs.wcs.ctype[0]
+            if "_" in title1:
+                title1 = r"${\rm "+title1+"}$"
+            unit1="["+nax1_clip.unit.to_string("latex_inline")+"]" 
+            rs = nax2_clip.unit.to_string()
+            rsl = nax2_clip.unit.to_string("latex_inline")
+            if "G0" in  models[0].wcs.wcs.ctype[1] or "FUV" in models[0].wcs.wcs.ctype[1]:
+                title2 = "log("+utils.get_rad(rs)+")"
+            else:
+                title2 = models[0].wcs.wcs.ctype[1]
+                if "_" in title2:
+                    title2 = r"${\rm "+title2+"}$"
+            unit2="["+rsl+"]"
+        
+            handles,labels=self._axis.get_legend_handles_labels()
+            phantom = [self._axis.plot([],marker="", markersize=0,ls="",lw=0)[0]]*2
+            lN = len(linesN)
+            lG = len(linesG)
+            diff = lN-lG
+            adiff=abs(diff)
+            phantom2 = [self._axis.plot([],marker="", markersize=0,ls="",lw=0)[0]]*adiff
+            blank = ['']*adiff
 
-        handles,labels=self._axis.get_legend_handles_labels()
-        phantom = [self._axis.plot([],marker="", markersize=0,ls="",lw=0)[0]]*2
-        lN = len(linesN)
-        lG = len(linesG)
-        diff = lN-lG
-        adiff=abs(diff)
-        phantom2 = [self._axis.plot([],marker="", markersize=0,ls="",lw=0)[0]]*adiff
-        blank = ['']*adiff
+            if diff == 0:
+                labels.insert(lN,unit2)
+                labels.insert(lN,title2)
+                labels = [title1,unit1]+labels
+                linesN = phantom + linesN
+                linesG = phantom + linesG
+            elif diff > 0: # more densities than radiation fields
+                labels.insert(lN,unit2)
+                labels.insert(lN,title2)
+                labels = [title1,unit1]+labels + blank
+                linesN = phantom + linesN
+                linesG = phantom + linesG + phantom2  
+            elif diff < 0: # more radiation fields than densities
+                labels = labels[0:lN]+blank+labels[lN:]
+                labels.insert(lN+adiff,unit2)
+                labels.insert(lN+adiff,title2)
+                labels = [title1,unit1]+labels
+                linesN = phantom + linesN + phantom2
+                linesG = phantom + linesG
+            handles = linesN+linesG
 
-        if diff == 0:
-            labels.insert(lN,unit2)
-            labels.insert(lN,title2)
-            labels = [title1,unit1]+labels
-            linesN = phantom + linesN
-            linesG = phantom + linesG
-        elif diff > 0: # more densities than radiation fields
-            labels.insert(lN,unit2)
-            labels.insert(lN,title2)
-            labels = [title1,unit1]+labels + blank
-            linesN = phantom + linesN
-            linesG = phantom + linesG + phantom2  
-        elif diff < 0: # more radiation fields than densities
-            labels = labels[0:lN]+blank+labels[lN:]
-            labels.insert(lN+adiff,unit2)
-            labels.insert(lN+adiff,title2)
-            labels = [title1,unit1]+labels
-            linesN = phantom + linesN + phantom2
-            linesG = phantom + linesG
-        handles = linesN+linesG
+            # add a second legend if user supplied measurements
+            if kwargs_opts['measurements'] is not None:
+                dl = self._axis.legend(dataline,label,loc='best')
+                self._axis.add_artist(dl)
 
-        # add a second legend if user supplied measurements
-        if measurements is not None:
-            dl = self._axis.legend(dataline,["data"],loc='best')
-            self._axis.add_artist(dl)
+            leg=self._axis.legend(handles,labels,ncol=2,markerfirst=True,bbox_to_anchor=(1.024,1),loc="upper left")
+            # trick to remove extra left side space in legend column headers.
+            # doesn't completely center the headers, but gets as close as possible
+            # See https://stackoverflow.com/questions/44071525/matplotlib-add-titles-to-the-legend-rows/44072076
+            for vpack in leg._legend_handle_box.get_children():
+                for hpack in vpack.get_children()[:2]:
+                    hpack.get_children()[0].set_width(0)
+                    
+        if kwargs_opts['title'] is not None:
+            self._axis.set_title(kwargs_opts['title'])
 
-        leg=self._axis.legend(handles,labels,ncol=2,markerfirst=True,bbox_to_anchor=(1.024,1),loc="upper left")
-        #leg._legend_box.align = "left"
-        # trick to remove extra left side space in legend column headers.
-        # doesn't completely center the headers, but gets as close as possible
-        # See https://stackoverflow.com/questions/44071525/matplotlib-add-titles-to-the-legend-rows/44072076
-        for vpack in leg._legend_handle_box.get_children():
-            for hpack in vpack.get_children()[:2]:
-                hpack.get_children()[0].set_width(0)
         
     def _get_xy_from_wcs(self,data,quantity=False,linear=False):
         """Get the x,y axis vectors from the WCS of the input data.
