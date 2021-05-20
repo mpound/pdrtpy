@@ -215,7 +215,6 @@ class ModelPlot(PlotBase):
 
         :param measurements: A list of two :class:`~pdrtpy.measurement.Measurement`, one for each `identifier`, that will be used to plot a data point on the grid. At least two Measurements, one for x and one for y, must be given.  Subsequent Measurements must also be paired since they represent x and y, e.g `[m1x, m1y, m2x, m2y,...]`. Measurement *data* and *uncertainty* members may be arrays.  Default: None
         :type measurements: array-like of :class:`~pdrtpy.measurment.Measurement`.  
-
         :param errorbar: Plot error bars when given measurements. Default: True
         :type errorbar: bool
         :param fmt: The format to use when plotting Measurement data. There should be one for each pair of Measurements. See :meth:`matplotlib.axes.Axes.plot` for examples. Default is 'sk' for all points.
