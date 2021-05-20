@@ -33,7 +33,6 @@ class PlotBase:
                   '#f781bf', '#a65628', '#984ea3',
                   '#999999', '#e41a1c', '#dede00']
         self.colorcycle(self._CB_color_cycle)
-        #print("Done PlotBase")
 
     def _autolevels(self,data,steps='log',numlevels=None,verbose=False):
         """Compute contour levels automatically based on data. 

@@ -235,6 +235,7 @@ class ModelPlot(PlotBase):
                        }
     
         kwargs_opts.update(kwargs)
+        # various input checks
         if len(list(identifiers)) != 2:
             raise ValueError("Length of identifiers list must be exactly 2")
         models = [self._modelset.get_model(i) for i in identifiers]
@@ -249,7 +250,8 @@ class ModelPlot(PlotBase):
                 if mdict[m.id]._unit != m.unit:
                     raise TypeError(f"Model and Measurement for {m.id} have different units: ({mdict[m.id]._unit},{m.unit})")
 
-
+        # Now we need to find the model points that fall within the user-specified NAXIS limits.
+        # First get the x,y of the models 
         xlog,ylog=self._get_xy_from_wcs(models[0],quantity=True,linear=False)
         xlin,ylin=self._get_xy_from_wcs(models[0],quantity=True,linear=True)
         
@@ -258,34 +260,31 @@ class ModelPlot(PlotBase):
         if 'log' in models[0].wcs.wcs.ctype[0]: x_is_log = True
         if 'log' in models[0].wcs.wcs.ctype[1]: y_is_log = True
         
-        # lin and log units are same so doesn't matter which is used for conversion
+        # linear and log units are same so doesn't matter which is used for conversion
         dcc=nax1_clip.to(xlog.unit)
         rcc=nax2_clip.to(ylog.unit)
-        
+        # Select the model x,y *indices* within the NAX limits
         xi=np.where((xlin>=dcc[0]) & (xlin<=dcc[1]))[0]
         yi=np.where((ylin>=rcc[0]) & (ylin<=rcc[1]))[0]
+        # Create an array containing *indices* of the range of x,y values.
         if x_is_log:
             x2= np.hstack([np.where((np.round(xlog.value,1))==i)[0] for i in np.arange(-5,12)])
         else:
             x2 = np.arange(len(xlin))
-        #print("xlin: ",xlin)
-        #print("xi: ",xi)
-        #print("X2: ",x2)
         # for 2020 models Y is not an integral value in erg s-1 cm-2
         # so rounding is necessary.
         if y_is_log:
             y2 = np.hstack([np.where((np.round(ylog.value,1))==i)[0] for i in np.arange(-5,12)])
         else:
             y2 = np.arange(len(ylin))
+        # Intersection of these two arrays contain the indices of desired model plot points.
         xi2=np.intersect1d(xi,x2)
         yi2=np.intersect1d(yi,y2)
-        #print("ylin: ",ylin)
-        #print("yi: ",yi)
-        #print("Y2: ",y2)
         
         self._figure,self._axis = self._plt.subplots(nrows=1,ncols=1)
         linesN=[]
         linesG=[]
+        # Sort out the axes labels depending on whether reciprocal=True or not.
         for j in xi2:
             if x_is_log:
                 label=np.round(np.log10(xlin[j].to(nax1_clip.unit).value),1)
@@ -328,12 +327,10 @@ class ModelPlot(PlotBase):
                 yy=models[1][j,xi2[0]:xi2[-1]+1]
             linesG.extend(self._axis.loglog(xx,yy,label=label,lw=2,ls='--'))
             
-        # plot the input measurement with error bar
-        # [measurement,measurement,fmt,label,measurement,measurement,fmt,label ...]
-        # or 
+        # plot the input measurement with error bar. Keywords are
         # [m1x,m1y,m2x,m2y,...]
         # [fmt1,fmt2,...]
-        # [label1,label2,label3]
+        # [label1,label2,...]
 
         if kwargs_opts['measurements'] is not None:
             l_meas = len(kwargs_opts['measurements'])
@@ -342,6 +339,7 @@ class ModelPlot(PlotBase):
                 raise ValueError(msg)
             n_meas = int(l_meas/2)
             fmt = kwargs_opts['fmt']
+            # Set the default format to black squares.
             if fmt is None:
                 fmt = np.full([n_meas],"sk")
             elif len(fmt) != n_meas:
@@ -356,6 +354,7 @@ class ModelPlot(PlotBase):
 
             args = []
             i=0
+            # ensure measurements are assigned to correct axis, based on their identifiers.
             for k in range(0,l_meas,2):
                 kk=k+1
                 if kwargs_opts['measurements'][k].id == identifiers[0]:
@@ -366,18 +365,20 @@ class ModelPlot(PlotBase):
                     _y = kwargs_opts['measurements'][k]
                 # collect the args
                 args.extend([_x,_y,fmt[i]])
-                # the error bars
+                # Plot the error bars.  Since, unlike axis.loglog(), axis.errorbar() can't 
+                # take a *args, we have to call this each time. 
+                # Note use of zorder to ensure points are on top of lines.
                 if kwargs_opts['errorbar']:
                     self._axis.errorbar(x=_x.data,y=_y.data,xerr=_x.error,yerr=_y.error,
                                         capsize=5.0,fmt=fmt[i],capthick=2,ls=None,zorder=6)
                 i=i+1
             # the data points
-            dataline = self._axis.loglog(*args,zorder=5)#marker="s", color='k')
+            dataline = self._axis.loglog(*args,zorder=5)
             self._axis.set_xscale('log')
             self._axis.set_yscale('log')
             
         if kwargs_opts['legend']:            
-            # create the column headers for the legend
+            # Manually build the legend. Create the column headers for the legend
             # and blank handles and labels to take up space for the headers and
             # when the number of density traces and radiation field traces
             # are not equal. 
@@ -437,7 +438,7 @@ class ModelPlot(PlotBase):
             for vpack in leg._legend_handle_box.get_children():
                 for hpack in vpack.get_children()[:2]:
                     hpack.get_children()[0].set_width(0)
-                    
+        # Put the plot title on if given.            
         if kwargs_opts['title'] is not None:
             self._axis.set_title(kwargs_opts['title'])
 
@@ -750,6 +751,7 @@ class ModelPlot(PlotBase):
                                                      linestyles=lstyles, colors=colors)
                 jj=jj+1
 
+#@todo Is a separate legend() method needed? Would be helpful for users to modify the legend.
 #def legend(self,labels,colors,loc='upper center',title=None,axindex=0):
 #    lw = 3
 #    ls = '-'
