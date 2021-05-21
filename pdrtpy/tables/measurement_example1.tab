@@ -1,0 +1,12 @@
+|identifier | data | uncertainty |
+|char       | float|  float      | 
+|           | K    | %           |
+| null      | null |   null      |
+ H200S0      2e5       5   
+ H200S1      3e5       10   
+ H200S2      4e5       15   
+ H200S3      5e5       20   
+ H200S4      6e5       25   
+ H200S5      7e5       30   
+ H200S6      8e5       35   
+ H200S7      9e5       40   

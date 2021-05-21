@@ -5,6 +5,7 @@ from copy import deepcopy
 from astropy import log
 import astropy.units as u
 from astropy.io import fits,registry
+from astropy.table import Table
 from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
 import numpy as np
 import numpy.ma as ma
@@ -261,6 +262,14 @@ class Measurement(CCDData):
         self._identifier = id
 
     @property
+    def beam(self):
+        '''Return the beam parameters as astropy Quantities or None if beam is not set'''
+        if "BMAJ" in self.header and self.header["BMAJ"] is not None:
+            return [self.header["BMAJ"],self.header["BMIN"],self.header["BPA"]]*u.degree
+        else:
+            return None
+        
+    @property
     def title(self):
         '''A formatted title (e.g., LaTeX) that can be in plotting.
         
@@ -290,7 +299,7 @@ class Measurement(CCDData):
     def levels(self):
         if self.flux.size != 1:
             raise Exception("This only works for Measurements with a single pixel")
-        return np.array([np.float(self.flux-self.error),np.float(self.flux),np.float(self.flux+self.error)])
+        return np.array([float(self.flux-self.error),float(self.flux),float(self.flux+self.error)])
 
     
     def add(self,other):
@@ -378,11 +387,99 @@ class Measurement(CCDData):
         '''
         return self._data[index]
     
+    @staticmethod
+    def from_table(filename,format='ipac',array=False):
+        r'''Table file reader for Measurement class.
+        Create one or more Measurements from a table.
+        The input table header must contain the columns: 
+            *data* - the data value
+            
+            *uncertainty* - the error on the data, can be absolute error or percent. If percent, the header unit row entry for this column must be "%"
+            
+            *identifier* - the identifier of this Measurement which should match a model in the ModelSet you are using, e.g., "CII_158" for [C II] 158 $\\mu$m
+        The following columns are optional:
+             *bmaj* - beam major axis size
+             
+             *bmin* - beam minor axis size
+             
+             *bpa*  - beam position angle
+        The table must specify the units of each column, e.g. a unit row in the header for IPAC format.  Leave column entry blank if unitless.  Units of value and error should be the same or conformable. Units must be transformable to a valid astropy.unit.Unit.
+
+        :param filename: Name of table file.
+        :type filename: str
+        :param format: `Astropy Table format <https://docs.astropy.org/en/stable/table/io.html>`_ Supported formats are ascii, ipac, votable. Default is `IPAC format  <https://docs.astropy.org/en/stable/api/astropy.io.ascii.Ipac.html#astropy.io.ascii.Ipac>`_
+        :type format: str
+        :param array: Controls whether a list of Measurements or a single Measurement is returned. If `array` is True,  one Measurement instance will be created for each row in the table and a Python list of Measurements will be returned.  If `array` is False,  one Measurement containing all the points in the `data` member will be returned. If `array` is False, the *identifier* and beam parameters of the first row will be used. If feeding the return value to a plot method such as :meth:`~pdrtpy.plot.modelplot.ModelPlot.phasespace`, choose `array=False`. Default:False. 
+        :type array: bool
+        
+        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        '''
+        t = Table.read(filename,format=format)
+        required = ["data","uncertainty","identifier"]
+        options = ["bmaj","bmin","bpa"]
+        errmsg = ""
+        for r in required:
+            if r not in t.colnames:
+                errmsg += "{0} is a required column. ".format(r)
+        if errmsg != "":
+            raise Exception("Insufficient information in table to create Measurement. {0}".format(errmsg))
+ 
+        # check for beam parameters in table.
+        # IFF all beam parameters present, they will be added to the Measurements.
+        if sorted(list(set(options)& set(t.colnames))) == sorted(options):
+            hasBeams = True
+        else:
+            hasBeams = False
+
+        if t["data"].unit is None: 
+            t["data"].unit = ""
+        if t["uncertainty"].unit is None: 
+            t["uncertainty"].unit = ""
+        #print("UNITS: ",t["data"].unit,t["uncertainty"].unit)
+        if array:
+            a = list()    
+            for x in t:
+                if t.columns["uncertainty"].unit == "%":
+                    err = StdDevUncertainty(x["uncertainty"]*x["data"]/100.0)
+                else:
+                    err = StdDevUncertainty(x["uncertainty"])
+                if hasBeams:
+                    # NB: I tried to do something tricky here with Qtable, but it actually became *more* complicated
+                    m = Measurement(data=x["data"],identifier=x["identifier"],
+                                unit=t.columns["data"].unit,
+                                uncertainty=err,
+                                bmaj=x["bmaj"]*t["bmaj"].unit, 
+                                bmin=x["bmin"]*t["bmaj"].unit,
+                                bpa=x["bpa"]*t["bpa"].unit)
+                else:
+                    m = Measurement(data=x["data"],identifier=x["identifier"],
+                                unit=t.columns["data"].unit,
+                                uncertainty=err)
+                a.append(m)
+            return a
+        else:
+            if t.columns["uncertainty"].unit == "%":
+                err = StdDevUncertainty(t["uncertainty"]*t["data"]/100.0)
+            else:
+                err = StdDevUncertainty(t["uncertainty"])
+            if hasBeams: 
+                m = Measurement(data=t["data"],identifier=t["identifier"][0],
+                                unit=t.columns["data"].unit,
+                                uncertainty=err,
+                                bmaj=t["bmaj"][0]*t["bmaj"].unit, 
+                                bmin=t["bmin"][0]*t["bmaj"].unit,
+                                bpa=t["bpa"][0]*t["bpa"].unit)
+            else:
+                m = Measurement(data=t["data"],identifier=t["identifier"][0],
+                                unit=t.columns["data"].unit,
+                                uncertainty=err)
+            return m
+                    
+        
 def fits_measurement_reader(filename, hdu=0, unit=None, 
-                        hdu_uncertainty='UNCERT',
                         hdu_mask='MASK', hdu_flags=None,
                         key_uncertainty_type='UTYPE', **kwd):
-    '''Reader for Measurement class, which will be called by :meth:`Measurement.read`.
+    '''FITS file reader for Measurement class, which will be called by :meth:`Measurement.read`.
     
     :param filename: Name of FITS file.
     :type filename: str
@@ -449,6 +546,7 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
     z._filename=filename.name
     log.setLevel('INFO') # set back to default
     return z
+
 
     
 with registry.delay_doc_updates(Measurement):
