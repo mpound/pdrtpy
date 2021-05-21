@@ -11,29 +11,80 @@ from .toolbase import ToolBase
 from .. import pdrutils as utils
 from ..measurement import Measurement
 
-class H2Excitation(ToolBase):
-    """Tool for fitting temperatures to :math:`H_2` Excitation Diagrams
+class ExcitationFit(ToolBase):
+    """Base class for creating excitation fitting tools for various species.
 
-       **This tool is still under development**
+    :param measurements: Input measurements to be fit.  
+    :type measurements: array or dict `~pdrtpy.measurement.Measurement`. If dict, the keys should be the Measurement *identifiers*.  
     """
-    def __init__(self,measurements=None):
-
+    def __init__(self,measurements=None,constantsfile=None):
         # must be set before call to init_measurements
         self._intensity_units = "erg cm^-2 s^-1 sr^-1"
         self._cd_units = 'cm^-2'
-
+        print("ExcitationFIt contstructor")
         if type(measurements) == dict or measurements is None:
             self._measurements = measurements
         else:
             self._init_measurements(measurements)
-
-        # default intensity units
-        self._ac = utils.get_table("atomic_constants.tab")
-        self._ac.add_index("Line")
-        self._ac.add_index("J_u")
+        if constantsfile is not None:
+            # set up atomic constants table, default intensity units
+            self._ac = constantsfile
+            self._ac.add_index("Line")
+            self._ac.add_index("J_u")
         self._column_density = dict()
+        self._column_densities = dict()
         # Most recent cutout selected by user for computation area.
         self._cutout = None
+
+    def _init_measurements(self,m):
+        '''Initialize measurements dictionary given a list.
+
+           :param m: list of intensity :class:`~pdrtpy.measurement.Measurement`s in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
+           :type m: list of :class:`~pdrtpy.measurement.Measurement`
+        '''
+        self._measurements = dict()
+        for mm in m:
+            if not utils.check_units(mm.unit,self._intensity_units):
+                raise TypeError("Measurement " +mm.id + " units "+mm.unit.to_string()+" are not in intensity units equivalent to "+self._intensity_units)
+            self._measurements[mm.id] = mm
+        # re-initialize column densities
+        
+    def add_measurement(self,m):
+        '''Add an intensity Measurement to internal dictionary used to 
+           compute the excitation diagram.   This method can also be used
+           to safely replace an existing intensity Measurement.
+
+           :param m: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
+        '''
+        if not utils.check_units(m.unit,self._intensity_units):
+            raise TypeError("Measurement " +m.id + " must be in intensity units equivalent to "+self._intensity_units)
+
+        if self._measurements:
+            self._measurements[m.id] = m
+            # if there is an existing column density with this ID, remove it
+            self._column_densities.pop(m.id,None)
+        else:
+            self._init_measurements(m)
+
+    def replace_measurement(self,m):
+        '''Safely replace an existing intensity Measurement.  Do not 
+           change a Measurement in place, use this method. 
+           Otherwise, the column densities will be inconsistent.
+
+           :param m: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
+        '''
+        self.add_measurement(self,m)
+
+  
+class H2ExcitationFit(ExcitationFit):
+    """Tool for fitting temperatures to :math:`H_2` Excitation Diagrams
+
+       **This tool is still under development**
+    """
+    def __init__(self,measurements=None,
+                 constantsfile=utils.get_table("atomic_constants.tab")):
+        print("H2ExcitationFit constructor")
+        super().__init__(measurements,constantsfile)
         self._canonical_opr = True
         self._opr_mask = None
 
@@ -44,7 +95,6 @@ class H2Excitation(ToolBase):
            :rtype: list of :class:`~pdrtpy.measurement.Measurement`
         '''
         return self._measurements
-
 
     def column_densities(self,norm=False,unit=utils._CM2):
         '''The computed upper state column densities of stored intensities
@@ -92,46 +142,6 @@ class H2Excitation(ToolBase):
                 t[self._ac.loc[m]["J_u"]] = self._ac.loc[m]["E_upper/k"]
         return t
 
-    def _init_measurements(self,m):
-        '''Initialize measurements dictionary given a list.
-
-           :param m: list of intensity :class:`~pdrtpy.measurement.Measurement`s in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
-           :type m: list of :class:`~pdrtpy.measurement.Measurement`
-        '''
-        self._measurements = dict()
-        for mm in m:
-            if not utils.check_units(mm.unit,self._intensity_units):
-                raise TypeError("Measurement " +mm.id + " units "+mm.unit.to_string()+" are not in intensity units equivalent to "+self._intensity_units)
-            self._measurements[mm.id] = mm
-        # re-initialize column densities
-        self._column_densities = dict()
-  
-    def add_measurement(self,m):
-        '''Add an intensity Measurement to internal dictionary used to 
-           compute the excitation diagram.   This method can also be used
-           to safely replace an existing intensity Measurement.
-
-           :param m: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
-        '''
-        if not utils.check_units(m.unit,self._intensity_units):
-            raise TypeError("Measurement " +m.id + " must be in intensity units equivalent to "+self._intensity_units)
-
-        if self._measurements:
-            self._measurements[m.id] = m
-            # if there is an existing column density with this ID, remove it
-            self._column_densities.pop(m.id,None)
-        else:
-            self._init_measurements(m)
-
-    def replace_measurement(self,m):
-        '''Safely replace an existing intensity Measurement.  Do not 
-           change a Measurement in place, use this method. 
-           Otherwise, the column densities will be inconsistent.
-
-           :param m: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
-        '''
-        self.add_measurement(self,m)
-
     def run(self):
         cdavg = self.average_column_density(norm=True)
         energy = self.energies(line=False)
@@ -164,7 +174,7 @@ class H2Excitation(ToolBase):
 
            :param intensity: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
            :type intensity: :class:`~pdrtpy.measurement.Measurement`
-           :param unit: The units in which to return the column density. Default: cm-2
+           :param unit: The units in which to return the column density. Default: :math:`{\\rm }cm^{-2}`
            :type unit: str or :class:`astropy.unit.Unit`
            :returns: a :class:`~pdrtpy.measurement.Measurement` of the column density.
            :rtype: :class:`~pdrtpy.measurement.Measurement` 
@@ -187,7 +197,8 @@ class H2Excitation(ToolBase):
             self._column_density[m] = self.colden(self._measurements[m],unit)
 
 
-    def average_column_density(self,position,size,norm=True,unit=utils._CM2,line=False,test=False):
+    def average_column_density(self,position,size,norm=True,
+                               unit=utils._CM2,line=False,test=False):
         r'''Compute the average column density over a spatial box.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.
 
         :param position: The position of the cutout array's center with respect to the data array. The position can be specified either as a `(x, y)` tuple of pixel coordinates or a :class:`~astropy.coordinates.SkyCoord`, which will use the :class:`~astropy.wcs.WCS` of the ::class:`~pdrtpy.measurement.Measurement`s added to this tool. See :class:`~astropy.nddata.utils.Cutout2D`.
@@ -197,7 +208,7 @@ class H2Excitation(ToolBase):
         :param norm: if True, normalize the column densities by the 
                        statistical weight of the upper state, :math:`g_u`.  For ortho-$H_2$ $g_u = 3(2J+1)$, for para-$H_2$ $g_u=2J+1$.
         :type norm: bool
-        :param unit: The units in which to return the column density. Default: math:`{\rm cm}^{-2}` 
+        :param unit: The units in which to return the column density. Default: :math:`{\rm cm}^{-2}` 
         :type unit: str or :class:`astropy.unit.Unit`
         :param line: if True, the returned dictionary index is the Line name, otherwise it is the upper state :math:`J` number.  
         :type line: bool
@@ -237,14 +248,6 @@ class H2Excitation(ToolBase):
              
         return cdmeas
 
-    def plot_intensities(self,**kwargs):
-        pass
-    def plot_column_densities(self,**kwargs):
-        pass
-
-    def excitation_diagram(self,**kwargs):
-        pass
-
     def _set_opr_mask(self,ids):
         # need to figure out which measurements are odd J and set mask=True for those, False for even J
         # Do this by lookup in atomic_constants.tab
@@ -252,7 +255,7 @@ class H2Excitation(ToolBase):
 
     def fit_excitation(self,energy,colden,fit_opr=False,**kwargs):
         """Fit the :math:`log N_u-E` diagram with two excitation temperatures,
-        a ``warm`` :math:`T_{ex}` and a ``cold`` :math:`T_{ex}`.  A first
+        a ``hot`` :math:`T_{ex}` and a ``cold`` :math:`T_{ex}`.  A first
         pass guess is initially made using data partitioning and two
         linear fits.
         :param energy: Eu/k
