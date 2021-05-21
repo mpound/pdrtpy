@@ -32,8 +32,7 @@ class PlotBase:
         self._CB_color_cycle = ['#377eb8', '#ff7f00','#4daf4a',
                   '#f781bf', '#a65628', '#984ea3',
                   '#999999', '#e41a1c', '#dede00']
-        self._plt.rc('axes', prop_cycle=(cycler('color',  self._CB_color_cycle)))
-        #print("Done PlotBase")
+        self.colorcycle(self._CB_color_cycle)
 
     def _autolevels(self,data,steps='log',numlevels=None,verbose=False):
         """Compute contour levels automatically based on data. 
@@ -148,9 +147,9 @@ class PlotBase:
            plot, which is not the default behavior.
 
            :param image: the mappable object for the plot. Must not be masked.
-           :type image: numpy.ndarray, astropy.io.fits HDU or CCDData
+           :type image: :obj:`numpy.ndarray`,:mod:`astropy.io.fits` HDU or CCDData
            :param axis: which Axes object for the plot
-           :type axis:  matplotlib.axis.Axes
+           :type axis:  :class:`matplotlib.axis.Axes`
            :param pos: colorbar position: ["left"|"right"|"bottom"|"top"]. Default: right
            :type pos: str
            :param width: width of the colorbar in terms of percent width of the plot.
@@ -192,3 +191,12 @@ class PlotBase:
            :type use: bool
         """
         self._plt.rcParams["text.usetex"] = use
+        
+    def colorcycle(self,colorcycle):
+        """Set the plot color cycle for multi-trace plots.  The default color cycle is optimized for color-blind users. 
+        
+        :param colorcycle: List of colors to use, typically an list of hex color strings.  This list will be passed to :meth:`matplotlib.pyplot.rc` as the *axes prop_cycle* parameter using :class:`matplotlib.cycler`.
+        :type colorcycle: list
+        """
+        self._plt.rc('axes', prop_cycle=(cycler('color',  colorcycle)))
+        
