@@ -299,7 +299,7 @@ class Measurement(CCDData):
     def levels(self):
         if self.flux.size != 1:
             raise Exception("This only works for Measurements with a single pixel")
-        return np.array([np.float(self.flux-self.error),np.float(self.flux),np.float(self.flux+self.error)])
+        return np.array([float(self.flux-self.error),float(self.flux),float(self.flux+self.error)])
 
     
     def add(self,other):
