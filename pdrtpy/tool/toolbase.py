@@ -5,8 +5,9 @@ class ToolBase(object):
         such as reading in observational data before run() can be invoked.
     """
     def __init__(self):
+        pass
         # most tools will have their own plotter
-        self._plotter = None
+        #self._plotter = None #no, the other way around. Plotters  have tools.
 
     def run(self):
         """Runs the tool. Each subclass Tool must implement its own run() method.
