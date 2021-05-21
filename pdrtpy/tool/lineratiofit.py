@@ -24,6 +24,11 @@ class LineRatioFit(ToolBase):
 The models to be fit are stored as intensity ratios. The input observations will be use to create ratios that correspond to models. From there a minimization fit is done to determine the density and radiation field that best fit the data.At least 3 observations are needed in order to make at least 2 ratios. With fewer ratios, no fitting can be done. More ratios generally means better determined density and radiation field, assuming the data are consistent with each other.
 
 Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view the results.
+    
+    :param modelset: The set of PDR models to use for fitting.
+    :type modelset:`~pdrtpy.modelset.ModelSet`
+    :param measurements: Input measurements to be fit.  
+    :type measurements: array or dict `~pdrtpy.measurement.Measurement`. If dict, the keys should be the Measurement *identifiers*.  
     """
     def __init__(self,modelset=ModelSet("wk2006",z=1),measurements=None):
         if type(modelset) == str:
@@ -49,7 +54,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self.radiation_field_type = None
         self.density_unit = None
         self.density_type = None
-        self._plotter = LineRatioPlot(self)
+        #self._plotter = LineRatioPlot(self) #not needed
     
     def _set_measurementnaxis(self):
         fk = utils.firstkey(self._measurements)
