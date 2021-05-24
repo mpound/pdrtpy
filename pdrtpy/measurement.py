@@ -301,7 +301,12 @@ class Measurement(CCDData):
             raise Exception("This only works for Measurements with a single pixel")
         return np.array([float(self.flux-self.error),float(self.flux),float(self.flux+self.error)])
 
-    
+    def _modify_id(self,other,op):
+        if getattr(other,"id", None) is not None:
+            return self.id + op + other.id
+        else:
+            return self.id 
+        
     def add(self,other):
         """Add this Measurement to another, propagating errors, units,  and updating identifiers.  Masks are logically or'd.
 
@@ -315,7 +320,7 @@ class Measurement(CCDData):
         # class so hard to subclass.
         z=CCDData.add(self,other,handle_mask=np.logical_or)
         z=Measurement(z,unit=z._unit)
-        z._identifier = self.id + '+' + other.id
+        z._identifier = self._modify_id(other,'+')
         z._unit = self.unit
         return z
    
@@ -327,7 +332,7 @@ class Measurement(CCDData):
         '''
         z=CCDData.subtract(self,other,handle_mask=np.logical_or)
         z=Measurement(z,unit=z._unit)
-        z._identifier = self.id + '-' + other.id
+        z._identifier = self._modify_id(other,'-')
         return z
     
     def multiply(self,other):
@@ -338,7 +343,7 @@ class Measurement(CCDData):
         '''
         z=CCDData.multiply(self,other,handle_mask=np.logical_or)
         z=Measurement(z,unit=z._unit)
-        z._identifier = self.id + '*' + other.id
+        z._identifier = self._modify_id(other,'*')
         return z
         
     def divide(self,other):
@@ -349,7 +354,7 @@ class Measurement(CCDData):
         '''
         z=CCDData.divide(self,other,handle_mask=np.logical_or)
         z=Measurement(z,unit=z._unit)
-        z._identifier = self.id + '/' + other.id
+        z._identifier = self._modify_id(other,'/')
         return z
     
     def __add__(self,other):
