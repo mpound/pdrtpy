@@ -75,7 +75,37 @@ class ExcitationFit(ToolBase):
         '''
         self.add_measurement(self,m)
 
-  
+# use?
+class FitParams(object):
+    def __init__(self,params,pcov,opr):
+        self._param = params
+        self._pcov = pcov
+        self._opr = opr
+        self._compute_temperatures()
+    def _compute_temperatures():
+        loge=math.log10(math.e)
+        if self._params[2] <  self._params[0]:
+            self._tcold=-loge/self._params[2]*u.Unit("K")
+            self._thot=-loge/self._params[0]*u.Unit("K")
+        else:
+            self._tcold=-loge/self._params[0]*u.Unit("K")
+            self._thot=-loge/self._params[2]*u.Unit("K")
+    @property
+    def thot(self):
+        return self._thot
+    @property
+    def tcold(self):
+        return self._tcold
+    @property
+    def opr(self):
+        return self._opr
+    @property 
+    def slopes(self):
+        return [self._params[0],self._params[2]]
+    @property 
+    def intercepts(self):
+        return [self._params[1],self._params[3]]
+        
 class H2ExcitationFit(ExcitationFit):
     """Tool for fitting temperatures to :math:`H_2` Excitation Diagrams
 
@@ -86,7 +116,8 @@ class H2ExcitationFit(ExcitationFit):
         print("H2ExcitationFit constructor")
         super().__init__(measurements,constantsfile)
         self._canonical_opr = True
-        self._opr_mask = None
+        self._opr_mask = None 
+        self._loge = math.log10(math.e)
 
     @property 
     def intensities(self):
@@ -117,9 +148,9 @@ class H2ExcitationFit(ExcitationFit):
             cdnorm = dict()
             for cd in self._column_density:
                 # This fails with complaints about units:
-                # self._column_density[cd]/self._ac.loc[cd]["g_u"]
-                gu = Measurement(self._ac.loc[cd]["g_u"],unit=u.dimensionless_unscaled)
-                cdnorm[cd] = self._column_density[cd]/gu
+                #self._column_density[cd] /= self._ac.loc[cd]["g_u"]
+                #gu = Measurement(self._ac.loc[cd]["g_u"],unit=u.dimensionless_unscaled)
+                cdnorm[cd] = self._column_density[cd]/self._ac.loc[cd]["g_u"]
             return cdnorm
         else:
             return self._column_density
@@ -154,10 +185,12 @@ class H2ExcitationFit(ExcitationFit):
         dE = self._ac.loc[colden.id]["dE/k"]*constants.k_B.cgs*self._ac["dE/k"].unit
         A = self._ac.loc[colden.id]["A"]*self._ac["A"].unit
         v = A*dE/(4.0*math.pi*u.sr)
-        val = Measurement(data=v.value,unit=v.unit)
+        val = Measurement(data=v.value,unit=v.unit,identifier=colden.id)
         intensity = val*colden # error will get propagated
         #print(intensity.unit,self._intensity_units)
-        return intensity.convert_unit_to(self._intensity_units)
+        i = intensity.convert_unit_to(self._intensity_units)
+        i._identifier = val.id
+        return i
 
     def colden(self,intensity,unit):
         '''Compute the column density in upper state :math:`N_u`, given an 
@@ -206,7 +239,7 @@ class H2ExcitationFit(ExcitationFit):
         :param size: The size of the cutout array along each axis. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(ny, nx)` order. Scalar numbers in size are assumed to be in units of pixels. `size` can also be a :class:`~astropy.units.Quantity` object or contain :class:`~astropy.units.Quantity` objects. Such :class:`~astropy.units.Quantity` objects must be in pixel or angular units. For all cases, size will be converted to an integer number of pixels, rounding the the nearest integer. See the mode keyword for additional details on the final cutout size.
         :type size: int, array_like, or :class:`astropy.units.Quantity`
         :param norm: if True, normalize the column densities by the 
-                       statistical weight of the upper state, :math:`g_u`.  For ortho-$H_2$ $g_u = 3(2J+1)$, for para-$H_2$ $g_u=2J+1$.
+                       statistical weight of the upper state, :math:`g_u`.  For ortho-$H_2$ $g_u = OPR \times (2J+1)$, for para-$H_2$ $g_u=2J+1$. In LTE, $OPR = 3$.
         :type norm: bool
         :param unit: The units in which to return the column density. Default: :math:`{\rm cm}^{-2}` 
         :type unit: str or :class:`astropy.unit.Unit`
@@ -219,7 +252,9 @@ class H2ExcitationFit(ExcitationFit):
         # Possibly modify error calculation, see https://pypi.org/project/statsmodels/
         # https://stackoverflow.com/questions/2413522/weighted-standard-deviation-in-numpy
         # Doesn't come out too different from np.sqrt(np.cov(values, aweights=weights))
-        cdnorm = self.column_densities(norm=norm,unit=unit)
+        
+        # Set norm=False because we normalize below if necessary.
+        cdnorm = self.column_densities(norm=False,unit=unit)
         cdmeas = dict()
         for cd in cdnorm:
             ca = cdnorm[cd]
@@ -244,7 +279,8 @@ class H2ExcitationFit(ExcitationFit):
                 #print("dividing by %f"%self._ac.loc[cd]["g_u"])
                 cdavg /= self._ac.loc[cd]["g_u"]
                 error /= self._ac.loc[cd]["g_u"]
-            cdmeas[index] = Measurement(data=cdavg,uncertainty=StdDevUncertainty(error),unit=ca.unit,identifier=cd)
+            cdmeas[index] = Measurement(data=cdavg, uncertainty=StdDevUncertainty(error),
+                                        unit=ca.unit, identifier=cd)
              
         return cdmeas
 
@@ -253,6 +289,18 @@ class H2ExcitationFit(ExcitationFit):
         # Do this by lookup in atomic_constants.tab
         self._opr_mask = self._ac.loc[ids]["J_u"]%2!=0
 
+    def _slopesfromguess(self,guess):
+        if guess[0]<guess[1]:
+            thot = guess[1]
+            tcold = guess[2]
+        else:
+            tcold=guess[2]
+            thot = guess[1]
+        slope = []
+        slope[0] = -self._loge/tcold
+        slope[1] = -self._loge/thot
+        return slope
+        
     def fit_excitation(self,energy,colden,fit_opr=False,**kwargs):
         """Fit the :math:`log N_u-E` diagram with two excitation temperatures,
         a ``hot`` :math:`T_{ex}` and a ``cold`` :math:`T_{ex}`.  A first
@@ -266,6 +314,8 @@ class H2ExcitationFit(ExcitationFit):
         :returns: The fit parameters as in :mod:`scipy.optimize.curve_fit`
         :rtype: list
         """
+        kwargs_opts = {"guess": None} # [tcold,thot]
+        kwargs_opts.update(kwargs)
         if type(energy) is dict:
             _ee = np.array([c for c in energy.values()])
             _energy = Measurement(_ee,unit="K")
@@ -286,22 +336,26 @@ class H2ExcitationFit(ExcitationFit):
             _error = error
 
         y = np.log10(_colden.data)
-        loge=math.log10(math.e)
-        sigma =loge*_colden.error/_colden.data
+        sigma =self._loge*_colden.error/_colden.data
         print("Energy = ",x,type(x))
         print("Colden = ",y,type(y))
         print("SIGMA = ",sigma,type(sigma))
         print("MASK = ",self._opr_mask)
-        fit_param, pcov = curve_fit(self._two_lines, xdata=x, ydata=y,sigma=sigma,maxfev=100000)
-        print("FIT_PARAM [slope,intercept,slope,intercept] :",fit_param)
+        print("GUESS = ",kwargs_opts["guess"])
+        if kwargs_opts["guess"] is None: 
+            fit_param, pcov = curve_fit(self._two_lines, xdata=x, ydata=y,sigma=sigma,maxfev=100000)
+            print("FIT_PARAM [slope,intercept,slope,intercept] :",fit_param)
+        else:
+            fit_param = kwargs_opts["guess"]
+            print("FIT PARAM GUESS [slope,intercept,slope,intercept]:",fit_param) 
         # There is no guarantee of order in fit_param except it will be [slope, intercept, slope, intercept].
         # Thus we have to check which slope is actually more steeply negative to discover which is T_cold.
         if fit_param[2] < fit_param[0]:
-            self._tcold=-loge/fit_param[2]*u.Unit("K")
-            self._thot=-loge/fit_param[0]*u.Unit("K")
+            self._tcold=-self._loge/fit_param[2]*u.Unit("K")
+            self._thot=-self._loge/fit_param[0]*u.Unit("K")
         else:
-            self._tcold=-loge/fit_param[0]*u.Unit("K")
-            self._thot=-loge/fit_param[2]*u.Unit("K")
+            self._tcold=-self._loge/fit_param[0]*u.Unit("K")
+            self._thot=-self._loge/fit_param[2]*u.Unit("K")
         print("First guess at excitation temperatures: T_cold = %.1f, T_hot = %.1f "%(self._tcold.value,self._thot.value))
         #if m1 != m2:
         #    x_intersect = (n2 - n1) / (m1 - m2)
@@ -323,13 +377,15 @@ class H2ExcitationFit(ExcitationFit):
             if fit_opr:
                 _a.append(fit_param2[4])
             self._fitted_params = [ _a, pcov2 ]
-            self._tcold=-loge/fit_param2[2]*u.Unit("K")
-            self._thot=-loge/fit_param2[0]*u.Unit("K")
+            self._tcold=-self._loge/fit_param2[2]*u.Unit("K")
+            self._thot=-self._loge/fit_param2[0]*u.Unit("K")
+            self._totalcolden = 10**self._fitted_params[0][1]*u.Unit("cm-2")   
         else:
-            self._tcold=-loge/fit_param2[0]*u.Unit("K")
-            self._thot=-loge/fit_param2[2]*u.Unit("K")
-            self._fitted_params = [ fit_param2, pcov2]
-        self._totalcolden = 10**self._fitted_params[0][3]*u.Unit("cm-2")
+            self._tcold=-self._loge/fit_param2[0]*u.Unit("K")
+            self._thot=-self._loge/fit_param2[2]*u.Unit("K")
+            self._totalcolden = 10**self._fitted_params[0][3]*u.Unit("cm-2")
+        self._fitted_params = [ fit_param2, pcov2]
+       
         text = f'Fitted excitation temperatures:T_cold = {self._tcold:0.1f}, T_hot={self._thot:0.1f}'
         print(text)
         if fit_opr:
@@ -421,9 +477,12 @@ class H2ExcitationFit(ExcitationFit):
            :return: Sum of lines in log space: log10(10**(x*m1+n1) + 10**(x*m2+n2))
            :rtype: :class:`numpy.ndarray` 
         '''
-        #print("XTYPE ",type(x))
-        #print("opr %g"%opr)
-        rat = opr / self._canonical_opr
+        # We assume that the column densities passed in have been normalized 
+        # using the canonical OPR=3. Therefore what we are actually fitting is 
+        # the ratio of the actual OPR to the canonical OPR.
+        # For even J, input x = Nu/(3*(2J+1), so we back that out by multiplying 
+        # by [canonical OPR]/[fit guess OPR]. 
+        rat = self._canonical_opr/opr
         #print(opr)
         opr_array = np.ma.masked_array(rat*np.ones(x.size),mask=self._opr_mask)
         y1 = 10**(x.data*m1+n1)*opr_array
@@ -431,5 +490,5 @@ class H2ExcitationFit(ExcitationFit):
         y2 = 10**(x.data*m2+n2)*opr_array
         #print(y2)
         retval = np.log10(y1.data+y2.data)
-        print(retval,opr)
+        #print(retval,opr)
         return retval
