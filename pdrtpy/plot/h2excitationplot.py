@@ -24,13 +24,14 @@ from matplotlib.colors import LogNorm
 from .plotbase import PlotBase
 from ..pdrutils import to,float_formatter
 
-class H2ExcitationPlot(PlotBase):
+class ExcitationPlot(PlotBase):
     """Class to plot various results from H2 Excitation diagram fitting.
     """
-    def __init__(self,tool):
+    def __init__(self,tool,label):
         super().__init__(tool)
         self._xlim = []
         self._ylim = []
+        self._label = label
 
     def plot_diagram(self,position,size,norm=True,show_fit=False,test=True,**kwargs):
         r"""Plot the excitation diagram
@@ -43,7 +44,8 @@ class H2ExcitationPlot(PlotBase):
         :type norm: bool
         """
         loge = math.log10(math.e)
-        cdavg = self._tool.average_column_density(norm=norm,position=position,size=size,line=False,test=test)
+        cdavg = self._tool.average_column_density(norm=norm,
+                            position=position,size=size,line=False,test=test)
         energies = self._tool.energies(line=False)
         energy = np.array([c for c in energies.values()])
         #print("E ",energy)
@@ -52,7 +54,8 @@ class H2ExcitationPlot(PlotBase):
         error = np.array([c.error for c in cdavg.values()])
         sigma = loge*error/colden
         self._figure,self._axis =self._plt.subplots(nrows=1,ncols=1,**kwargs)
-        self._axis.errorbar(energy,np.log10(colden),yerr=sigma,fmt="o", capsize=1,label='$H_2$ data')
+        self._axis.errorbar(energy,np.log10(colden),yerr=sigma,
+                            fmt="o", capsize=1,label=self._label+' data')
         self._axis.set_xlabel("$E_u/k$ (K)")
         self._axis.set_ylabel("log $(N_u/g_u) ~({\\rm cm}^{-2})$")
         first=True
@@ -74,15 +77,16 @@ class H2ExcitationPlot(PlotBase):
                 ma1, na1, ma2, na2, opr = tt._fitted_params[0]
             labcold = r"$T_{cold}=$"+f"{tt._tcold:3.0f}"
             labhot= r"$T_{hot}=$"+f"{tt._thot:3.0f}"
-            labnh = r"$N(H_2)="+float_formatter(tt._totalcolden,2)+"$"
-
+            labnh = r"$N("+self._label+")="+float_formatter(tt._totalcolden,2)+"$"
             self._axis.plot(x_fit,tt._one_line(x_fit, ma1,na1),'.',label=labcold)
             self._axis.plot(x_fit,tt._one_line(x_fit, ma2,na2),'.',label=labhot)
             if opr is None:
-                self._axis.plot(x_fit,tt._exc_func(x_fit,*tt._fitted_params[0]),label="sum")
+                self._axis.plot(x_fit,tt._exc_func(x_fit,
+                                *tt._fitted_params[0]),label="sum")
             else:
                 tt._opr_mask = False*np.ones(x_fit.size)
-                self._axis.plot(x_fit,tt._exc_func_opr(x_fit,*tt._fitted_params[0]),label="sum")
+                self._axis.plot(x_fit,tt._exc_func_opr(x_fit,
+                                *tt._fitted_params[0]),label="sum")
             handles,labels=self._axis.get_legend_handles_labels()
 
             #kluge to ensure N(H2) label is last
