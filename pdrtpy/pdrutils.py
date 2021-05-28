@@ -334,6 +334,7 @@ def to(unit,image):
   newmap = deepcopy(image)
   newmap.data = newmap.data * value
   newmap.unit = u.Unit(unit)
+  #@TODO deal with identifier.
   # deal with uncertainty in Measurements.
   if getattr(newmap,"_uncertainty") is not None:
      newmap._uncertainty.array = newmap.uncertainty.array * value
