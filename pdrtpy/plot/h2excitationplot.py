@@ -70,19 +70,15 @@ class ExcitationPlot(PlotBase):
         if show_fit:
             tt = self._tool
             x_fit = np.linspace(1, 5100, 30)  
-            opr=None
-            if len(tt._fitted_params[0]) == 4:
-                ma1, na1, ma2, na2 = tt._fitted_params[0]
-            else:
-                ma1, na1, ma2, na2, opr = tt._fitted_params[0]
-            labcold = r"$T_{cold}=$"+f"{tt.tcold.value:3.0f}"+r"$\pm$"+f"{tt.tcold.error:.1f}"
-            labhot= r"$T_{hot}=$"+f"{tt.thot.value:3.0f}"+r"$\pm$"+f"{tt.thot.error:.1f}"
-            labnh = r"$N("+self._label+")="+float_formatter(tt.total_colden.value,2)+"$"
+            ma1, na1, ma2, na2 = tt.fit_params._params[0:4]
+            labcold = r"$T_{cold}=$"+f"{tt.tcold.value:3.0f}"+r"$\pm$"+f"{tt.tcold.error:.1f} {tt.tcold.unit}"
+            labhot= r"$T_{hot}=$"+f"{tt.thot.value:3.0f}"+r"$\pm$"+f"{tt.thot.error:.1f} {tt.thot.unit}"
+            labnh = r"$N("+self._label+")="+float_formatter(tt.total_colden,2)+"$"
             self._axis.plot(x_fit,tt._one_line(x_fit, ma1,na1),'.',label=labcold)
             self._axis.plot(x_fit,tt._one_line(x_fit, ma2,na2),'.',label=labhot)
-            if opr is None:
+            if tt.fit_params.opr_fitted == False: #opr was NOT fitted.
                 self._axis.plot(x_fit,tt._exc_func(x_fit,
-                                *tt._fit_params._params),label="sum")
+                                *tt.fit_params._params),label="sum")
             else:
                 tt._opr_mask = False*np.ones(x_fit.size)
                 self._axis.plot(x_fit,tt._exc_func_opr(x_fit,

@@ -85,8 +85,10 @@ class FitParams(object):
         self._perr = np.sqrt(np.diag(pcov))
         if len(params)==5:
             self._opr=params[4]
+            self.opr_fitted = True
         else:
             self._opr=3
+            self.opr_fitted = False
         self._tunit = u.Unit("K")
         self._cdunit = u.Unit("cm-2")
         self._total_colden = dict()
@@ -191,11 +193,11 @@ class H2ExcitationFit(ExcitationFit):
         super().__init__(measurements,constantsfile)
         self._canonical_opr = True
         self._opr_mask = None 
-        self._fit_params = None
+        self._fitparams = None
 
     @property
     def fit_params(self):
-        return self._fit_params
+        return self._fitparams
     
     @property 
     def intensities(self):
