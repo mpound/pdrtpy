@@ -548,7 +548,7 @@ def fliplabel(label):
     ii = label.index('/')
     return label[ii+1:]+'/'+label[0:ii]
 
-# partly stolen from astropy.quanity.to_string
+# partly stolen from astropy.quanity.to_string, will also work with Measurements
 def float_formatter(quantity,precision):
     format_spec = '.{}g'.format(precision)
     number = Latex.format_exponential_notation(quantity.value, format_spec=format_spec)
