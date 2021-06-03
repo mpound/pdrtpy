@@ -218,13 +218,20 @@ class Measurement(CCDData):
         if needsclose: _error.close()
 
     @property
+    # deprecated, as measurements can be anything not just flux
     def flux(self):
         '''Return the underlying flux data array
         
         :rtype: :class:`numpy.ndarray`
         '''
         return self.data
-
+    @property
+    def value(self):
+        '''Return the underlying data array
+        
+        :rtype: :class:`numpy.ndarray`
+        '''
+        return self.data       
     @property
     def error(self):
         '''Return the underlying error array
