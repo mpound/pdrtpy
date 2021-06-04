@@ -555,3 +555,9 @@ def float_formatter(quantity,precision):
     # strip the $ signs
     unit = quantity.unit.to_string('latex_inline')[1:-1]
     return f'{number}~{unit}'
+
+def isEven(number):
+    return abs(number) % 2 == 0
+
+def isOdd(number):
+    return not isEven(number)
