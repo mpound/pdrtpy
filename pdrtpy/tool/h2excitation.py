@@ -21,7 +21,7 @@ class ExcitationFit(ToolBase):
         # must be set before call to init_measurements
         self._intensity_units = "erg cm^-2 s^-1 sr^-1"
         self._cd_units = 'cm^-2'
-        print("ExcitationFIt contstructor")
+        #print("ExcitationFIt contstructor")
         if type(measurements) == dict or measurements is None:
             self._measurements = measurements
         else:
@@ -189,16 +189,27 @@ class H2ExcitationFit(ExcitationFit):
     """
     def __init__(self,measurements=None,
                  constantsfile=utils.get_table("atomic_constants.tab")):
-        print("H2ExcitationFit constructor")
+        #print("H2ExcitationFit constructor")
         super().__init__(measurements,constantsfile)
-        self._canonical_opr = True
+        self._canonical_opr = 3.0
         self._opr_mask = None 
         self._fitparams = None
 
     @property
     def fit_params(self):
         return self._fitparams
-    
+    @property
+    def opr_fitted(self):
+        if self._fitparams is None: 
+            return False
+        return self._fitparams.opr_fitted
+    @property
+    def opr(self):
+        if self.opr_fitted:
+            return self._fitparams.opr
+        else:
+            return self._canonical_opr
+        
     @property 
     def intensities(self):
         '''The stored intensities. See :meth:`add_measurement`
@@ -253,6 +264,7 @@ class H2ExcitationFit(ExcitationFit):
                 # This fails with complaints about units:
                 #self._column_density[cd] /= self._ac.loc[cd]["g_u"]
                 #gu = Measurement(self._ac.loc[cd]["g_u"],unit=u.dimensionless_unscaled)
+                #print("1 normalizing")
                 cdnorm[cd] = self._column_density[cd]/self._ac.loc[cd]["g_u"]
             return cdnorm
         else:
@@ -315,6 +327,7 @@ class H2ExcitationFit(ExcitationFit):
            :returns: a :class:`~pdrtpy.measurement.Measurement` of the column density.
            :rtype: :class:`~pdrtpy.measurement.Measurement` 
         '''
+        #print("calling colden")
         dE = self._ac.loc[intensity.id]["dE/k"]*constants.k_B.cgs*self._ac["dE/k"].unit
         A = self._ac.loc[intensity.id]["A"]*self._ac["A"].unit
         v = 4.0*math.pi*u.sr/(A*dE)
@@ -332,7 +345,13 @@ class H2ExcitationFit(ExcitationFit):
         for m in self._measurements:
             self._column_density[m] = self.colden(self._measurements[m],unit)
 
-
+    def gu(self,key,opr):
+        if utils.isEven(self._ac.loc[key]["J_u"]):
+            return self._ac.loc[key]["g_u"]
+        else:
+            print("Ju=%d scaling by [%.2f/%.2f]=%.2f"%(self._ac.loc[key]["J_u"],opr,self._canonical_opr,opr/self._canonical_opr))
+            return self._ac.loc[key]["g_u"]*opr/self._canonical_opr
+        
     def average_column_density(self,position,size,norm=True,
                                unit=utils._CM2,line=False,test=False):
         r'''Compute the average column density over a spatial box.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.
@@ -361,16 +380,14 @@ class H2ExcitationFit(ExcitationFit):
         cdmeas = dict()
         for cd in cdnorm:
             ca = cdnorm[cd]
-            self._cutout = Cutout2D(ca.data,position,size,ca.wcs,mode='partial',fill_value=np.nan)
-            w= Cutout2D(ca.uncertainty.array,position,size,ca.wcs,mode='partial',fill_value=np.nan)
+            self._cutout = Cutout2D(ca.data, position, size, ca.wcs, mode='partial', fill_value=np.nan)
+            w= Cutout2D(ca.uncertainty.array, position, size, ca.wcs, mode='partial', fill_value=np.nan)
             cddata = np.ma.masked_array(self._cutout.data,np.isnan(self._cutout.data))
             weights = np.ma.masked_array(w.data,np.isnan(w.data))
             #print("W Shape %s data shape %s"%(w.shape,cddata.shape))
             cdavg = np.average(cddata,weights=weights)
-            if test:
-                error = np.nanmean(ca.error)
-            else:
-                error = np.sqrt(np.cov(cddata.flatten(),aweights=weights.flatten()))
+            #error = np.sqrt(np.cov(cddata.flatten(),aweights=weights.flatten()))
+            error = np.nanmean(ca.error)
             #weighted_stats = DescrStatsW(cddata.flatten(), weights=weights.flatten(), ddof=0)
             #print("NP %e %e"%(cdavg, error))
             #print("Stats %e %e %e"%(weighted_stats.mean, weighted_stats.std ,  weighted_stats.std_mean))
@@ -379,9 +396,14 @@ class H2ExcitationFit(ExcitationFit):
             else:
                 index = self._ac.loc[cd]["J_u"]
             if norm:
+                #print("2 normalizing")
                 #print("dividing by %f"%self._ac.loc[cd]["g_u"])
-                cdavg /= self._ac.loc[cd]["g_u"]
-                error /= self._ac.loc[cd]["g_u"]
+                if test:
+                    cdavg /= self.gu(cd,self.opr)
+                    error /= self.gu(cd,self.opr)
+                else:
+                    cdavg /= self._ac.loc[cd]["g_u"]
+                    error /= self._ac.loc[cd]["g_u"]
             cdmeas[index] = Measurement(data=cdavg, uncertainty=StdDevUncertainty(error),
                                         unit=ca.unit, identifier=cd)
              
@@ -418,7 +440,7 @@ class H2ExcitationFit(ExcitationFit):
         inthot  = y[-1] - slopehot*x[-1]
         return [slopecold, intcold, slopehot, inthot]
     
-    def fit_excitation(self,energy,colden,fit_opr=False,**kwargs):
+    def fit_excitation(self,position,size,fit_opr=False,**kwargs):
         """Fit the :math:`log N_u-E` diagram with two excitation temperatures,
         a ``hot`` :math:`T_{ex}` and a ``cold`` :math:`T_{ex}`.  A first
         pass guess is initially made using data partitioning and two
@@ -431,35 +453,41 @@ class H2ExcitationFit(ExcitationFit):
         :returns: The fit parameters as in :mod:`scipy.optimize.curve_fit`
         :rtype: list
         """
-
-        if type(energy) is dict:
-            _ee = np.array([c for c in energy.values()])
-            _energy = Measurement(_ee,unit="K")
-            _ids = list(energy.keys())
-        else:
-            _energy = energy
-            _ids = []
-            for e in _energy:
-                _ids.append(e.id)
+        energy = self.energies(line=True)
+        _ee = np.array([c for c in energy.values()])
+        _energy = Measurement(_ee,unit="K")
+        _ids = list(energy.keys())
+        #if type(energy) is dict:
+        #    _ee = np.array([c for c in energy.values()])
+        #    _energy = Measurement(_ee,unit="K")
+        #    _ids = list(energy.keys())
+        #else:
+        #    _energy = energy
+        #    _ids = []
+        #     for e in _energy:
+        #        _ids.append(e.id)
         self._set_opr_mask(_ids)
+        # Get Nu/gu 
+        colden=self.average_column_density(norm=True,position=position,size=size,line=True,test=True)
+        #if type(colden) is dict:
+        # Need to stuff the data into a single vector
+        _cd = np.array([c.data for c in colden.values()])
+        _er  = np.array([c.error for c in colden.values()])
+        _colden = Measurement(_cd,uncertainty=StdDevUncertainty(_er),unit="cm-2")
+        #else:
+        #    _colden = colden
+        #    _error = error
         x = _energy.data
-        if type(colden) is dict:
-            _cd = np.array([c.data for c in colden.values()])
-            _er  = np.array([c.error for c in colden.values()])
-            _colden = Measurement(_cd,uncertainty=StdDevUncertainty(_er),unit="cm-2")
-        else:
-            _colden = colden
-            _error = error
-
         y = np.log10(_colden.data)
         kwargs_opts = {"guess": self._first_guess(x,y)}
         kwargs_opts.update(kwargs)
-        sigma =utils.LOGE*_colden.error/_colden.data
-        print("Energy = ",x,type(x))
-        print("Colden = ",y,type(y))
-        print("SIGMA = ",sigma,type(sigma))
-        print("MASK = ",self._opr_mask)
-        print("GUESS = ",kwargs_opts["guess"])
+        sigma = utils.LOGE*_colden.error/_colden.data
+        if False:
+            print("Energy = ",x,type(x))
+            print("Colden = ",y,type(y))
+            print("SIGMA = ",sigma,type(sigma))
+            print("MASK = ",self._opr_mask)
+            #print("GUESS = ",kwargs_opts["guess"])
         if kwargs_opts["guess"] is None: 
             fit_param, pcov = curve_fit(self._two_lines, xdata=x, ydata=y,sigma=sigma,maxfev=100000)
             #print("FIT_PARAM [slope,intercept,slope,intercept] :",fit_param)
@@ -491,7 +519,7 @@ class H2ExcitationFit(ExcitationFit):
         else:
             fit_param2,pcov2 = curve_fit(self._exc_func, x, y, p0=fit_param, sigma=sigma)
         self._fitparams = FitParams(fit_param2,pcov2)
-        self._fitparams.report()
+        #self._fitparams.report()
 
         if False:
             if fit_param2[2] < fit_param2[0]:
