@@ -47,7 +47,8 @@ class ExcitationPlot(PlotBase):
                       'xmax':5000.0,
                       'ymax':22,
                       'ymin': 15,
-                      'grid' :None}
+                      'grid' :None,
+                      'figsize':(10,7)}
         kwargs_opts.update(kwargs)
         cdavg = self._tool.average_column_density(norm=norm, position=position, size=size, line=False, test=test)
         energies = self._tool.energies(line=False)
@@ -57,9 +58,13 @@ class ExcitationPlot(PlotBase):
         #print("N ",colden)
         error = np.array([c.error for c in cdavg.values()])
         sigma = LOGE*error/colden
-        self._figure,self._axis =self._plt.subplots()#nrows=1,ncols=1)
+        self._figure,self._axis  = self._plt.subplots(figsize=kwargs_opts['figsize']) ##nrows=1,ncols=1)
         self._axis.errorbar(energy,np.log10(colden),yerr=sigma,
                             fmt="o", capsize=1,label=self._label+' data')
+        if self._tool.opr_fitted:
+            cdn = self._tool.average_column_density(norm=norm, position=position, size=size, line=False, test=False)
+            cddn = np.array([c.data for c in cdn.values()])
+            self._axis.scatter(x=energy,y=np.log10(cddn),marker="^",label="opr=3")
         self._axis.set_xlabel("$E_u/k$ (K)")
         if norm:
             self._axis.set_ylabel("log $(N_u/g_u) ~({\\rm cm}^{-2})$")
@@ -88,8 +93,18 @@ class ExcitationPlot(PlotBase):
             labnh = r"$N("+self._label+")="+float_formatter(tt.total_colden,2)+"$"
             self._axis.plot(x_fit,tt._one_line(x_fit, ma1,na1),'.',label=labcold)
             self._axis.plot(x_fit,tt._one_line(x_fit, ma2,na2),'.',label=labhot)
-            self._axis.plot(x_fit,tt._exc_func(x_fit,
-                            *tt.fit_params._params[0:4]),label="sum")
+
+            if tt.opr_fitted:
+                tt._opr_mask = False*np.ones(x_fit.size)
+                self._axis.plot(x_fit,tt._exc_func_opr(x_fit,
+                            *tt.fit_params._params),label="sum")
+                ma1, na1, ma2, na2= [-2.06876425e-03,  2.05430745e+01, -6.26653322e-04,  1.90774300e+01]
+                self._axis.plot(x_fit,tt._one_line(x_fit, ma1,na1),'.',label="C1")
+                self._axis.plot(x_fit,tt._one_line(x_fit, ma2,na2),'.',label="C2")      
+            else:
+                self._axis.plot(x_fit,tt._exc_func(x_fit,
+                            *tt.fit_params._params[0:4]),label="sum")       
+            print("PARAMS: ",tt.fit_params._params)
             handles,labels=self._axis.get_legend_handles_labels()
 
             #kluge to ensure N(H2) label is last

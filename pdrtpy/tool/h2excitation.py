@@ -203,6 +203,7 @@ class H2ExcitationFit(ExcitationFit):
         if self._fitparams is None: 
             return False
         return self._fitparams.opr_fitted
+    
     @property
     def opr(self):
         if self.opr_fitted:
@@ -349,7 +350,7 @@ class H2ExcitationFit(ExcitationFit):
         if utils.isEven(self._ac.loc[key]["J_u"]):
             return self._ac.loc[key]["g_u"]
         else:
-            print("Ju=%d scaling by [%.2f/%.2f]=%.2f"%(self._ac.loc[key]["J_u"],opr,self._canonical_opr,opr/self._canonical_opr))
+#            print("Ju=%d scaling by [%.2f/%.2f]=%.2f"%(self._ac.loc[key]["J_u"],opr,self._canonical_opr,opr/self._canonical_opr))
             return self._ac.loc[key]["g_u"]*opr/self._canonical_opr
         
     def average_column_density(self,position,size,norm=True,
@@ -468,7 +469,8 @@ class H2ExcitationFit(ExcitationFit):
         #        _ids.append(e.id)
         self._set_opr_mask(_ids)
         # Get Nu/gu 
-        colden=self.average_column_density(norm=True,position=position,size=size,line=True,test=True)
+        colden = self.average_column_density(norm=True, position=position,
+                                             size=size, line=True, test=True)
         #if type(colden) is dict:
         # Need to stuff the data into a single vector
         _cd = np.array([c.data for c in colden.values()])
@@ -489,7 +491,8 @@ class H2ExcitationFit(ExcitationFit):
             print("MASK = ",self._opr_mask)
             #print("GUESS = ",kwargs_opts["guess"])
         if kwargs_opts["guess"] is None: 
-            fit_param, pcov = curve_fit(self._two_lines, xdata=x, ydata=y,sigma=sigma,maxfev=100000)
+            fit_param, pcov = curve_fit(self._two_lines, xdata=x,
+                                        ydata=y,sigma=sigma,maxfev=100000)
             #print("FIT_PARAM [slope,intercept,slope,intercept] :",fit_param)
         else:
             fit_param = kwargs_opts["guess"]
@@ -512,10 +515,13 @@ class H2ExcitationFit(ExcitationFit):
 
         # Now do second pass fit to full curve using first pass as initial guess
         if fit_opr:
+            self._fitparams = None
             fit_param=np.append(fit_param,[3]) # add opr
             bounds = ([-np.inf,-np.inf,-np.inf,-np.inf,0],[np.inf,np.inf,np.inf,np.inf,3])
+            print("FP IN:",fit_param)
             fit_param2,pcov2 = curve_fit(self._exc_func_opr, xdata=x, ydata=y, p0=fit_param, 
                                          sigma=sigma ,maxfev=1000000, bounds=bounds)
+            print("FP OUT:",fit_param2)
         else:
             fit_param2,pcov2 = curve_fit(self._exc_func, x, y, p0=fit_param, sigma=sigma)
         self._fitparams = FitParams(fit_param2,pcov2)
@@ -536,8 +542,7 @@ class H2ExcitationFit(ExcitationFit):
                 self._tcold=-utils.LOGE/fit_param2[0]*u.Unit("K")
                 self._thot=-utils.LOGE/fit_param2[2]*u.Unit("K")
                 self._total_colden["hot"] = 10**self._fitted_params[0][1]*u.Unit("cm-2")
-            self._total_colden["cold"] = 10**self._fitted_params[0][3]*u.Unit("cm-2")         
-      
+                self._total_colden["cold"] = 10**self._fitted_params[0][3]*u.Unit("cm-2")         
             text = f'Fitted excitation temperatures:T_cold = {self.tcold.data:0.1f}+/-{self.tcold.error:0.1f} K, T_hot={self.thot.data:0.1f}+/-{self.thot.error:0.1f} K'
             print(text)
             if fit_opr:
@@ -621,7 +626,7 @@ class H2ExcitationFit(ExcitationFit):
            :param n1: intercept of first line
            :type n1: float
            :param m2: slope of second line
-           :type m2: float
+           :type m2: floa
            :param n2: intercept of second line
            :type n2: float
            :param opr: ortho-to-para ratio
@@ -638,9 +643,9 @@ class H2ExcitationFit(ExcitationFit):
         rat = self._canonical_opr/opr
         #print(opr)
         opr_array = np.ma.masked_array(rat*np.ones(x.size),mask=self._opr_mask)
-        y1 = 10**(x.data*m1+n1)*opr_array
+        y1 = 10**(x*m1+n1)*opr_array
         #print(y1)
-        y2 = 10**(x.data*m2+n2)*opr_array
+        y2 = 10**(x*m2+n2)*opr_array
         #print(y2)
         retval = np.log10(y1.data+y2.data)
         #print(retval,opr)
