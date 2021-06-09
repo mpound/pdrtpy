@@ -414,6 +414,7 @@ class H2ExcitationFit(ExcitationFit):
         # need to figure out which measurements are odd J and set mask=True for those, False for even J
         # Do this by lookup in atomic_constants.tab
         self._opr_mask = self._ac.loc[ids]["J_u"]%2!=0
+        self._not_opr_mask = self._ac.loc[ids]["J_u"]%2==0
 
     def _slopesfromguess(self,guess):
         if guess[0]<guess[1]:
@@ -642,11 +643,20 @@ class H2ExcitationFit(ExcitationFit):
         # by [canonical OPR]/[fit guess OPR]. 
         rat = self._canonical_opr/opr
         #print(opr)
+        print(self._opr_mask)
+        factor = np.ones(x.size)
+        factor[np.where(self._opr_mask)] *= rat
+        #print("F ",factor)
         opr_array = np.ma.masked_array(rat*np.ones(x.size),mask=self._opr_mask)
+       # print(opr_array)
         y1 = 10**(x*m1+n1)*opr_array
+        y1f = 10**(x*m1+n1)*factor
         #print(y1)
         y2 = 10**(x*m2+n2)*opr_array
+        y2f = 10**(x*m2+n2)*factor
+        print(y2,"\n",y2f)
         #print(y2)
         retval = np.log10(y1.data+y2.data)
+        retval = np.log10(y1f+y2f)
         #print(retval,opr)
         return retval
