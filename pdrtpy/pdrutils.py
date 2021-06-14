@@ -570,3 +570,8 @@ def is_image(image):
     if image.wcs.wcs.ctype is None:
         return False
     return True
+
+def is_ratio(identifier):
+    # find() returns -1 if char not found.
+    # in our case, also rule out that the / is in the zeroth position.
+    return identifier.find('/') > 0
