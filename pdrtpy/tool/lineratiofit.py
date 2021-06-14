@@ -284,14 +284,14 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
 
         # Check the coordinate systems only if there is more than one pixel
         m1 = self._measurements[utils.firstkey(self._measurements)]
-        if len(m1) != 0:
+        if utils.is_image(m1):
             if not self._check_header("CTYPE1"):
                raise Exception("CTYPE1 of your input Measurements do not match. Please ensure coordinates of all Measurements are the same.")
             if not self._check_header("CTYPE2"):
                raise Exception("CTYPE2 of your input Measurements do not match. Please ensure coordinates of all Measurements are the same.")
 
         #Only allow beam = None if single value measurements.
-        if len(m1) == 0 :
+        if not utils.is_image(m1):
             if self._check_header("BMAJ",None) or self._check_header("BMIN",None) or self._check_header("BPA",None):
                utils.warn(self,"No beam parameters in Measurement headers, assuming they are all equal!")
         #if not self._check_header("BUNIT") ...
