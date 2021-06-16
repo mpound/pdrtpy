@@ -296,7 +296,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                utils.warn(self,"No beam parameters in Measurement headers, assuming they are all equal!")
         #if not self._check_header("BUNIT") ...
 
-    def run(self,mask=['mad',1.0]):
+    def run(self,mask=None):
         '''Run the full computation using all the :class:`observations <pdrtpy.measurement.Measurement>` added.   This will 
         check compatibility of input observations (e.g., beam parameters, coordinate types, axes lengths) and 
         raise exceptions if the observations don't match each other.
@@ -305,7 +305,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                         and radiation field. Possible values are:
 
              ['mad', multiplier]   - compute standard deviation using median absolute deviation (astropy.mad_std),
-                                     and mask out values between +/- multiplier*mad_std
+                                     and mask out values between +/- multiplier*mad_std.  Example: ['mad',1.0]
 
              ['data', (low,high)]  - mask based on data values, mask out data between low and high
 
@@ -314,7 +314,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
              ['error', (low,high)] - mask based on uncertainty plane, mask out data where the corresponding error pixel value 
                                      is below low or above high
 
-                              None - Don't mask data
+                              None - Don't mask data. This is the default.
 
            :type mask:  list or None
 
@@ -617,6 +617,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         gnxy = np.where(self._reduced_chisq==rchi_min)
         gi = gnxy[firstindex]
         ni = gnxy[secondindex]
+        print("len GNXY: ",len(gnxy))
         #print("GI ",gi)
         #print("NI ",ni)
         #print("len(rchimin) shape(rchimin) ",len(rchi_min),rchi_min.shape)
@@ -644,16 +645,21 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         newshape = self._observedratios[fk2].shape
         g0 =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,1]
         n =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,0]
-        #print("G ",g0)
-        #print("N ",n)
+        print("G ",g0)
+        print("N ",n)
+        print("newshape ",newshape)
+        print("len(newshape)",len(newshape))
 
         self._radiation_field=deepcopy(self._observedratios[fk2])
-        if spatial_idx == 0:
+        if spatial_idx == 0 and len(newshape) == 0:
             self._radiation_field.data=g0[0]
             self._radiation_field.uncertainty.array=float("NAN")
         else:
-            # note this will reshape g0 in radiation_field for us!
-            self._radiation_field.data[spatial_idx]=g0
+            if len(newshape) == 1: # Measurement with data vector
+                self._radiation_field.data = g0
+            else: #Measurement with image
+                # note this will reshape g0 in radiation_field for us! 
+                self._radiation_field.data[spatial_idx]=g0
             # We cannot mask nans because numpy does not support writing
             # MaskedArrays to a file. Will get a not implemented error.
             # Therefore just copy the nans over from the input observations.
@@ -666,11 +672,15 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._radiation_field.uncertainty.unit = self.radiation_field_unit
 
         self._density=deepcopy(self._observedratios[fk2])
-        if spatial_idx == 0:
+        if spatial_idx == 0 and len(newshape) == 0:
             self._density.data=n[0]
             self._density.uncertainty.array=float("NAN")
         else:
-            self._density.data[spatial_idx]=n
+            if len(newshape) == 1: # Measurement with data vector
+                self._density.data = n
+            else: #Measurement with image
+                # note this will reshape g0 in radiation_field for us! 
+                self._density.data[spatial_idx]=n
             self._density.data[np.isnan(self._observedratios[fk2])] = np.nan
             # kluge because we dont know how to properly calcultate undertainty on this.
             #self._density.uncertainty.array=np.zeroes(self._density.uncertainty.array)
