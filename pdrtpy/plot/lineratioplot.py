@@ -182,7 +182,7 @@ class LineRatioPlot(PlotBase):
         if not kwargs_opts['image'] and kwargs_opts['colors'][0] == 'white':
            kwargs_opts['colors'][0] = 'black'
 
-        if self._tool.has_maps:
+        if self._tool:
             data = self._tool.chisq(min=True)
             if 'title' not in kwargs:
                 kwargs_opts['title'] = r'$\chi^2$ (dof=%d)'%self._tool._dof
@@ -250,6 +250,9 @@ class LineRatioPlot(PlotBase):
                        'title': None
                       }
         kwargs_opts.update(kwargs)
+        if self._tool.has_vectors:
+            raise NotImplementedError("Plotting of chi-square is not yet implemented for vector Measurements.")
+            
         if self._tool.has_maps:
             if 'title' not in kwargs:
                 kwargs_opts['title'] = r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof
@@ -259,6 +262,7 @@ class LineRatioPlot(PlotBase):
             # so no legend
         else:
             data = self._tool.reduced_chisq(min=False)
+
             self._modelplot._plot_no_wcs(data,header=None,**kwargs_opts)
             # Put a crosshair where the chisq minimum is.
             # To do this we first get the array index of the minimum
@@ -337,8 +341,8 @@ class LineRatioPlot(PlotBase):
         **Currently only works for single-pixel Measurements**
         '''
 
-        if self._tool.has_maps:
-            raise NotImplementedError("Plotting of confidence intervals is not yet implemented for maps")
+        if self._tool.has_maps or self._tool.has_vectors:
+            raise NotImplementedError("Plotting of confidence intervals is not yet implemented for maps or vectors.")
 
         kwargs_opts = {'units': None,
                        'aspect': 'equal',
@@ -368,8 +372,8 @@ class LineRatioPlot(PlotBase):
         **Currently only works for single-pixel Measurements**
         '''
 
-        if self._tool.has_maps:
-            raise NotImplementedError("Plotting of ratio overlays is not yet implemented for maps")
+        if self._tool.has_maps or self._tool.has_vectors:
+            raise NotImplementedError("Plotting of ratio overlays is not yet implemented for maps or vectors.")
 
         kwargs_opts = {'units': None,
                        'image':False,
@@ -407,8 +411,8 @@ class LineRatioPlot(PlotBase):
         **Currently only works for single-pixel Measurements**
         '''
 
-        if self._tool.has_maps:
-            raise NotImplementedError("Plotting of ratio overlays is not yet implemented for maps")
+        if self._tool.has_maps or self._tool.has_vectors:
+            raise NotImplementedError("Plotting of ratio overlays is not yet implemented for maps or vectors.")
 
         kwargs_opts = {'units': None,
                        'image':True,
@@ -562,7 +566,7 @@ class LineRatioPlot(PlotBase):
         if type(self._axis) is not np.ndarray:
             self._axis = np.array([self._axis])
         for a in self._axis:
-            a.tick_params(axes='both',direction='in')
+            a.tick_params(axis='both',direction='in') # axes vs axis???
             for c in a.coords:
                 c.display_minor_ticks(True)
         if kwargs_opts['image']:

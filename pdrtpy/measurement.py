@@ -423,6 +423,7 @@ class Measurement(CCDData):
         
         :rtype: :class:`~pdrtpy.measurement.Measurement`
         '''
+        #@todo support input of a astropy.Table directly
         t = Table.read(filename,format=format)
         required = ["data","uncertainty","identifier"]
         options = ["bmaj","bmin","bpa"]

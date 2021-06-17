@@ -89,14 +89,24 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
 
     @property
     def has_maps(self):
-        '''Are the Measurements used map-based or pixel-based?.
+        '''Are the Measurements used map-based?. (i.e., have 2 spatial axes)
         
-        :returns: True, if the observational inputs are spatial maps, False if they were single-pixel Measurements
+        :returns: True, if the observational inputs are spatial maps, False otherwise
  
         :rtype: bool
         '''
+        
         return self._measurementnaxis > 1
-
+    @property
+    
+    def has_vectors(self):
+        '''Are the Measurements used a Nx1 vector, e.g. read in from a table with :meth:`~pdrtpy.Measurement.from_table`.
+        
+        :returns: True, if the observational inputs are a vector, False otherwise
+        :rtype: bool
+        '''
+        return self._measurementnaxis == 1
+        
     @property
     def ratiocount(self):
         '''The number of ratios that match models available in the current :class:`~pdrtpy.modelset.ModelSet` given the current set of measurements

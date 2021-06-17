@@ -513,10 +513,12 @@ class ModelPlot(PlotBase):
             else:
                 # needed for get_xy_from_wcs call later.
                 data.wcs = wcs.WCS(_header)
+                print(data.wcs)
+                print(data.wcs.wcs)
                 # however, get the usual complaint about non-FITS units
                 # in WCS, so remove them here because they aren't needed.
                 # We have to convolute ourselves later to add them back in!
-                data.wcs.wcs.cunit = ["",""]
+                data.wcs.wcs.cunit = ["" for i in range(data.wcs.naxis)]
 
 
         kwargs_opts = {'units' : None,
