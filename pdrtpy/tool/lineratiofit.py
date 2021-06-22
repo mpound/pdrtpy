@@ -627,7 +627,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         gnxy = np.where(self._reduced_chisq==rchi_min)
         gi = gnxy[firstindex]
         ni = gnxy[secondindex]
-        print("len GNXY: ",len(gnxy))
         #print("GI ",gi)
         #print("NI ",ni)
         #print("len(rchimin) shape(rchimin) ",len(rchi_min),rchi_min.shape)
@@ -655,10 +654,10 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         newshape = self._observedratios[fk2].shape
         g0 =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,1]
         n =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,0]
-        print("G ",g0)
-        print("N ",n)
-        print("newshape ",newshape)
-        print("len(newshape)",len(newshape))
+        #print("G ",g0)
+        #print("N ",n)
+        #print("newshape ",newshape)
+        #print("len(newshape)",len(newshape))
 
         self._radiation_field=deepcopy(self._observedratios[fk2])
         if spatial_idx == 0 and len(newshape) == 0:
@@ -833,4 +832,10 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
 
         if self.density is not None:
             t.add_column(col=Column(self.density, unit=self.density_unit), name=self.density.id)
+
+        if self._chisq_min is not None:
+            t.add_column(col=Column(self._chisq_min, unit=None), name="Chi-square")
+
+        for j in t.columns:
+            t[j].format = '4.3E'
         return t
