@@ -116,8 +116,8 @@ class LineRatioPlot(PlotBase):
 
         kwargs_opts.update(kwargs)
 
-        # handle single pixel case
-        if len( self._tool._density.shape) == 0 :
+        # handle single pixel or multi-pixel non-map cases.
+        if len( self._tool._density.shape) == 0 or self._tool.has_vectors:
             return utils.to(kwargs_opts['units'],self._tool._density)
 
         tunit=u.Unit(kwargs_opts['units'])
@@ -139,8 +139,8 @@ class LineRatioPlot(PlotBase):
                        'title': None}
         kwargs_opts.update(kwargs)
 
-        # handle single pixel case
-        if len( self._tool.radiation_field.shape) == 0 :
+        # handle single pixel or multi-pixel non-map cases.
+        if len( self._tool.radiation_field.shape) == 0 or self._tool.has_vectors:
             return utils.to(kwargs_opts['units'],self._tool.radiation_field)
 
         if kwargs_opts['title'] is None:
@@ -181,8 +181,9 @@ class LineRatioPlot(PlotBase):
         # make a sensible choice about contours if image is not shown
         if not kwargs_opts['image'] and kwargs_opts['colors'][0] == 'white':
            kwargs_opts['colors'][0] = 'black'
-
-        if self._tool:
+        if self._tool.has_vectors:
+            raise NotImplementedError("Plotting of chi-square is not yet implemented for vector Measurements.")
+        if self._tool.has_maps:
             data = self._tool.chisq(min=True)
             if 'title' not in kwargs:
                 kwargs_opts['title'] = r'$\chi^2$ (dof=%d)'%self._tool._dof
@@ -542,7 +543,7 @@ class LineRatioPlot(PlotBase):
 
         # delay merge until min_ and max_ are known
         kwargs_imshow.update(kwargs)
-        kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km,
+        kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km, 
                                              kwargs_imshow['vmin'],kwargs_imshow['vmax'],
                                              kwargs_imshow['stretch'])
 
@@ -560,6 +561,7 @@ class LineRatioPlot(PlotBase):
                                                                 'aspect':kwargs_imshow['aspect']},
                                                     constrained_layout=kwargs_subplot['constrained_layout'])
             #print("CL=",self._plt.rcParams['figure.constrained_layout.use']) 
+
   
 
         # Make sure self._axis is an array because we will index it below.
