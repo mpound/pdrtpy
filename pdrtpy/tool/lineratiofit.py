@@ -813,10 +813,11 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._radiation_field._identifier = "Radiation Field"
         
     @property
-    def table(self):
-        '''Construct the table of input Measurements, and if the fit has been run, the density and radiation field values
+    def table(self)
+        '''Construct the table of input Measurements, and if the fit has been run, the density, radiation field, and :math:`\chi^2` values
         
         :rtype: :class:`astropy.table.Table`
+        #@TODO: make this work for map data
         '''
         v = self._measurements.values()
         t = Table(self._measurements,
