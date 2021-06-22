@@ -9,7 +9,7 @@ from astropy.io.fits.header import Header
 import astropy.wcs as wcs
 import astropy.units as u
 import astropy.stats as astats
-from astropy.table import Table
+from astropy.table import Table, Column
 from astropy.nddata import NDDataArray, CCDData, StdDevUncertainty
 
 from ..tool.toolbase import ToolBase
@@ -810,3 +810,27 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         # convert from OrderedDict to astropy.io.fits.header.Header
         self._density.header = Header(self._density.header)
         self._radiation_field.header = Header(self._radiation_field.header)
+        self._density._identifier = "H2 Volume Density"
+        self._radiation_field._identifier = "Radiation Field"
+        
+    @property
+    def table(self):
+        '''Construct the table of input Measurements, and if the fit has been run, the density and radiation field values
+        
+        :rtype: :class:`astropy.table.Table`
+        '''
+        v = self._measurements.values()
+        t = Table(self._measurements,
+                  units=[m.unit for m in v]
+                  )
+        if self._observedratios is not None:
+            v = self._observedratios.values()
+            cols = [Column(data=d,unit=d.unit) for d in v]
+            t.add_columns(cols=cols, names=[m.id for m in v])
+
+        if self.radiation_field is not None:
+            t.add_column(col=Column(self.radiation_field, unit=self.radiation_field_unit), name=self.radiation_field.id)
+
+        if self.density is not None:
+            t.add_column(col=Column(self.density, unit=self.density_unit), name=self.density.id)
+        return t
