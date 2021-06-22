@@ -837,5 +837,5 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             t.add_column(col=Column(self._chisq_min, unit=None), name="Chi-square")
 
         for j in t.columns:
-            t[j].format = '4.3E'
+            t[j].format = '3.2E'
         return t
