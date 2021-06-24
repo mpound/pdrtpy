@@ -22,15 +22,16 @@ from astropy.visualization.stretch import SinhStretch,  LinearStretch
 from matplotlib.colors import LogNorm
 
 from .plotbase import PlotBase
-from ..pdrutils import to,float_formatter
+from ..pdrutils import to,float_formatter,LOGE
 
-class H2ExcitationPlot(PlotBase):
+class ExcitationPlot(PlotBase):
     """Class to plot various results from H2 Excitation diagram fitting.
     """
-    def __init__(self,tool):
+    def __init__(self,tool,label):
         super().__init__(tool)
         self._xlim = []
         self._ylim = []
+        self._label = label
 
     def plot_diagram(self,position,size,norm=True,show_fit=False,test=True,**kwargs):
         r"""Plot the excitation diagram
@@ -42,19 +43,33 @@ class H2ExcitationPlot(PlotBase):
                        statistical weight of the upper state, :math:`g_u`.  
         :type norm: bool
         """
-        loge = math.log10(math.e)
-        cdavg = self._tool.average_column_density(norm=norm,position=position,size=size,line=False,test=test)
+        kwargs_opts = {'xmin':0.0,
+                      'xmax':5000.0,
+                      'ymax':22,
+                      'ymin': 15,
+                      'grid' :None,
+                      'figsize':(10,7)}
+        kwargs_opts.update(kwargs)
+        cdavg = self._tool.average_column_density(norm=norm, position=position, size=size, line=False, test=test)
         energies = self._tool.energies(line=False)
         energy = np.array([c for c in energies.values()])
         #print("E ",energy)
         colden = np.array([c.data for c in cdavg.values()])
         #print("N ",colden)
         error = np.array([c.error for c in cdavg.values()])
-        sigma = loge*error/colden
-        self._figure,self._axis =self._plt.subplots(nrows=1,ncols=1,**kwargs)
-        self._axis.errorbar(energy,np.log10(colden),yerr=sigma,fmt="o", capsize=1,label='$H_2$ data')
+        sigma = LOGE*error/colden
+        self._figure,self._axis  = self._plt.subplots(figsize=kwargs_opts['figsize']) ##nrows=1,ncols=1)
+        self._axis.errorbar(energy,np.log10(colden),yerr=sigma,
+                            fmt="o", capsize=1,label=self._label+' data')
+        if self._tool.opr_fitted:
+            cdn = self._tool.average_column_density(norm=norm, position=position, size=size, line=False, test=False)
+            cddn = np.array([c.data for c in cdn.values()])
+            self._axis.scatter(x=energy,y=np.log10(cddn),marker="^",label="opr=3")
         self._axis.set_xlabel("$E_u/k$ (K)")
-        self._axis.set_ylabel("log $(N_u/g_u) ~({\\rm cm}^{-2})$")
+        if norm:
+            self._axis.set_ylabel("log $(N_u/g_u) ~({\\rm cm}^{-2})$")
+        else:
+            self._axis.set_ylabel("log $(N_u) ~({\\rm cm}^{-2})$")
         first=True
         for lab in sorted(cdavg):
             if first: 
@@ -66,28 +81,48 @@ class H2ExcitationPlot(PlotBase):
         handles,labels=self._axis.get_legend_handles_labels()
         if show_fit:
             tt = self._tool
-            x_fit = np.linspace(1, 5100, 30)  
-            ma1, na1, ma2, na2 = tt._fitted_params[2]
-            om1, on1, om2, on2 = tt._fitted_params[0]
-            labcold = r"$T_{cold}=$"+f"{tt._tcold:3.0f}"
-            labhot= r"$T_{hot}=$"+f"{tt._thot:3.0f}"
-            labnh = r"$N(H_2)="+float_formatter(tt._totalcolden,2)+"$"
+            if tt.fit_params is None:
+                raise ValueError("No fit to show. Have you run the fit in your H2ExcitationTool?")
 
+            #@TODO default limits should be based on input data. 
+            x_fit = np.linspace(1, 5100, 30)  
+            ma1, na1, ma2, na2 = tt.fit_params._params[0:4]
+            #@TODO improve float_formatter to optionally handle measurement errors
+            labcold = r"$T_{cold}=$"+f"{tt.tcold.value:3.0f}"+r"$\pm$"+f"{tt.tcold.error:.1f} {tt.tcold.unit}"
+            labhot= r"$T_{hot}=$"+f"{tt.thot.value:3.0f}"+r"$\pm$"+f"{tt.thot.error:.1f} {tt.thot.unit}"
+            labnh = r"$N("+self._label+")="+float_formatter(tt.total_colden,2)+"$"
             self._axis.plot(x_fit,tt._one_line(x_fit, ma1,na1),'.',label=labcold)
             self._axis.plot(x_fit,tt._one_line(x_fit, ma2,na2),'.',label=labhot)
-            self._axis.plot(x_fit,tt._x_lin(x_fit,*tt._fitted_params[2]),label="sum")
+
+            if tt.opr_fitted:
+                tt._opr_mask = False*np.ones(x_fit.size)
+                self._axis.plot(x_fit,tt._exc_func_opr(x_fit,
+                            *tt.fit_params._params),label="sum")
+                ma1, na1, ma2, na2= [-2.06876425e-03,  2.05430745e+01, -6.26653322e-04,  1.90774300e+01]
+                self._axis.plot(x_fit,tt._one_line(x_fit, ma1,na1),'.',label="C1")
+                self._axis.plot(x_fit,tt._one_line(x_fit, ma2,na2),'.',label="C2")      
+            else:
+                self._axis.plot(x_fit,tt._exc_func(x_fit,
+                            *tt.fit_params._params[0:4]),label="sum")       
+            print("PARAMS: ",tt.fit_params._params)
             handles,labels=self._axis.get_legend_handles_labels()
 
             #kluge to ensure N(H2) label is last
             phantom = self._axis.plot([],marker="", markersize=0,ls="",lw=0)
             handles.append(phantom[0])
             labels.append(labnh)
-
-            self._axis.set_xlim(0,5000)
-            self._axis.set_ylim(15,22)
-            self._axis.xaxis.set_major_locator(MultipleLocator(1000))
-            self._axis.yaxis.set_major_locator(MultipleLocator(1))
-            self._axis.xaxis.set_minor_locator(MultipleLocator(200))
-            self._axis.yaxis.set_minor_locator(MultipleLocator(0.2))
+            if tt.opr_fitted:
+                labopr = f"Fitted OPR={tt.opr:2.1f}"+r"$\pm$"+f"{tt.fit_params._perr[4]:0.1f}"
+                ph2 = self._axis.plot([],marker="", markersize=0,ls="",lw=0)
+                handles.append(ph2[0])
+                labels.append(labopr)
+        self._axis.set_xlim(kwargs_opts['xmin'],kwargs_opts['xmax'])
+        self._axis.set_ylim(kwargs_opts['ymin'],kwargs_opts['ymax'])
+        self._axis.xaxis.set_major_locator(MultipleLocator(1000))
+        self._axis.yaxis.set_major_locator(MultipleLocator(1))
+        self._axis.xaxis.set_minor_locator(MultipleLocator(200))
+        self._axis.yaxis.set_minor_locator(MultipleLocator(0.2))
+        if kwargs_opts['grid'] is not None:
+            self._axis.grid(b=True,which='both',axis='both',lw=1,color='k',alpha=0.33)
             
         self._axis.legend(handles,labels)

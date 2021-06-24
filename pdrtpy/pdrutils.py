@@ -21,6 +21,7 @@ _OBS_UNIT_ = u.erg/(u.second*u.cm*u.cm*u.sr)
 _CM = u.Unit("cm")
 _CM2 = u.Unit("cm-2")
 _KKMS = u.Unit("K km s-1")
+LOGE = np.log10(np.e)
 
 # ISRF in other units
 #The wavelength of 1110 Ang is the longest wavelength for H2 excitation,
@@ -334,6 +335,7 @@ def to(unit,image):
   newmap = deepcopy(image)
   newmap.data = newmap.data * value
   newmap.unit = u.Unit(unit)
+  #@TODO deal with identifier.
   # deal with uncertainty in Measurements.
   if getattr(newmap,"_uncertainty") is not None:
      newmap._uncertainty.array = newmap.uncertainty.array * value
@@ -546,13 +548,14 @@ def fliplabel(label):
     ii = label.index('/')
     return label[ii+1:]+'/'+label[0:ii]
 
-# partly stolen from astropy.quanity.to_string
+# partly stolen from astropy.quanity.to_string, will also work with Measurements
 def float_formatter(quantity,precision):
     format_spec = '.{}g'.format(precision)
     number = Latex.format_exponential_notation(quantity.value, format_spec=format_spec)
     # strip the $ signs
     unit = quantity.unit.to_string('latex_inline')[1:-1]
     return f'{number}~{unit}'
+
 
 def is_image(image):
     """Check if a Measurement is an image. The be an image it must have a header with axes keywords and a WCS to be considered an image.  This is to distiguish Measurements that have a data array with more than one member from a true image. 
@@ -575,3 +578,10 @@ def is_ratio(identifier):
     # find() returns -1 if char not found.
     # in our case, also rule out that the / is in the zeroth position.
     return identifier.find('/') > 0
+
+def isEven(number):
+    return abs(number) % 2 == 0
+
+def isOdd(number):
+    return not isEven(number)
+

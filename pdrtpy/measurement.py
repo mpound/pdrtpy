@@ -218,13 +218,20 @@ class Measurement(CCDData):
         if needsclose: _error.close()
 
     @property
+    # deprecated, as measurements can be anything not just flux
     def flux(self):
         '''Return the underlying data array
         
         :rtype: :class:`numpy.ndarray`
         '''
         return self.data
-
+    @property
+    def value(self):
+        '''Return the underlying data array
+        
+        :rtype: :class:`numpy.ndarray`
+        '''
+        return self.data       
     @property
     def error(self):
         '''Return the underlying error array
@@ -310,12 +317,23 @@ class Measurement(CCDData):
             raise Exception("This only works for Measurements with a single pixel")
         return np.array([float(self.flux-self.error),float(self.flux),float(self.flux+self.error)])
 
-    
+    def _modify_id(self,other,op):
+        """Handle ID string for arithmetic operations with Measurements or numbers
+        :param other: a Measurement or number
+        :type other: :class:`Measurement` or number
+        :param op: descriptive string of operation, e.g. "+", "*"
+        :type op: str
+        """
+        if getattr(other,"id", None) is not None:
+            return self.id + op + other.id
+        else:
+            return self.id 
+        
     def add(self,other):
         """Add this Measurement to another, propagating errors, units,  and updating identifiers.  Masks are logically or'd.
 
-        :param other: a Measurement to add
-        :type other: :class:`Measurement`
+        :param other: a Measurement or number to add
+        :type other: :class:`Measurement` or number
         """
         # need to do tricky stuff to preserve unit propogation.
         # super().add() does not work because it instantiates a Measurement
@@ -324,41 +342,41 @@ class Measurement(CCDData):
         # class so hard to subclass.
         z=CCDData.add(self,other,handle_mask=np.logical_or)
         z=Measurement(z,unit=z._unit)
-        z._identifier = self.id + '+' + other.id
+        z._identifier = self._modify_id(other,'+')
         z._unit = self.unit
         return z
    
     def subtract(self,other):
         '''Subtract another Measurement from this one, propagating errors, units,  and updating identifiers.  Masks are logically or'd.
 
-        :param other: a Measurement to subtract
-        :type other: :class:`Measurement`
+        :param other: a Measurement or number to subtract
+        :type other: :class:`Measurement` or number
         '''
         z=CCDData.subtract(self,other,handle_mask=np.logical_or)
         z=Measurement(z,unit=z._unit)
-        z._identifier = self.id + '-' + other.id
+        z._identifier = self._modify_id(other,'-')
         return z
     
     def multiply(self,other):
         '''Multiply this Measurement by another, propagating errors, units,  and updating identifiers.  Masks are logically or'd.
 
-        :param other: a Measurement to multiply
-        :type other: :class:`Measurement`
+        :param other: a Measurement or number to multiply
+        :type other: :class:`Measurement` or number
         '''
         z=CCDData.multiply(self,other,handle_mask=np.logical_or)
         z=Measurement(z,unit=z._unit)
-        z._identifier = self.id + '*' + other.id
+        z._identifier = self._modify_id(other,'*')
         return z
         
     def divide(self,other):
         '''Divide this Measurement by another, propagating errors, units,  and updating identifiers.  Masks are logically or'd.
 
-        :param other: a Measurement to divide
-        :type other: :class:`Measurement`
+        :param other: a Measurement or number to divide by
+        :type other: :class:`Measurement` or number
         '''
         z=CCDData.divide(self,other,handle_mask=np.logical_or)
         z=Measurement(z,unit=z._unit)
-        z._identifier = self.id + '/' + other.id
+        z._identifier = self._modify_id(other,'/')
         return z
     
     def __add__(self,other):
