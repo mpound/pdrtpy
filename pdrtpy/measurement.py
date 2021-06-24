@@ -11,7 +11,7 @@ import numpy as np
 import numpy.ma as ma
 from os import remove
 from os.path import exists
-from .pdrutils import squeeze,mask_union
+from .pdrutils import squeeze,mask_union,is_ratio
 
 class Measurement(CCDData):
     r"""Measurement represents one or more observations of a given spectral
@@ -132,22 +132,22 @@ class Measurement(CCDData):
         
 
     @staticmethod
-    def make_measurement(fluxfile,error,outfile,rms=None,masknan=True,overwrite=False,unit="adu"):
-        """Create a FITS files with 2 HDUS, the first being the flux and the 2nd being 
-        the flux uncertainty. This format makes allows the resulting file to be read into the underlying :class:'~astropy.nddata.CCDData` class.
+    def make_measurement(datafile,error,outfile,rms=None,masknan=True,overwrite=False,unit="adu"):
+        """Create a FITS files with 2 HDUS, the first being the datavalue and the 2nd being 
+        the data uncertainty. This format makes allows the resulting file to be read into the underlying :class:'~astropy.nddata.CCDData` class.
 
-        :param fluxfile: The FITS file containing the flux data as a function of spatial coordinates
+        :param fluxfile: The FITS file containing the data as a function of spatial coordinates
         :type fluxfile: str
-        :param error: The errors on the flux data Possible values for error are:
+        :param error: The errors on the data Possible values for error are:
 
-             - a filename with the same shape as fluxfile containing the error values per pixel
+             - a filename with the same shape as datafile containing the error values per pixel
              - a percentage value 'XX%' must have the "%" symbol in it
              - 'rms' meaning use the rms parameter if given, otherwise look for the RMS keyword in the FITS header of the fluxfile
 
         :type error: str
         :param outfile: The output file to write the result in (FITS format)
         :type outfile: str
-        :param rms:  If error == 'rms', this value may give the rms in same units as flux.
+        :param rms:  If error == 'rms', this value may give the rms in same units as data (e.g 'erg s-1 cm-2 sr-1').
         :type rms: float or :class:`astropy.units.Unit`
         :param masknan: Whether to mask any pixel where the flux or the error is NaN. Default:true
         :type masknan: bool
@@ -170,7 +170,7 @@ class Measurement(CCDData):
             # indicated by RMS keyword in input file.
             Measurement.make_measurement("my_infile.fits",error='rms',outfile="my_outfile.fits",unit="K km/s",overwrite=True)
         """
-        _flux = fits.open(fluxfile)
+        _flux = fits.open(datafile)
         needsclose = False
         if error == 'rms':
             _error = deepcopy(_flux)
@@ -220,7 +220,7 @@ class Measurement(CCDData):
     @property
     # deprecated, as measurements can be anything not just flux
     def flux(self):
-        '''Return the underlying flux data array
+        '''Return the underlying data array
         
         :rtype: :class:`numpy.ndarray`
         '''
@@ -275,6 +275,15 @@ class Measurement(CCDData):
             return [self.header["BMAJ"],self.header["BMIN"],self.header["BPA"]]*u.degree
         else:
             return None
+        
+    def is_ratio(self):
+        '''Indicate if this `Measurement` is a ratio..  
+        This method looks for the '/' past the first character  of the` Measurement` *identifier*, such as "CII_158/CO_32"
+        See also pdrutils.is_ratio(string)
+        
+        :returns: True if the Measurement is a ratio, False otherwise
+        :rtype: bool''' 
+        return is_ratio(self.id) #pdrutils method
         
     @property
     def title(self):
@@ -432,6 +441,7 @@ class Measurement(CCDData):
         
         :rtype: :class:`~pdrtpy.measurement.Measurement`
         '''
+        #@todo support input of a astropy.Table directly
         t = Table.read(filename,format=format)
         required = ["data","uncertainty","identifier"]
         options = ["bmaj","bmin","bpa"]

@@ -516,7 +516,7 @@ class ModelPlot(PlotBase):
                 # however, get the usual complaint about non-FITS units
                 # in WCS, so remove them here because they aren't needed.
                 # We have to convolute ourselves later to add them back in!
-                data.wcs.wcs.cunit = ["",""]
+                data.wcs.wcs.cunit = ["" for i in range(data.wcs.naxis)]
 
 
         kwargs_opts = {'units' : None,

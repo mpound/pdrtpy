@@ -556,8 +556,32 @@ def float_formatter(quantity,precision):
     unit = quantity.unit.to_string('latex_inline')[1:-1]
     return f'{number}~{unit}'
 
+
+def is_image(image):
+    """Check if a Measurement is an image. The be an image it must have a header with axes keywords and a WCS to be considered an image.  This is to distiguish Measurements that have a data array with more than one member from a true image. 
+    :param image: the image to check. It must have a :class:`numpy.ndarray` data member and :class:`astropy.units.Unit` unit member or a header BUNIT keyword.
+    :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+    :return: True if it is an image, False otherwise.
+    """
+   
+    if getattr(image,"header",None) is None or getattr(image,"wcs",None) is None:
+        return False
+    if image.wcs.naxis is None or image.wcs.wcs is None:
+        return False
+    if image.wcs.naxis == 0: #naxis=1 ok -- a 1-D image is still an image.
+        return False
+    if image.wcs.wcs.ctype is None:
+        return False
+    return True
+
+def is_ratio(identifier):
+    # find() returns -1 if char not found.
+    # in our case, also rule out that the / is in the zeroth position.
+    return identifier.find('/') > 0
+
 def isEven(number):
     return abs(number) % 2 == 0
 
 def isOdd(number):
     return not isEven(number)
+
