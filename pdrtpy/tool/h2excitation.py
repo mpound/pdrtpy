@@ -5,6 +5,7 @@ from astropy.nddata import StdDevUncertainty
 import math
 import numpy as np
 from scipy.optimize import curve_fit
+from lmfit import Parameters,minimize,fit_report
 #from statsmodels.stats.weightstats import DescrStatsW
 
 from .toolbase import ToolBase
@@ -194,20 +195,97 @@ class H2ExcitationFit(ExcitationFit):
         self._canonical_opr = 3.0
         self._opr_mask = None 
         self._fitparams = None
+        self._params = Parameters()
+        self._params.add('opr',value=3.0,min=1.0,max=3.0,vary=False)
+        self._params.add('m1',value=0,min=-1,max=1)
+        self._params.add('n1',value=15,min=0,max=30)
+        self._params.add('m2',value=0,min=-1,max=1)
+        self._params.add('n2',value=15,min=0,max=30)
+        self._fitresult = None
+        
+    def compute_quantities(self,params):
+        loge=math.log10(math.e)
+        ln10 = math.log(10)
+        _temperature = dict()
+        _total_colden = dict()
+        _tunit = "K"
+        _cdunit = "cm-2"
+        if params['m2'] <  params['m1']:
+            # cold and hot temperatures
+            uc = params['m2'].stderr/params['m2']
+            tc = -loge/params['m2']
+            ucc = StdDevUncertainty(np.abs(tc*uc))
+            _temperature["cold"]=Measurement(data=tc,unit=_tunit,uncertainty=ucc)
+            uh = params['m1'].stderr/params['m1']
+            th = -loge/params['m1']
+            uch = StdDevUncertainty(np.abs(th*uh))
+            _temperature["hot"]=Measurement(data=th,unit=_tunit,uncertainty=uch)
+            # cold and hot total column density
+            nc = 10**params['n1']
+            uc = ln10*params['n1'].stderr*nc
+            ucn = StdDevUncertainty(np.abs(uc))
+            _total_colden["cold"] = Measurement(nc,unit=_cdunit,uncertainty=ucn)
+            nh = 10**params['n2']
+            uh = ln10*params['n2'].stderr*nh
+            uhn = StdDevUncertainty(np.abs(uh))
+            _total_colden["hot"] = Measurement(nh,unit=_cdunit,uncertainty=uhn)
+        else:
+            uc = params['m1'].stderr/params['m1']
+            tc = -loge/params['m1']
+            ucc = StdDevUncertainty(np.abs(tc*uc))
+            _temperature["cold"]=Measurement(data=tc,unit=_tunit,uncertainty=ucc)
+            uh = params['m2'].stderr/params['m2']
+            th = -loge/params['m2']
+            uch = StdDevUncertainty(np.abs(th*uh))
+            _temperature["hot"]=Measurement(data=th,unit=_tunit,uncertainty=uch)
+            # cold and hot total column density
+            uc = ln10*params['n2'].stderr*params['n2']
+            nc = 10**params['n2']
+            uc = ln10*params['n2'].stderr*nc
+            ucn = StdDevUncertainty(np.abs(uc))
+            _total_colden["cold"] = Measurement(nc,unit=_cdunit,uncertainty=ucn)
+            nh = 10**params['n1']
+            uh = ln10*params['n1'].stderr*nh
+            uhn = StdDevUncertainty(np.abs(uh))
+            _total_colden["hot"] = Measurement(nh,unit=_cdunit,uncertainty=uhn)
+        return [_temperature,_total_colden]
 
+    def lmfunc2(self,params,x,data,error,idx):
+    #@TODO if enough values, compute separate OPRs Tcold and Thot. (See Neufeld et al 2006)
+        # We assume that the column densities passed in have been normalized 
+        # using the canonical OPR=3. Therefore what we are actually fitting is 
+        # the ratio of the actual OPR to the canonical OPR.
+        # For odd J, input x = Nu/(3*(2J+1), so we back that out by multiplying 
+        # by [canonical OPR]/[fit guess OPR]. 
+        p = params.valuesdict()
+
+        y1 = 10**(x*p['m1']+p['n1'])            
+        y2 = 10**(x*p['m2']+p['n2'])
+        if params['opr'].vary:
+            rat = 3.0/p['opr']
+            y1[idx] *= rat   
+            y2[idx] *= rat
+        #print("slope/intercept,opr ",p['m1'],p['n1'],p['m2'],p['n2'],p['opr'])
+        #print("y1 ",y1)
+        #print("y2 ",y2)
+        model = np.log10(y1+y2)
+        return (model - data)/error
     @property
     def fit_params(self):
         return self._fitparams
     @property
+    def fit_result(self):
+        return self._fitresult
+    @property
     def opr_fitted(self):
-        if self._fitparams is None: 
+        if self._fitresult is None: 
             return False
-        return self._fitparams.opr_fitted
+        return self._fitresult.params['opr'].vary
     
     @property
     def opr(self):
         if self.opr_fitted:
-            return self._fitparams.opr
+            return self._fitresult.params['opr'].value
         else:
             return self._canonical_opr
         
@@ -508,11 +586,6 @@ class H2ExcitationFit(ExcitationFit):
             tcold=(-utils.LOGE/fit_param[0])*u.Unit("K")
             thot=(-utils.LOGE/fit_param[2])*u.Unit("K")
         print("First guess at excitation temperatures: T_cold = %.1f, T_hot = %.1f "%(tcold.value,thot.value))
-        #if m1 != m2:
-        #    x_intersect = (n2 - n1) / (m1 - m2)
-        #    print(x_intersect)
-        #else:
-        #    print("did not find two linear components")
 
         # Now do second pass fit to full curve using first pass as initial guess
         if fit_opr:

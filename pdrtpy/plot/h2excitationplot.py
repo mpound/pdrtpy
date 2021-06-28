@@ -62,7 +62,8 @@ class ExcitationPlot(PlotBase):
         self._axis.errorbar(energy,np.log10(colden),yerr=sigma,
                             fmt="o", capsize=1,label=self._label+' data')
         if self._tool.opr_fitted:
-            cdn = self._tool.average_column_density(norm=norm, position=position, size=size, line=False, test=False)
+            cdn = self._tool.average_column_density(norm=norm, position=position, 
+                                                    size=size, line=False, test=False)
             cddn = np.array([c.data for c in cdn.values()])
             self._axis.scatter(x=energy,y=np.log10(cddn),marker="^",label="opr=3")
         self._axis.set_xlabel("$E_u/k$ (K)")
