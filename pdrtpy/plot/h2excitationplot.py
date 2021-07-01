@@ -82,30 +82,33 @@ class ExcitationPlot(PlotBase):
         handles,labels=self._axis.get_legend_handles_labels()
         if show_fit:
             tt = self._tool
-            if tt.fit_params is None:
+            #if tt.fit_params is None:
+            if tt.fit_result is None:
                 raise ValueError("No fit to show. Have you run the fit in your H2ExcitationTool?")
 
-            #@TODO default limits should be based on input data. 
-            x_fit = np.linspace(1, 5100, 30)  
-            ma1, na1, ma2, na2 = tt.fit_params._params[0:4]
+            #@TODO possibly expand default limits to zero as minimum so users can see the intercepts
+            x_fit = np.linspace(min(energy),max(energy), 30)  
+            #ma1, na1, ma2, na2 = tt.fit_params._params[0:4]
+            outpar = tt.fit_result.params.valuesdict()
             #@TODO improve float_formatter to optionally handle measurement errors
-            labcold = r"$T_{cold}=$"+f"{tt.tcold.value:3.0f}"+r"$\pm$"+f"{tt.tcold.error:.1f} {tt.tcold.unit}"
-            labhot= r"$T_{hot}=$"+f"{tt.thot.value:3.0f}"+r"$\pm$"+f"{tt.thot.error:.1f} {tt.thot.unit}"
-            labnh = r"$N("+self._label+")="+float_formatter(tt.total_colden,2)+"$"
-            self._axis.plot(x_fit,tt._one_line(x_fit, ma1,na1),'.',label=labcold)
-            self._axis.plot(x_fit,tt._one_line(x_fit, ma2,na2),'.',label=labhot)
+            labcold = r"$T_{cold}=$" + f"{tt.tcold.value:3.0f}" +r"$\pm$" + f"{tt.tcold.error:.1f} {tt.tcold.unit}"
+            labhot= r"$T_{hot}=$" + f"{tt.thot.value:3.0f}"+ r"$\pm$" + f"{tt.thot.error:.1f} {tt.thot.unit}"
+            labnh = r"$N("+self._label+")=" + float_formatter(tt.total_colden,2)+"$"
+            self._axis.plot(x_fit,tt._one_line(x_fit, outpar['m1'], 
+                                         outpar['n1']), '.' ,label=labcold)
+            self._axis.plot(x_fit,tt._one_line(x_fit, outpar['m2'], 
+                                        outpar['n2']), '.', label=labhot)
 
-            if tt.opr_fitted:
-                tt._opr_mask = False*np.ones(x_fit.size)
-                self._axis.plot(x_fit,tt._exc_func_opr(x_fit,
-                            *tt.fit_params._params),label="sum")
-                ma1, na1, ma2, na2= [-2.06876425e-03,  2.05430745e+01, -6.26653322e-04,  1.90774300e+01]
-                self._axis.plot(x_fit,tt._one_line(x_fit, ma1,na1),'.',label="C1")
-                self._axis.plot(x_fit,tt._one_line(x_fit, ma2,na2),'.',label="C2")      
-            else:
-                self._axis.plot(x_fit,tt._exc_func(x_fit,
-                            *tt.fit_params._params[0:4]),label="sum")       
-            print("PARAMS: ",tt.fit_params._params)
+            #if tt.opr_fitted:
+            self._axis.plot(x_fit,tt.fit_result.eval(x=x_fit),label="sum")
+                #            *tt.fit_params._params),label="sum")
+#                ma1, na1, ma2, na2= [-2.06876425e-03,  2.05430745e+01, -6.26653322e-04,  1.90774300e+01]
+#                self._axis.plot(x_fit,tt._one_line(x_fit, #outpar['m1'],outpar['n1']),'.',label="C1")
+#                self._axis.plot(x_fit,tt._one_line(x_fit, #outpar['m2'],outpar['n2']),'.',label="C2")      
+            #else:
+            #    self._axis.plot(x_fit,tt._exc_func(x_fit,
+            #                *tt.fit_params._params[0:4]),label="sum")       
+            #print("PARAMS: ",tt.fit_params._params)
             handles,labels=self._axis.get_legend_handles_labels()
 
             #kluge to ensure N(H2) label is last
