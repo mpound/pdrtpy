@@ -2,3 +2,7 @@ numpy>=1.18
 astropy>=4.1
 scipy>=1.4
 matplotlib>=3.3.1
+lmfit>=1.0.2
+algopy>=0.5.7 
+numdifftools>=0.9.40
+
