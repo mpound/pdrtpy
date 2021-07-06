@@ -22,6 +22,7 @@ _CM = u.Unit("cm")
 _CM2 = u.Unit("cm-2")
 _KKMS = u.Unit("K km s-1")
 LOGE = np.log10(np.e)
+LN10 = np.log(10)
 
 # ISRF in other units
 #The wavelength of 1110 Ang is the longest wavelength for H2 excitation,
