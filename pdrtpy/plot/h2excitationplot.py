@@ -87,7 +87,7 @@ class ExcitationPlot(PlotBase):
                 raise ValueError("No fit to show. Have you run the fit in your H2ExcitationTool?")
 
             #@TODO possibly expand default limits to zero as minimum so users can see the intercepts
-            x_fit = np.linspace(min(energy),max(energy), 30)  
+            x_fit = np.linspace(0,max(energy), 30)  
             #ma1, na1, ma2, na2 = tt.fit_params._params[0:4]
             outpar = tt.fit_result.params.valuesdict()
             #@TODO improve float_formatter to optionally handle measurement errors
@@ -100,7 +100,9 @@ class ExcitationPlot(PlotBase):
                                         outpar['n2']), '.', label=labhot)
 
             #if tt.opr_fitted:
-            self._axis.plot(x_fit,tt.fit_result.eval(x=x_fit),label="sum")
+            opr_p = tt._fitresult.params['opr']
+      
+            self._axis.plot(x_fit, tt.fit_result.eval(x=x_fit,fit_opr=False), label="sum")
                 #            *tt.fit_params._params),label="sum")
 #                ma1, na1, ma2, na2= [-2.06876425e-03,  2.05430745e+01, -6.26653322e-04,  1.90774300e+01]
 #                self._axis.plot(x_fit,tt._one_line(x_fit, #outpar['m1'],outpar['n1']),'.',label="C1")
@@ -116,7 +118,7 @@ class ExcitationPlot(PlotBase):
             handles.append(phantom[0])
             labels.append(labnh)
             if tt.opr_fitted:
-                labopr = f"Fitted OPR={tt.opr:2.1f}"+r"$\pm$"+f"{tt.fit_params._perr[4]:0.1f}"
+                labopr = f"Fitted OPR={tt.opr:2.1f}"+r"$\pm$"+f"{opr_p.stderr:0.1f}"
                 ph2 = self._axis.plot([],marker="", markersize=0,ls="",lw=0)
                 handles.append(ph2[0])
                 labels.append(labopr)
