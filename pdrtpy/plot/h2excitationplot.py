@@ -33,7 +33,8 @@ class ExcitationPlot(PlotBase):
         self._ylim = []
         self._label = label
 
-    def plot_diagram(self,position,size,norm=True,show_fit=False,test=True,**kwargs):
+    def plot_diagram(self,position,size,norm=True,show_fit=False,**kwargs):
+        #@todo position and size might not necessarily match how the fit was done.
         r"""Plot the excitation diagram
         :param position: The position of the cutout array's center with respect to the data array. The position can be specified either as a `(x, y)` tuple of pixel coordinates or a :class:`~astropy.coordinates.SkyCoord`, which will use the :class:`~astropy.wcs.WCS` of the ::class:`~pdrtpy.measurement.Measurement`s added to this tool. See :class:`~astropy.nddata.utils.Cutout2D`.
         :type position: tuple or :class:`astropy.coordinates.SkyCoord`
@@ -42,28 +43,27 @@ class ExcitationPlot(PlotBase):
         :param norm: if True, normalize the column densities by the 
                        statistical weight of the upper state, :math:`g_u`.  
         :type norm: bool
+        :param show_fit: Show the most recent fit done the the associated H2ExcitationFit tool. 
         """
         kwargs_opts = {'xmin':0.0,
-                      'xmax':5000.0,
+                      'xmax':5000.0, #@TODO this should scale with max(energy)
                       'ymax':22,
                       'ymin': 15,
                       'grid' :None,
                       'figsize':(10,7)}
         kwargs_opts.update(kwargs)
-        cdavg = self._tool.average_column_density(norm=norm, position=position, size=size, line=False, test=test)
+        cdavg = self._tool.average_column_density(norm=norm, position=position, size=size, line=False)
         energies = self._tool.energies(line=False)
         energy = np.array([c for c in energies.values()])
-        #print("E ",energy)
         colden = np.array([c.data for c in cdavg.values()])
-        #print("N ",colden)
         error = np.array([c.error for c in cdavg.values()])
         sigma = LOGE*error/colden
-        self._figure,self._axis  = self._plt.subplots(figsize=kwargs_opts['figsize']) ##nrows=1,ncols=1)
+        self._figure,self._axis  = self._plt.subplots(figsize=kwargs_opts['figsize'])
         self._axis.errorbar(energy,np.log10(colden),yerr=sigma,
                             fmt="o", capsize=1,label=self._label+' data')
         if self._tool.opr_fitted:
             cdn = self._tool.average_column_density(norm=norm, position=position, 
-                                                    size=size, line=False, test=False)
+                                                    size=size, line=False)
             cddn = np.array([c.data for c in cdn.values()])
             self._axis.scatter(x=energy,y=np.log10(cddn),marker="^",label="opr=3")
         self._axis.set_xlabel("$E_u/k$ (K)")
@@ -82,15 +82,10 @@ class ExcitationPlot(PlotBase):
         handles,labels=self._axis.get_legend_handles_labels()
         if show_fit:
             tt = self._tool
-            #if tt.fit_params is None:
             if tt.fit_result is None:
                 raise ValueError("No fit to show. Have you run the fit in your H2ExcitationTool?")
-
-            #@TODO possibly expand default limits to zero as minimum so users can see the intercepts
             x_fit = np.linspace(0,max(energy), 30)  
-            #ma1, na1, ma2, na2 = tt.fit_params._params[0:4]
             outpar = tt.fit_result.params.valuesdict()
-            #@TODO improve float_formatter to optionally handle measurement errors
             labcold = r"$T_{cold}=$" + f"{tt.tcold.value:3.0f}" +r"$\pm$" + f"{tt.tcold.error:.1f} {tt.tcold.unit}"
             labhot= r"$T_{hot}=$" + f"{tt.thot.value:3.0f}"+ r"$\pm$" + f"{tt.thot.error:.1f} {tt.thot.unit}"
             labnh = r"$N("+self._label+")=" + float_formatter(tt.total_colden,2)+"$"
@@ -98,21 +93,9 @@ class ExcitationPlot(PlotBase):
                                          outpar['n1']), '.' ,label=labcold)
             self._axis.plot(x_fit,tt._one_line(x_fit, outpar['m2'], 
                                         outpar['n2']), '.', label=labhot)
-
-            #if tt.opr_fitted:
             opr_p = tt._fitresult.params['opr']
-      
             self._axis.plot(x_fit, tt.fit_result.eval(x=x_fit,fit_opr=False), label="sum")
-                #            *tt.fit_params._params),label="sum")
-#                ma1, na1, ma2, na2= [-2.06876425e-03,  2.05430745e+01, -6.26653322e-04,  1.90774300e+01]
-#                self._axis.plot(x_fit,tt._one_line(x_fit, #outpar['m1'],outpar['n1']),'.',label="C1")
-#                self._axis.plot(x_fit,tt._one_line(x_fit, #outpar['m2'],outpar['n2']),'.',label="C2")      
-            #else:
-            #    self._axis.plot(x_fit,tt._exc_func(x_fit,
-            #                *tt.fit_params._params[0:4]),label="sum")       
-            #print("PARAMS: ",tt.fit_params._params)
             handles,labels=self._axis.get_legend_handles_labels()
-
             #kluge to ensure N(H2) label is last
             phantom = self._axis.plot([],marker="", markersize=0,ls="",lw=0)
             handles.append(phantom[0])
