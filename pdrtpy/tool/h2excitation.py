@@ -4,11 +4,8 @@ import astropy.constants as constants
 from astropy.nddata import StdDevUncertainty
 import math
 import numpy as np
-from scipy.optimize import curve_fit
-from lmfit import Parameters,minimize,fit_report
+from lmfit import Parameters, fit_report
 from lmfit.model import Model, ModelResult
-#from statsmodels.stats.weightstats import DescrStatsW
-
 from .toolbase import ToolBase
 from .. import pdrutils as utils
 from ..measurement import Measurement
@@ -23,7 +20,7 @@ class ExcitationFit(ToolBase):
         # must be set before call to init_measurements
         self._intensity_units = "erg cm^-2 s^-1 sr^-1"
         self._cd_units = 'cm^-2'
-        #print("ExcitationFIt contstructor")
+        self._t_units = "K"
         if type(measurements) == dict or measurements is None:
             self._measurements = measurements
         else:
@@ -38,8 +35,7 @@ class ExcitationFit(ToolBase):
         # Most recent cutout selected by user for computation area.
         self._cutout = None
         
-
-    
+       
     def _init_measurements(self,m):
         '''Initialize measurements dictionary given a list.
 
@@ -78,129 +74,22 @@ class ExcitationFit(ToolBase):
            :param m: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
         '''
         self.add_measurement(self,m)
-
-# use?
-class FitParams(object):
-    def __init__(self,params,pcov):
-        self._params = params
-        self._pcov = pcov
-        self._perr = np.sqrt(np.diag(pcov))
-        if len(params)==5:
-            self._opr=params[4]
-            self.opr_fitted = True
-        else:
-            self._opr=3
-            self.opr_fitted = False
-        self._tunit = u.Unit("K")
-        self._cdunit = u.Unit("cm-2")
-        self._total_colden = dict()
-        self._temperature = dict()
-        self._compute_quantities()
-
-    def _compute_quantities(self):
-        loge=math.log10(math.e)
-        ln10 = math.log(10)
-        if self._params[2] <  self._params[0]:
-            # cold and hot temperatures
-            uc = self._perr[2]/self._params[2]
-            tc = -loge/self._params[2]
-            ucc = StdDevUncertainty(np.abs(tc*uc))
-            self._temperature["cold"]=Measurement(data=tc,unit=self._tunit,uncertainty=ucc)
-            uh = self._perr[0]/self._params[0]
-            th = -loge/self._params[0]
-            uch = StdDevUncertainty(np.abs(th*uh))
-            self._temperature["hot"]=Measurement(data=th,unit=self._tunit,uncertainty=uch)
-            # cold and hot total column density
-            nc = 10**self._params[1]
-            uc = ln10*self._perr[1]*nc
-            ucn = StdDevUncertainty(np.abs(uc))
-            self._total_colden["cold"] = Measurement(nc,unit=self._cdunit,uncertainty=ucn)
-            nh = 10**self._params[3]
-            uh = ln10*self._perr[3]*nh
-            uhn = StdDevUncertainty(np.abs(uh))
-            self._total_colden["hot"] = Measurement(nh,unit=self._cdunit,uncertainty=uhn)
-        else:
-            uc = self._perr[0]/self._params[0]
-            tc = -loge/self._params[0]
-            ucc = StdDevUncertainty(np.abs(tc*uc))
-            self._temperature["cold"]=Measurement(data=tc,unit=self._tunit,uncertainty=ucc)
-            uh = self._perr[2]/self._params[2]
-            th = -loge/self._params[2]
-            uch = StdDevUncertainty(np.abs(th*uh))
-            self._temperature["hot"]=Measurement(data=th,unit=self._tunit,uncertainty=uch)
-            # cold and hot total column density
-            uc = ln10*self._perr[3]*self._params[3]
-            nc = 10**self._params[3]
-            uc = ln10*self._perr[3]*nc
-            ucn = StdDevUncertainty(np.abs(uc))
-            self._total_colden["cold"] = Measurement(nc,unit=self._cdunit,uncertainty=ucn)
-            nh = 10**self._params[1]
-            uh = ln10*self._perr[1]*nh
-            uhn = StdDevUncertainty(np.abs(uh))
-            self._total_colden["hot"] = Measurement(nh,unit=self._cdunit,uncertainty=uhn)
-    
-    def residuals(self,residuals):
-        self._residuals = residuals
-    
-    @property
-    def thot(self):
-        return self._temperature["hot"]
-    @property
-    def tcold(self):
-        return self._temperature["cold"]
-    @property
-    def coldenhot(self):
-        return self._total_colden["hot"]
-    @property 
-    def coldencold(self):
-        return self._total_colden["cold"]
-    @property 
-    def total_colden(self):
-        return self._total_colden["hot"]+self._total_colden["cold"]
-    @property
-    def opr(self):
-        return self._opr
-    @property 
-    def slopes(self):
-        return [self._params[0],self._params[2]]
-    @property 
-    def intercepts(self):
-        return [self._params[1],self._params[3]]
-        
-    def report(self):
-        s = "Fit parameters\n"
-        s += "Slopes :" + str(self.slopes) +"\n"
-        s += "Intercepts :" + str(self.intercepts) +"\n"
-        tcold = f'T_cold = {self.tcold.data:0.1f} +/-{ self.tcold.error:0.1f} {self._tunit:FITS}\n'
-        thot = f'T_hot = {self.thot.data:0.1f} +/- {self.thot.error:0.1f} {self._tunit:FITS}\n'
-        s += tcold
-        s += thot
-        ncold = f'N_cold = {self.coldencold.data:0.2e} +/- {self.coldencold.error:0.2e} {self._cdunit:FITS}\n'
-        nhot = f'N_hot = {self.coldenhot.data:0.2e} +/- {self.coldenhot.error:0.2e} {self._cdunit:FITS}\n'
-        ntot = f'N_total = {self.total_colden.data:0.2e} +/- {self.total_colden.error:0.2e} {self._cdunit:FITS}\n'
-        s += ncold
-        s += nhot
-        s += ntot
-        s += "OPR = "+str(self._opr)
-        print(s)
         
 class H2ExcitationFit(ExcitationFit):
     """Tool for fitting temperatures to :math:`H_2` Excitation Diagrams
-
-       **This tool is still under development**
     """
     def __init__(self,measurements=None,
                  constantsfile=utils.get_table("atomic_constants.tab")):
-        #print("H2ExcitationFit constructor")
         super().__init__(measurements,constantsfile)
         self._canonical_opr = 3.0
-        #self._fitparams = None
         self._init_params()
         self._init_model()
         self._fitresult = None
-
+        self._temperature = None
+        self._total_colden = None
+        
     def _init_params(self):
-        #input parameters
+        #fit input parameters
         self._params = Parameters()
         self._params.add('opr',value=3.0,min=1.0,max=3.0,vary=False)
         self._params.add('m1',value=0,min=-1,max=1)
@@ -209,33 +98,34 @@ class H2ExcitationFit(ExcitationFit):
         self._params.add('n2',value=15,min=0,max=30)
         
     def _residual(self,params,x,data,error,idx):
-    #@TODO if enough values, compute separate OPRs Tcold and Thot. (See Neufeld et al 2006)
         # We assume that the column densities passed in have been normalized 
         # using the canonical OPR=3. Therefore what we are actually fitting is 
         # the ratio of the actual OPR to the canonical OPR.
-        # For odd J, input x = Nu/(3*(2J+1), so we back that out by multiplying 
-        # by [canonical OPR]/[fit guess OPR]. 
+        # For odd J, input x = Nu/(3*(2J+1) where 3=canonical OPR. 
+        #
+        # We want the model-data residual to be small, but if the opr 
+        # is different from the  canonical value of 3, then data[idx] will 
+        # be low by a factor of 3/opr.
+        # So we must LOWER model[idx] artificially by dividing it by 
+        # 3/opr, i.e. multiplying by opr/3.  This is equivalent to addition in log-space.
         p = params.valuesdict()
         y1 = 10**(x*p['m1']+p['n1'])            
         y2 = 10**(x*p['m2']+p['n2'])
-        if params['opr'].vary:
-            rat = self._canonical_opr/p['opr']
-            y1[idx] *= rat   
-            y2[idx] *= rat
         model = np.log10(y1+y2)
+        if params['opr'].vary:
+            model += np.log10(p['opr']/self._canonical_opr)
         return (model - data)/error
     
     def _modelfunc(self,x,m1,n1,m2,n2,opr,idx=[],fit_opr=False):
         '''Function for fitting the excitation curve as sum of two linear functions 
            and allowing ortho-to-para ratio to vary.  Para is even J, ortho is odd J.
-           :param x: masked array of x values where mask is TRUE indicates the x value is an odd J transition and the OPR can vary.  Even J transitions have OPR=1 always.
-           :type x: :class:`numpy.ma.masked_array`
+           :param x: independent axis array
            :param m1: slope of first line
            :type m1: float
            :param n1: intercept of first line
            :type n1: float
            :param m2: slope of second line
-           :type m2: floa
+           :type m2: float
            :param n2: intercept of second line
            :type n2: float
            :param opr: ortho-to-para ratio
@@ -244,18 +134,24 @@ class H2ExcitationFit(ExcitationFit):
            :param idx: list of indices that may have variable opr (odd J transitions)
            :param fit_opr: indicate whether opr will be fit, default False (opr fixed)
            :type fit_opr: False
-           :return: Sum of lines in log space: log10(10**(x*m1+n1) + 10**(x*m2+n2))
+           :return: Sum of lines in log space:log10(10**(x*m1+n1) + 10**(x*m2+n2)) + log10(opr/3.0)
            :rtype: :class:`numpy.ndarray` 
         '''
         y1 = 10**(x*m1+n1)            
         y2 = 10**(x*m2+n2)
         model = np.log10(y1+y2)
-        # We want the model-data residual to be small, but if the opr is different from the 
-        # canonical value of 3, then data[idx] will be low by a factor of 3/opr.
+        # We assume that the column densities passed in have been normalized 
+        # using the canonical OPR=3. Therefore what we are actually fitting is 
+        # the ratio of the actual OPR to the canonical OPR.
+        # For odd J, input x = Nu/(3*(2J+1) where 3=canonical OPR. 
+        #
+        # We want the model-data residual to be small, but if the opr 
+        # is different from the  canonical value of 3, then data[idx] will 
+        # be low by a factor of 3/opr.
         # So we must LOWER model[idx] artificially by dividing it by 
         # 3/opr, i.e. multiplying by opr/3.  This is equivalent to addition in log-space.
         if fit_opr:
-            model[idx] += np.log10(opr/3.0)
+            model[idx] += np.log10(opr/self._canonical_opr)
         return model
     
     def _init_model(self):
@@ -268,57 +164,43 @@ class H2ExcitationFit(ExcitationFit):
                                        vary=q.vary)
             self._model.make_params()
     
-    def compute_quantities(self,params):
-        loge=utils.LOGE
-        ln10 = utils.LN10
+    def _compute_quantities(self,params):
+        """Compute the temperatures and column densities for the hot and cold gas components.  This method will set class variables `_temperature` and `_colden`.
+        
+        :param params: The fit parameters returned from fit_excitation.
+        :type params: :class:`lmfit.Parameters`
+        """
         self._temperature = dict()
         self._total_colden = dict()
-        _tunit = "K"
-        _cdunit = "cm-2"
-        #@todo this section can be refactored
         if params['m2'] <  params['m1']:
-            # cold and hot temperatures
-            uc = params['m2'].stderr/params['m2']
-            tc = -loge/params['m2']
-            ucc = StdDevUncertainty(np.abs(tc*uc))
-            self._temperature["cold"]=Measurement(data=tc,unit=_tunit,uncertainty=ucc)
-            uh = params['m1'].stderr/params['m1']
-            th = -loge/params['m1']
-            uch = StdDevUncertainty(np.abs(th*uh))
-            self._temperature["hot"]=Measurement(data=th,unit=_tunit,uncertainty=uch)
-            # cold and hot total column density
-            nc = 10**params['n1']
-            uc = ln10*params['n1'].stderr*nc
-            ucn = StdDevUncertainty(np.abs(uc))
-            self._total_colden["cold"] = Measurement(nc,unit=_cdunit,uncertainty=ucn)
-            nh = 10**params['n2']
-            uh = ln10*params['n2'].stderr*nh
-            uhn = StdDevUncertainty(np.abs(uh))
-            self._total_colden["hot"] = Measurement(nh,unit=_cdunit,uncertainty=uhn)
+            cold = '2'
+            hot = '1'
         else:
-            uc = params['m1'].stderr/params['m1']
-            tc = -loge/params['m1']
-            ucc = StdDevUncertainty(np.abs(tc*uc))
-            self._temperature["cold"]=Measurement(data=tc,unit=_tunit,uncertainty=ucc)
-            uh = params['m2'].stderr/params['m2']
-            th = -loge/params['m2']
-            uch = StdDevUncertainty(np.abs(th*uh))
-            self._temperature["hot"]=Measurement(data=th,unit=_tunit,uncertainty=uch)
-            # cold and hot total column density
-            uc = ln10*params['n2'].stderr*params['n2']
-            nc = 10**params['n2']
-            uc = ln10*params['n2'].stderr*nc
-            ucn = StdDevUncertainty(np.abs(uc))
-            self._total_colden["cold"] = Measurement(nc,unit=_cdunit,uncertainty=ucn)
-            nh = 10**params['n1']
-            uh = ln10*params['n1'].stderr*nh
-            uhn = StdDevUncertainty(np.abs(uh))
-            self._total_colden["hot"] = Measurement(nh,unit=_cdunit,uncertainty=uhn)
-
-    #@property
-    #def fit_params(self):
-    #    return self._fitparams
-    
+            cold = '1'
+            hot = '2'
+        mcold = 'm'+cold
+        mhot= 'm'+hot
+        ncold = 'n'+cold
+        nhot = 'n'+hot
+        # cold and hot temperatures
+        uc = params[mcold].stderr/params[mcold]
+        tc = -utils.LOGE/params[mcold]
+        ucc = StdDevUncertainty(np.abs(tc*uc))
+        self._temperature["cold"]=Measurement(data=tc,unit=self._t_units,uncertainty=ucc)
+        uh = params[mhot].stderr/params[mhot]
+        th = -utils.LOGE/params[mhot]
+        uch = StdDevUncertainty(np.abs(th*uh))
+        self._temperature["hot"]=Measurement(data=th,unit=self._t_units,uncertainty=uch)
+        # cold and hot total column density
+        nc = 10**params[ncold]
+        uc = utils.LN10*params[ncold].stderr*nc
+        ucn = StdDevUncertainty(np.abs(uc))
+        self._total_colden["cold"] = Measurement(nc,unit=self._cd_units,uncertainty=ucn)
+        nh = 10**params[nhot]
+        uh = utils.LN10*params[nhot].stderr*nh
+        uhn = StdDevUncertainty(np.abs(uh))
+        self._total_colden["hot"] = Measurement(nh,unit=self._cd_units,uncertainty=uhn)
+        
     @property
     def fit_result(self):
         return self._fitresult
@@ -486,7 +368,7 @@ class H2ExcitationFit(ExcitationFit):
             return self._ac.loc[key]["g_u"]*opr/self._canonical_opr
         
     def average_column_density(self,position,size,norm=True,
-                               unit=utils._CM2,line=False,test=False):
+                               unit=utils._CM2,line=False):
         r'''Compute the average column density over a spatial box.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.
 
         :param position: The position of the cutout array's center with respect to the data array. The position can be specified either as a `(x, y)` tuple of pixel coordinates or a :class:`~astropy.coordinates.SkyCoord`, which will use the :class:`~astropy.wcs.WCS` of the ::class:`~pdrtpy.measurement.Measurement`s added to this tool. See :class:`~astropy.nddata.utils.Cutout2D`.
@@ -517,41 +399,48 @@ class H2ExcitationFit(ExcitationFit):
             w= Cutout2D(ca.uncertainty.array, position, size, ca.wcs, mode='partial', fill_value=np.nan)
             cddata = np.ma.masked_array(self._cutout.data,np.isnan(self._cutout.data))
             weights = np.ma.masked_array(w.data,np.isnan(w.data))
-            #print("W Shape %s data shape %s"%(w.shape,cddata.shape))
             cdavg = np.average(cddata,weights=weights)
-            #error = np.sqrt(np.cov(cddata.flatten(),aweights=weights.flatten()))
             error = np.nanmean(ca.error)
-            #weighted_stats = DescrStatsW(cddata.flatten(), weights=weights.flatten(), ddof=0)
-            #print("NP %e %e"%(cdavg, error))
-            #print("Stats %e %e %e"%(weighted_stats.mean, weighted_stats.std ,  weighted_stats.std_mean))
             if line:
                 index = cd
             else:
                 index = self._ac.loc[cd]["J_u"]
             if norm:
-                #print("2 normalizing")
-                #print("dividing by %f"%self._ac.loc[cd]["g_u"])
-                if test:
-                    cdavg /= self.gu(cd,self.opr)
-                    error /= self.gu(cd,self.opr)
-                else:
-                    cdavg /= self._ac.loc[cd]["g_u"]
-                    error /= self._ac.loc[cd]["g_u"]
+                #if test:
+                #    cdavg /= self.gu(cd,self.opr)
+                #    error /= self.gu(cd,self.opr)
+                #else:
+                cdavg /= self._ac.loc[cd]["g_u"]
+                error /= self._ac.loc[cd]["g_u"]
             cdmeas[index] = Measurement(data=cdavg, uncertainty=StdDevUncertainty(error),
                                         unit=ca.unit, identifier=cd)
              
         return cdmeas
-
-    def _set_opr_mask(self,ids):
-    #    # need to figure out which measurements are odd J and set mask=True for those, False for even J
-        # Do this by lookup in atomic_constants.tab
-        self._opr_mask = self._ac.loc[ids]["J_u"]%2!=0
-        self._not_opr_mask = self._ac.loc[ids]["J_u"]%2==0
         
-    def _get_opr_indices(self,ids):
-         return np.where(self._ac.loc[ids]["J_u"]%2!=0)[0]
+    def _get_ortho_indices(self,ids):
+        """Given a list of J values, return the indices of those that are ortho
+        transitions (odd J)
+        
+        :param ids:
+        :type ids: list of str 
+        :returns: The array indices of the odd J values.
+        :rtype: list of int
+        """
+        return np.where(self._ac.loc[ids]["J_u"]%2!=0)[0]
+    
+    def _get_para_indices(self,ids):
+        """Given a list of J values, return the indices of those that are para
+        transitions (even J)
+        
+        :param ids:
+        :type ids: list of str 
+        :returns: The array indices of the even J values.
+        :rtype: list of int
+        """
+        return np.where(self._ac.loc[ids]["J_u"]%2==0)[0]
             
     def _slopesfromguess(self,guess):
+        """given a guess of two temperatures, compute slopes from them"""
         if guess[0]<guess[1]:
             thot = guess[1]
             tcold = guess[2]
@@ -587,94 +476,44 @@ class H2ExcitationFit(ExcitationFit):
         :param colden: list of log(Nu/gu)
         :type colden: :class:`~pdrtpy.measurement.Measurement` containing list of values and errors
 
-        :returns: The fit parameters as in :mod:`scipy.optimize.curve_fit`
-        :rtype: list
+        :returns: The fit result: slopes, intercepts, and, if `fit_opr=True`, the ortho to para ratio (OPR)
+        :rtype:  :class:`lmfit.model.ModelResult`
         """
         energy = self.energies(line=True)
         _ee = np.array([c for c in energy.values()])
         _energy = Measurement(_ee,unit="K")
         _ids = list(energy.keys())
-        #if type(energy) is dict:
-        #    _ee = np.array([c for c in energy.values()])
-        #    _energy = Measurement(_ee,unit="K")
-        #    _ids = list(energy.keys())
-        #else:
-        #    _energy = energy
-        #    _ids = []
-        #     for e in _energy:
-        #        _ids.append(e.id)
-        self._set_opr_mask(_ids)
-        # Get Nu/gu 
+        # Get Nu/gu.  Canoical opr will be used. 
         colden = self.average_column_density(norm=True, position=position,
-                                             size=size, line=True, test=False)
-        #if type(colden) is dict:
+                                             size=size, line=True)
+
         # Need to stuff the data into a single vector
         _cd = np.array([c.data for c in colden.values()])
         _er  = np.array([c.error for c in colden.values()])
         _colden = Measurement(_cd,uncertainty=StdDevUncertainty(_er),unit="cm-2")
-        #else:
-        #    _colden = colden
-        #    _error = error
+
         x = _energy.data
         y = np.log10(_colden.data)
-        kwargs_opts = {"guess": self._first_guess(x,y)}
-        kwargs_opts.update(kwargs)
+        #kwargs_opts = {"guess": self._first_guess(x,y)}
+        #kwargs_opts.update(kwargs)
         sigma = utils.LOGE*_colden.error/_colden.data
-        #if kwargs_opts["guess"] is None: 
-        #    fit_param, pcov = curve_fit(self._two_lines, xdata=x,
-        #                                ydata=y,sigma=sigma,maxfev=100000)
-            #print("FIT_PARAM [slope,intercept,slope,intercept] :",fit_param)
-        #else:
-        #fit_param = kwargs_opts["guess"]
-            #print("FIT PARAM GUESS [slope,intercept,slope,intercept]:",fit_param) 
-        
-        # There is no guarantee of order in fit_param except it will be [slope, intercept, slope, intercept].
-        # Thus we have to check which slope is actually more steeply negative to discover which is T_cold.
-        fit_param = kwargs_opts["guess"]
-        if fit_param[2] < fit_param[0]:
-            tcold=(-utils.LOGE/fit_param[2])*u.Unit("K")
-            thot=(-utils.LOGE/fit_param[0])*u.Unit("K")
-        else:
-            tcold=(-utils.LOGE/fit_param[0])*u.Unit("K")
-            thot=(-utils.LOGE/fit_param[2])*u.Unit("K")
+        slopecold, intcold, slopehot, inthot = self._first_guess(x,y)
+        tcold=(-utils.LOGE/slopecold)*u.Unit("K")
+        thot=(-utils.LOGE/slopehot)*u.Unit("K")
         print("First guess at excitation temperatures: T_cold = %.1f, T_hot = %.1f "%(tcold.value,thot.value))
 
-        # Now do second pass fit to full curve using first pass as initial guess
-        #if fit_opr:
-        #    self._params['opr'].vary = True
-            #self._fitparams = None
-            #fit_param=np.append(fit_param,[3]) # add opr
-            #bounds = ([-np.inf,-np.inf,-np.inf,-np.inf,0],[np.inf,np.inf,np.inf,np.inf,3])
-            #print("FP IN:",fit_param)
-            #fit_param2,pcov2 = curve_fit(self._exc_func_opr, xdata=x, ydata=y, p0=fit_param, 
-                                         #sigma=sigma ,maxfev=1000000, bounds=bounds)
-            #print("FP OUT:",fit_param2)
-       # else:
-        #    self._params['opr'].vary = False
-            #fit_param2,pcov2 = curve_fit(self._exc_func, x, y, p0=fit_param, sigma=sigma)
-        #self._fitparams = FitParams(fit_param2,pcov2)
-        #self._fitparams.report()
-    
-        #if fit_opr:
-        #    r = y - self._exc_func_opr(x, *fit_param2)
-        #else:
-        #    r = y - self._exc_func(x, *fit_param2)
-        #print("Residuals: %.3e"%np.sum(np.square(r)))
-        #self._fitparams.residuals(r)
-        #return  self._fitparams
         self._model.set_param_hint('opr',vary = fit_opr)
-        #if fit_opr: self._model.set_param_hint('opr',value=2.0)
+
         p=self._model.make_params()
         #p.pretty_print()
         wts = 1/(sigma*sigma)
-        #self._fitresult = minimize(self._residual,self._params,args=(x,y,sigma,idx))
-        idx=self._get_opr_indices(_ids)
+        idx=self._get_ortho_indices(_ids)
         self._fitresult = self._model.fit(data=y, weights=wts, x=x, idx=idx,fit_opr=fit_opr)
         print(fit_report(self._fitresult))
         # @todo update Parameter hints based on first guess.
         # Parameter initial values get passed as x0 to scipy.minimize
-        # You can't do it separately with   fit_kws={"x0":kwargs_opts['guess']})
-        self.compute_quantities(self._fitresult.params)
+        # So You can't do it separately with   fit_kws={"x0":kwargs_opts['guess']})
+        self._compute_quantities(self._fitresult.params)
         return self._fitresult
 
     def _two_lines(self,x, m1, n1, m2, n2):
@@ -708,72 +547,3 @@ class H2ExcitationFit(ExcitationFit):
            :type n1: float
         '''
         return m1*x+n1
-
-    def _exc_func(self,x, m1, n1, m2, n2):
-        '''Function for fitting the excitation curve as sum of two linear functions.
-
-           :param x: array of x values
-           :type x: :class:`numpy.ndarray` 
-           :param m1: slope of first line
-           :type m1: float
-           :param n1: intercept of first line
-           :type n1: float
-           :param m2: slope of second line
-           :type m2: float
-           :param n2: intercept of second line
-           :type n2: float
-
-           :return: Sum of lines in log space: log10(10**(x*m1+n1) + 10**(x*m2+n2))
-           :rtype: :class:`numpy.ndarray` 
-        '''
-        y1 = 10**(x*m1+n1)
-        y2 = 10**(x*m2+n2)
-        retval = np.log10(y1+y2)
-        return retval
-
-    def _exc_func_opr(self,x, m1, n1, m2, n2,opr):
-#@TODO if enough values, compute separate OPRs Tcold and Thot. (See Neufeld et al 2006)
-        '''Function for fitting the excitation curve as sum of two linear functions 
-           and allowing ortho-to-para ratio to vary.  Para is even J, ortho is odd J.
-           A single OPR value 
-
-           :param x: masked array of x values where mask is TRUE indicates the x value is an odd J transition and the OPR can vary.  Even J transitions have OPR=1 always.
-           :type x: :class:`numpy.ma.masked_array`
-           :param m1: slope of first line
-           :type m1: float
-           :param n1: intercept of first line
-           :type n1: float
-           :param m2: slope of second line
-           :type m2: floa
-           :param n2: intercept of second line
-           :type n2: float
-           :param opr: ortho-to-para ratio
-           :type opr: float
-
-           :return: Sum of lines in log space: log10(10**(x*m1+n1) + 10**(x*m2+n2))
-           :rtype: :class:`numpy.ndarray` 
-        '''
-        # We assume that the column densities passed in have been normalized 
-        # using the canonical OPR=3. Therefore what we are actually fitting is 
-        # the ratio of the actual OPR to the canonical OPR.
-        # For even J, input x = Nu/(3*(2J+1), so we back that out by multiplying 
-        # by [canonical OPR]/[fit guess OPR]. 
-        rat = self._canonical_opr/opr
-        #print(opr)
-        print(self._opr_mask)
-        factor = np.ones(x.size)
-        factor[np.where(self._opr_mask)] *= rat
-        #print("F ",factor)
-        opr_array = np.ma.masked_array(rat*np.ones(x.size),mask=self._opr_mask)
-       # print(opr_array)
-        y1 = 10**(x*m1+n1)*opr_array
-        y1f = 10**(x*m1+n1)*factor
-        #print(y1)
-        y2 = 10**(x*m2+n2)*opr_array
-        y2f = 10**(x*m2+n2)*factor
-        print(y2,"\n",y2f)
-        #print(y2)
-        retval = np.log10(y1.data+y2.data)
-        retval = np.log10(y1f+y2f)
-        #print(retval,opr)
-        return retval
