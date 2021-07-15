@@ -63,10 +63,9 @@ class ExcitationPlot(PlotBase):
         self._axis.errorbar(energy,np.log10(colden),yerr=sigma,
                             fmt="o", capsize=1,label=_label)
         if self._tool.opr_fitted:
-            cdn = self._tool.average_column_density(norm=norm, position=position, 
-                                                    size=size, line=False)
-            cddn = np.array([c.data for c in cdn.values()])
-            self._axis.scatter(x=energy,y=np.log10(cddn),marker="^",label="opr=3")
+            # Do it for only the odd ones!
+            cddn = colden*self._tool._canonical_opr/self._tool.opr
+            self._axis.errorbar(x=energy,y=np.log10(cddn),marker="^",label=f"OPR={self._tool.opr:.2f}",yerr=sigma,capsize=1)
         self._axis.set_xlabel("$E_u/k$ (K)")
         if norm:
             self._axis.set_ylabel("log $(N_u/g_u) ~({\\rm cm}^{-2})$")
@@ -102,11 +101,11 @@ class ExcitationPlot(PlotBase):
             phantom = self._axis.plot([],marker="", markersize=0,ls="",lw=0)
             handles.append(phantom[0])
             labels.append(labnh)
-            if tt.opr_fitted:
-                labopr = f"Fitted OPR={tt.opr:2.1f}"+r"$\pm$"+f"{opr_p.stderr:0.1f}"
-                ph2 = self._axis.plot([],marker="", markersize=0,ls="",lw=0)
-                handles.append(ph2[0])
-                labels.append(labopr)
+            #if tt.opr_fitted:
+            #    labopr = f"Fitted OPR={tt.opr:2.2f}"+r"$\pm$"+f"{opr_p.stderr:0.2f}"
+            #    ph2 = self._axis.plot([],marker="", markersize=0,ls="",lw=0)
+            #   handles.append(ph2[0])
+            #   labels.append(labopr)
         self._axis.set_xlim(kwargs_opts['xmin'],kwargs_opts['xmax'])
         self._axis.set_ylim(kwargs_opts['ymin'],kwargs_opts['ymax'])
         self._axis.xaxis.set_major_locator(MultipleLocator(1000))
