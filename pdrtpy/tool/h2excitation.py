@@ -101,7 +101,10 @@ class H2ExcitationFit(ExcitationFit):
     def _init_params(self):
         #fit input parameters
         self._params = Parameters()
-        self._params.add('opr',value=3.0,min=1.0,max=3.0,vary=False)
+        # we have to have opr max be greater than 3 so that fitting will work.
+        # the fit algorithm does not like when the initial value is pinned at one
+        # of the limits
+        self._params.add('opr',value=3.0,min=1.0,max=3.5,vary=False)
         self._params.add('m1',value=0,min=-1,max=1)
         self._params.add('n1',value=15,min=0,max=30)
         self._params.add('m2',value=0,min=-1,max=1)
@@ -324,8 +327,8 @@ class H2ExcitationFit(ExcitationFit):
                 t[self._ac.loc[m]["J_u"]] = self._ac.loc[m]["E_upper/k"]
         return t
 
-    def run(self):
-        pass
+    def run(self,position=None,size=None,fit_opr=False,**kwargs):
+        return self.fit_excitation(position,size,fit_opr,**kwargs)
 
     def intensity(self,colden):
         # colden is N_upper
@@ -449,7 +452,7 @@ class H2ExcitationFit(ExcitationFit):
                     weights = ca.uncertainty.array
             cdavg = np.average(cddata,weights=weights)
             error = np.nanmean(ca.error)
-            cdmeas[index] = Measurement(data=cdavg, 
+            cdmeas[cd] = Measurement(data=cdavg, 
                                         uncertainty=StdDevUncertainty(error),
                                         unit=ca.unit, identifier=cd)            
         return cdmeas
@@ -538,7 +541,7 @@ class H2ExcitationFit(ExcitationFit):
         slopecold, intcold, slopehot, inthot = self._first_guess(x,y)
         tcold=(-utils.LOGE/slopecold)
         thot=(-utils.LOGE/slopehot)
-        print("First guess at excitation temperatures: T_cold = %.1f, T_hot = %.1f "%(tcold,thot))
+        print("First guess at excitation temperatures:\n T_cold = %.1f\n T_hot = %.1f "%(tcold,thot))
         
         # update Parameter hints based on first guess.
         self._model.set_param_hint('m1',value=slopecold,vary=True)
@@ -558,7 +561,10 @@ class H2ExcitationFit(ExcitationFit):
         warnings.resetwarnings()
         #print(fit_report(self._fitresult))
         self._compute_quantities(self._fitresult.params)
-        print(f"Fitted excitation temperatures:\n T_cold = {self.tcold.value:3.0f}+/-{self.tcold.error:.1f}\n T_hot = {self.thot.value:3.0f}+/-{self.thot.error:.1f}")
+        print("Fitted excitation temperatures and column densities:")
+        print(f" T_cold = {self.tcold.value:3.0f}+/-{self.tcold.error:.1f}\n T_hot = {self.thot.value:3.0f}+/-{self.thot.error:.1f}")
+        print(f" N_cold = {self.coldencold.value:.2e}+/-{self.coldencold.error:.1e}\n N_hot = {self.coldenhot.value:.2e}+/-{self.coldenhot.error:.1e}")
+        print(f" N_total = {self.total_colden.value:.2e}+/-{self.total_colden.error:.1e}")
         return self._fitresult
 
     def _two_lines(self,x, m1, n1, m2, n2):
