@@ -31,6 +31,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
     :type measurements: array or dict `~pdrtpy.measurement.Measurement`. If dict, the keys should be the Measurement *identifiers*.  
     """
     def __init__(self,modelset=ModelSet("wk2006",z=1),measurements=None):
+        super().__init__() # needed?
         if type(modelset) == str:
             # may need to disable this
             self._initialize_modelTable(modelset)
@@ -56,9 +57,9 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self.density_type = None
         #self._plotter = LineRatioPlot(self) #not needed
     
-    def _set_measurementnaxis(self):
-        fk = utils.firstkey(self._measurements)
-        self._measurementnaxis = len(self._measurements[fk].shape)
+    #def _set_measurementnaxis(self):
+    #    fk = utils.firstkey(self._measurements)
+    #    self._measurementnaxis = len(self._measurements[fk].shape)
 
     @property
     def modelset(self):
@@ -92,25 +93,25 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         return list(self._observedratios.keys())
 
 
-    @property
-    def has_maps(self):
-        '''Are the Measurements used map-based?. (i.e., have 2 spatial axes)
-        
-        :returns: True, if the observational inputs are spatial maps, False otherwise
- 
-        :rtype: bool
-        '''
-        
-        return self._measurementnaxis > 1
-    @property
-    
-    def has_vectors(self):
-        '''Are the Measurements used a Nx1 vector, e.g. read in from a table with :meth:`~pdrtpy.Measurement.from_table`.
-        
-        :returns: True, if the observational inputs are a vector, False otherwise
-        :rtype: bool
-        '''
-        return self._measurementnaxis == 1
+#    @property
+#    def has_maps(self):
+#        '''Are the Measurements used map-based?. (i.e., have 2 spatial axes)
+#        
+#        :returns: True, if the observational inputs are spatial maps, False otherwise
+# 
+#        :rtype: bool
+#        '''
+#        
+#        return self._measurementnaxis > 1
+#    @property
+#    
+#    def has_vectors(self):
+#        '''Are the Measurements used a Nx1 vector, e.g. read in from a table with #:meth:`~pdrtpy.Measurement.from_table`.
+#        
+#        :returns: True, if the observational inputs are a vector, False otherwise
+##        :rtype: bool
+#        '''
+#        return self._measurementnaxis == 1
         
     @property
     def ratiocount(self):

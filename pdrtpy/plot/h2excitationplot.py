@@ -33,7 +33,7 @@ class ExcitationPlot(PlotBase):
         self._ylim = []
         self._label = label
 
-    def plot_diagram(self,position,size,norm=True,show_fit=False,**kwargs):
+    def plot_diagram(self,position=None,size=None,norm=True,show_fit=False,**kwargs):
         #@todo position and size might not necessarily match how the fit was done.
         r"""Plot the excitation diagram
         :param position: The position of the cutout array's center with respect to the data array. The position can be specified either as a `(x, y)` tuple of pixel coordinates or a :class:`~astropy.coordinates.SkyCoord`, which will use the :class:`~astropy.wcs.WCS` of the ::class:`~pdrtpy.measurement.Measurement`s added to this tool. See :class:`~astropy.nddata.utils.Cutout2D`.
@@ -59,8 +59,9 @@ class ExcitationPlot(PlotBase):
         error = np.array([c.error for c in cdavg.values()])
         sigma = LOGE*error/colden
         self._figure,self._axis  = self._plt.subplots(figsize=kwargs_opts['figsize'])
+        _label = '$'+self._label+'$ data'
         self._axis.errorbar(energy,np.log10(colden),yerr=sigma,
-                            fmt="o", capsize=1,label=self._label+' data')
+                            fmt="o", capsize=1,label=_label)
         if self._tool.opr_fitted:
             cdn = self._tool.average_column_density(norm=norm, position=position, 
                                                     size=size, line=False)
@@ -71,6 +72,7 @@ class ExcitationPlot(PlotBase):
             self._axis.set_ylabel("log $(N_u/g_u) ~({\\rm cm}^{-2})$")
         else:
             self._axis.set_ylabel("log $(N_u) ~({\\rm cm}^{-2})$")
+        # label the points with e.g. J=2,3,4...
         first=True
         for lab in sorted(cdavg):
             if first: 

@@ -9,6 +9,7 @@ from lmfit.model import Model, ModelResult
 from .toolbase import ToolBase
 from .. import pdrutils as utils
 from ..measurement import Measurement
+import warnings
 
 class ExcitationFit(ToolBase):
     """Base class for creating excitation fitting tools for various species.
@@ -17,6 +18,7 @@ class ExcitationFit(ToolBase):
     :type measurements: array or dict `~pdrtpy.measurement.Measurement`. If dict, the keys should be the Measurement *identifiers*.  
     """
     def __init__(self,measurements=None,constantsfile=None):
+        super().__init__()
         # must be set before call to init_measurements
         self._intensity_units = "erg cm^-2 s^-1 sr^-1"
         self._cd_units = 'cm^-2'
@@ -25,16 +27,14 @@ class ExcitationFit(ToolBase):
             self._measurements = measurements
         else:
             self._init_measurements(measurements)
+        self._set_measurementnaxis()
         if constantsfile is not None:
             # set up atomic constants table, default intensity units
             self._ac = constantsfile
             self._ac.add_index("Line")
             self._ac.add_index("J_u")
-        self._column_density = dict()
-        self._column_densities = dict()
-        # Most recent cutout selected by user for computation area.
-        self._cutout = None
-        
+        #@todo we don't really even use this.  CD's are computed on the fly in average_column_density()
+        self._column_density = dict()      
        
     def _init_measurements(self,m):
         '''Initialize measurements dictionary given a list.
@@ -62,9 +62,19 @@ class ExcitationFit(ToolBase):
         if self._measurements:
             self._measurements[m.id] = m
             # if there is an existing column density with this ID, remove it
-            self._column_densities.pop(m.id,None)
+            self._column_density.pop(m.id,None)
         else:
             self._init_measurements(m)
+            
+    def remove_measurement(self,id):
+        '''Delete a measurement from the internal dictionary used to compute column densities. Any associated column density will also be removed.
+
+           :param id: the measurement identifier
+           :type id: str
+           :raises KeyError: if id not in existing Measurements
+        '''
+        del self._measurements[id] # we want this to raise a KeyError if id not found
+        self._column_density.pop(m.id,None) # but not this.
 
     def replace_measurement(self,m):
         '''Safely replace an existing intensity Measurement.  Do not 
@@ -256,31 +266,42 @@ class H2ExcitationFit(ExcitationFit):
         '''   
         return self._temperature['hot']#self._fitparams.thot
     
-    def column_densities(self,norm=False,unit=utils._CM2):
-        '''The computed upper state column densities of stored intensities
+    def column_densities(self,norm=False,unit=utils._CM2, line=False):
+        r'''The computed upper state column densities of stored intensities
 
            :param norm: if True, normalize the column densities by the 
                        statistical weight of the upper state, :math:`g_u`.  
                        Default: False
            :type norm: bool
+           :param unit: The units in which to return the column density. Default: :math:`{\\rm }cm^{-2}`
+           :type unit: str or :class:`astropy.unit.Unit`
+           :param line: if True, the dictionary index is the Line name, 
+                     otherwise it is the upper state :math:`J` number.  Default: False
+           :type line: bool
 
-           :returns: dictionary of column densities indexed by Line name
+           :returns: dictionary of column densities indexed by upper state :math:`J` number or Line name. Default: False means return indexed by :math:`J`.
            :rtype: dict
         '''
         # Compute column densities if needed. 
         # Note: this has a gotcha - if user changes an existing intensity 
         # Measurement in place, rather than replaceMeasurement(), the colden 
         # won't get recomputed. But we warned them!
-        if not self._column_density or (len(self._column_density) != len(self._measurements)):
-            self._compute_column_densities(unit=unit)
+        #if not self._column_density or (len(self._column_density) != len(self._measurements)):
+        
+        # screw it. just always compute them.  Note to self: change this if it becomes computationally intensive
+        self._compute_column_densities(unit=unit,line=line)
         if norm:
             cdnorm = dict()
             for cd in self._column_density:
+                if line:
+                    denom = self._ac.loc[cd]["g_u"]
+                else:
+                    denom = self._ac.loc['J_u',cd]["g_u"]
                 # This fails with complaints about units:
                 #self._column_density[cd] /= self._ac.loc[cd]["g_u"]
                 #gu = Measurement(self._ac.loc[cd]["g_u"],unit=u.dimensionless_unscaled)
-                #print("1 normalizing")
-                cdnorm[cd] = self._column_density[cd]/self._ac.loc[cd]["g_u"]
+                cdnorm[cd] = self._column_density[cd]/denom
+            #return #self._column_density
             return cdnorm
         else:
             return self._column_density
@@ -291,7 +312,7 @@ class H2ExcitationFit(ExcitationFit):
            :param line: if True, the dictionary index is the Line name, 
                      otherwise it is the upper state :math:`J` number.  Default: False
            :type line: bool
-           :returns: dictionary indexed by upper state :math:`J` number or Line name. 
+           :returns: dictionary indexed by upper state :math:`J` number or Line name. Default: False means return indexed by :math:`J`.
            :rtype: dict
         '''
         t = dict()
@@ -304,11 +325,7 @@ class H2ExcitationFit(ExcitationFit):
         return t
 
     def run(self):
-        cdavg = self.average_column_density(norm=True)
-        energy = self.energies(line=False)
-        z=np.array([np.hstack([cdavg[key],energy[key]]) for key in cdavg.keys()])
-        x = Measurement(z[:,0],unit="K")
-        y = Measurement(z[:1],unit=utils._CM2)
+        pass
 
     def intensity(self,colden):
         # colden is N_upper
@@ -342,23 +359,34 @@ class H2ExcitationFit(ExcitationFit):
            :returns: a :class:`~pdrtpy.measurement.Measurement` of the column density.
            :rtype: :class:`~pdrtpy.measurement.Measurement` 
         '''
-        #print("calling colden")
-        dE = self._ac.loc[intensity.id]["dE/k"]*constants.k_B.cgs*self._ac["dE/k"].unit
+
+        dE = self._ac.loc[intensity.id]["dE/k"] * constants.k_B.cgs * self._ac["dE/k"].unit
         A = self._ac.loc[intensity.id]["A"]*self._ac["A"].unit
         v = 4.0*math.pi*u.sr/(A*dE)
-        #print("dE ",dE.unit,' A ',A.unit,' v ',v.unit)
         val = Measurement(data=v.value,unit=v.unit)
         N_upper = intensity * val # error will get propagated
         return N_upper.convert_unit_to(unit)
 
-    def _compute_column_densities(self,unit):
-        '''Compute all column densities for stored intensity measurements
-           :param unit: The units in which to return the column density. Default: cm-2
+    def _compute_column_densities(self,unit=utils._CM2,line=False):
+        r'''Compute all upper level column densities for stored intensity measurements and puts them in a dictionary
+           :param unit: The units in which to return the column density. Default: :math:`{\\rm }cm^{-2}`
            :type unit: str or :class:`astropy.unit.Unit`
-           :returns: a :class:`~pdrtpy.measurement.Measurement` of the column density.
+           :param line: if True, the dictionary index is the Line name, 
+                     otherwise it is the upper state :math:`J` number.  Default: False
+           :type line: bool
+        
+            # should we reutrn something here or just compute them and never store.
+            # I'm beginning to think there is no reason to store them.
+           #:returns: dictionary of column densities as:class:`~pdrtpy.measurement.Measurement  indexed by upper state :math:`J` number or Line name. Default: False means return indexed by :math:`J`.
+           #:returns: a :class:`~pdrtpy.measurement.Measurement` of the column density.
         '''
+        self._column_density = dict()
         for m in self._measurements:
-            self._column_density[m] = self.colden(self._measurements[m],unit)
+            if line:
+                index = m
+            else:
+                index = self._ac.loc[m]["J_u"]             
+            self._column_density[index] = self.colden(self._measurements[m],unit)
 
     def gu(self,key,opr):
         if utils.isEven(self._ac.loc[key]["J_u"]):
@@ -367,13 +395,13 @@ class H2ExcitationFit(ExcitationFit):
             print("Ju=%d scaling by [%.2f/%.2f]=%.2f"%(self._ac.loc[key]["J_u"],opr,self._canonical_opr,opr/self._canonical_opr))
             return self._ac.loc[key]["g_u"]*opr/self._canonical_opr
         
-    def average_column_density(self,position,size,norm=True,
+    def average_column_density(self,position=None,size=None,norm=True,
                                unit=utils._CM2,line=False):
         r'''Compute the average column density over a spatial box.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.
 
         :param position: The position of the cutout array's center with respect to the data array. The position can be specified either as a `(x, y)` tuple of pixel coordinates or a :class:`~astropy.coordinates.SkyCoord`, which will use the :class:`~astropy.wcs.WCS` of the ::class:`~pdrtpy.measurement.Measurement`s added to this tool. See :class:`~astropy.nddata.utils.Cutout2D`.
-        :type position: tuple or :class:`astropy.coordinates.SkyCoord`
-        :param size: The size of the cutout array along each axis. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(ny, nx)` order. Scalar numbers in size are assumed to be in units of pixels. `size` can also be a :class:`~astropy.units.Quantity` object or contain :class:`~astropy.units.Quantity` objects. Such :class:`~astropy.units.Quantity` objects must be in pixel or angular units. For all cases, size will be converted to an integer number of pixels, rounding the the nearest integer. See the mode keyword for additional details on the final cutout size.
+        :type position: tuple or :class:`astropy.coordinates.SkyCoord` 
+        :param size: The size of the cutout array along each axis. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(ny, nx)` order. Scalar numbers in size are assumed to be in units of pixels. `size` can also be a :class:`~astropy.units.Quantity` object or contain :class:`~astropy.units.Quantity` objects. Such :class:`~astropy.units.Quantity` objects must be in pixel or angular units. For all cases, size will be converted to an integer number of pixels, rounding the the nearest integer. See the mode keyword for additional details on the final cutout size. Default value of None means use all pixels (position is ignored)
         :type size: int, array_like, or :class:`astropy.units.Quantity`
         :param norm: if True, normalize the column densities by the 
                        statistical weight of the upper state, :math:`g_u`.  For ortho-$H_2$ $g_u = OPR \times (2J+1)$, for para-$H_2$ $g_u=2J+1$. In LTE, $OPR = 3$.
@@ -391,30 +419,39 @@ class H2ExcitationFit(ExcitationFit):
         # Doesn't come out too different from np.sqrt(np.cov(values, aweights=weights))
         
         # Set norm=False because we normalize below if necessary.
-        cdnorm = self.column_densities(norm=False,unit=unit)
+        if position is not None and size is None:
+            print("WARNING: ignoring position keyword since no size given")
+        if position is None and size is not None:
+            raise Exception("You must supply a position in addition to size for cutout")
+        cdnorm = self.column_densities(norm=norm,unit=unit,line=line)
         cdmeas = dict()
         for cd in cdnorm:
             ca = cdnorm[cd]
-            self._cutout = Cutout2D(ca.data, position, size, ca.wcs, mode='partial', fill_value=np.nan)
-            w= Cutout2D(ca.uncertainty.array, position, size, ca.wcs, mode='partial', fill_value=np.nan)
-            cddata = np.ma.masked_array(self._cutout.data,np.isnan(self._cutout.data))
-            weights = np.ma.masked_array(w.data,np.isnan(w.data))
+            if size is not None:
+                if len(size) != len(ca.shape):
+                    raise Exception(f"Size dimensions [{len(size)}] don't match measurements [{len(ca.shape)}]")
+                if size[0] > ca.shape[0] or size[1] > ca.shape[1]:
+                    raise Exception(f"Requested cutout size {size} exceeds measurement size {ca.shape}")
+                cutout = Cutout2D(ca.data, position, size, ca.wcs, mode='partial', fill_value=np.nan)
+                w= Cutout2D(ca.uncertainty.array, position, size, ca.wcs, mode='partial', fill_value=np.nan).data
+                cddata = np.ma.masked_array(cutout.data,np.isnan(cutout.data))
+                weights = np.ma.masked_array(w.data,np.isnan(w.data))
+            else: 
+                cddata = ca.data
+                # handle corner case of measurment.data is shape = (1,)
+                # and StdDevUncertainty.array is shape = ().
+                # They both have only one value but StdDevUncertainty stores
+                # its data in a peculiar way.
+                # alternative: check that type(ca.uncertainty.array) == np.ndarray would also work.
+                if np.shape(ca.data) == (1,) and np.shape(ca.uncertainty.array) == ():
+                    weights = np.array([ca.uncertainty.array])
+                else:
+                    weights = ca.uncertainty.array
             cdavg = np.average(cddata,weights=weights)
             error = np.nanmean(ca.error)
-            if line:
-                index = cd
-            else:
-                index = self._ac.loc[cd]["J_u"]
-            if norm:
-                #if test:
-                #    cdavg /= self.gu(cd,self.opr)
-                #    error /= self.gu(cd,self.opr)
-                #else:
-                cdavg /= self._ac.loc[cd]["g_u"]
-                error /= self._ac.loc[cd]["g_u"]
-            cdmeas[index] = Measurement(data=cdavg, uncertainty=StdDevUncertainty(error),
-                                        unit=ca.unit, identifier=cd)
-             
+            cdmeas[index] = Measurement(data=cdavg, 
+                                        uncertainty=StdDevUncertainty(error),
+                                        unit=ca.unit, identifier=cd)            
         return cdmeas
         
     def _get_ortho_indices(self,ids):
@@ -438,7 +475,8 @@ class H2ExcitationFit(ExcitationFit):
         :rtype: list of int
         """
         return np.where(self._ac.loc[ids]["J_u"]%2==0)[0]
-            
+    
+    # currently unused.  in future may allow users to give first guesses at the temperatures, though not clear these will be better than _firstguess().  plus this does nothing for the intercepts  
     def _slopesfromguess(self,guess):
         """given a guess of two temperatures, compute slopes from them"""
         if guess[0]<guess[1]:
@@ -498,22 +536,29 @@ class H2ExcitationFit(ExcitationFit):
         #kwargs_opts.update(kwargs)
         sigma = utils.LOGE*_colden.error/_colden.data
         slopecold, intcold, slopehot, inthot = self._first_guess(x,y)
-        tcold=(-utils.LOGE/slopecold)*u.Unit("K")
-        thot=(-utils.LOGE/slopehot)*u.Unit("K")
-        print("First guess at excitation temperatures: T_cold = %.1f, T_hot = %.1f "%(tcold.value,thot.value))
-
+        tcold=(-utils.LOGE/slopecold)
+        thot=(-utils.LOGE/slopehot)
+        print("First guess at excitation temperatures: T_cold = %.1f, T_hot = %.1f "%(tcold,thot))
+        
+        # update Parameter hints based on first guess.
+        self._model.set_param_hint('m1',value=slopecold,vary=True)
+        self._model.set_param_hint('n1',value=intcold,vary=True)
+        self._model.set_param_hint('m2',value=slopehot,vary=True)
+        self._model.set_param_hint('n2',value=inthot,vary=True)
+        # update whether opr is allowed to vary or not.
         self._model.set_param_hint('opr',vary = fit_opr)
-
         p=self._model.make_params()
         #p.pretty_print()
+        
         wts = 1/(sigma*sigma)
         idx=self._get_ortho_indices(_ids)
+        # Suppress the incorrect warning about model parameters
+        warnings.simplefilter('ignore',category=UserWarning)
         self._fitresult = self._model.fit(data=y, weights=wts, x=x, idx=idx,fit_opr=fit_opr)
-        print(fit_report(self._fitresult))
-        # @todo update Parameter hints based on first guess.
-        # Parameter initial values get passed as x0 to scipy.minimize
-        # So You can't do it separately with   fit_kws={"x0":kwargs_opts['guess']})
+        warnings.resetwarnings()
+        #print(fit_report(self._fitresult))
         self._compute_quantities(self._fitresult.params)
+        print(f"Fitted excitation temperatures:\n T_cold = {self.tcold.value:3.0f}+/-{self.tcold.error:.1f}\n T_hot = {self.thot.value:3.0f}+/-{self.thot.error:.1f}")
         return self._fitresult
 
     def _two_lines(self,x, m1, n1, m2, n2):
