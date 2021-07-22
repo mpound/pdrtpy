@@ -195,7 +195,7 @@ class PlotBase:
     def colorcycle(self,colorcycle):
         """Set the plot color cycle for multi-trace plots.  The default color cycle is optimized for color-blind users. 
         
-        :param colorcycle: List of colors to use, typically an list of hex color strings.  This list will be passed to :meth:`matplotlib.pyplot.rc` as the *axes prop_cycle* parameter using :class:`matplotlib.cycler`.
+        :param colorcycle: List of colors to use, typically a list of hex color strings.  This list will be passed to :meth:`matplotlib.pyplot.rc` as the *axes prop_cycle* parameter using :class:`matplotlib.cycler`.
         :type colorcycle: list
         """
         self._plt.rc('axes', prop_cycle=(cycler('color',  colorcycle)))
