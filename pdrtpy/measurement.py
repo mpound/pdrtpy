@@ -405,10 +405,28 @@ class Measurement(CCDData):
         m = "%s +/- %s %s" % (self.data,self.error,self.unit)
         return m
     
+
     def __str__(self):
+        # this fails for array data
+        #return  "{:3.2e} +/- {:3.2e} {:s}".format(self.data,self.error,self.unit)
         m = "%s +/- %s %s" % (self.data,self.error,self.unit)
         return m
     
+    def __format__(self,spec):
+        #todo look more closely how Quantity does this
+        #print("using __format__")
+        if spec=="":
+            return str(self)
+        if len(self) == 0:
+        # this can't possibly be the way you are supposed to use this, but it works
+            spec = "{:"+spec+"}"
+            return spec.format(self.data) + " +/- " + spec.format(self.error)+" {:s}".format(self.unit)
+        else:
+            spec="%"+spec
+            a = np.vectorize(spec.__mod__,otypes=[np.float64])(self.data)
+            b = np.vectorize(spec.__mod__,otypes=[np.float64])(self.error)
+            return "%s +/- %s %s" % (a,b,self.unit)
+        
     def __getitem__(self,index):
         '''Allows us to use [] to index into the data array
         '''
