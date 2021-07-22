@@ -501,7 +501,7 @@ class H2ExcitationFit(ExcitationFit):
                 else:
                     weights = ca.uncertainty.array
             cdavg = np.average(cddata,weights=weights)
-            error = np.nanmean(ca.error)
+            error = np.nanmean(ca.error)/np.sqrt(ca.error.size)#-1
             cdmeas[cd] = Measurement(data=cdavg, 
                                         uncertainty=StdDevUncertainty(error),
                                         unit=ca.unit, identifier=cd)            
