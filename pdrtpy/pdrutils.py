@@ -20,6 +20,7 @@ _RFS_UNIT_ = u.erg/(u.second*u.cm*u.cm)
 _OBS_UNIT_ = u.erg/(u.second*u.cm*u.cm*u.sr)
 _CM = u.Unit("cm")
 _CM2 = u.Unit("cm-2")
+_K = u.Unit("K")
 _KKMS = u.Unit("K km s-1")
 LOGE = np.log10(np.e)
 LN10 = np.log(10)
@@ -332,6 +333,7 @@ def to(unit,image):
   #print("converting [%s] in %s to [%s]"%(image.unit,image.header["TITLE"],unit))
   #@todo check out NDDataArray.convert_unit_to
   # https://docs.astropy.org/en/stable/api/astropy.nddata.NDDataArray.html#astropy.nddata.NDDataArray.convert_unit_to
+    # todo equivalencies needed for e.g. temperature
   value = image.unit.to(unit)
   newmap = deepcopy(image)
   newmap.data = newmap.data * value
