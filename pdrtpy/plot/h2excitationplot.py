@@ -22,7 +22,7 @@ from astropy.visualization.stretch import SinhStretch,  LinearStretch
 from matplotlib.colors import LogNorm
 
 from .plotbase import PlotBase
-from ..pdrutils import to,float_formatter,LOGE
+from ..pdrutils import to,float_formatter,LOGE,isOdd
 
 class ExcitationPlot(PlotBase):
     """Class to plot various results from H2 Excitation diagram fitting.
@@ -49,8 +49,12 @@ class ExcitationPlot(PlotBase):
                       'xmax':5000.0, #@TODO this should scale with max(energy)
                       'ymax':22,
                       'ymin': 15,
-                      'grid' :None,
-                      'figsize':(10,7)}
+                      'grid' :False,
+                      'figsize':(10,7),
+                      'capsize':3,
+                      'linewidth': 2.0,
+                      'markersize': 8,
+                      'color':None}
         kwargs_opts.update(kwargs)
         cdavg = self._tool.average_column_density(norm=norm, position=position, size=size, line=False)
         energies = self._tool.energies(line=False)
@@ -59,13 +63,28 @@ class ExcitationPlot(PlotBase):
         error = np.array([c.error for c in cdavg.values()])
         sigma = LOGE*error/colden
         self._figure,self._axis  = self._plt.subplots(figsize=kwargs_opts['figsize'])
-        _label = '$'+self._label+'$ data'
-        self._axis.errorbar(energy,np.log10(colden),yerr=sigma,
-                            fmt="o", capsize=1,label=_label)
         if self._tool.opr_fitted:
-            # Do it for only the odd ones!
+            _label = "LTE"
+        else:
+            _label = '$'+self._label+'$ data'
+        ec = self._axis.errorbar(energy,np.log10(colden),yerr=sigma,
+                            fmt="o", capsize=kwargs_opts['capsize'],
+                            label=_label, lw=kwargs_opts['linewidth'],
+                            ms=kwargs_opts['markersize'],color=kwargs_opts['color'])
+        if self._tool.opr_fitted:
+            # Plot only the odd-J ones!
             cddn = colden*self._tool._canonical_opr/self._tool.opr
-            self._axis.errorbar(x=energy,y=np.log10(cddn),marker="^",label=f"OPR={self._tool.opr:.2f}",yerr=sigma,capsize=1)
+            odd_index = np.where([isOdd(c) for c in cdavg.keys()])
+            #print(ec.lines)
+            #color = ec.lines[0].get_color() # want these to be same color as data
+            self._axis.errorbar(x=energy[odd_index], 
+                                y=np.log10(cddn[odd_index]),marker="^",
+                                label=f"OPR = {self._tool.opr.value:.2f}",
+                                yerr=sigma[odd_index], 
+                                capsize=2*kwargs_opts['capsize'],
+                                linestyle='none',color='k',
+                                lw=kwargs_opts['linewidth'],
+                                ms=kwargs_opts['markersize'])
         self._axis.set_xlabel("$E_u/k$ (K)")
         if norm:
             self._axis.set_ylabel("log $(N_u/g_u) ~({\\rm cm}^{-2})$")
@@ -84,35 +103,37 @@ class ExcitationPlot(PlotBase):
         if show_fit:
             tt = self._tool
             if tt.fit_result is None:
-                raise ValueError("No fit to show. Have you run the fit in your H2ExcitationTool?")
+                raise ValueError("No fit to show. Have you run the fit in your H2ExcitationFit?")
+            # Doesn't work
+            #if kwargs_opts['color'] is not None:
+            #    print("shift color")
+            #    self.colorcycle(self._CB_color_cycle[1:])
             x_fit = np.linspace(0,max(energy), 30)  
             outpar = tt.fit_result.params.valuesdict()
             labcold = r"$T_{cold}=$" + f"{tt.tcold.value:3.0f}" +r"$\pm$" + f"{tt.tcold.error:.1f} {tt.tcold.unit}"
             labhot= r"$T_{hot}=$" + f"{tt.thot.value:3.0f}"+ r"$\pm$" + f"{tt.thot.error:.1f} {tt.thot.unit}"
             labnh = r"$N("+self._label+")=" + float_formatter(tt.total_colden,2)+"$"
             self._axis.plot(x_fit,tt._one_line(x_fit, outpar['m1'], 
-                                         outpar['n1']), '.' ,label=labcold)
+                            outpar['n1']), '.' ,label=labcold,
+                            lw=kwargs_opts['linewidth'])
             self._axis.plot(x_fit,tt._one_line(x_fit, outpar['m2'], 
-                                        outpar['n2']), '.', label=labhot)
+                            outpar['n2']), '.', label=labhot,
+                            lw=kwargs_opts['linewidth'])
             opr_p = tt._fitresult.params['opr']
-            self._axis.plot(x_fit, tt.fit_result.eval(x=x_fit,fit_opr=False), label="sum")
+            self._axis.plot(x_fit, tt.fit_result.eval(x=x_fit,fit_opr=False), label="fit")
             handles,labels=self._axis.get_legend_handles_labels()
             #kluge to ensure N(H2) label is last
             phantom = self._axis.plot([],marker="", markersize=0,ls="",lw=0)
             handles.append(phantom[0])
             labels.append(labnh)
-            #if tt.opr_fitted:
-            #    labopr = f"Fitted OPR={tt.opr:2.2f}"+r"$\pm$"+f"{opr_p.stderr:0.2f}"
-            #    ph2 = self._axis.plot([],marker="", markersize=0,ls="",lw=0)
-            #   handles.append(ph2[0])
-            #   labels.append(labopr)
         self._axis.set_xlim(kwargs_opts['xmin'],kwargs_opts['xmax'])
         self._axis.set_ylim(kwargs_opts['ymin'],kwargs_opts['ymax'])
         self._axis.xaxis.set_major_locator(MultipleLocator(1000))
         self._axis.yaxis.set_major_locator(MultipleLocator(1))
         self._axis.xaxis.set_minor_locator(MultipleLocator(200))
         self._axis.yaxis.set_minor_locator(MultipleLocator(0.2))
-        if kwargs_opts['grid'] is not None:
-            self._axis.grid(b=True,which='both',axis='both',lw=1,color='k',alpha=0.33)
+        if kwargs_opts['grid']:
+            self._axis.grid(b=True,which='both',axis='both',lw=kwargs_opts['linewidth'],
+                            color='k',alpha=0.33)
             
         self._axis.legend(handles,labels)
