@@ -184,7 +184,11 @@ class H2ExcitationFit(ExcitationFit):
         :type params: :class:`lmfit.Parameters`
         """
         self._temperature = dict()
+        # N(J=0) column density = intercept on y axis               
+        self._j0_colden = dict()
+        # total column density = N(J=0)*Z(T) where Z(T) is partition function
         self._total_colden = dict()
+
         if params['m2'] <  params['m1']:
             cold = '2'
             hot = '1'
@@ -208,26 +212,46 @@ class H2ExcitationFit(ExcitationFit):
         nc = 10**params[ncold]
         uc = utils.LN10*params[ncold].stderr*nc
         ucn = StdDevUncertainty(np.abs(uc))
-        self._total_colden["cold"] = Measurement(nc,unit=self._cd_units,uncertainty=ucn)
+        self._j0_colden["cold"] = Measurement(nc,unit=self._cd_units,uncertainty=ucn)
         nh = 10**params[nhot]
         uh = utils.LN10*params[nhot].stderr*nh
         uhn = StdDevUncertainty(np.abs(uh))
-        self._total_colden["hot"] = Measurement(nh,unit=self._cd_units,uncertainty=uhn)
+        self._j0_colden["hot"] = Measurement(nh,unit=self._cd_units,uncertainty=uhn)
+        self._total_colden["cold"] = self._j0_colden["cold"] * self._partition_function(self.tcold)
+        self._total_colden["hot"] = self._j0_colden["hot"] * self._partition_function(self.thot)      
+        self._opr = Measurement(self._fitresult.params['opr'].value,
+                                unit=u.dimensionless_unscaled, 
+                        uncertainty=StdDevUncertainty(self._fitresult.params['opr'].stderr))
+        
         
     @property
     def fit_result(self):
+        '''The result of the fitting procedure which includes fit statistics, variable values and uncertainties, and correlations between variables.
+        
+        :rtype: :class:`lmfit.modelresult.ModelResult
+        '''
         return self._fitresult
     
     @property
     def opr_fitted(self):
+        '''Was the ortho-to-para ratio fitted?
+        
+        :returns: True if OPR was fitted, False if canonical LTE value was used
+        :rtype: bool
+        '''
         if self._fitresult is None: 
             return False
         return self._fitresult.params['opr'].vary
     
     @property
     def opr(self):
+        '''The ortho-to-para ratio (OPR)
+        
+        :returns: The fitted OPR is it was determined in the fit, otherwise the canonical LTE OPR
+        :rtype: float
+        '''
         if self.opr_fitted:
-            return self._fitresult.params['opr'].value
+            return self._opr
         else:
             return self._canonical_opr
         
@@ -238,24 +262,34 @@ class H2ExcitationFit(ExcitationFit):
            :rtype: list of :class:`~pdrtpy.measurement.Measurement`
         '''
         return self._measurements  
+    
     @property
     def total_colden(self):
         '''The fitted total column density
         
         :rtype: :class:`~pdrtpy.measurement.Measurement` 
         '''
-        return self._total_colden["hot"]+self._total_colden["cold"] #self._fitparams.total_colden
+        return self._total_colden["hot"]+self._total_colden["cold"]
 
     @property
-    def coldenhot(self):
+    def hot_colden(self):
+        '''The fitted hot gas total column density
+        
+        :rtype: :class:`~pdrtpy.measurement.Measurement`         
+        '''
         return self._total_colden["hot"]
+    
     @property 
-    def coldencold(self):
+    def cold_colden(self):
+        '''The fitted cold gas total column density
+        
+        :rtype: :class:`~pdrtpy.measurement.Measurement`         
+        '''
         return self._total_colden["cold"]
 
     @property 
     def tcold(self):
-        '''The fitted cold gas temperature
+        '''The fitted cold gas excitation temperature
         
         :rtype: :class:`~pdrtpy.measurement.Measurement` 
         '''        
@@ -263,7 +297,7 @@ class H2ExcitationFit(ExcitationFit):
 
     @property
     def thot(self):
-        '''The fitted hot gas temperature
+        '''The fitted hot gas excitation temperature
         
         :rtype: :class:`~pdrtpy.measurement.Measurement` 
         '''   
@@ -328,6 +362,22 @@ class H2ExcitationFit(ExcitationFit):
         return t
 
     def run(self,position=None,size=None,fit_opr=False,**kwargs):
+        r'''Fit the :math:`log N_u-E` diagram with two excitation temperatures,
+        a ``hot`` :math:`T_{ex}` and a ``cold`` :math:`T_{ex}`. 
+        
+        If ``position`` and ``size`` are given, the data will be averaged over a spatial box before fitting.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.  Otherwise, the fit is done at every pixel.   If the Measurements are single values, these arguments are ignored.
+
+        :param position: The position of the cutout array's center with respect to the data array. The position can be specified either as a `(x, y)` tuple of pixel coordinates or a :class:`~astropy.coordinates.SkyCoord`, which will use the :class:`~astropy.wcs.WCS` of the ::class:`~pdrtpy.measurement.Measurement`s added to this tool. See :class:`~astropy.nddata.utils.Cutout2D`.
+        :type position: tuple or :class:`astropy.coordinates.SkyCoord` 
+        :param size: The size of the cutout array along each axis. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(ny, nx)` order. Scalar numbers in size are assumed to be in units of pixels. `size` can also be a :class:`~astropy.units.Quantity` object or contain :class:`~astropy.units.Quantity` objects. Such :class:`~astropy.units.Quantity` objects must be in pixel or angular units. For all cases, size will be converted to an integer number of pixels, rounding the the nearest integer. See the mode keyword for additional details on the final cutout size. Default value of None means use all pixels (position is ignored)
+        :type size: int, array_like, or :class:`astropy.units.Quantity`
+        :param fit_opr: Whether to fit the ortho-to-para ratio or not. If True, the OPR will be varied to determine the best value. If False, the OPR is fixed at the canonical LTE value of 3.
+        :type fit_opr: bool
+        :returns: The fit result which contains slopes, intercepts, the ortho to para ratio (OPR), and fit statistics
+        :rtype:  :class:`lmfit.model.ModelResult`       
+        
+        
+        '''
         return self.fit_excitation(position,size,fit_opr,**kwargs)
 
     def intensity(self,colden):
@@ -511,14 +561,16 @@ class H2ExcitationFit(ExcitationFit):
         """Fit the :math:`log N_u-E` diagram with two excitation temperatures,
         a ``hot`` :math:`T_{ex}` and a ``cold`` :math:`T_{ex}`.  A first
         pass guess is initially made using data partitioning and two
-        linear fits.
-        :param energy: Eu/k
-        :type energy: :class:`~pdrtpy.measurement.Measurement` containing list of values.
-        :param colden: list of log(Nu/gu)
-        :type colden: :class:`~pdrtpy.measurement.Measurement` containing list of values and errors
+        linear fits. If ``position`` and ``size`` are given, the data will be averaged over a spatial box before fitting.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.  Otherwise, the fit is done at every pixel.   If the Measurements are single values, these arguments are ignored.
 
-        :returns: The fit result: slopes, intercepts, and, if `fit_opr=True`, the ortho to para ratio (OPR)
-        :rtype:  :class:`lmfit.model.ModelResult`
+        :param position: The position of the cutout array's center with respect to the data array. The position can be specified either as a `(x, y)` tuple of pixel coordinates or a :class:`~astropy.coordinates.SkyCoord`, which will use the :class:`~astropy.wcs.WCS` of the ::class:`~pdrtpy.measurement.Measurement`s added to this tool. See :class:`~astropy.nddata.utils.Cutout2D`.
+        :type position: tuple or :class:`astropy.coordinates.SkyCoord` 
+        :param size: The size of the cutout array along each axis. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(ny, nx)` order. Scalar numbers in size are assumed to be in units of pixels. `size` can also be a :class:`~astropy.units.Quantity` object or contain :class:`~astropy.units.Quantity` objects. Such :class:`~astropy.units.Quantity` objects must be in pixel or angular units. For all cases, size will be converted to an integer number of pixels, rounding the the nearest integer. See the mode keyword for additional details on the final cutout size. Default value of None means use all pixels (position is ignored)
+        :type size: int, array_like, or :class:`astropy.units.Quantity`
+        :param fit_opr: Whether to fit the ortho-to-para ratio or not. If True, the OPR will be varied to determine the best value. If False, the OPR is fixed at the canonical LTE value of 3.
+        :type fit_opr: bool
+        :returns: The fit result which contains slopes, intercepts, the ortho to para ratio (OPR), and fit statistics
+        :rtype:  :class:`lmfit.model.ModelResult`  
         """
         energy = self.energies(line=True)
         _ee = np.array([c for c in energy.values()])
@@ -541,7 +593,7 @@ class H2ExcitationFit(ExcitationFit):
         slopecold, intcold, slopehot, inthot = self._first_guess(x,y)
         tcold=(-utils.LOGE/slopecold)
         thot=(-utils.LOGE/slopehot)
-        print("First guess at excitation temperatures:\n T_cold = %.1f\n T_hot = %.1f "%(tcold,thot))
+        print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K"%(tcold,thot))
         
         # update Parameter hints based on first guess.
         self._model.set_param_hint('m1',value=slopecold,vary=True)
@@ -562,9 +614,9 @@ class H2ExcitationFit(ExcitationFit):
         #print(fit_report(self._fitresult))
         self._compute_quantities(self._fitresult.params)
         print("Fitted excitation temperatures and column densities:")
-        print(f" T_cold = {self.tcold.value:3.0f}+/-{self.tcold.error:.1f}\n T_hot = {self.thot.value:3.0f}+/-{self.thot.error:.1f}")
-        print(f" N_cold = {self.coldencold.value:.2e}+/-{self.coldencold.error:.1e}\n N_hot = {self.coldenhot.value:.2e}+/-{self.coldenhot.error:.1e}")
-        print(f" N_total = {self.total_colden.value:.2e}+/-{self.total_colden.error:.1e}")
+        print(f" T_cold = {self.tcold.value:3.0f}+/-{self.tcold.error:.1f} {self.tcold.unit}\n T_hot = {self.thot.value:3.0f}+/-{self.thot.error:.1f} {self.thot.unit}")
+        print(f" N_cold = {self.cold_colden.value:.2e}+/-{self.cold_colden.error:.1e} {self.cold_colden.unit}\n N_hot = {self.hot_colden.value:.2e}+/-{self.hot_colden.error:.1e} {self.hot_colden.unit}")
+        print(f" N_total = {self.total_colden.value:.2e}+/-{self.total_colden.error:.1e} {self.total_colden.unit}")
         return self._fitresult
 
     def _two_lines(self,x, m1, n1, m2, n2):
@@ -598,3 +650,24 @@ class H2ExcitationFit(ExcitationFit):
            :type n1: float
         '''
         return m1*x+n1
+    
+
+    def _partition_function(self,tex):
+        '''Calculate the H2 partition function given an excitation temperature
+        
+        :param tex: the excitation temperature
+        :type tex: :class:`~pdrtpy.measurement.Measurement` or :class:`astropy.units.quantity.Quantity`
+        :returns: the partition function value
+        :rtype: numpy.float
+        '''
+        # See Herbst et al 1996
+        # http://articles.adsabs.harvard.edu/pdf/1996AJ....111.2403H
+        # Z(T) =  = 0.0247T * [1—exp(—6000/T)]^-1
+        
+        # This is just being defensive.  I know the temperatures used internally are in K.
+        t = (tex.value*u.Unit(tex.unit)).to("K",equivalencies=u.temperature()).value
+        #print(t)
+        #print(tex.value)
+        z = 0.0247*t/(1.0 - np.exp(-6000.0/t))
+        return z
+
