@@ -97,6 +97,9 @@ class H2ExcitationFit(ExcitationFit):
         self._fitresult = None
         self._temperature = None
         self._total_colden = None
+        # position and size for averaging
+        self._position = None  
+        self._size = None
         
     def _init_params(self):
         #fit input parameters
@@ -367,16 +370,14 @@ class H2ExcitationFit(ExcitationFit):
         
         If ``position`` and ``size`` are given, the data will be averaged over a spatial box before fitting.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.  Otherwise, the fit is done at every pixel.   If the Measurements are single values, these arguments are ignored.
 
-        :param position: The position of the cutout array's center with respect to the data array. The position can be specified either as a `(x, y)` tuple of pixel coordinates or a :class:`~astropy.coordinates.SkyCoord`, which will use the :class:`~astropy.wcs.WCS` of the ::class:`~pdrtpy.measurement.Measurement`s added to this tool. See :class:`~astropy.nddata.utils.Cutout2D`.
-        :type position: tuple or :class:`astropy.coordinates.SkyCoord` 
-        :param size: The size of the cutout array along each axis. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(ny, nx)` order. Scalar numbers in size are assumed to be in units of pixels. `size` can also be a :class:`~astropy.units.Quantity` object or contain :class:`~astropy.units.Quantity` objects. Such :class:`~astropy.units.Quantity` objects must be in pixel or angular units. For all cases, size will be converted to an integer number of pixels, rounding the the nearest integer. See the mode keyword for additional details on the final cutout size. Default value of None means use all pixels (position is ignored)
-        :type size: int, array_like, or :class:`astropy.units.Quantity`
+        :param position: The position of the cutout array's center with respect to the data array. The position can be specified either as a `(x, y)` tuple of pixel coordinates.
+        :type position: tuple 
+        :param size: The size of the cutout array along each axis in pixels. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(nx, ny)` order [*this is the opposite of Cutout2D signature*]. Scalar numbers in size are assumed to be in units of pixels.  Default value of None means use all pixels (position is ignored)
+        :type size: int, array_like`
         :param fit_opr: Whether to fit the ortho-to-para ratio or not. If True, the OPR will be varied to determine the best value. If False, the OPR is fixed at the canonical LTE value of 3.
         :type fit_opr: bool
         :returns: The fit result which contains slopes, intercepts, the ortho to para ratio (OPR), and fit statistics
-        :rtype:  :class:`lmfit.model.ModelResult`       
-        
-        
+        :rtype:  :class:`lmfit.model.ModelResult`      
         '''
         return self.fit_excitation(position,size,fit_opr,**kwargs)
 
@@ -449,13 +450,13 @@ class H2ExcitationFit(ExcitationFit):
             return self._ac.loc[key]["g_u"]*opr/self._canonical_opr
         
     def average_column_density(self,position=None,size=None,norm=True,
-                               unit=utils._CM2,line=False):
+                               unit=utils._CM2,line=False, clip=0*u.Unit("cm-2")):
         r'''Compute the average column density over a spatial box.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.
 
-        :param position: The position of the cutout array's center with respect to the data array. The position can be specified either as a `(x, y)` tuple of pixel coordinates or a :class:`~astropy.coordinates.SkyCoord`, which will use the :class:`~astropy.wcs.WCS` of the ::class:`~pdrtpy.measurement.Measurement`s added to this tool. See :class:`~astropy.nddata.utils.Cutout2D`.
-        :type position: tuple or :class:`astropy.coordinates.SkyCoord` 
-        :param size: The size of the cutout array along each axis. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(ny, nx)` order. Scalar numbers in size are assumed to be in units of pixels. `size` can also be a :class:`~astropy.units.Quantity` object or contain :class:`~astropy.units.Quantity` objects. Such :class:`~astropy.units.Quantity` objects must be in pixel or angular units. For all cases, size will be converted to an integer number of pixels, rounding the the nearest integer. See the mode keyword for additional details on the final cutout size. Default value of None means use all pixels (position is ignored)
-        :type size: int, array_like, or :class:`astropy.units.Quantity`
+        :param position: The position of the cutout array's center with respect to the data array. The position can be specified either as a `(x, y)` tuple of pixel coordinates.
+        :type position: tuple 
+        :param size: The size of the cutout array along each axis. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(nx,ny)` order [*this is the opposite of Cutout2D signature*]. Scalar numbers in size are assumed to be in units of pixels.  Default value of None means use all pixels (position is ignored)
+        :type size: int, array_like`
         :param norm: if True, normalize the column densities by the 
                        statistical weight of the upper state, :math:`g_u`.  For ortho-$H_2$ $g_u = OPR \times (2J+1)$, for para-$H_2$ $g_u=2J+1$. In LTE, $OPR = 3$.
         :type norm: bool
@@ -476,6 +477,14 @@ class H2ExcitationFit(ExcitationFit):
             print("WARNING: ignoring position keyword since no size given")
         if position is None and size is not None:
             raise Exception("You must supply a position in addition to size for cutout")
+        if size is not None:
+            if np.isscalar(size):
+                size = np.array([size,size])
+            else:
+                #Cutout2D wants (ny,nx)
+                size = np.array([size[1],size[0]])
+        
+        clip = clip.to("cm-2")
         cdnorm = self.column_densities(norm=norm,unit=unit,line=line)
         cdmeas = dict()
         for cd in cdnorm:
@@ -483,12 +492,19 @@ class H2ExcitationFit(ExcitationFit):
             if size is not None:
                 if len(size) != len(ca.shape):
                     raise Exception(f"Size dimensions [{len(size)}] don't match measurements [{len(ca.shape)}]")
-                if size[0] > ca.shape[0] or size[1] > ca.shape[1]:
-                    raise Exception(f"Requested cutout size {size} exceeds measurement size {ca.shape}")
-                cutout = Cutout2D(ca.data, position, size, ca.wcs, mode='partial', fill_value=np.nan)
-                w= Cutout2D(ca.uncertainty.array, position, size, ca.wcs, mode='partial', fill_value=np.nan).data
-                cddata = np.ma.masked_array(cutout.data,np.isnan(cutout.data))
+
+
+                #if size[0] > ca.shape[0] or size[1] > ca.shape[1]:
+                #    raise Exception(f"Requested cutout size {size} exceeds measurement size {ca.shape}")
+                cutout = Cutout2D(ca.data, position, size, ca.wcs, mode='trim', fill_value=np.nan)
+                w= Cutout2D(ca.uncertainty.array, position, size, ca.wcs, mode='trim', fill_value=np.nan)
+                cddata = np.ma.masked_array(cutout.data,mask=np.ma.mask_or(np.isnan(cutout.data),cutout.data<clip.value))
                 weights = np.ma.masked_array(w.data,np.isnan(w.data))
+                if False:
+                    # save cutout as a test that we have the x,y correct in size param
+                    t = Measurement(cddata,unit=ca.unit,uncertainty=StdDevUncertainty(weights),identifier=ca.id)
+                    t.write("cutout.fits",overwrite=True)
+                    
             else: 
                 cddata = ca.data
                 # handle corner case of measurment.data is shape = (1,)

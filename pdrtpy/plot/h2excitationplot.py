@@ -63,7 +63,7 @@ class ExcitationPlot(PlotBase):
         error = np.array([c.error for c in cdavg.values()])
         sigma = LOGE*error/colden
         self._figure,self._axis  = self._plt.subplots(figsize=kwargs_opts['figsize'])
-        if self._tool.opr_fitted:
+        if self._tool.opr_fitted and show_fit:
             _label = "LTE"
         else:
             _label = '$'+self._label+'$ data'
@@ -71,7 +71,7 @@ class ExcitationPlot(PlotBase):
                             fmt="o", capsize=kwargs_opts['capsize'],
                             label=_label, lw=kwargs_opts['linewidth'],
                             ms=kwargs_opts['markersize'],color=kwargs_opts['color'])
-        if self._tool.opr_fitted:
+        if self._tool.opr_fitted and show_fit:
             # Plot only the odd-J ones!
             cddn = colden*self._tool._canonical_opr/self._tool.opr
             odd_index = np.where([isOdd(c) for c in cdavg.keys()])
