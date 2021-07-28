@@ -481,42 +481,41 @@ class Measurement(CCDData):
             t["data"].unit = ""
         if t["uncertainty"].unit is None: 
             t["uncertainty"].unit = ""
-        #print("UNITS: ",t["data"].unit,t["uncertainty"].unit)
         if array:
             a = list()    
             for x in t:
                 if t.columns["uncertainty"].unit == "%":
-                    err = StdDevUncertainty(x["uncertainty"]*x["data"]/100.0)
+                    err = StdDevUncertainty(x["uncertainty"]*x["data"]/100.0,t.columns["data"].unit)
                 else:
-                    err = StdDevUncertainty(x["uncertainty"])
+                    err = StdDevUncertainty(x["uncertainty"],x["uncertainty"].unit)
                 if hasBeams:
                     # NB: I tried to do something tricky here with Qtable, but it actually became *more* complicated
-                    m = Measurement(data=x["data"],identifier=x["identifier"],
+                    m = Measurement(data=x["data"].data,identifier=x["identifier"],
                                 unit=t.columns["data"].unit,
                                 uncertainty=err,
                                 bmaj=x["bmaj"]*t["bmaj"].unit, 
                                 bmin=x["bmin"]*t["bmaj"].unit,
                                 bpa=x["bpa"]*t["bpa"].unit)
                 else:
-                    m = Measurement(data=x["data"],identifier=x["identifier"],
+                    m = Measurement(data=x["data"].data,identifier=x["identifier"],
                                 unit=t.columns["data"].unit,
                                 uncertainty=err)
                 a.append(m)
             return a
         else:
             if t.columns["uncertainty"].unit == "%":
-                err = StdDevUncertainty(t["uncertainty"]*t["data"]/100.0)
+                err = StdDevUncertainty(t["uncertainty"]*t["data"]/100.0,unit=t.columns["data"].unit)
             else:
-                err = StdDevUncertainty(t["uncertainty"])
+                err = StdDevUncertainty(t["uncertainty"],unit=t.columns["uncertainty"].unit)
             if hasBeams: 
-                m = Measurement(data=t["data"],identifier=t["identifier"][0],
+                m = Measurement(data=t["data"].data,identifier=t["identifier"][0],
                                 unit=t.columns["data"].unit,
                                 uncertainty=err,
                                 bmaj=t["bmaj"][0]*t["bmaj"].unit, 
                                 bmin=t["bmin"][0]*t["bmaj"].unit,
                                 bpa=t["bpa"][0]*t["bpa"].unit)
             else:
-                m = Measurement(data=t["data"],identifier=t["identifier"][0],
+                m = Measurement(data=t["data"].data,identifier=t["identifier"][0],
                                 unit=t.columns["data"].unit,
                                 uncertainty=err)
             return m
