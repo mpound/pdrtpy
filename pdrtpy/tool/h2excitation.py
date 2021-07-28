@@ -314,7 +314,7 @@ class H2ExcitationFit(ExcitationFit):
                        Default: False
            :type norm: bool
            :param unit: The units in which to return the column density. Default: :math:`{\\rm }cm^{-2}`
-           :type unit: str or :class:`astropy.unit.Unit`
+           :type unit: str or :class:`astropy.units.Unit`
            :param line: if True, the dictionary index is the Line name, 
                      otherwise it is the upper state :math:`J` number.  Default: False
            :type line: bool
@@ -409,7 +409,7 @@ class H2ExcitationFit(ExcitationFit):
            :param intensity: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
            :type intensity: :class:`~pdrtpy.measurement.Measurement`
            :param unit: The units in which to return the column density. Default: :math:`{\\rm }cm^{-2}`
-           :type unit: str or :class:`astropy.unit.Unit`
+           :type unit: str or :class:`astropy.units.Unit`
            :returns: a :class:`~pdrtpy.measurement.Measurement` of the column density.
            :rtype: :class:`~pdrtpy.measurement.Measurement` 
         '''
@@ -424,7 +424,7 @@ class H2ExcitationFit(ExcitationFit):
     def _compute_column_densities(self,unit=utils._CM2,line=False):
         r'''Compute all upper level column densities for stored intensity measurements and puts them in a dictionary
            :param unit: The units in which to return the column density. Default: :math:`{\\rm }cm^{-2}`
-           :type unit: str or :class:`astropy.unit.Unit`
+           :type unit: str or :class:`astropy.units.Unit`
            :param line: if True, the dictionary index is the Line name, 
                      otherwise it is the upper state :math:`J` number.  Default: False
            :type line: bool
@@ -450,7 +450,7 @@ class H2ExcitationFit(ExcitationFit):
             return self._ac.loc[key]["g_u"]*opr/self._canonical_opr
         
     def average_column_density(self,position=None,size=None,norm=True,
-                               unit=utils._CM2,line=False, clip=0*u.Unit("cm-2")):
+                               unit=utils._CM2,line=False, clip=-1E40*u.Unit("cm-2")):
         r'''Compute the average column density over a spatial box.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.
 
         :param position: The position of the cutout array's center with respect to the data array. The position can be specified either as a `(x, y)` tuple of pixel coordinates.
@@ -461,17 +461,17 @@ class H2ExcitationFit(ExcitationFit):
                        statistical weight of the upper state, :math:`g_u`.  For ortho-$H_2$ $g_u = OPR \times (2J+1)$, for para-$H_2$ $g_u=2J+1$. In LTE, $OPR = 3$.
         :type norm: bool
         :param unit: The units in which to return the column density. Default: :math:`{\rm cm}^{-2}` 
-        :type unit: str or :class:`astropy.unit.Unit`
+        :type unit: str or :class:`astropy.units.Unit`
         :param line: if True, the returned dictionary index is the Line name, otherwise it is the upper state :math:`J` number.  
         :type line: bool
         :returns: dictionary of column density Measurements, with keys as :math:`J` number or Line name
         :rtype:  dict
+        :param clip: Column density value at which to clip pixels. Pixels with column densities below this value will not be used in the average. Default: a large negative number, which translates to no clipping.  
+        :type clip: :class:`astropy.units.Quantity`
         '''
-
-        # Possibly modify error calculation, see https://pypi.org/project/statsmodels/
-        # https://stackoverflow.com/questions/2413522/weighted-standard-deviation-in-numpy
-        # Doesn't come out too different from np.sqrt(np.cov(values, aweights=weights))
-        
+        #@todo
+        # - should default clip = None?
+    
         # Set norm=False because we normalize below if necessary.
         if position is not None and size is None:
             print("WARNING: ignoring position keyword since no size given")
