@@ -457,7 +457,7 @@ class Measurement(CCDData):
         :param array: Controls whether a list of Measurements or a single Measurement is returned. If `array` is True,  one Measurement instance will be created for each row in the table and a Python list of Measurements will be returned.  If `array` is False,  one Measurement containing all the points in the `data` member will be returned. If `array` is False, the *identifier* and beam parameters of the first row will be used. If feeding the return value to a plot method such as :meth:`~pdrtpy.plot.modelplot.ModelPlot.phasespace`, choose `array=False`. Default:False. 
         :type array: bool
         
-        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        :rtype: :class:`~pdrtpy.measurement.Measurement` or list of :class:`~pdrtpy.measurement.Measurement`
         '''
         #@todo support input of a astropy.Table directly
         t = Table.read(filename,format=format)
@@ -483,19 +483,19 @@ class Measurement(CCDData):
             t["uncertainty"].unit = ""
         if array:
             a = list()    
-            for x in t:
+            for x in t: # x is a astropy.table.row.Row
                 if t.columns["uncertainty"].unit == "%":
-                    err = StdDevUncertainty(x["uncertainty"]*x["data"]/100.0,t.columns["data"].unit)
+                    err = StdDevUncertainty(array=x["uncertainty"]*x["data"]/100.0,unit=t.columns["data"].unit)
                 else:
-                    err = StdDevUncertainty(x["uncertainty"],x["uncertainty"].unit)
+                    err = StdDevUncertainty(array=x["uncertainty"],unit=t.columns["uncertainty"].unit)
                 if hasBeams:
                     # NB: I tried to do something tricky here with Qtable, but it actually became *more* complicated
                     m = Measurement(data=x["data"].data,identifier=x["identifier"],
                                 unit=t.columns["data"].unit,
                                 uncertainty=err,
-                                bmaj=x["bmaj"]*t["bmaj"].unit, 
-                                bmin=x["bmin"]*t["bmaj"].unit,
-                                bpa=x["bpa"]*t["bpa"].unit)
+                                bmaj=x["bmaj"]*t.columns["bmaj"].unit, 
+                                bmin=x["bmin"]*t.columns["bmaj"].unit,
+                                bpa=x["bpa"]*t.columns["bpa"].unit)
                 else:
                     m = Measurement(data=x["data"].data,identifier=x["identifier"],
                                 unit=t.columns["data"].unit,
