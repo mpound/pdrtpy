@@ -56,6 +56,17 @@ _rad_title['Habing'] = '$G_0$'
 _rad_title['Draine'] = '$\chi$'
 _rad_title['Mathis'] = 'FUV'
 
+def _nbversion():
+    return open("../VERSION","r").readline().strip(*"\n")
+def check_nb():
+    nbv = _nbversion()
+    ver = version()
+    if nbv != ver:
+        # How do I suppress the stacktrace of the warning itself?!
+    #    warnings.warn("The version of this notebook does not match the version of pdrtpy. You may be missing some functionality.  For best results, upgrade both pdtpry and pdrtpy-nb to the latest version.",stacklevel=0)
+        print(f"WARNING: Your version of the PDRT notebooks does [{nbv:s}] not match your version of pdrtpy [{ver:s}]. You may be missing some functionality.  For best results, upgrade both pdtpry and pdrtpy-nb to the latest version. See https://pdrtpy.readthedocs.io")
+    else:
+        print("Your PDRT notebooks version matches your pdrtpy version -- hooray!")
 def get_rad(key):
     """Get radiation field symbol (LaTeX) given radiation field unit.
     If key is unrecognized, 'FUV Radiation Field' is returned.
