@@ -417,14 +417,16 @@ class Measurement(CCDData):
         #print("using __format__")
         if spec=="":
             return str(self)
-        if len(self) == 0:
         # this can't possibly be the way you are supposed to use this, but it works
-            spec = "{:"+spec+"}"
+        spec = "{:"+spec+"}"
+        if len(self) == 0:
             return spec.format(self.data) + " +/- " + spec.format(self.error)+" {:s}".format(self.unit)
         else:
-            spec="%"+spec
-            a = np.vectorize(spec.__mod__,otypes=[np.float64])(self.data)
-            b = np.vectorize(spec.__mod__,otypes=[np.float64])(self.error)
+            a = np.array2string(self.data, formatter={'float': lambda x: spec.format(x)})
+            b = np.array2string(self.data, formatter={'float': lambda x: spec.format(x)})
+            # this does not always work
+            # a = np.vectorize(spec.__mod__,otypes=[np.float64])(self.data)
+            #b = np.vectorize(spec.__mod__,otypes=[np.float64])(self.error)
             return "%s +/- %s %s" % (a,b,self.unit)
         
     def __getitem__(self,index):
