@@ -388,7 +388,6 @@ class H2ExcitationFit(ExcitationFit):
         v = A*dE/(4.0*math.pi*u.sr)
         val = Measurement(data=v.value,unit=v.unit,identifier=colden.id)
         intensity = val*colden # error will get propagated
-        #print(intensity.unit,self._intensity_units)
         i = intensity.convert_unit_to(self._intensity_units)
         i._identifier = val.id
         return i
@@ -446,7 +445,7 @@ class H2ExcitationFit(ExcitationFit):
         if utils.isEven(self._ac.loc[key]["J_u"]):
             return self._ac.loc[key]["g_u"]
         else:
-            print("Ju=%d scaling by [%.2f/%.2f]=%.2f"%(self._ac.loc[key]["J_u"],opr,self._canonical_opr,opr/self._canonical_opr))
+            #print("Ju=%d scaling by [%.2f/%.2f]=%.2f"%(self._ac.loc[key]["J_u"],opr,self._canonical_opr,opr/self._canonical_opr))
             return self._ac.loc[key]["g_u"]*opr/self._canonical_opr
         
     def average_column_density(self,position=None,size=None,norm=True,
@@ -627,7 +626,6 @@ class H2ExcitationFit(ExcitationFit):
         warnings.simplefilter('ignore',category=UserWarning)
         self._fitresult = self._model.fit(data=y, weights=wts, x=x, idx=idx,fit_opr=fit_opr)
         warnings.resetwarnings()
-        #print(fit_report(self._fitresult))
         self._compute_quantities(self._fitresult.params)
         print("Fitted excitation temperatures and column densities:")
         print(f" T_cold = {self.tcold.value:3.0f}+/-{self.tcold.error:.1f} {self.tcold.unit}\n T_hot = {self.thot.value:3.0f}+/-{self.thot.error:.1f} {self.thot.unit}")
@@ -682,8 +680,6 @@ class H2ExcitationFit(ExcitationFit):
         
         # This is just being defensive.  I know the temperatures used internally are in K.
         t = (tex.value*u.Unit(tex.unit)).to("K",equivalencies=u.temperature()).value
-        #print(t)
-        #print(tex.value)
         z = 0.0247*t/(1.0 - np.exp(-6000.0/t))
         return z
 

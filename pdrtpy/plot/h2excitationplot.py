@@ -75,7 +75,6 @@ class ExcitationPlot(PlotBase):
             # Plot only the odd-J ones!
             cddn = colden*self._tool._canonical_opr/self._tool.opr
             odd_index = np.where([isOdd(c) for c in cdavg.keys()])
-            #print(ec.lines)
             #color = ec.lines[0].get_color() # want these to be same color as data
             self._axis.errorbar(x=energy[odd_index], 
                                 y=np.log10(cddn[odd_index]),marker="^",
@@ -106,7 +105,6 @@ class ExcitationPlot(PlotBase):
                 raise ValueError("No fit to show. Have you run the fit in your H2ExcitationFit?")
             # Doesn't work
             #if kwargs_opts['color'] is not None:
-            #    print("shift color")
             #    self.colorcycle(self._CB_color_cycle[1:])
             x_fit = np.linspace(0,max(energy), 30)  
             outpar = tt.fit_result.params.valuesdict()
