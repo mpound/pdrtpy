@@ -194,21 +194,14 @@ class LineRatioPlot(PlotBase):
             # Put a crosshair where the chisq minimum is.
             # To do this we first get the array index of the minimum
             # then use WCS to translate to world coordinates.
-            [row,col] = np.where(self._tool._chisq==self._tool._chisq_min.flux)
-            #print("ROW,COL (Pixel units) = ",row,col)
+            [row,col] = np.where(self._tool._chisq==self._tool._chisq_min.value)
             mywcs = wcs.WCS(data.header)
             # Suppress WCS warning about 1/cm3 not being FITS
             warnings.simplefilter('ignore',category=UnitsWarning)
             logn,logrf = mywcs.array_index_to_world(row,col)
-            #print("AI n,rf:",logn,logrf)
-            #logn,logrf = mywcs.pixel_to_world(col,row)
-            ##print("PW n,rf:",logn,logrf)
-            #print("logrf.unit",logrf.unit)
             warnings.resetwarnings()
             n = (10**logn.value[0])*u.Unit(logn.unit.to_string())
             rf = (10**logrf.value[0])*u.Unit(logrf.unit.to_string())
-            #print("n dn",n,mywcs.wcs.cdelt[0])
-            #print("rf drf",rf,mywcs.wcs.cdelt[0])
             if kwargs_opts['xaxis_unit'] is not None:
                 x = n.to(kwargs_opts['xaxis_unit']).value
             else:
@@ -221,16 +214,15 @@ class LineRatioPlot(PlotBase):
 
             if kwargs_opts['title'] is None:
                 kwargs_opts['title'] = r'$\chi^2$ (dof=%d)'%self._tool._dof
-            label = r'$\chi_{min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)'%(self._tool._chisq_min.flux,x,y)
+            label = r'$\chi_{min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)'%(self._tool._chisq_min.value,x,y)
             self._modelplot._axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
             # handle legend locally
             if kwargs_opts['legend']:
-                #print("doing legend")
                 legend = self._modelplot._axis[0].legend(loc='upper center',title=kwargs_opts['title'])
             self._figure = self._modelplot.figure
             self._axis = self._modelplot.axis
 
-    def reduced_chisq(self, **kwargs):
+   flux def reduced_chisq(self, **kwargs):
         '''Plot the reduced :math:`\chi^2` map that was computed by the
         :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
         
@@ -268,8 +260,7 @@ class LineRatioPlot(PlotBase):
             # Put a crosshair where the chisq minimum is.
             # To do this we first get the array index of the minimum
             # then use WCS to translate to world coordinates.
-            [row,col] = np.where(self._tool._reduced_chisq==self._tool._reduced_chisq_min.flux)
-            #print("ROW,COL (Pixel units) = ",row,col)
+            [row,col] = np.where(self._tool._reduced_chisq==self._tool._reduced_chisq_min.value)
             mywcs = wcs.WCS(data.header)
             # Suppress WCS warning about 1/cm3 not being FITS
             warnings.simplefilter('ignore',category=UnitsWarning)
@@ -283,7 +274,6 @@ class LineRatioPlot(PlotBase):
             # "The unit '1/cm3' is unrecognized, so all arithmetic operations with it are invalid."
             # Yet by all other measures this appears to be a valid unit. 
             # The workaround is to us to_string() method.
-            #print("logrf.unit",logrf.unit)
             n = (10**logn.value[0])*u.Unit(logn.unit.to_string())
             rf = (10**logrf.value[0])*u.Unit(logrf.unit.to_string())
             if kwargs_opts['xaxis_unit'] is not None:
@@ -297,7 +287,7 @@ class LineRatioPlot(PlotBase):
 
             if kwargs_opts['title'] is None:
                 kwargs_opts['title'] = r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof
-            label = r'$\chi_{\nu,min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)'%(self._tool._reduced_chisq_min.flux,x,y)
+            label = r'$\chi_{\nu,min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)'%(self._tool._reduced_chisq_min.value,x,y)
             self._axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
             # handle legend locally
             if kwargs_opts['legend']:
@@ -365,7 +355,6 @@ class LineRatioPlot(PlotBase):
         confidence.data = 100*stats.distributions.chi2.cdf(confidence.data,self._tool._dof)
         #self._modelplot._plot_no_wcs(data=chi2_stat,header=self._tool._chisq.header,**kwargs_opts)
         self._modelplot._plot_no_wcs(data=confidence,header=None,**kwargs_opts)
-        #print("CF min max ",np.min(chi2_stat),np.max(chi2_stat))
     
     def overlay_all_ratios(self,**kwargs):
         '''Overlay all the measured ratios and their errors on the :math:`(n,G_0)` space. 
@@ -519,7 +508,6 @@ class LineRatioPlot(PlotBase):
             raise Exception("Unexpected model naxis: %d"%self._tool._modelnaxis)
 
         km = ma.masked_invalid(k)
-        #print("Masks equal? %s:"%np.all(k.mask==km.mask))
         if getattr(k,"mask",None) is not None:
             km.mask = np.logical_or(k.mask,km.mask)
         # make sure nans don't affect the color map
@@ -551,8 +539,6 @@ class LineRatioPlot(PlotBase):
         # swap ncols and nrows in figsize to preserve aspect ratio
         kwargs_subplot['figsize'] = kwargs.get("figsize",(kwargs_subplot["ncols"]*5,kwargs_subplot["nrows"]*5))
 
-        #print("Got non-default kwargs: ", kwargs)
-
         axidx = kwargs_subplot['index']-1
         if kwargs_subplot['reset']:
             self._figure,self._axis = self._plt.subplots(kwargs_subplot['nrows'],kwargs_subplot['ncols'],
@@ -560,9 +546,6 @@ class LineRatioPlot(PlotBase):
                                                     subplot_kw={'projection':k.wcs,
                                                                 'aspect':kwargs_imshow['aspect']},
                                                     constrained_layout=kwargs_subplot['constrained_layout'])
-            #print("CL=",self._plt.rcParams['figure.constrained_layout.use']) 
-
-  
 
         # Make sure self._axis is an array because we will index it below.
         if type(self._axis) is not np.ndarray:

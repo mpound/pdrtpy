@@ -384,7 +384,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             for k,v in self._measurements.items():
                 # error is StdDevUncertainty so must use _array to get at raw values
                 indices = np.where((v.error <= mask[1][0]) | (v.error >= mask[1][1]))
-                #print("%s indices: %s"%(k,indices))
                 if v.mask is not None:
                     v.mask[indices] = True
                 else:
@@ -409,10 +408,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             # deepcopy workaround for bug: https://github.com/astropy/astropy/issues/9006
             num = utils.convert_if_necessary(self._measurements[p["numerator"]])
             denom = utils.convert_if_necessary(self._measurements[p["denominator"]])
-            #print("%s mask is None: %s "%(p["numerator"],num.mask is None))
-            #print("%s mask is None: %s "%(p["denominator"],denom.mask is None))
             self._observedratios[label] = deepcopy(num/denom)
-            #print("%s mask is None: %s "%(label,self._observedratios[label].mask is None))
             self._observedratios[label].meta = deepcopy(num.header)
             #@TODO create a meaningful header for the ratio map
             self._ratioHeader(p["numerator"],p["denominator"],label)
@@ -424,7 +420,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         if "CII_158" in m and "FIR" in m:
             if "OI_63" in m:
                 lab="OI_63+CII_158/FIR"
-                #print(l)
                 oi = utils.convert_if_necessary(self._measurements["OI_63"])
                 cii = utils.convert_if_necessary(self._measurements["CII_158"])
                 a = deepcopy(oi+cii)
@@ -434,7 +429,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                 self._ratioHeader("OI_63+CII_158","FIR",lab)
             if "OI_145" in m:
                 lab="OI_145+CII_158/FIR"
-                #print(ll)
                 oi = utils.convert_if_necessary(self._measurements["OI_145"])
                 cii = utils.convert_if_necessary(self._measurements["CII_158"])
                 aa = deepcopy(oi+cii)
@@ -474,7 +468,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             modelpix = np.reshape(self._modelratios[r],sz)
 
             residuals = list()
-            mf = ma.masked_invalid(self._observedratios[r].flux)
+            mf = ma.masked_invalid(self._observedratios[r].value)
             me = ma.masked_invalid(self._observedratios[r].error)  
             #frac_error = f*modelpix  # this is actually slower than looping over modelpix
             s2 = me**2
@@ -491,8 +485,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                 _q = ma.masked_invalid(_q)
                 residuals.append(_q)
             # result order is g0,n,y,x
-            #print("Shape mr1 ",self._modelratios[r].shape,type(self._modelratios[r].shape[0]))
-            #print("Shape or2 ",self._observedratios[r].shape)#,type(self._observedratios[r].shape[0]))
 
             # Catch the case of a single pixel
             if len(self._observedratios[r].shape) == 0:
@@ -580,15 +572,11 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         # get the likelihood maxima of each pixel along the g,n axes
         z=np.amax(self._likelihood,(0,1))
         gi,ni,yi,xi=np.where(self._likelihood==z)
-        #print(gi)
-        #print(len(gi),len(ni),len(xi),len(yi))
         spatial_idx = (yi,xi)
         model_idx   = np.transpose(np.array([ni,gi]))
         # qq[:,:2] takes the first two columns of qq
         # [:,[1,0]] swaps those columns
         # np.flip would also swap them.
-        #print(qq[:,:2][:,[1,0]])
-        #print(np.flip(qq[:,:2]))
         fk = utils.firstkey(self._modelratios)
         fk2 = utils.firstkey(self._observedratios)
         newshape = self._observedratios[fk2].shape
@@ -633,13 +621,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         gnxy = np.where(self._reduced_chisq==rchi_min)
         gi = gnxy[firstindex]
         ni = gnxy[secondindex]
-        #print("GI ",gi)
-        #print("NI ",ni)
-        #print("len(rchimin) shape(rchimin) ",len(rchi_min),rchi_min.shape)
-        #print("len(gi) len(ni) ",len(gi),len(ni))
-        #print("shape(gi) shape(ni) ",np.shape(gi),np.shape(ni))
-        #print("gnxy shape , len(gnxy) ",np.shape(gnxy),len(np.shape(gnxy)))
-        #print("chi_min shape, len(shape(chi_min)) ",np.shape(chi_min),len(np.shape(chi_min)))
         if len(gnxy) >= 4:
             # astronomical spatial indices
             spatial_idx = (gnxy[thirdindex],gnxy[fourthindex])
@@ -650,21 +631,10 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         if self._modelnaxis == 3:
             # add 3rd axis to model_idx
             model_idx = np.insert(model_idx,0,[0],axis=1)
-        #print("MODEL INDEX: ",model_idx)
-        # qq[:,:2] takes the first two columns of qq
-        # [:,[1,0]] swaps those columns
-        # np.flip would also swap them.
-        #print(qq[:,:2][:,[1,0]])
-        #print(np.flip(qq[:,:2]))
         fk2 = utils.firstkey(self._observedratios)
         newshape = self._observedratios[fk2].shape
         g0 =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,1]
         n =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,0]
-        #print("G ",g0)
-        #print("N ",n)
-        #print("newshape ",newshape)
-        #print("len(newshape)",len(newshape))
-
         self._radiation_field=deepcopy(self._observedratios[fk2])
         if spatial_idx == 0 and len(newshape) == 0:
             self._radiation_field.data=g0[0]
@@ -711,7 +681,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
 
         # now save copies of the 2D min chisquares
         self._chisq_min=deepcopy(self._observedratios[fk2])
-        #print("chisq_min shape, len(chisq_min) ",np.shape(self._chisq_min),len(np.shape(self._chisq_min)))
         if spatial_idx == 0:
             self._chisq_min.data = chi_min
         else:
