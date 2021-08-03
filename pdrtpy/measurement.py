@@ -136,20 +136,20 @@ class Measurement(CCDData):
         """Create a FITS files with 2 HDUS, the first being the datavalue and the 2nd being 
         the data uncertainty. This format makes allows the resulting file to be read into the underlying :class:'~astropy.nddata.CCDData` class.
 
-        :param fluxfile: The FITS file containing the data as a function of spatial coordinates
-        :type fluxfile: str
+        :param datafile: The FITS file containing the data as a function of spatial coordinates
+        :type datafile: str
         :param error: The errors on the data Possible values for error are:
 
              - a filename with the same shape as datafile containing the error values per pixel
              - a percentage value 'XX%' must have the "%" symbol in it
-             - 'rms' meaning use the rms parameter if given, otherwise look for the RMS keyword in the FITS header of the fluxfile
+             - 'rms' meaning use the rms parameter if given, otherwise look for the RMS keyword in the FITS header of the datafile
 
         :type error: str
         :param outfile: The output file to write the result in (FITS format)
         :type outfile: str
         :param rms:  If error == 'rms', this value may give the rms in same units as data (e.g 'erg s-1 cm-2 sr-1').
         :type rms: float or :class:`astropy.units.Unit`
-        :param masknan: Whether to mask any pixel where the flux or the error is NaN. Default:true
+        :param masknan: Whether to mask any pixel where the data or the error is NaN. Default:true
         :type masknan: bool
         :param overwrite: If `True`, overwrite the output file if it exists. Default: `False`.
         :type overwrite: bool
@@ -170,61 +170,61 @@ class Measurement(CCDData):
             # indicated by RMS keyword in input file.
             Measurement.make_measurement("my_infile.fits",error='rms',outfile="my_outfile.fits",unit="K km/s",overwrite=True)
         """
-        _flux = fits.open(datafile)
+        _data = fits.open(datafile)
         needsclose = False
         if error == 'rms':
-            _error = deepcopy(_flux)
+            _error = deepcopy(_data)
             if rms is None:
-                rms = _flux[0].header.get("RMS",None)
+                rms = _data[0].header.get("RMS",None)
                 if rms is None:
-                    raise Exception("rms not given as parameter and RMS keyword not present in flux header")
+                    raise Exception("rms not given as parameter and RMS keyword not present in data header")
                 else:
                     print("Found RMS in header: %.2E %s"%(rms,_error[0].data.shape))
             tmp = np.full(_error[0].data.shape,rms)
             _error[0].data[:] = rms
         elif "%" in error:
             percent = float(error.strip('%')) / 100.0
-            _error = deepcopy(_flux)
-            _error[0].data = _flux[0].data*percent
+            _error = deepcopy(_data)
+            _error[0].data = _data[0].data*percent
         else:
             _error = fits.open(error)
             needsclose = True
  
-        fb = _flux[0].header.get('bunit',str(unit)) #use str in case Unit was given
+        fb = _data[0].header.get('bunit',str(unit)) #use str in case Unit was given
         eb = _error[0].header.get('bunit',str(unit))
         if fb != eb:
-            raise Exception("BUNIT must be the same in both flux (%s) and error (%s) maps"%(fb,eb))
+            raise Exception("BUNIT must be the same in both data (%s) and error (%s) maps"%(fb,eb))
         # Sigh, this is necessary since there is no mode available in
         # fits.open that will truncate an existing file for writing
         if overwrite and exists(outfile):
             remove(outfile)
         _out = fits.open(name=outfile,mode="ostream")
-        _out.append(_flux[0])
+        _out.append(_data[0])
         _out[0].header['bunit'] = fb
         _out.append(_error[0])
         _out[1].header['extname']='UNCERT'
         _out[1].header['bunit'] = eb
         _out[1].header['utype'] = 'StdDevUncertainty'
         if masknan:
-            fmasked = ma.masked_invalid(_flux[0].data)
+            fmasked = ma.masked_invalid(_data[0].data)
             emasked = ma.masked_invalid(_error[0].data)
             final_mask = mask_union([fmasked,emasked])
             # Convert boolean mask to uint since io.fits cannot handle bool.
             hduMask = fits.ImageHDU(final_mask.astype(np.uint8), name='MASK')
             _out.append(hduMask)
         _out.writeto(outfile,overwrite=overwrite)
-        _flux.close()
+        _data.close()
         _out.close()
         if needsclose: _error.close()
 
-    @property
-    # deprecated, as measurements can be anything not just flux
-    def flux(self):
-        '''Return the underlying data array
-        
-        :rtype: :class:`numpy.ndarray`
-        '''
-        return self.data
+    #@property
+    # deprecated, replaced with value(self) as measurements can be anything not just flux
+    #def flux(self):
+    #    '''Return the underlying data array
+    #    
+    #    :rtype: :class:`numpy.ndarray`
+    #    '''
+    #    return self.data
     @property
     def value(self):
         '''Return the underlying data array
@@ -244,13 +244,13 @@ class Measurement(CCDData):
     
     @property
     def SN(self):
-        '''Return the signal to noise ratio (flux/error)
+        '''Return the signal to noise ratio (value/error)
 
         :rtype: :class:`numpy.ndarray`
         '''
         if self.uncertainty is None: 
             return None
-        return self.flux/self.error
+        return self.value/self.error
     
     @property
     def id(self):
@@ -302,7 +302,7 @@ class Measurement(CCDData):
         return self._filename
     
     def write(self,filename,**kwd):
-        '''Write this Measurement to a FITS file with flux in 1st HDU and error in 2nd HDU. See :meth:`astropy.nddata.CCDData.write`.
+        '''Write this Measurement to a FITS file with value in 1st HDU and error in 2nd HDU. See :meth:`astropy.nddata.CCDData.write`.
         
         :param filename:  Name of file.
         :type filename: str
@@ -313,9 +313,9 @@ class Measurement(CCDData):
         
     @property
     def levels(self):
-        if self.flux.size != 1:
+        if self.value.size != 1:
             raise Exception("This only works for Measurements with a single pixel")
-        return np.array([float(self.flux-self.error),float(self.flux),float(self.flux+self.error)])
+        return np.array([float(self.value-self.error),float(self.value),float(self.value+self.error)])
 
     def _modify_id(self,other,op):
         """Handle ID string for arithmetic operations with Measurements or numbers
