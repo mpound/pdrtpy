@@ -2,7 +2,7 @@
 
 ### Release 2.1
 
-#### _H2 Excitation Fitting
+#### _H2 Excitation Fitting_
 
 - H2 Excitation fitting tool first version completed.  
   - Completely rewritten fitting method to use LMFIT package
@@ -21,11 +21,11 @@
 #### _Models_
  - added to Wolfire-Kaufman 2006 z=1 set:
      * CO(6-5)/CO(3-2)
-     * \[C II\] 158$\mu$m/FIR
-     * \[C II\] 158um/CO(6-5)
-     * \[C II\] 158um/CO(3-2)
-     * \[Fe II\] 1.60um/\[Fe II\] 1.64um
-     * \[Fe II\] 1.64um/\[Fe II\] 5.43um
+     * \[C II\] 158&mu;m/FIR
+     * \[C II\] 158&mu;m/CO(6-5)
+     * \[C II\] 158&mu;m/CO(3-2)
+     * \[Fe II\] 1.60&mu;m/\[Fe II\] 1.64&mu;m
+     * \[Fe II\] 1.64&mu;m/\[Fe II\] 5.43&mu;m
      
 #### _Plotting_     
 
