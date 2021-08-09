@@ -1,6 +1,6 @@
 ## Change Log
 
-### Release 2.1
+### Release 2.1.0
 
 #### _H2 Excitation Fitting_
 
