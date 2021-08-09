@@ -30,7 +30,7 @@ class ExcitationFit(ToolBase):
         self._set_measurementnaxis()
         if constantsfile is not None:
             # set up atomic constants table, default intensity units
-            self._ac = constantsfile
+            self._ac = utils.get_table(constantsfile)
             self._ac.add_index("Line")
             self._ac.add_index("J_u")
         #@todo we don't really even use this.  CD's are computed on the fly in average_column_density()
@@ -89,7 +89,7 @@ class H2ExcitationFit(ExcitationFit):
     """Tool for fitting temperatures to :math:`H_2` Excitation Diagrams
     """
     def __init__(self,measurements=None,
-                 constantsfile=utils.get_table("atomic_constants.tab")):
+                 constantsfile="atomic_constants.tab"):
         super().__init__(measurements,constantsfile)
         self._canonical_opr = 3.0
         self._init_params()
@@ -97,7 +97,7 @@ class H2ExcitationFit(ExcitationFit):
         self._fitresult = None
         self._temperature = None
         self._total_colden = None
-        # position and size for averaging
+        # position and size that was used for averaging/fit
         self._position = None  
         self._size = None
         
@@ -231,7 +231,7 @@ class H2ExcitationFit(ExcitationFit):
     def fit_result(self):
         '''The result of the fitting procedure which includes fit statistics, variable values and uncertainties, and correlations between variables.
         
-        :rtype: :class:`lmfit.modelresult.ModelResult
+        :rtype: :class:`lmfit.modelresult.ModelResult`
         '''
         return self._fitresult
     
@@ -368,7 +368,7 @@ class H2ExcitationFit(ExcitationFit):
         r'''Fit the :math:`log N_u-E` diagram with two excitation temperatures,
         a ``hot`` :math:`T_{ex}` and a ``cold`` :math:`T_{ex}`. 
         
-        If ``position`` and ``size`` are given, the data will be averaged over a spatial box before fitting.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.  Otherwise, the fit is done at every pixel.   If the Measurements are single values, these arguments are ignored.
+        If ``position`` and ``size`` are given, the data will be averaged over a spatial box before fitting.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.  If position or size is None, the data are averaged over all pixels.  If the Measurements are single values, these arguments are ignored.
 
         :param position: The position of the cutout array's center with respect to the data array. The position can be specified either as a `(x, y)` tuple of pixel coordinates.
         :type position: tuple 
@@ -379,9 +379,21 @@ class H2ExcitationFit(ExcitationFit):
         :returns: The fit result which contains slopes, intercepts, the ortho to para ratio (OPR), and fit statistics
         :rtype:  :class:`lmfit.model.ModelResult`      
         '''
-        return self.fit_excitation(position,size,fit_opr,**kwargs)
+        return self._fit_excitation(position,size,fit_opr,**kwargs)
 
     def intensity(self,colden):
+        '''Given an upper state column density :math:`N_u`, compute the intensity :math:`I`.  
+
+           .. math::
+                 I = {A \Delta E~N_u \over 4\pi}     
+              
+        where :math:`A` is the Einstein A coefficient and :math:`\Delta E` is the energy of the transition.     
+        
+        :param colden: upper state column density
+        :type colden: :class:`~pdrtpy.measurement.Measurement`
+        :returns: optically thin intensity 
+        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        '''
         # colden is N_upper
         dE = self._ac.loc[colden.id]["dE/k"]*constants.k_B.cgs*self._ac["dE/k"].unit
         A = self._ac.loc[colden.id]["A"]*self._ac["A"].unit
@@ -441,12 +453,21 @@ class H2ExcitationFit(ExcitationFit):
                 index = self._ac.loc[m]["J_u"]             
             self._column_density[index] = self.colden(self._measurements[m],unit)
 
-    def gu(self,key,opr):
-        if utils.isEven(self._ac.loc[key]["J_u"]):
-            return self._ac.loc[key]["g_u"]
+    def gu(self,id,opr):
+        r'''Get the upper state statistical weight $g_u$ for the given transition identifer, and, if the transition is odd-$J$, scale the result by the given ortho-to-para ratio.  If the transition is even-$J$, the LTE value is returned.
+        
+           :param id: the measurement identifier
+           :type id: str
+           :param opr:
+           :type opr: float
+           :raises KeyError: if id not in existing Measurements 
+           :rtype: float
+        '''
+        if utils.isEven(self._ac.loc[id]["J_u"]):
+            return self._ac.loc[id]["g_u"]
         else:
-            #print("Ju=%d scaling by [%.2f/%.2f]=%.2f"%(self._ac.loc[key]["J_u"],opr,self._canonical_opr,opr/self._canonical_opr))
-            return self._ac.loc[key]["g_u"]*opr/self._canonical_opr
+            #print("Ju=%d scaling by [%.2f/%.2f]=%.2f"%(self._ac.loc[id]["J_u"],opr,self._canonical_opr,opr/self._canonical_opr))
+            return self._ac.loc[id]["g_u"]*opr/self._canonical_opr
         
     def average_column_density(self,position=None,size=None,norm=True,
                                unit=utils._CM2,line=False, clip=-1E40*u.Unit("cm-2")):
@@ -571,12 +592,14 @@ class H2ExcitationFit(ExcitationFit):
         intcold = y[1] - slopecold*x[1]
         inthot  = y[-1] - slopehot*x[-1]
         return [slopecold, intcold, slopehot, inthot]
-    
-    def fit_excitation(self,position,size,fit_opr=False,**kwargs):
+
+    def _fit_excitation(self,position,size,fit_opr=False,**kwargs):
         """Fit the :math:`log N_u-E` diagram with two excitation temperatures,
         a ``hot`` :math:`T_{ex}` and a ``cold`` :math:`T_{ex}`.  A first
         pass guess is initially made using data partitioning and two
-        linear fits. If ``position`` and ``size`` are given, the data will be averaged over a spatial box before fitting.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.  Otherwise, the fit is done at every pixel.   If the Measurements are single values, these arguments are ignored.
+        linear fits. 
+
+        If ``position`` and ``size`` are given, the data will be averaged over a spatial box before fitting.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.  If position or size is None, the data are averaged over all pixels.  If the Measurements are single values, these arguments are ignored.
 
         :param position: The position of the cutout array's center with respect to the data array. The position can be specified either as a `(x, y)` tuple of pixel coordinates or a :class:`~astropy.coordinates.SkyCoord`, which will use the :class:`~astropy.wcs.WCS` of the ::class:`~pdrtpy.measurement.Measurement`s added to this tool. See :class:`~astropy.nddata.utils.Cutout2D`.
         :type position: tuple or :class:`astropy.coordinates.SkyCoord` 
@@ -587,11 +610,12 @@ class H2ExcitationFit(ExcitationFit):
         :returns: The fit result which contains slopes, intercepts, the ortho to para ratio (OPR), and fit statistics
         :rtype:  :class:`lmfit.model.ModelResult`  
         """
+
         energy = self.energies(line=True)
         _ee = np.array([c for c in energy.values()])
         _energy = Measurement(_ee,unit="K")
         _ids = list(energy.keys())
-        # Get Nu/gu.  Canoical opr will be used. 
+        # Get Nu/gu.  Canonical opr will be used. 
         colden = self.average_column_density(norm=True, position=position,
                                              size=size, line=True)
 
@@ -631,6 +655,10 @@ class H2ExcitationFit(ExcitationFit):
         print(f" T_cold = {self.tcold.value:3.0f}+/-{self.tcold.error:.1f} {self.tcold.unit}\n T_hot = {self.thot.value:3.0f}+/-{self.thot.error:.1f} {self.thot.unit}")
         print(f" N_cold = {self.cold_colden.value:.2e}+/-{self.cold_colden.error:.1e} {self.cold_colden.unit}\n N_hot = {self.hot_colden.value:.2e}+/-{self.hot_colden.error:.1e} {self.hot_colden.unit}")
         print(f" N_total = {self.total_colden.value:.2e}+/-{self.total_colden.error:.1e} {self.total_colden.unit}")
+        
+        #if successful, set the used position and size
+        self._position = position
+        self._size = size
         return self._fitresult
 
     def _two_lines(self,x, m1, n1, m2, n2):

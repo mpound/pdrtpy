@@ -222,7 +222,7 @@ class LineRatioPlot(PlotBase):
             self._figure = self._modelplot.figure
             self._axis = self._modelplot.axis
 
-   flux def reduced_chisq(self, **kwargs):
+    def reduced_chisq(self, **kwargs):
         '''Plot the reduced :math:`\chi^2` map that was computed by the
         :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
         
@@ -348,12 +348,14 @@ class LineRatioPlot(PlotBase):
                        'xaxis_unit': None,
                        'yaxis_unit': None,
                        'title':  "Confidence Intervals"}
-
+        
+        # ensure levels are in ascending order
+        kwargs_opts['levels'] = sorted(kwargs_opts['levels'])
         kwargs_opts.update(kwargs)
 
         confidence = deepcopy(self._tool._chisq)
         confidence.data = 100*stats.distributions.chi2.cdf(confidence.data,self._tool._dof)
-        #self._modelplot._plot_no_wcs(data=chi2_stat,header=self._tool._chisq.header,**kwargs_opts)
+        self._tool.confidence = confidence
         self._modelplot._plot_no_wcs(data=confidence,header=None,**kwargs_opts)
     
     def overlay_all_ratios(self,**kwargs):
