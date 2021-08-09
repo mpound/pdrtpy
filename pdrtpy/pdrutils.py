@@ -11,6 +11,7 @@ from copy import deepcopy
 import astropy.units as u
 from astropy.constants import k_B
 from astropy.table import Table
+from astropy.units.format.latex import Latex
 
 from pdrtpy import version
 
@@ -18,7 +19,11 @@ from pdrtpy import version
 _RFS_UNIT_ = u.erg/(u.second*u.cm*u.cm)
 _OBS_UNIT_ = u.erg/(u.second*u.cm*u.cm*u.sr)
 _CM = u.Unit("cm")
+_CM2 = u.Unit("cm-2")
+_K = u.Unit("K")
 _KKMS = u.Unit("K km s-1")
+LOGE = np.log10(np.e)
+LN10 = np.log(10)
 
 # ISRF in other units
 #The wavelength of 1110 Ang is the longest wavelength for H2 excitation,
@@ -51,6 +56,17 @@ _rad_title['Habing'] = '$G_0$'
 _rad_title['Draine'] = '$\chi$'
 _rad_title['Mathis'] = 'FUV'
 
+def _nbversion():
+    return open("../VERSION","r").readline().strip(*"\n")
+def check_nb():
+    nbv = _nbversion()
+    ver = version()
+    if nbv != ver:
+        # How do I suppress the stacktrace of the warning itself?!
+    #    warnings.warn("The version of this notebook does not match the version of pdrtpy. You may be missing some functionality.  For best results, upgrade both pdtpry and pdrtpy-nb to the latest version.",stacklevel=0)
+        print(f"WARNING: Your version of the PDRT notebooks does [{nbv:s}] not match your version of pdrtpy [{ver:s}]. You may be missing some functionality.  For best results, upgrade both pdtpry and pdrtpy-nb to the latest version. See https://pdrtpy.readthedocs.io")
+    else:
+        print("Your PDRT notebooks version matches your pdrtpy version -- hooray!")
 def get_rad(key):
     """Get radiation field symbol (LaTeX) given radiation field unit.
     If key is unrecognized, 'FUV Radiation Field' is returned.
@@ -326,10 +342,14 @@ def to(unit,image):
      :return: an image with converted values and units
   """
   #print("converting [%s] in %s to [%s]"%(image.unit,image.header["TITLE"],unit))
+  #@todo check out NDDataArray.convert_unit_to
+  # https://docs.astropy.org/en/stable/api/astropy.nddata.NDDataArray.html#astropy.nddata.NDDataArray.convert_unit_to
+    # todo equivalencies needed for e.g. temperature
   value = image.unit.to(unit)
   newmap = deepcopy(image)
   newmap.data = newmap.data * value
   newmap.unit = u.Unit(unit)
+  #@TODO deal with identifier.
   # deal with uncertainty in Measurements.
   if getattr(newmap,"_uncertainty") is not None:
      newmap._uncertainty.array = newmap.uncertainty.array * value
@@ -541,3 +561,41 @@ def fliplabel(label):
     """
     ii = label.index('/')
     return label[ii+1:]+'/'+label[0:ii]
+
+# partly stolen from astropy.quanity.to_string, will also work with Measurements
+def float_formatter(quantity,precision):
+    format_spec = '.{}g'.format(precision)
+    number = Latex.format_exponential_notation(quantity.value, format_spec=format_spec)
+    # strip the $ signs
+    unit = quantity.unit.to_string('latex_inline')[1:-1]
+    return f'{number}~{unit}'
+
+
+def is_image(image):
+    """Check if a Measurement is an image. The be an image it must have a header with axes keywords and a WCS to be considered an image.  This is to distiguish Measurements that have a data array with more than one member from a true image. 
+    :param image: the image to check. It must have a :class:`numpy.ndarray` data member and :class:`astropy.units.Unit` unit member or a header BUNIT keyword.
+    :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+    :return: True if it is an image, False otherwise.
+    """
+   
+    if getattr(image,"header",None) is None or getattr(image,"wcs",None) is None:
+        return False
+    if image.wcs.naxis is None or image.wcs.wcs is None:
+        return False
+    if image.wcs.naxis == 0: #naxis=1 ok -- a 1-D image is still an image.
+        return False
+    if image.wcs.wcs.ctype is None:
+        return False
+    return True
+
+def is_ratio(identifier):
+    # find() returns -1 if char not found.
+    # in our case, also rule out that the / is in the zeroth position.
+    return identifier.find('/') > 0
+
+def isEven(number):
+    return abs(number) % 2 == 0
+
+def isOdd(number):
+    return not isEven(number)
+

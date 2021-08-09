@@ -9,6 +9,8 @@
          CI_370      CI_609       CI_370/CI_609           ciciweb    1   [C I] 370 $\mu$m / [C I] 609 $\mu$m
         CII_158       CO_10       CII_158/CO_10          ciicoweb    1   [C II] 158 $\mu$m / CO(J=1-0)
         CII_158       CO_32       CII_158/CO_32        ciico32web    1   [C II] 158 $\mu$m / CO(J=3-2)
+        CII_158       CO_65       CII_158/CO_65       CII158_CO65    1   [C II] 158 $\mu$m / CO(J=6-5)
+        CII_158         FIR         CII_158/FIR        CII158_FIR    1   [C II] 158 $\mu$m / I$_{FIR}$
          CI_609       CO_10        CI_609/CO_10           cicoweb    1   [C I] 609 $\mu$m / CO(J=1-0)
          CI_609       CO_21        CI_609/CO_21         cico21web    1   [C I] 609 $\mu$m / CO(J=2-1)
          CI_609       CO_32        CI_609/CO_32         cico32web    1   [C I] 609 $\mu$m / CO(J=3-2)
@@ -22,6 +24,7 @@
           CO_43       CO_21         CO_43/CO_21         co4321web    1   CO(J=4-3) / CO(J=2-1)
           CO_65       CO_10         CO_65/CO_10         co6510web    1   CO(J=6-5) / CO(J=1-0)
           CO_65       CO_21         CO_65/CO_21         co6521web    1   CO(J=6-5) / CO(J=2-1)
+          CO_65       CO_32         CO_65/CO_32         CO65_CO32    1   CO(J=6-5) / CO(J=3-2)
           CO_65       CO_54         CO_65/CO_54         co6554web    1   CO(J=6-5) / CO(J=5-4)
           CO_76       CO_10         CO_76/CO_10         co7610web    1   CO(J=7-6) / CO(J=1-0)
           CO_76       CO_21         CO_76/CO_21         co7621web    1   CO(J=7-6) / CO(J=2-1)

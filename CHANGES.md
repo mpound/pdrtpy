@@ -1,6 +1,47 @@
 ## Change Log
 
-### 2.0.7
+### Release 2.1.0
+
+#### _H2 Excitation Fitting_
+
+- H2 Excitation fitting tool first version completed.  
+  - Completely rewritten fitting method to use LMFIT package
+  - Allow fitting of ortho-to-para ratio
+  - Use Measurements for all fitted quantities
+  - Compute total column densities using partition function
+
+- H2 Excitation fitting example notebook completed.
+
+#### _Measurements_
+
+  - Measurements can now be read from tables
+  
+  - Better formatting for print using `__format__' and f-strings
+
+#### _Models_
+ - added to Wolfire-Kaufman 2006 z=1 set:
+     * CO(6-5)/CO(3-2)
+     * \[C II\] 158&mu;m/FIR
+     * \[C II\] 158&mu;m/CO(6-5)
+     * \[C II\] 158&mu;m/CO(3-2)
+     * \[Fe II\] 1.60&mu;m/\[Fe II\] 1.64&mu;m
+     * \[Fe II\] 1.64&mu;m/\[Fe II\] 5.43&mu;m
+     
+#### _Plotting_     
+
+- H2 Excitation plotter completed 
+
+- Phase space plots can now plot multiple points
+
+#### _Documentation_
+
+- updated
+
+#### _Issues_
+
+- issues 12, 14, 28 closed
+
+### Release 2.0.7
 
 #### _Models_
 

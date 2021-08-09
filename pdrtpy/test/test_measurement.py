@@ -49,6 +49,7 @@ class TestMeasurement(unittest.TestCase):
             self.assertTrue(np.all(np.round(a.error,3) == np.round(e,3)))
     
             self.assertTrue(m[q].unit == u.adu)
+    #@todo add operations with numerics (e.g. m*3.14)
 
     def test_read_write(self):
         # Get the input filenames of the FITS files in the testdata directory
