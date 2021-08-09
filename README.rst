@@ -63,7 +63,7 @@ Installation
 Requirements
 ^^^^^^^^^^^^
 
-``pdrtpy`` requires Python 3 and recent versions of  `astropy <https://astropy.org>`_, `numpy <https://numpy.org>`_, `scipy <https://scipy.org>`_, and `matplotlib <https://matplotlib.org/>`_. If you want to run the `Example Notebooks`_, you also need `jupyter <https://jupyter.org>`_.
+``pdrtpy`` requires Python 3 and recent versions of  `astropy <https://astropy.org>`_, `numpy <https://numpy.org>`_, `scipy <https://scipy.org>`_, `lmfit <https://lmfit.github.io/lmfit-py/>, and `matplotlib <https://matplotlib.org/>`_. If you want to run the `Example Notebooks`_, you also need `jupyter <https://jupyter.org>`_.
 
 First make sure you are using Python 3:
 
@@ -120,6 +120,7 @@ To familiarize yourself with the capabilities of ``pdrtpy``, we suggest you do t
 - PDRT_Example_Model_Plotting.ipynb
 - PDRT_Example_Find_n_G0_Single_Pixel.ipynb  
 - PDRT_Example_Make_n_G0_maps.ipynb       
+- PDRT_Example_H2_Excitation.ipynb
 
 .. |reg|    unicode:: U+000AE .. REGISTERED SIGN
 .. |13C|    replace:: :sup:`13`\ C
