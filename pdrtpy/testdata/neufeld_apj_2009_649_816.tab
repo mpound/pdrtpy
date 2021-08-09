@@ -1,0 +1,20 @@
+\ Data used to text excitation diagram fitting.
+\ Columns are upper state molecular hydrogen column density 
+\ taken from Table 3 of Neufeld+2006,ApJ,649,816
+\ https://iopscience.iop.org/article/10.1086/506604/pdf
+\ Errors in Intensity and thus N_H are "less than or equal to 25%" (See their Table 2)
+\ They derive ortho to para ratio ~ 0.4 in the warm gas and 
+\ opr ~ 1.5-2 in hot gas
+\sources="HH5 4FS,  HH 54C, HH 54E+K,  HH 7"
+| J_u | log(N_H) |  log(N_H) | log(N_H) | log(N_H)|
+| int |  float   |   float   |  float   |  float  |
+|     | cm-2     |   cm-2    |   cm-2   | cm-2    |
+| null|  null    |   null    |  null    | null    |
+  2     19.51        19.44     19.47     19.70
+  3     18.94        18.88     18.98     18.89
+  4     18.62        18.81     18.71     18.77
+  5     18.25        18.17     18.33     18.26
+  6     17.70        17.77     17.67     17.75
+  7     17.40        17.27     17.40     17.36
+  8     16.78        16.69     16.70     16.65
+  9     16.45        16.36     16.49     16.48
