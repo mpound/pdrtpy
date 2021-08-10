@@ -1,9 +1,4 @@
-numpy>=1.18
-astropy>=4.1
-scipy>=1.4
-matplotlib>=3.3.1
 numpydoc>=0.9.1
-lmfit>=1.0
 sphinx>=4.0
 sphinx-automodapi>=0.12
 sphinxcontrib-applehelp>=1.0.1
