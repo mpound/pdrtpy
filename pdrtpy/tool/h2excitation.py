@@ -15,7 +15,7 @@ class ExcitationFit(ToolBase):
     """Base class for creating excitation fitting tools for various species.
 
     :param measurements: Input measurements to be fit.  
-    :type measurements: array or dict `~pdrtpy.measurement.Measurement`. If dict, the keys should be the Measurement *identifiers*.  
+    :type measurements: list of :class:`~pdrtpy.measurement.Measurement`. 
     """
     def __init__(self,measurements=None,constantsfile=None):
         super().__init__()
@@ -86,7 +86,14 @@ class ExcitationFit(ToolBase):
         self.add_measurement(self,m)
         
 class H2ExcitationFit(ExcitationFit):
-    """Tool for fitting temperatures to :math:`H_2` Excitation Diagrams
+    r"""Tool for fitting temperatures, column densities, and ortho-to-para ratio(`OPR`) from an :math:`H_2` excitation diagram. It takes as input a set of :math:`H_2` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.   
+
+Often, excitation diagrams show evidence of both "hot" and "cold" gas components, where the cold gas dominates the intensity in the low `J` transitions and the hot gas dominates in the high `J` transitions. Given data over several transitions, one can fit for :math:`T_{cold}, T_{hot}, N_{total} = N_{cold}+ N_{hot}`, and optionally `OPR`. One needs at least 5 points to fit the temperatures and column densities (slope and intercept :math:`\times 2`), though one could compute (not fit) them with only 4 points. To additionally fit `OPR`, one should have 6 points (5 degrees of freedom).
+
+Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view the results.
+
+:param measurements: Input :math:`H_2` measurements to be fit.  
+:type measurements: list of :class:`~pdrtpy.measurement.Measurement`. 
     """
     def __init__(self,measurements=None,
                  constantsfile="atomic_constants.tab"):
@@ -231,7 +238,7 @@ class H2ExcitationFit(ExcitationFit):
     def fit_result(self):
         '''The result of the fitting procedure which includes fit statistics, variable values and uncertainties, and correlations between variables.
         
-        :rtype: :class:`lmfit.modelresult.ModelResult`
+        :rtype:  :class:`lmfit.model.ModelResult`      
         '''
         return self._fitresult
     

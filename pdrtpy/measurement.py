@@ -40,7 +40,7 @@ class Measurement(CCDData):
     :param identifier: string indicating what this is an observation of, e.g., "CO_10" for CO(1-0)
     :type identifier: str
 
-    :param title: formatted string (e.g. LaTeX) describing this observation that can be used for plotting, e.g., r'$^{13}$CO(3-2)'
+    :param title: formatted string (e.g., LaTeX) describing this observation that can be used for plotting. Python r-strings are accepted, e.g., r'$^{13}$CO(3-2)'  would give :math:`^{13}{\rm CO(3-2)}`.
     :type title: str
 
     :param bmaj: [optional] beam major axis diameter. This will be converted to degrees for storage in FITS header
@@ -66,7 +66,7 @@ class Measurement(CCDData):
        my_obs = Measurement.read("file.fits",identifier="CII_158")
        my_other_obs = Measurement.read("file2.fits",identifier="CO2_1",unit="K km/s",bmaj=9.3*u.arcsec,bmin=14.1*u.arcsec,bpa=23.2*u.degrees)
 
-    By default image axis with only a single dimension are removed on read.  If you do not want this behavior, used `read(squeeze=False)`. See also: :class:`astropy.nddata.CCDData`.
+    By default image axes with only a single dimension are removed on read.  If you do not want this behavior, used `read(squeeze=False)`. See also: :class:`astropy.nddata.CCDData`.
     """
     def __init__(self,*args, **kwargs):
         debug = kwargs.pop('debug', False)

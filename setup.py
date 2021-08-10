@@ -38,6 +38,8 @@ setup(
         'numpy',
         'scipy',
         'matplotlib',
+        'lmfit',
+        'numdifftools'
     ],
     url = "http://dustem.astro.umd.edu",
     project_urls = {

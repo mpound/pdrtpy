@@ -30,10 +30,10 @@ The base class of all tools.  Tools have a built-in plotter and a :meth:`run` me
    :show-inheritance:
 
 
-H2ExcitationFit
----------------
+Excitation Diagram Fitting
+--------------------------
 
-Tool for fitting temperature, column density, and ortho-to-para ratio in :math:`H_2` excitation diagrams.  A two temperature model is assumed, and the fit will find :math:`T_{hot}, T_{cold}, N_{hot}(H_2), N_{cold}(H_2),` and optionally `OPR`.  The base class `ExcitationFit` can be used to create a tool to fit a different molecule.
+:class:`~pdrtpy.tool.h2excitation.H2ExcitationFit` is a tool for fitting temperature, column density, and ortho-to-para ratio in :math:`H_2` excitation diagrams.  A two temperature model is assumed, and the fit will find :math:`T_{hot}, T_{cold}, N_{hot}(H_2), N_{cold}(H_2),` and optionally `OPR`.  The base class :class:`~pdrtpy.tool.h2excitation.ExcitationFit` can be used to create a tool to fit a different molecule.
 
 .. automodule:: pdrtpy.tool.h2excitation
    :members:
