@@ -439,17 +439,20 @@ class Measurement(CCDData):
         r'''Table file reader for Measurement class.
         Create one or more Measurements from a table.
         The input table header must contain the columns: 
+
             *data* - the data value
             
             *uncertainty* - the error on the data, can be absolute error or percent. If percent, the header unit row entry for this column must be "%"
             
             *identifier* - the identifier of this Measurement which should match a model in the ModelSet you are using, e.g., "CII_158" for [C II] 158 $\\mu$m
         The following columns are optional:
+
              *bmaj* - beam major axis size
              
              *bmin* - beam minor axis size
              
              *bpa*  - beam position angle
+
         The table must specify the units of each column, e.g. a unit row in the header for IPAC format.  Leave column entry blank if unitless.  Units of value and error should be the same or conformable. Units must be transformable to a valid astropy.unit.Unit.
 
         :param filename: Name of table file.
