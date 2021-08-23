@@ -157,7 +157,7 @@ We welcome contributions and ideas to improve the PDR Toolbox!  **All contributo
 
 For Developers
 --------------
-If you plan to tinker with the code, i is best to fork the repo and work on your own fork.  Point your browser to 
+If you plan to tinker with the code, you should fork the repo and work on your own fork.  Point your browser to 
 `https://github.com/mpound/pdrtpy <https://github.com/mpound/pdrtpy>`_
 and click on *fork* in the upper right corner.   After you have made your changes, create a pull request to merge them into the master branch.
 
@@ -165,13 +165,13 @@ You may want to use a virtual environment to protect from polluting your daily w
 
 .. code-block:: sh
   
-   git clone https://github.com/mpound/pdrtpy
    sudo apt-get install python3-venv
    python -m venv ~/pdrtpy_venv
    source ~/venv/bin/activate
    cd pdrtpy
    pip install -r requirements.txt
    pip install -e .
+
 
 .. |reg|    unicode:: U+000AE .. REGISTERED SIGN
 .. |13C|    replace:: :sup:`13`\ C
