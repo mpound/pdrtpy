@@ -23,7 +23,7 @@ PhotoDissociation Region Toolbox --- Python
  :alt: GNU GPL v3 License
 
 .. image:: https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg 
- :target CODE_OF_CONDUCT.md
+ :target: https://github.com/mpound/pdrtpy/blob/stable_release/CODE_OF_CONDUCT.md
  :alt: Contributor Covenant Code of Conduct  
 
 ``pdrtpy`` is the new and improved version of the formerly web-based `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/>`_, rewritten in Python with new capabilities and giving more flexibility to end users.  (The web-based /CGI version of PDRT is deprecated and no longer supported). 
@@ -131,12 +131,12 @@ If you don't have git, you can
 
 To familiarize yourself with the capabilities of ``pdrtpy``, we suggest you do the notebooks in this order:
 
-- `Working with Measurements <https://github.com/mpound/pdrtpy-nb/PDRT_Example_Measurements.ipynb>`_
-- `Working with ModelSets <https://github.com/mpound/pdrtpy-nb/PDRT_Example_ModelSets.ipynb>`_
-- `Plotting Models <https://github.com/mpound/pdrtpy-nb/PDRT_Example_Model_Plotting.ipynb>`_
-- `Determing Radiation Field and Intensity for Single Pixel Measurements <https://github.com/mpound/pdrtpy-nb/PDRT_Example_Find_n_G0_Single_Pixel.ipynb>`_
-- `Determing Radiation Field and Intensity for Maps <https://github.com/mpound/pdrtpy-nb/PDRT_Example_Make_n_G0_maps.ipynb>`_
-- `Fitting |H2| Excitation Diagrams <https://github.com/mpound/pdrtpy-nb/PDRT_Example_H2_Excitation.ipynb>`_
+- `Working with Measurements <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Measurements.ipynb>`_
+- `Introduction to ModelSets <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_ModelSets.ipynb>`_
+- `Exploring Models <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Model_Plotting.ipynb>`_
+- `Determing Radiation Field and Intensity <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Find_n_G0_Single_Pixel.ipynb>`_
+- `Image Radiation Field and Intensity for Maps <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Make_n_G0_maps.ipynb>`_
+- `Fitting |H2| Excitation Diagrams <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_H2_Excitation.ipynb>`_
 
 Getting Help & Giving Feedback
 ==============================
@@ -153,7 +153,9 @@ create a Github account, you can post to the `PDR Toolbox forum
 
 Contribute Code or Documentation
 =================================
-We welcome contributions and ideas to improve the PDR Toolbox!  **All contributors agree to follow our** `Code of Conduct <https://github.com/mpound/pdrtpy/CODE_OF_CONDUCT.md>`_ .   Please look at our `Roadmap of Functionality <https://github.com/mpound/pdrtpy/roadmap.md>`_ to see the main new features we want to build.  You can help out with those or suggest new features.   Please 
+We welcome contributions and ideas to improve the PDR Toolbox!  **All contributors agree to follow our** `Code of Conduct <https://github.com/mpound/pdrtpy/blob/stable_release/CODE_OF_CONDUCT.md>`_ .  Please look at our 
+`Roadmap of Functionality <https://github.com/mpound/pdrtpy/blob/stable_release/roadmap.md>`_ 
+to see the main new features we want to build.  You can help out with those or suggest new features. 
 
 For Developers
 --------------
