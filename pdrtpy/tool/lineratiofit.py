@@ -797,9 +797,15 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         :rtype: :class:`astropy.table.Table`
         '''
         v = self._measurements.values()
-        t = Table(self._measurements,
-                  units=[m.unit for m in v]
-                  )
+        # This only works for astropy version >= 4.1
+        # and for some reason requirements.txt did not install it
+        # for a test user.
+        #t = Table(self._measurements,
+        #          units=[m.unit for m in v]
+        #          )
+        t = Table()
+        cols = [Column(data=d,unit=d.unit) for d in v]
+        t.add_columns(cols=cols, names=[m.id for m in v])
         if self._observedratios is not None:
             v = self._observedratios.values()
             cols = [Column(data=d,unit=d.unit) for d in v]
