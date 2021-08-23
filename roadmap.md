@@ -13,6 +13,8 @@ These are the big-picture things we want to add before the money runs out!
 
 - add full Roueff et al Table of H2 line parameters
 
+- helpful methods to compute temperature and column density for users with insufficient data for fill fitting
+
 - full support for map-based pixel-by-pixel fitting
 
 - regularization technique to reduce unphysical spatial variation
@@ -42,3 +44,7 @@ These are the big-picture things we want to add before the money runs out!
 - Always can use updating
 
 - More notebook examples
+
+#### _Issues_
+
+- See Issue list in github.  True bugs have highest priority
