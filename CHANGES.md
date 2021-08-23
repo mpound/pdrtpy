@@ -4,10 +4,14 @@
 
 #### _H2 Excitation Fitting_
 
-- H2 Excitation fitting tool first version completed.  
+- H2 Excitation fitting tool first version completed.
+
   - Completely rewritten fitting method to use LMFIT package
-  - Allow fitting of ortho-to-para ratio
+
+  - Allow fitting of ortho-to-para rati0
+
   - Use Measurements for all fitted quantities
+
   - Compute total column densities using partition function
 
 - H2 Excitation fitting example notebook completed.
@@ -15,21 +19,21 @@
 #### _Measurements_
 
   - Measurements can now be read from tables
-  
+
   - Better formatting for print using `__format__' and f-strings
 
 #### _Models_
  - added to Wolfire-Kaufman 2006 z=1 set:
-     * CO(6-5)/CO(3-2)
-     * \[C II\] 158&mu;m/FIR
-     * \[C II\] 158&mu;m/CO(6-5)
-     * \[C II\] 158&mu;m/CO(3-2)
-     * \[Fe II\] 1.60&mu;m/\[Fe II\] 1.64&mu;m
-     * \[Fe II\] 1.64&mu;m/\[Fe II\] 5.43&mu;m
-     
-#### _Plotting_     
+     * CO(6-5) / CO(3-2)
+     * [C II] 158&mu;m / FIR
+     * [C II] 158&mu;m / CO(6-5)
+     * [C II] 158&mu;m / CO(3-2)
+     * [Fe II] 1.60&mu;m / [Fe II] 1.64&mu;m
+     * [Fe II] 1.64&mu;m / [Fe I\] 5.43&mu;m
 
-- H2 Excitation plotter completed 
+#### _Plotting_
+
+- H2 Excitation plotter completed
 
 - Phase space plots can now plot multiple points
 
@@ -59,7 +63,7 @@
 
 #### _Plotting_
 
-- New `ModelPlot` class 
+- New `ModelPlot` class
 
     - plots model files without the need of `LineRatioFit`
 
