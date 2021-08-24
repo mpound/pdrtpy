@@ -193,6 +193,9 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         :param params: The fit parameters returned from fit_excitation.
         :type params: :class:`lmfit.Parameters`
         """
+        for p in params:
+            if params[p].stderr is None:
+                raise Exception("Something went wrong with the fit and it was unable to calculate errors on the fitted parameters. It's likely that a two-temperature model is not appropriate for your data. Check the fit_result report and plot.")
         self._temperature = dict()
         # N(J=0) column density = intercept on y axis               
         self._j0_colden = dict()
@@ -383,8 +386,6 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         :type size: int, array_like`
         :param fit_opr: Whether to fit the ortho-to-para ratio or not. If True, the OPR will be varied to determine the best value. If False, the OPR is fixed at the canonical LTE value of 3.
         :type fit_opr: bool
-        :returns: The fit result which contains slopes, intercepts, the ortho to para ratio (OPR), and fit statistics
-        :rtype:  :class:`lmfit.model.ModelResult`      
         '''
         return self._fit_excitation(position,size,fit_opr,**kwargs)
 
@@ -618,8 +619,18 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         :rtype:  :class:`lmfit.model.ModelResult`  
         """
 
+        if fit_opr:
+            min_points = 5
+        else:
+            min_points = 4
+            
         energy = self.energies(line=True)
         _ee = np.array([c for c in energy.values()])
+        #@ todo: allow fitting of one-temperature model
+        if len(_ee) < min_points:
+            raise Exception(f"You need at least {min_points:d} data points to determine two-temperature model")
+        if len(_ee) == min_points:
+            warnings.warn(f"Number of data points is equal to number of free parameters ({min_points:d}). Fit will be over-constrained")
         _energy = Measurement(_ee,unit="K")
         _ids = list(energy.keys())
         # Get Nu/gu.  Canonical opr will be used. 
@@ -657,6 +668,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         warnings.simplefilter('ignore',category=UserWarning)
         self._fitresult = self._model.fit(data=y, weights=wts, x=x, idx=idx,fit_opr=fit_opr)
         warnings.resetwarnings()
+        # this will raise an exception if the fit was bad (fit errors == None)
         self._compute_quantities(self._fitresult.params)
         print("Fitted excitation temperatures and column densities:")
         print(f" T_cold = {self.tcold.value:3.0f}+/-{self.tcold.error:.1f} {self.tcold.unit}\n T_hot = {self.thot.value:3.0f}+/-{self.thot.error:.1f} {self.thot.unit}")
@@ -666,7 +678,6 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         #if successful, set the used position and size
         self._position = position
         self._size = size
-        return self._fitresult
 
     def _two_lines(self,x, m1, n1, m2, n2):
         '''This function is used to partition a fit to data using two lines and 

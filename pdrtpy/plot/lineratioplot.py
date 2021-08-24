@@ -70,6 +70,8 @@ class LineRatioPlot(PlotBase):
         kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'colorbar':True}
         kwargs_opts.update(kwargs)
         self._modelplot._plot_no_wcs(model[id],**kwargs_opts)
+        self._figure = self._modelplot.figure
+        self._axis = self._modelplot.axis
 
     def modelratio(self,id,**kwargs):
         """Plot one of the model ratios
@@ -86,6 +88,8 @@ class LineRatioPlot(PlotBase):
         kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'units': u.dimensionless_unscaled , 'colorbar':True}
         kwargs_opts.update(kwargs)
         self._modelplot._plot_no_wcs(self._tool._modelratios[id],**kwargs_opts)
+        self._figure = self._modelplot.figure
+        self._axis = self._modelplot.axis
 
     def observedratio(self,id,**kwargs):
         """Plot one of the observed ratios
@@ -292,6 +296,8 @@ class LineRatioPlot(PlotBase):
             # handle legend locally
             if kwargs_opts['legend']:
                 legend = self._axis[0].legend(loc='upper center',title=kwargs_opts['title'])
+            self._figure = self._modelplot.figure
+            self._axis = self._modelplot.axis
 
     def show_both(self,units = ['Habing','cm^-3'], **kwargs):
         '''Plot both radiation field and volume density maps computed by the
@@ -357,6 +363,8 @@ class LineRatioPlot(PlotBase):
         confidence.data = 100*stats.distributions.chi2.cdf(confidence.data,self._tool._dof)
         self._tool.confidence = confidence
         self._modelplot._plot_no_wcs(data=confidence,header=None,**kwargs_opts)
+        self._figure = self._modelplot.figure
+        self._axis = self._modelplot.axis
     
     def overlay_all_ratios(self,**kwargs):
         '''Overlay all the measured ratios and their errors on the :math:`(n,G_0)` space. 
@@ -396,6 +404,8 @@ class LineRatioPlot(PlotBase):
             lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in kwargs_opts['meas_color'][0:i]]
             labels = [self._tool._modelratios[k].title for k in self._tool._modelratios]
             self._plt.legend(lines, labels,loc='upper center',title='Observed Ratios')
+        self._figure = self._modelplot.figure
+        self._axis = self._modelplot.axis
 
     def ratios_on_models(self,**kwargs):
         '''Overlay all the measured ratios and their errors on the individual models for those ratios.  Plots are displayed in multi-column format, controlled the `ncols` keyword. Default: ncols=2

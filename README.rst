@@ -22,14 +22,28 @@ PhotoDissociation Region Toolbox --- Python
  :target: https://www.gnu.org/licenses/gpl-3.0
  :alt: GNU GPL v3 License
 
-``pdrtpy`` is the new and improved version of the classic `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/pdrt>`_, rewritten in Python with new capabilities and giving more flexibility to end users.  (The Perl/CGI version of PDRT is deprecated and no longer supported).
+.. image:: https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg 
+ :target: https://github.com/mpound/pdrtpy/blob/stable_release/CODE_OF_CONDUCT.md
+ :alt: Contributor Covenant Code of Conduct  
 
-The new PDR Toolbox will cover many more spectral lines and metallicities
-and allows map-based analysis so users can quickly compute spatial images
-of density and radiation field from map data.  We provide Jupyter `Example Notebooks`_ for data analysis.  It also can support models from other PDR codes
-enabling comparison of derived properties between codes.
+``pdrtpy`` is the new and improved version of the formerly web-based `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/>`_, rewritten in Python with new capabilities and giving more flexibility to end users.  (The web-based /CGI version of PDRT is deprecated and no longer supported). 
 
-The underlying model code has improved physics and chemistry. Critical updates include those discussed in 
+The PDR Toolbox is a science-enabling tool for the community, designed to
+help astronomers determine the physical parameters of photodissociation
+regions from observations. Typical observations of both Galactic
+and extragalactic PDRs come from ground- and space-based millimeter,
+submillimeter, and far-infrared telescopes such as ALMA, SOFIA, JWST,
+Spitzer, and Herschel. Given a set of observations of spectral line or
+continuum intensities, PDR Toolbox can compute best-fit FUV incident
+intensity and cloud density based on our models of PDR emission.
+
+The PDR Toolbox will cover a wide range of spectral lines and metallicities
+and allows map-based analysis so users can quickly compute spatial
+images of density and radiation field from map data.  We provide Jupyter
+`Example Notebooks`_ for data analysis.  It also can support models from
+other PDR codes enabling comparison of derived properties between codes.
+
+The underlying PDR model code has improved physics and chemistry. Critical updates include those discussed in 
 `Neufeld & Wolfire 2016 <https://ui.adsabs.harvard.edu/abs/2016ApJ...826..183N/abstract>`_, plus photo rates from 
 `Heays et al. 2017 <https://ui.adsabs.harvard.edu/abs/2017A%26A...602A.105H/abstract>`_, oxygen chemistry rates from 
 `Kovalenko et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018ApJ...856..100K/abstract>`_ and 
@@ -40,6 +54,8 @@ excitation rates for |OI| from
 `Lique et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018MNRAS.474.2313L/abstract>`_ (and Lique private
 communication) and have included |13C| chemistry along with the
 emitted line intensities for  |13CII| and |13CO|.
+
+We also support fitting of temperatures and column densities to |H2| excitation diagrams.
 
 What is a PDR? 
 ==============
@@ -115,12 +131,49 @@ If you don't have git, you can
 
 To familiarize yourself with the capabilities of ``pdrtpy``, we suggest you do the notebooks in this order:
 
-- PDRT_Example_Measurements.ipynb 
-- PDRT_Example_ModelSets.ipynb
-- PDRT_Example_Model_Plotting.ipynb
-- PDRT_Example_Find_n_G0_Single_Pixel.ipynb  
-- PDRT_Example_Make_n_G0_maps.ipynb       
-- PDRT_Example_H2_Excitation.ipynb
+- `Working with Measurements <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Measurements.ipynb>`_
+- `Introduction to ModelSets <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_ModelSets.ipynb>`_
+- `Exploring Models <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Model_Plotting.ipynb>`_
+- `Determing Radiation Field and Intensity <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Find_n_G0_Single_Pixel.ipynb>`_
+- `Image Radiation Field and Intensity for Maps <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Make_n_G0_maps.ipynb>`_
+- `Fitting |H2| Excitation Diagrams <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_H2_Excitation.ipynb>`_
+
+Getting Help & Giving Feedback
+==============================
+If you have a question or wish to give feedback about using PDR Toolbox or about the example notebooks, head on over to our `PDR Toolbox online forum <https://groups.google.com/g/pdrt>`_.  There you can post your question and engage in discussion with the developers and other users.  Feature requests from the community are welcome.
+
+Reporting Issues
+================
+If you find a bug or something you think is in error, please report it on
+the `github issue tracker <https://github.com/mpound/pdrtpy/issues>`_. 
+(You must have a `Github account <https://github.com/>`_ to submit an issue).
+If you aren't sure if something is a bug or not, or if you don't wish to
+create a Github account, you can post to the `PDR Toolbox forum
+<https://groups.google.com/g/pdrt>`_.
+
+Contribute Code or Documentation
+=================================
+We welcome contributions and ideas to improve the PDR Toolbox!  **All contributors agree to follow our** `Code of Conduct <https://github.com/mpound/pdrtpy/blob/stable_release/CODE_OF_CONDUCT.md>`_ .  Please look at our 
+`Roadmap of Functionality <https://github.com/mpound/pdrtpy/blob/stable_release/roadmap.md>`_ 
+to see the main new features we want to build.  You can help out with those or suggest new features. 
+
+For Developers
+--------------
+If you plan to tinker with the code, you should fork the repo and work on your own fork.  Point your browser to 
+`https://github.com/mpound/pdrtpy <https://github.com/mpound/pdrtpy>`_
+and click on *fork* in the upper right corner.   After you have made your changes, create a pull request to merge them into the master branch.
+
+You may want to use a virtual environment to protect from polluting your daily working environment (especially if you have a stable version of `pdrtpy` installed).
+
+.. code-block:: sh
+  
+   sudo apt-get install python3-venv
+   python -m venv ~/pdrtpy_venv
+   source ~/venv/bin/activate
+   cd pdrtpy
+   pip install -r requirements.txt
+   pip install -e .
+
 
 .. |reg|    unicode:: U+000AE .. REGISTERED SIGN
 .. |13C|    replace:: :sup:`13`\ C
@@ -128,4 +181,5 @@ To familiarize yourself with the capabilities of ``pdrtpy``, we suggest you do t
 .. |13CII|  replace:: [\ :sup:`13`\ C II]
 .. |OI|  replace:: [O I]
 .. |CII|  replace:: [C II]
+.. |H2|  replace:: H\ :sub:`2`
 .. |nu|     unicode:: 0x3bd .. greek nu
