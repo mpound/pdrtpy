@@ -8,7 +8,7 @@
 
   - Completely rewritten fitting method to use LMFIT package
 
-  - Allow fitting of ortho-to-para rati0
+  - Allow fitting of ortho-to-para ratio
 
   - Use Measurements for all fitted quantities
 
