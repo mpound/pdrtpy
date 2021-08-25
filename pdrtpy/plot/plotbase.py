@@ -184,8 +184,8 @@ class PlotBase:
         self._figure.savefig(fname=fname,**kwargs_opts)
 
     def usetex(self,use):
-        """Control whether plots use LaTeX formatting in axis labels and other text components. This method sets
-           matplotlib parameter `rcParams["text.usetex"]` in the local pyplot instance.
+        """Control whether plots delegate rendering of fancy text components in axis labels and elsewhere to the system version of LaTeX or use matplotlib's rendering. This method sets
+           matplotlib parameter `rcParams["text.usetex"]` in the local pyplot instance.  Note: You must have LaTeX installed on your system if setting this to True or an exception will be raised when you try to plot.
 
            :param use: whether to use LaTeX or not
            :type use: bool
