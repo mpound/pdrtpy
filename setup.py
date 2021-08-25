@@ -34,12 +34,12 @@ setup(
     packages = find_packages(exclude=excludelist),
     include_package_data = True,
     install_requires = [
-        'astropy',
-        'numpy',
-        'scipy',
-        'matplotlib',
-        'lmfit',
-        'numdifftools'
+        'astropy>=4.1',
+        'numpy>=1.1.8',
+        'scipy>=1.4',
+        'matplotlib>=3.3.1',
+        'lmfit>=1.0.2',
+        'numdifftools>=0.9.40'
     ],
     url = "http://dustem.astro.umd.edu",
     project_urls = {
