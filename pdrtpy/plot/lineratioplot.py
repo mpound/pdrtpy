@@ -53,9 +53,6 @@ class LineRatioPlot(PlotBase):
         self._axis = None
         self._modelplot = ModelPlot(self._tool._modelset,self._figure,self._axis)
         self._ratiocolor=[]
-        self._CB_color_cycle = [ '#377eb8', '#ff7f00', '#4daf4a',
-                  '#f781bf', '#a65628', '#984ea3',
-                  '#999999', '#e41a1c', '#dede00']
 
     def modelintensity(self,id,**kwargs):
         """Plot one of the model intensities
@@ -73,6 +70,8 @@ class LineRatioPlot(PlotBase):
         kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'colorbar':True}
         kwargs_opts.update(kwargs)
         self._modelplot._plot_no_wcs(model[id],**kwargs_opts)
+        self._figure = self._modelplot.figure
+        self._axis = self._modelplot.axis
 
     def modelratio(self,id,**kwargs):
         """Plot one of the model ratios
@@ -89,6 +88,8 @@ class LineRatioPlot(PlotBase):
         kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'units': u.dimensionless_unscaled , 'colorbar':True}
         kwargs_opts.update(kwargs)
         self._modelplot._plot_no_wcs(self._tool._modelratios[id],**kwargs_opts)
+        self._figure = self._modelplot.figure
+        self._axis = self._modelplot.axis
 
     def observedratio(self,id,**kwargs):
         """Plot one of the observed ratios
@@ -119,8 +120,8 @@ class LineRatioPlot(PlotBase):
 
         kwargs_opts.update(kwargs)
 
-        # handle single pixel case
-        if len( self._tool._density.shape) == 0 :
+        # handle single pixel or multi-pixel non-map cases.
+        if len( self._tool._density.shape) == 0 or self._tool.has_vectors:
             return utils.to(kwargs_opts['units'],self._tool._density)
 
         tunit=u.Unit(kwargs_opts['units'])
@@ -142,8 +143,8 @@ class LineRatioPlot(PlotBase):
                        'title': None}
         kwargs_opts.update(kwargs)
 
-        # handle single pixel case
-        if len( self._tool.radiation_field.shape) == 0 :
+        # handle single pixel or multi-pixel non-map cases.
+        if len( self._tool.radiation_field.shape) == 0 or self._tool.has_vectors:
             return utils.to(kwargs_opts['units'],self._tool.radiation_field)
 
         if kwargs_opts['title'] is None:
@@ -184,7 +185,8 @@ class LineRatioPlot(PlotBase):
         # make a sensible choice about contours if image is not shown
         if not kwargs_opts['image'] and kwargs_opts['colors'][0] == 'white':
            kwargs_opts['colors'][0] = 'black'
-
+        if self._tool.has_vectors:
+            raise NotImplementedError("Plotting of chi-square is not yet implemented for vector Measurements.")
         if self._tool.has_maps:
             data = self._tool.chisq(min=True)
             if 'title' not in kwargs:
@@ -196,21 +198,14 @@ class LineRatioPlot(PlotBase):
             # Put a crosshair where the chisq minimum is.
             # To do this we first get the array index of the minimum
             # then use WCS to translate to world coordinates.
-            [row,col] = np.where(self._tool._chisq==self._tool._chisq_min.flux)
-            #print("ROW,COL (Pixel units) = ",row,col)
+            [row,col] = np.where(self._tool._chisq==self._tool._chisq_min.value)
             mywcs = wcs.WCS(data.header)
             # Suppress WCS warning about 1/cm3 not being FITS
             warnings.simplefilter('ignore',category=UnitsWarning)
             logn,logrf = mywcs.array_index_to_world(row,col)
-            #print("AI n,rf:",logn,logrf)
-            #logn,logrf = mywcs.pixel_to_world(col,row)
-            ##print("PW n,rf:",logn,logrf)
-            #print("logrf.unit",logrf.unit)
             warnings.resetwarnings()
             n = (10**logn.value[0])*u.Unit(logn.unit.to_string())
             rf = (10**logrf.value[0])*u.Unit(logrf.unit.to_string())
-            #print("n dn",n,mywcs.wcs.cdelt[0])
-            #print("rf drf",rf,mywcs.wcs.cdelt[0])
             if kwargs_opts['xaxis_unit'] is not None:
                 x = n.to(kwargs_opts['xaxis_unit']).value
             else:
@@ -223,11 +218,10 @@ class LineRatioPlot(PlotBase):
 
             if kwargs_opts['title'] is None:
                 kwargs_opts['title'] = r'$\chi^2$ (dof=%d)'%self._tool._dof
-            label = r'$\chi_{min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)'%(self._tool._chisq_min.flux,x,y)
+            label = r'$\chi_{min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)'%(self._tool._chisq_min.value,x,y)
             self._modelplot._axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
             # handle legend locally
             if kwargs_opts['legend']:
-                #print("doing legend")
                 legend = self._modelplot._axis[0].legend(loc='upper center',title=kwargs_opts['title'])
             self._figure = self._modelplot.figure
             self._axis = self._modelplot.axis
@@ -253,6 +247,9 @@ class LineRatioPlot(PlotBase):
                        'title': None
                       }
         kwargs_opts.update(kwargs)
+        if self._tool.has_vectors:
+            raise NotImplementedError("Plotting of chi-square is not yet implemented for vector Measurements.")
+            
         if self._tool.has_maps:
             if 'title' not in kwargs:
                 kwargs_opts['title'] = r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof
@@ -262,12 +259,12 @@ class LineRatioPlot(PlotBase):
             # so no legend
         else:
             data = self._tool.reduced_chisq(min=False)
+
             self._modelplot._plot_no_wcs(data,header=None,**kwargs_opts)
             # Put a crosshair where the chisq minimum is.
             # To do this we first get the array index of the minimum
             # then use WCS to translate to world coordinates.
-            [row,col] = np.where(self._tool._reduced_chisq==self._tool._reduced_chisq_min.flux)
-            #print("ROW,COL (Pixel units) = ",row,col)
+            [row,col] = np.where(self._tool._reduced_chisq==self._tool._reduced_chisq_min.value)
             mywcs = wcs.WCS(data.header)
             # Suppress WCS warning about 1/cm3 not being FITS
             warnings.simplefilter('ignore',category=UnitsWarning)
@@ -281,7 +278,6 @@ class LineRatioPlot(PlotBase):
             # "The unit '1/cm3' is unrecognized, so all arithmetic operations with it are invalid."
             # Yet by all other measures this appears to be a valid unit. 
             # The workaround is to us to_string() method.
-            #print("logrf.unit",logrf.unit)
             n = (10**logn.value[0])*u.Unit(logn.unit.to_string())
             rf = (10**logrf.value[0])*u.Unit(logrf.unit.to_string())
             if kwargs_opts['xaxis_unit'] is not None:
@@ -295,11 +291,13 @@ class LineRatioPlot(PlotBase):
 
             if kwargs_opts['title'] is None:
                 kwargs_opts['title'] = r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof
-            label = r'$\chi_{\nu,min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)'%(self._tool._reduced_chisq_min.flux,x,y)
+            label = r'$\chi_{\nu,min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)'%(self._tool._reduced_chisq_min.value,x,y)
             self._axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
             # handle legend locally
             if kwargs_opts['legend']:
                 legend = self._axis[0].legend(loc='upper center',title=kwargs_opts['title'])
+            self._figure = self._modelplot.figure
+            self._axis = self._modelplot.axis
 
     def show_both(self,units = ['Habing','cm^-3'], **kwargs):
         '''Plot both radiation field and volume density maps computed by the
@@ -340,8 +338,8 @@ class LineRatioPlot(PlotBase):
         **Currently only works for single-pixel Measurements**
         '''
 
-        if self._tool.has_maps:
-            raise NotImplementedError("Plotting of confidence intervals is not yet implemented for maps")
+        if self._tool.has_maps or self._tool.has_vectors:
+            raise NotImplementedError("Plotting of confidence intervals is not yet implemented for maps or vectors.")
 
         kwargs_opts = {'units': None,
                        'aspect': 'equal',
@@ -356,14 +354,17 @@ class LineRatioPlot(PlotBase):
                        'xaxis_unit': None,
                        'yaxis_unit': None,
                        'title':  "Confidence Intervals"}
-
+        
+        # ensure levels are in ascending order
+        kwargs_opts['levels'] = sorted(kwargs_opts['levels'])
         kwargs_opts.update(kwargs)
 
         confidence = deepcopy(self._tool._chisq)
         confidence.data = 100*stats.distributions.chi2.cdf(confidence.data,self._tool._dof)
-        #self._modelplot._plot_no_wcs(data=chi2_stat,header=self._tool._chisq.header,**kwargs_opts)
+        self._tool.confidence = confidence
         self._modelplot._plot_no_wcs(data=confidence,header=None,**kwargs_opts)
-        #print("CF min max ",np.min(chi2_stat),np.max(chi2_stat))
+        self._figure = self._modelplot.figure
+        self._axis = self._modelplot.axis
     
     def overlay_all_ratios(self,**kwargs):
         '''Overlay all the measured ratios and their errors on the :math:`(n,G_0)` space. 
@@ -371,8 +372,8 @@ class LineRatioPlot(PlotBase):
         **Currently only works for single-pixel Measurements**
         '''
 
-        if self._tool.has_maps:
-            raise NotImplementedError("Plotting of ratio overlays is not yet implemented for maps")
+        if self._tool.has_maps or self._tool.has_vectors:
+            raise NotImplementedError("Plotting of ratio overlays is not yet implemented for maps or vectors.")
 
         kwargs_opts = {'units': None,
                        'image':False,
@@ -403,6 +404,8 @@ class LineRatioPlot(PlotBase):
             lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in kwargs_opts['meas_color'][0:i]]
             labels = [self._tool._modelratios[k].title for k in self._tool._modelratios]
             self._plt.legend(lines, labels,loc='upper center',title='Observed Ratios')
+        self._figure = self._modelplot.figure
+        self._axis = self._modelplot.axis
 
     def ratios_on_models(self,**kwargs):
         '''Overlay all the measured ratios and their errors on the individual models for those ratios.  Plots are displayed in multi-column format, controlled the `ncols` keyword. Default: ncols=2
@@ -410,8 +413,8 @@ class LineRatioPlot(PlotBase):
         **Currently only works for single-pixel Measurements**
         '''
 
-        if self._tool.has_maps:
-            raise NotImplementedError("Plotting of ratio overlays is not yet implemented for maps")
+        if self._tool.has_maps or self._tool.has_vectors:
+            raise NotImplementedError("Plotting of ratio overlays is not yet implemented for maps or vectors.")
 
         kwargs_opts = {'units': None,
                        'image':True,
@@ -517,7 +520,6 @@ class LineRatioPlot(PlotBase):
             raise Exception("Unexpected model naxis: %d"%self._tool._modelnaxis)
 
         km = ma.masked_invalid(k)
-        #print("Masks equal? %s:"%np.all(k.mask==km.mask))
         if getattr(k,"mask",None) is not None:
             km.mask = np.logical_or(k.mask,km.mask)
         # make sure nans don't affect the color map
@@ -541,15 +543,13 @@ class LineRatioPlot(PlotBase):
 
         # delay merge until min_ and max_ are known
         kwargs_imshow.update(kwargs)
-        kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km,
+        kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km, 
                                              kwargs_imshow['vmin'],kwargs_imshow['vmax'],
                                              kwargs_imshow['stretch'])
 
         kwargs_subplot.update(kwargs)
         # swap ncols and nrows in figsize to preserve aspect ratio
         kwargs_subplot['figsize'] = kwargs.get("figsize",(kwargs_subplot["ncols"]*5,kwargs_subplot["nrows"]*5))
-
-        #print("Got non-default kwargs: ", kwargs)
 
         axidx = kwargs_subplot['index']-1
         if kwargs_subplot['reset']:
@@ -558,14 +558,12 @@ class LineRatioPlot(PlotBase):
                                                     subplot_kw={'projection':k.wcs,
                                                                 'aspect':kwargs_imshow['aspect']},
                                                     constrained_layout=kwargs_subplot['constrained_layout'])
-            #print("CL=",self._plt.rcParams['figure.constrained_layout.use']) 
-  
 
         # Make sure self._axis is an array because we will index it below.
         if type(self._axis) is not np.ndarray:
             self._axis = np.array([self._axis])
         for a in self._axis:
-            a.tick_params(axes='both',direction='in')
+            a.tick_params(axis='both',direction='in') # axes vs axis???
             for c in a.coords:
                 c.display_minor_ticks(True)
         if kwargs_opts['image']:

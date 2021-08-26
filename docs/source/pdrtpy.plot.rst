@@ -27,10 +27,10 @@ PlotBase
    :undoc-members:
    :show-inheritance:
 
-H2ExcitationPlot
+ExcitationPlot
 ----------------
 
-.. automodule:: pdrtpy.plot.h2excitationplot
+.. automodule:: pdrtpy.plot.excitationplot
    :members:
    :undoc-members:
    :show-inheritance:

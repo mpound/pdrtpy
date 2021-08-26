@@ -8,6 +8,8 @@ For examples how to use `LineRatioFit`, see the notebooks
 and 
 `PDRT_Example_Make_n_G0_maps.ipynb <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Make_n_G0_maps.ipynb>`_.
 
+For an example how to use `H2ExcitationFit` and `ExcitationPlot` see the notebook `PDRT_Example_H2_Excitation.ipynb <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_H2_Excitation.ipynb>`_.
+
 --------------
 
 .. automodule:: pdrtpy.tool
@@ -28,10 +30,10 @@ The base class of all tools.  Tools have a built-in plotter and a :meth:`run` me
    :show-inheritance:
 
 
-H2Excitation
-------------
+Excitation Diagram Fitting
+--------------------------
 
-Tool for fitting temperatures in :math:`H_2` excitation diagrams.  A two temperature model is assumed, :math:`T_{warm}` and :math:`T_{cold}`.
+:class:`~pdrtpy.tool.h2excitation.H2ExcitationFit` is a tool for fitting temperature, column density, and ortho-to-para ratio in :math:`H_2` excitation diagrams.  A two temperature model is assumed, and the fit will find :math:`T_{hot}, T_{cold}, N_{hot}(H_2), N_{cold}(H_2),` and optionally `OPR`.  The base class :class:`~pdrtpy.tool.h2excitation.ExcitationFit` can be used to create a tool to fit a different molecule.
 
 .. automodule:: pdrtpy.tool.h2excitation
    :members:
@@ -41,7 +43,7 @@ Tool for fitting temperatures in :math:`H_2` excitation diagrams.  A two tempera
 LineRatioFit
 ------------
 
-Tool for determining photodissociation region external radiation field and density (commonly known as :math:`G_0` and :math:`n`) from measured spectral line intensity ratios.  
+Tool for determining photodissociation region external radiation field and particle density (commonly given as :math:`G_0` and :math:`n`) from measured spectral line intensity ratios.  
 
 .. automodule:: pdrtpy.tool.lineratiofit
    :members:

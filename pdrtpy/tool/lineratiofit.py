@@ -9,7 +9,7 @@ from astropy.io.fits.header import Header
 import astropy.wcs as wcs
 import astropy.units as u
 import astropy.stats as astats
-from astropy.table import Table
+from astropy.table import Table, Column
 from astropy.nddata import NDDataArray, CCDData, StdDevUncertainty
 
 from ..tool.toolbase import ToolBase
@@ -19,13 +19,21 @@ from ..modelset import ModelSet
 from ..measurement import Measurement
 
 class LineRatioFit(ToolBase):
-    """LineRatioFit is a tool to fit observations of intensity ratios to a set of PDR models. It takes as input a set of observations with errors represented as :class:`~pdrtpy.measurement.Measurement`s and  :class:`~pdrtpy.modelset.ModelSet` for the models to which the data will be fitted. The observations should be spectral line or continuum intensities.  They can be spatial maps or single pixel values. They should have the same spatial resolution.
+    """LineRatioFit is a tool to fit observations of intensity ratios to a set of PDR models. It takes as input a set of observations with errors represented as :class:`~pdrtpy.measurement.Measurement` and  :class:`~pdrtpy.modelset.ModelSet` for the models to which the data will be fitted. The observations should be spectral line or continuum intensities.  They can be spatial maps or single pixel values. They should have the same spatial resolution.
     
 The models to be fit are stored as intensity ratios. The input observations will be use to create ratios that correspond to models. From there a minimization fit is done to determine the density and radiation field that best fit the data.At least 3 observations are needed in order to make at least 2 ratios. With fewer ratios, no fitting can be done. More ratios generally means better determined density and radiation field, assuming the data are consistent with each other.
 
 Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view the results.
+    
+
+:param modelset: The set of PDR models to use for fitting.
+:type modelset: :class:`~pdrtpy.modelset.ModelSet`
+
+:param measurements: Input measurements to be fit.  
+:type measurements: list or dict of :class:`~pdrtpy.measurement.Measurement`. If dict, the keys should be the Measurement *identifiers*.  
     """
     def __init__(self,modelset=ModelSet("wk2006",z=1),measurements=None):
+        super().__init__() # needed?
         if type(modelset) == str:
             # may need to disable this
             self._initialize_modelTable(modelset)
@@ -49,11 +57,11 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self.radiation_field_type = None
         self.density_unit = None
         self.density_type = None
-        self._plotter = LineRatioPlot(self)
+        #self._plotter = LineRatioPlot(self) #not needed
     
-    def _set_measurementnaxis(self):
-        fk = utils.firstkey(self._measurements)
-        self._measurementnaxis = len(self._measurements[fk].shape)
+    #def _set_measurementnaxis(self):
+    #    fk = utils.firstkey(self._measurements)
+    #    self._measurementnaxis = len(self._measurements[fk].shape)
 
     @property
     def modelset(self):
@@ -87,16 +95,26 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         return list(self._observedratios.keys())
 
 
-    @property
-    def has_maps(self):
-        '''Are the Measurements used map-based or pixel-based?.
+#    @property
+#    def has_maps(self):
+#        '''Are the Measurements used map-based?. (i.e., have 2 spatial axes)
+#        
+#        :returns: True, if the observational inputs are spatial maps, False otherwise
+# 
+#        :rtype: bool
+#        '''
+#        
+#        return self._measurementnaxis > 1
+#    @property
+#    
+#    def has_vectors(self):
+#        '''Are the Measurements used a Nx1 vector, e.g. read in from a table with #:meth:`~pdrtpy.Measurement.from_table`.
+#        
+#        :returns: True, if the observational inputs are a vector, False otherwise
+##        :rtype: bool
+#        '''
+#        return self._measurementnaxis == 1
         
-        :returns: True, if the observational inputs are spatial maps, False if they were single-pixel Measurements
- 
-        :rtype: bool
-        '''
-        return self._measurementnaxis > 1
-
     @property
     def ratiocount(self):
         '''The number of ratios that match models available in the current :class:`~pdrtpy.modelset.ModelSet` given the current set of measurements
@@ -284,19 +302,19 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
 
         # Check the coordinate systems only if there is more than one pixel
         m1 = self._measurements[utils.firstkey(self._measurements)]
-        if len(m1) != 0:
+        if utils.is_image(m1):
             if not self._check_header("CTYPE1"):
                raise Exception("CTYPE1 of your input Measurements do not match. Please ensure coordinates of all Measurements are the same.")
             if not self._check_header("CTYPE2"):
                raise Exception("CTYPE2 of your input Measurements do not match. Please ensure coordinates of all Measurements are the same.")
 
         #Only allow beam = None if single value measurements.
-        if len(m1) == 0 :
+        if not utils.is_image(m1):
             if self._check_header("BMAJ",None) or self._check_header("BMIN",None) or self._check_header("BPA",None):
                utils.warn(self,"No beam parameters in Measurement headers, assuming they are all equal!")
         #if not self._check_header("BUNIT") ...
 
-    def run(self,mask=['mad',1.0]):
+    def run(self,mask=None):
         '''Run the full computation using all the :class:`observations <pdrtpy.measurement.Measurement>` added.   This will 
         check compatibility of input observations (e.g., beam parameters, coordinate types, axes lengths) and 
         raise exceptions if the observations don't match each other.
@@ -305,7 +323,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                         and radiation field. Possible values are:
 
              ['mad', multiplier]   - compute standard deviation using median absolute deviation (astropy.mad_std),
-                                     and mask out values between +/- multiplier*mad_std
+                                     and mask out values between +/- multiplier*mad_std.  Example: ['mad',1.0]
 
              ['data', (low,high)]  - mask based on data values, mask out data between low and high
 
@@ -314,7 +332,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
              ['error', (low,high)] - mask based on uncertainty plane, mask out data where the corresponding error pixel value 
                                      is below low or above high
 
-                              None - Don't mask data
+                              None - Don't mask data. This is the default.
 
            :type mask:  list or None
 
@@ -368,7 +386,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             for k,v in self._measurements.items():
                 # error is StdDevUncertainty so must use _array to get at raw values
                 indices = np.where((v.error <= mask[1][0]) | (v.error >= mask[1][1]))
-                #print("%s indices: %s"%(k,indices))
                 if v.mask is not None:
                     v.mask[indices] = True
                 else:
@@ -393,10 +410,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             # deepcopy workaround for bug: https://github.com/astropy/astropy/issues/9006
             num = utils.convert_if_necessary(self._measurements[p["numerator"]])
             denom = utils.convert_if_necessary(self._measurements[p["denominator"]])
-            #print("%s mask is None: %s "%(p["numerator"],num.mask is None))
-            #print("%s mask is None: %s "%(p["denominator"],denom.mask is None))
             self._observedratios[label] = deepcopy(num/denom)
-            #print("%s mask is None: %s "%(label,self._observedratios[label].mask is None))
             self._observedratios[label].meta = deepcopy(num.header)
             #@TODO create a meaningful header for the ratio map
             self._ratioHeader(p["numerator"],p["denominator"],label)
@@ -408,7 +422,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         if "CII_158" in m and "FIR" in m:
             if "OI_63" in m:
                 lab="OI_63+CII_158/FIR"
-                #print(l)
                 oi = utils.convert_if_necessary(self._measurements["OI_63"])
                 cii = utils.convert_if_necessary(self._measurements["CII_158"])
                 a = deepcopy(oi+cii)
@@ -418,7 +431,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                 self._ratioHeader("OI_63+CII_158","FIR",lab)
             if "OI_145" in m:
                 lab="OI_145+CII_158/FIR"
-                #print(ll)
                 oi = utils.convert_if_necessary(self._measurements["OI_145"])
                 cii = utils.convert_if_necessary(self._measurements["CII_158"])
                 aa = deepcopy(oi+cii)
@@ -458,7 +470,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             modelpix = np.reshape(self._modelratios[r],sz)
 
             residuals = list()
-            mf = ma.masked_invalid(self._observedratios[r].flux)
+            mf = ma.masked_invalid(self._observedratios[r].value)
             me = ma.masked_invalid(self._observedratios[r].error)  
             #frac_error = f*modelpix  # this is actually slower than looping over modelpix
             s2 = me**2
@@ -475,8 +487,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                 _q = ma.masked_invalid(_q)
                 residuals.append(_q)
             # result order is g0,n,y,x
-            #print("Shape mr1 ",self._modelratios[r].shape,type(self._modelratios[r].shape[0]))
-            #print("Shape or2 ",self._observedratios[r].shape)#,type(self._observedratios[r].shape[0]))
 
             # Catch the case of a single pixel
             if len(self._observedratios[r].shape) == 0:
@@ -564,15 +574,11 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         # get the likelihood maxima of each pixel along the g,n axes
         z=np.amax(self._likelihood,(0,1))
         gi,ni,yi,xi=np.where(self._likelihood==z)
-        #print(gi)
-        #print(len(gi),len(ni),len(xi),len(yi))
         spatial_idx = (yi,xi)
         model_idx   = np.transpose(np.array([ni,gi]))
         # qq[:,:2] takes the first two columns of qq
         # [:,[1,0]] swaps those columns
         # np.flip would also swap them.
-        #print(qq[:,:2][:,[1,0]])
-        #print(np.flip(qq[:,:2]))
         fk = utils.firstkey(self._modelratios)
         fk2 = utils.firstkey(self._observedratios)
         newshape = self._observedratios[fk2].shape
@@ -617,13 +623,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         gnxy = np.where(self._reduced_chisq==rchi_min)
         gi = gnxy[firstindex]
         ni = gnxy[secondindex]
-        #print("GI ",gi)
-        #print("NI ",ni)
-        #print("len(rchimin) shape(rchimin) ",len(rchi_min),rchi_min.shape)
-        #print("len(gi) len(ni) ",len(gi),len(ni))
-        #print("shape(gi) shape(ni) ",np.shape(gi),np.shape(ni))
-        #print("gnxy shape , len(gnxy) ",np.shape(gnxy),len(np.shape(gnxy)))
-        #print("chi_min shape, len(shape(chi_min)) ",np.shape(chi_min),len(np.shape(chi_min)))
         if len(gnxy) >= 4:
             # astronomical spatial indices
             spatial_idx = (gnxy[thirdindex],gnxy[fourthindex])
@@ -634,26 +633,20 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         if self._modelnaxis == 3:
             # add 3rd axis to model_idx
             model_idx = np.insert(model_idx,0,[0],axis=1)
-        #print("MODEL INDEX: ",model_idx)
-        # qq[:,:2] takes the first two columns of qq
-        # [:,[1,0]] swaps those columns
-        # np.flip would also swap them.
-        #print(qq[:,:2][:,[1,0]])
-        #print(np.flip(qq[:,:2]))
         fk2 = utils.firstkey(self._observedratios)
         newshape = self._observedratios[fk2].shape
         g0 =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,1]
         n =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,0]
-        #print("G ",g0)
-        #print("N ",n)
-
         self._radiation_field=deepcopy(self._observedratios[fk2])
-        if spatial_idx == 0:
+        if spatial_idx == 0 and len(newshape) == 0:
             self._radiation_field.data=g0[0]
             self._radiation_field.uncertainty.array=float("NAN")
         else:
-            # note this will reshape g0 in radiation_field for us!
-            self._radiation_field.data[spatial_idx]=g0
+            if len(newshape) == 1: # Measurement with data vector
+                self._radiation_field.data = g0
+            else: #Measurement with image
+                # note this will reshape g0 in radiation_field for us! 
+                self._radiation_field.data[spatial_idx]=g0
             # We cannot mask nans because numpy does not support writing
             # MaskedArrays to a file. Will get a not implemented error.
             # Therefore just copy the nans over from the input observations.
@@ -666,11 +659,15 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._radiation_field.uncertainty.unit = self.radiation_field_unit
 
         self._density=deepcopy(self._observedratios[fk2])
-        if spatial_idx == 0:
+        if spatial_idx == 0 and len(newshape) == 0:
             self._density.data=n[0]
             self._density.uncertainty.array=float("NAN")
         else:
-            self._density.data[spatial_idx]=n
+            if len(newshape) == 1: # Measurement with data vector
+                self._density.data = n
+            else: #Measurement with image
+                # note this will reshape g0 in radiation_field for us! 
+                self._density.data[spatial_idx]=n
             self._density.data[np.isnan(self._observedratios[fk2])] = np.nan
             # kluge because we dont know how to properly calcultate undertainty on this.
             #self._density.uncertainty.array=np.zeroes(self._density.uncertainty.array)
@@ -686,7 +683,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
 
         # now save copies of the 2D min chisquares
         self._chisq_min=deepcopy(self._observedratios[fk2])
-        #print("chisq_min shape, len(chisq_min) ",np.shape(self._chisq_min),len(np.shape(self._chisq_min)))
         if spatial_idx == 0:
             self._chisq_min.data = chi_min
         else:
@@ -790,3 +786,40 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         # convert from OrderedDict to astropy.io.fits.header.Header
         self._density.header = Header(self._density.header)
         self._radiation_field.header = Header(self._radiation_field.header)
+        self._density._identifier = "H2 Volume Density"
+        self._radiation_field._identifier = "Radiation Field"
+        
+    @property
+    def table(self):
+        #@TODO: make this work for map data ?
+        '''Construct the table of input Measurements, and if the fit has been run, the density, radiation field, and :math:`\chi^2` values
+        
+        :rtype: :class:`astropy.table.Table`
+        '''
+        v = self._measurements.values()
+        # This only works for astropy version >= 4.1
+        # and for some reason requirements.txt did not install it
+        # for a test user.
+        #t = Table(self._measurements,
+        #          units=[m.unit for m in v]
+        #          )
+        t = Table()
+        cols = [Column(data=d,unit=d.unit) for d in v]
+        t.add_columns(cols=cols, names=[m.id for m in v])
+        if self._observedratios is not None:
+            v = self._observedratios.values()
+            cols = [Column(data=d,unit=d.unit) for d in v]
+            t.add_columns(cols=cols, names=[m.id for m in v])
+
+        if self.radiation_field is not None:
+            t.add_column(col=Column(self.radiation_field, unit=self.radiation_field_unit), name=self.radiation_field.id)
+
+        if self.density is not None:
+            t.add_column(col=Column(self.density, unit=self.density_unit), name=self.density.id)
+
+        if self._chisq_min is not None:
+            t.add_column(col=Column(self._chisq_min, unit=None), name="Chi-square")
+
+        for j in t.columns:
+            t[j].format = '3.2E'
+        return t
