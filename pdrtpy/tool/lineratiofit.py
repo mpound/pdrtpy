@@ -459,7 +459,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             raise Exception("No model data ready.  Was read_models() called?")
             
         if self.ratiocount < 2 :
-            raise Exception("Not enough ratios.  You need to provide at least 3 observations that can be used to compute 2 ratios that are covered by the ModelSet. From your observations, only %d ratios can be computed."%self.ratiocount)
+            raise Exception(f"Not enough ratios.  You need to provide at least 3 observations that can be used to compute 2 ratios that are covered by the ModelSet. From your observations, only {self.ratiocount:d} ratio(s) {list(self._modelratios.keys())} can be computed.")
 
         if not self._check_ratio_shapes():
             raise Exception("Observed ratio maps have different dimensions")
