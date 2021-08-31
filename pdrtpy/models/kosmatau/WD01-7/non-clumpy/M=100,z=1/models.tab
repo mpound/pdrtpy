@@ -51,14 +51,23 @@
   OI_63+CII_158         FIR   OI_63+CII_158/FIR            firweb    1   ([O I] 63 $\mu$m + [C II] 158 $\mu$m) / I$_{FIR}$
  OI_145+CII_158         FIR  OI_145+CII_158/FIR       firoi145web    1   ([O I] 145 $\mu$m + [C II] 158 $\mu$m) / I$_{FIR}$
          CI_609           1              CI_609             ciweb    1   [C I] 609 $\mu$m 
+         CI_370           1             CI_370           ci370web    1   [C I] 370 $\mu$m 
         CII_158           1             CII_158             cpweb    1   [C II] 158 $\mu$m
          OI_145           1              OI_145          oi145web    1   [O I] 145 $\mu$m
           OI_63           1               OI_63           oi63web    1   [O I] 63 $\mu$m
-          CO_10           1               CO_10             coweb    1   CO(J=1-0)
+          CO_10           1               CO_10           co10web    1   CO(J=1-0)
           CO_21           1               CO_21           co21web    1   CO(J=2-1)
+          CO_32           1               CO_32           co32web    1   CO(J=3-2)
           CO_43           1               CO_43           co43web    1   CO(J=4-3)
           CO_54           1               CO_54           co54web    1   CO(J=5-4)
           CO_65           1               CO_65           co65web    1   CO(J=6-5)
           CO_76           1               CO_76           co76web    1   CO(J=7-6)
-            FIR           1                 FIR     FIR-singleweb    1   FIR 28.2 - 3100 $ \mu$m
+          CO_87           1               CO_87           co87web    1   CO(J=8-7)
+          CO_98           1               CO_98           co98web    1   CO(J=9-8)
+         CO_109           1              CO_109          co109web    1   CO(J=10-9)
+        CO_1110           1             CO_1110         co1110web    1   CO(J=11-10)
+        CO_1211           1             CO_1211         co1211web    1   CO(J=12-11)
+        CO_1312           1             CO_1312         co1312web    1   CO(J=13-12)
+        CO_1413           1             CO_1413         co1413web    1   CO(J=13-12)
+            FIR           1                 FIR     fir-singleweb    1   FIR 28.2 - 3100 $ \mu$m
              TS           1                  TS             tsweb    1   Surface Temperature
