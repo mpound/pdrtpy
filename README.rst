@@ -21,7 +21,11 @@ PhotoDissociation Region Toolbox --- Python
 .. image:: https://img.shields.io/badge/License-GPLv3-blue.svg?style=plastic
  :target: https://www.gnu.org/licenses/gpl-3.0
  :alt: GNU GPL v3 License
-
+ 
+.. image:: https://readthedocs.org/projects/pdrtpy/badge/?version=latest
+ :target https://pdrtpy.readthedocs.io/en/latest/?badge=latest
+ :alt: Documentation status
+ 
 .. image:: https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg 
  :target: https://github.com/mpound/pdrtpy/blob/stable_release/CODE_OF_CONDUCT.md
  :alt: Contributor Covenant Code of Conduct  
