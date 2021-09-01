@@ -22,7 +22,7 @@ from .. import pdrutils as utils
 
 
 class ModelPlot(PlotBase):
-    """Class to plot models and optionally Measurements.  It does not require :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` first.
+    """ ModelPlot is a tool for exploring sets of models.  It can plot individual intensity or ratio models, phase-space diagrams, and optionally overlay observations.  It does not require model fitting with :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` first.
 
     :Keyword Arguments:
     The methods of this class can take a variety of optional keywords.  See the general `Plot Keywords`_ documentation

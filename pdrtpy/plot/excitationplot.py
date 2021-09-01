@@ -25,7 +25,8 @@ from .plotbase import PlotBase
 from ..pdrutils import to,float_formatter,LOGE,isOdd
 
 class ExcitationPlot(PlotBase):
-    """Class to plot various results from H2 Excitation diagram fitting.
+    """
+ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy.tool.h2excitationfit.H2ExcitationFit`. It can plot the observed excitation diagram with or without fit results, and allows averaging over user-given spatial areas.  
     """
     def __init__(self,tool,label):
         super().__init__(tool)
