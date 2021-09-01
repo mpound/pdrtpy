@@ -33,7 +33,7 @@ from .. import pdrutils as utils
 
 
 class LineRatioPlot(PlotBase):
-    """Class to plot various results from PDR Toolbox model fitting.
+    """LineRatioPlot plots the results of :class:`~pdrtpy.tools.lineratiofit.LineRatioFit`.  It can plot maps of fit results, observations with errors on top of models, chi-square and confidence intervals and more.
     
 
     :Keyword Arguments:
