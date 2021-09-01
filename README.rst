@@ -6,7 +6,7 @@ PhotoDissociation Region Toolbox --- Python
 
 ------------------------------------------------------------
 
-.. image:: https://img.shields.io/badge/ascl-1102.022-blue.svg?colorB=262255
+.. image:: https://img.shields.io/badge/ascl-1102.022-blue.svg?colorB=262255&style=plastic
    :target: http://ascl.net/1102.022
    :alt: Astrophysics Source Code Library 1102.022
 
@@ -22,11 +22,11 @@ PhotoDissociation Region Toolbox --- Python
  :target: https://www.gnu.org/licenses/gpl-3.0
  :alt: GNU GPL v3 License
  
-.. image:: https://readthedocs.org/projects/pdrtpy/badge/?version=latest
+.. image:: https://readthedocs.org/projects/pdrtpy/badge/?version=latest&style=plastic
  :target https://pdrtpy.readthedocs.io/en/latest/?badge=latest
  :alt: Documentation status
  
-.. image:: https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg 
+.. image:: https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg?style=plastic
  :target: https://github.com/mpound/pdrtpy/blob/stable_release/CODE_OF_CONDUCT.md
  :alt: Contributor Covenant Code of Conduct  
 
