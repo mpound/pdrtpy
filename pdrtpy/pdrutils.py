@@ -599,3 +599,53 @@ def isEven(number):
 def isOdd(number):
     return not isEven(number)
 
+def get_xy_from_wcs(data,quantity=False,linear=False):
+    """Get the x,y axis vectors from the WCS of the input image.
+   
+    :param data: the input image
+    :type data: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+    :param quantity: If True, return the arrays as :class:`astropy.units.Quantity`. If False, the returned arrays are :class:`numpy.ndarray`.
+    :type quantity: bool
+    :param linear: If True, returned arrays are in linear space, if False they are in log space.
+    :type linear: bool
+    :return: The axis values as arrays.  Values are center of pixel.
+    :rtype: :class:`numpy.ndarray` or :class:`astropy.units.Quantity`
+    """
+    w = data.wcs
+    if w is None:
+        raise Exception("No WCS in the input image")
+    xind=np.arange(w._naxis[0])
+    yind=np.arange(w._naxis[1])
+    # wcs methods want broadcastable arrays, but in our
+    # case naxis1 != naxis2, so make two 
+    # calls and take x from the one and y from the other.
+    if quantity:
+        x=w.array_index_to_world(xind,xind)[0]
+        y=w.array_index_to_world(yind,yind)[1]
+        # Need to handle Habing or Draine units which are non-standard FITS.
+        # Can't apply them to a WCS because it will raise an Exception.
+        # See ModelSet.get_model
+        cunit=data.header.get("CUNIT2",None) 
+        if cunit == "Habing":
+           y._unit = habing_unit     
+        if cunit == "Draine":
+           y._unit = draine_unit     
+        if linear:
+           j = 10*np.ones(len(x.value))
+           k = 10*np.ones(len(y.value))
+           #ugh we are depending on CTYPE being properly indicated as log(whatever)
+           if 'log' in w.wcs.ctype[0]:
+               x = np.power(j,x.value)*x.unit
+           if 'log' in w.wcs.ctype[1]:
+                   y = np.power(k,y.value)*y.unit
+    else:
+        x=w.array_index_to_world_values(xind,xind)[0]
+        y=w.array_index_to_world_values(yind,yind)[1]
+        if linear:
+           j = 10*np.ones(len(x))
+           k = 10*np.ones(len(y))
+           if 'log' in w.wcs.ctype[0]:
+               x = np.power(j,x)
+           if 'log' in w.wcs.ctype[1]:
+               y = np.power(k,y)
+    return (x,y)
