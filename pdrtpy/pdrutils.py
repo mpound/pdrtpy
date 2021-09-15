@@ -599,3 +599,44 @@ def isEven(number):
 def isOdd(number):
     return not isEven(number)
 
+def _has_substring(s,ids):
+    return any([s in c for c in ids])
+
+def _has_H2(ids):
+    return _has_substring('H2',ids)
+
+def _trim_to_H2(image):
+    '''H2 models in wk2006 are a smaller grid 17x17 vs 25x29. So when performing operations
+    involving other models, we have to trim the other models to 17x17;  log(n,G0) from 1 to 5
+    
+    :param image: the model to trim
+    :type image: :class:`~pdrtpy.measurement.Measurement`
+    :returns: the trimmed model
+    :rtype: :class:`~pdrtpy.measurement.Measurement`
+    '''
+    f = deepcopy(image)
+    #Slice the WCS. Note this is in numpy array order, not WCS axis order
+    f.wcs = f.wcs[6:23,0:17]
+    f.data = f.data[6:23,0:17]
+    f.meta['NAXIS1'] = 17
+    f.meta['NAXIS2'] = 17
+    comment("Trimmed model",f)
+    return f
+
+def _trim_all_to_H2(measurements):
+    if type(measurements) is dict:
+        for id in measurements:
+            if "H2" not in id:
+                measurements[id] = _trim_to_H2(measurements[id])
+                print("trm 1 ",id,measurements[id].wcs)
+    else:
+        # have to iterate over index to ensure "pass by reference"
+        # if we did for m in meausurements: m = ..., then measurements
+        # remains unchanged at end of function.  Wheee, python!
+        for j in range(len(measurements)):
+            if "H2" not in measurements[j].id:
+                measurements[j] = _trim_to_H2(measurements[j])
+                print("trm ",measurements[j].id,measurements[j].wcs)
+        
+        
+

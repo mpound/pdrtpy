@@ -168,11 +168,15 @@ class ModelPlot(PlotBase):
         ids = [m.id for m in measurements]
         meas = dict(zip(ids,measurements))
         models = [self._modelset.get_model(i) for i in ids]
+        # need to trim model grids if H2 is present
+        if utils._has_H2(ids):
+            utils._trim_all_to_H2(models)
+        print("TRM ",models[0].wcs)
         i =0 
         nratio = 0
         nintensity = 0
         for val in models:
-            if len(meas[val.id].data) != 1:
+            if np.size(meas[val.id].data) != 1:
                 raise ValueError(f"Can't plot {val.id}. This method only works with single pixel Measurements [len(measurement.data) must be 1]")
             if i > 0: kwargs_opts['reset']=False
             # pass the index of the contour color to use via the "secret" colorcounter keyword.
@@ -566,6 +570,7 @@ class ModelPlot(PlotBase):
             raise Exception("Unexpected NAXIS value: %d"%_naxis)
 
         km = ma.masked_invalid(k)
+        print("km shape ",np.shape(km))
         if getattr(k,"mask",None) is not None:
             km.mask = np.logical_or(k.mask,km.mask)
         # make sure nans don't affect the color map
@@ -620,6 +625,7 @@ class ModelPlot(PlotBase):
             
         # make the x and y axes.  Since the models are computed on a log grid, we
         # use logarithmic ticks.
+        #print("ModelPlot: DATA[%s] WCS %s"%(data.id,data.wcs))
         x,y = self._get_xy_from_wcs(data,quantity=True,linear=True)
         locmaj = ticker.LogLocator(base=10.0, subs=(1.0, ),numticks=10)
         locmin = ticker.LogLocator(base=10.0, subs=np.arange(2, 10)*.1,numticks=10) 
