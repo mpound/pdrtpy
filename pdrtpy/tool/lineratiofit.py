@@ -271,6 +271,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._modelratios = self._modelset.get_models(self.measurementIDs,model_type='ratio')
         k = utils.firstkey(self._modelratios)
         self._modelnaxis = self._modelratios[k].wcs.naxis
+        self._modelshape = np.array(self._modelratios[k].data.shape)
         if not self.density_unit:
             self.density_unit = self._modelratios[k].wcs.wcs.cunit[0]
             self.density_type = self._modelratios[k].wcs.wcs.ctype[0]
@@ -421,7 +422,10 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             self._observedratios[label].meta = deepcopy(num.header)
             #@TODO create a meaningful header for the ratio map
             self._ratioHeader(p["numerator"],p["denominator"],label)
+            self._observedshape = self._observedratios[label].data.shape
+        self._observedshape = np.array(self._observed_shape)
         self._add_oi_cii_fir()
+
 
     def _add_oi_cii_fir(self):
         '''add special case ([O I] 63 micron + [C II] 158 micron)/IFIR to observed ratios'''
@@ -445,7 +449,21 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                 self._observedratios[lab] = aa/bb
                 self._observedratios[lab].meta = deepcopy(bb.header)
                 self._ratioHeader("OI_145+CII_158","FIR",lab)
-                    
+                
+    # function to minimize in single-pixel case            
+    def _residual_single_pix(params):
+        parvals = params.valuesdict()
+        mvalue = np.ones(self.ratiocount)
+        dvalue = np.ones(self.ratiocount)
+        evalue = np.ones(self.ratiocount)
+        i=0
+        for k in self._modelratios:
+            mvalue[i] = self._modelratios[k].get(parvals['density'],parvals['radiation_field']) 
+            dvalue[i] = self._observedratios[k].value
+            evalue[i] = self._observedratios[k].error
+            i = i+1
+        return  (dvalue - mvalue)/evalue
+    
     #deprecated
     def _compute_delta_sq(self):
         '''Compute the difference-squared values from the observed ratios 

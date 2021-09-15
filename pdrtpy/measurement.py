@@ -9,9 +9,10 @@ from astropy.table import Table
 from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
 import numpy as np
 import numpy.ma as ma
+from scipy.interpolate import interp2d
 from os import remove
 from os.path import exists
-from .pdrutils import squeeze,mask_union,is_ratio
+from . import pdrutils as utils
 
 class Measurement(CCDData):
     r"""Measurement represents one or more observations of a given spectral
@@ -122,6 +123,8 @@ class Measurement(CCDData):
             self.header["BMIN"] = _beam["BMIN"]
         if "BPA" not in self.header:
             self.header["BPA"] = _beam["BPA"]
+        if self.wcs is not None:
+            self._set_up_for_interp()
 
     def _beam_convert(self,bpar):
         if bpar is None:  
@@ -208,7 +211,7 @@ class Measurement(CCDData):
         if masknan:
             fmasked = ma.masked_invalid(_data[0].data)
             emasked = ma.masked_invalid(_error[0].data)
-            final_mask = mask_union([fmasked,emasked])
+            final_mask = utils.mask_union([fmasked,emasked])
             # Convert boolean mask to uint since io.fits cannot handle bool.
             hduMask = fits.ImageHDU(final_mask.astype(np.uint8), name='MASK')
             _out.append(hduMask)
@@ -217,14 +220,6 @@ class Measurement(CCDData):
         _out.close()
         if needsclose: _error.close()
 
-    #@property
-    # deprecated, replaced with value(self) as measurements can be anything not just flux
-    #def flux(self):
-    #    '''Return the underlying data array
-    #    
-    #    :rtype: :class:`numpy.ndarray`
-    #    '''
-    #    return self.data
     @property
     def value(self):
         '''Return the underlying data array
@@ -283,7 +278,7 @@ class Measurement(CCDData):
         
         :returns: True if the Measurement is a ratio, False otherwise
         :rtype: bool''' 
-        return is_ratio(self.id) #pdrutils method
+        return utils.is_ratio(self.id) #pdrutils method
         
     @property
     def title(self):
@@ -310,6 +305,34 @@ class Measurement(CCDData):
         '''
         hdu = self.to_hdu()
         hdu.writeto(filename,**kwd)
+    
+    def _set_up_for_interp(self,kind='cubic'):
+        """
+        We don't want to have to do a call to get a pixel value at a particular WCS every time it's needed.
+        So make one call that converts the entire NAXIS1 and NAXIS2 to an array of world coordinates and stash that away
+        so we can pass it to scipy.interp2d when needed
+        """
+        self._world_axis = utils.get_xy_from_wcs(self,quantity=False,linear=False)
+        self._world_axis_lin = utils.get_xy_from_wcs(self,quantity=False,linear=True)
+        self._interp_log = interp2d(self._world_axis[0],self._world_axis[1],z=self.data,kind=kind,bounds_error=True)
+        self._interp_lin = interp2d(self._world_axis_lin[0],self._world_axis_lin[1],z=self.data,kind=kind,bounds_error=True)
+        
+    def get(self,world_x,world_y,log=False):
+        """Get the value(s) at the give world coordinates
+        
+        :param world_x: the x value in world units of naxis1
+        :type world_x: float or array-like
+        :param world_y: the y value in world units of naxis2
+        :type world_y: float or array-lke
+        :param log: True if the input coords are logarithmic Default:False
+        :type log: bool
+        :returns The value(s) of the Measurement at input coordinates
+        :rtype: float
+        """
+        if log:
+            return self._interp_log(world_x,world_y)
+        else:
+            return self._interp_lin(world_x,world_y)
         
     @property
     def levels(self):
@@ -582,7 +605,7 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
     log.setLevel('WARNING')
     z = CCDData.read(filename,unit=unit)#,hdu,uu,hdu_uncertainty,hdu_mask,hdu_flags,key_uncertainty_type, **kwd)
     if _squeeze:
-        z = squeeze(z)
+        z = utils.squeeze(z)
         
     # @TODO if uncertainty plane not present, look for RMS keyword
     # @TODO header values get stuffed into WCS, others may be dropped by CCDData._generate_wcs_and_update_header
