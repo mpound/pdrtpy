@@ -623,18 +623,24 @@ def _trim_to_H2(image):
     comment("Trimmed model",f)
     return f
 
-def _trim_all_to_H2(measurements):
-    if type(measurements) is dict:
-        for id in measurements:
+def _trim_all_to_H2(models):
+    '''H2 models in wk2006 are a smaller grid 17x17 vs 25x29. So when performing operations
+    involving other models, we have to trim the other models to 17x17;  log(n,G0) from 1 to 5
+    
+    :param models: models to trim
+    :type models: :list or dict of class:`~pdrtpy.measurement.Measurement`
+    '''
+    if type(models) is dict:
+        for id in models:
             if "H2" not in id:
-                measurements[id] = _trim_to_H2(measurements[id])
+                models[id] = _trim_to_H2(models[id])
     else:
         # have to iterate over index to ensure "pass by reference"
-        # if we did for m in meausurements: m = ..., then measurements
+        # if we did for m in models: m = ..., then models
         # remains unchanged at end of function.  Wheee, python!
-        for j in range(len(measurements)):
-            if "H2" not in measurements[j].id:
-                measurements[j] = _trim_to_H2(measurements[j])
+        for j in range(len(models)):
+            if "H2" not in models[j].id:
+                models[j] = _trim_to_H2(models[j])
         
         
 
