@@ -11,6 +11,7 @@ import astropy.units as u
 import astropy.stats as astats
 from astropy.table import Table, Column
 from astropy.nddata import NDDataArray, CCDData, StdDevUncertainty
+import warnings
 
 from ..tool.toolbase import ToolBase
 from ..plot.lineratioplot import LineRatioPlot
@@ -229,6 +230,10 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
     def _check_ratio_shapes(self):
        if self._observedratios == None: return False
        return self._check_shapes(self._observedratios)
+    
+    def _check_model_shapes(self):
+        if self._modelratios == None: return False
+        return self._check_shapes(self._modelratios)
             
     def add_measurement(self,m):
         r'''Add a Measurement to internal dictionary used to compute ratios. This measurement may be intensity units (erg :math:`{\rm s}^{-1}` :math:`{\rm cm}^{-2}`) or integrated intensity (K km/s).
@@ -252,7 +257,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         '''
         del self._measurements[id]
         self._set_model_files_used()
-   
     
     def read_models(self,unit=u.dimensionless_unscaled):
         """Given a list of measurement IDs, find and open the FITS files that have matching ratios
@@ -280,7 +284,10 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                     self.radiation_field_unit = u.Unit(self._modelratios[k].header["CUNIT2"])
                 except KeyError:
                     raise Exception("Keyword CUNIT2 is required in file %s FITS header to describe units of interstellar radiation field"%thefile)
-    
+        if not self._check_model_shapes():
+            warnings.warn("Trimming all model grids to match H2 grid: log(n) = 1-5, log(G0) = 1-5")
+            utils._trim_all_to_H2(self._modelratios)
+            
     def _check_compatibility(self):
         """Check that all Measurements are compatible (beams, coordinate systems, shapes) so that the computation make commence.
  
@@ -542,6 +549,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         k = utils.firstkey(self._deltasq)
         _wcs = deepcopy(self._deltasq[k].wcs)
         _meta = deepcopy(self._deltasq[k].meta)
+        print
         self._chisq = CCDData(sumary,unit='adu',wcs=_wcs,meta=_meta)
         self._reduced_chisq =  self._chisq.divide(self._dof)
         # must make a copy here otherwise the header is an OrderDict

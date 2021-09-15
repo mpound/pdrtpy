@@ -360,6 +360,7 @@ class ModelSet(object):
         self._supported_ratios.remove_rows(matching_rows)
         self._supported_ratios['title'].unit = None
         self._supported_ratios['ratio'].unit = None
+        self._supported_ratios.remove_column("denominator")
         self._supported_ratios.rename_column("ratio","ratio label")
         self._supported_lines.rename_column("ratio","intensity label")
 
