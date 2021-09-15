@@ -599,6 +599,49 @@ def isEven(number):
 def isOdd(number):
     return not isEven(number)
 
+def _has_substring(s,ids):
+    return any([s in c for c in ids])
+
+def _has_H2(ids):
+    return _has_substring('H2',ids)
+
+def _trim_to_H2(image):
+    '''H2 models in wk2006 are a smaller grid 17x17 vs 25x29. So when performing operations
+    involving other models, we have to trim the other models to 17x17;  log(n,G0) from 1 to 5
+    
+    :param image: the model to trim
+    :type image: :class:`~pdrtpy.measurement.Measurement`
+    :returns: the trimmed model
+    :rtype: :class:`~pdrtpy.measurement.Measurement`
+    '''
+    f = deepcopy(image)
+    #Slice the WCS. Note this is in numpy array order, not WCS axis order
+    f.wcs = f.wcs[6:23,0:17]
+    f.data = f.data[6:23,0:17]
+    f.meta['NAXIS1'] = 17
+    f.meta['NAXIS2'] = 17
+    comment("Trimmed model",f)
+    return f
+
+def _trim_all_to_H2(models):
+    '''H2 models in wk2006 are a smaller grid 17x17 vs 25x29. So when performing operations
+    involving other models, we have to trim the other models to 17x17;  log(n,G0) from 1 to 5
+    
+    :param models: models to trim
+    :type models: :list or dict of class:`~pdrtpy.measurement.Measurement`
+    '''
+    if type(models) is dict:
+        for id in models:
+            if "H2" not in id:
+                models[id] = _trim_to_H2(models[id])
+    else:
+        # have to iterate over index to ensure "pass by reference"
+        # if we did for m in models: m = ..., then models
+        # remains unchanged at end of function.  Wheee, python!
+        for j in range(len(models)):
+            if "H2" not in models[j].id:
+                models[j] = _trim_to_H2(models[j])
+
 def get_xy_from_wcs(data,quantity=False,linear=False):
     """Get the x,y axis vectors from the WCS of the input image.
    
