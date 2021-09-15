@@ -641,7 +641,7 @@ def _trim_all_to_H2(models):
         for j in range(len(models)):
             if "H2" not in models[j].id:
                 models[j] = _trim_to_H2(models[j])
-
+                
 def get_xy_from_wcs(data,quantity=False,linear=False):
     """Get the x,y axis vectors from the WCS of the input image.
    
@@ -692,3 +692,4 @@ def get_xy_from_wcs(data,quantity=False,linear=False):
            if 'log' in w.wcs.ctype[1]:
                y = np.power(k,y)
     return (x,y)
+

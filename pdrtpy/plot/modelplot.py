@@ -169,11 +169,15 @@ class ModelPlot(PlotBase):
         ids = [m.id for m in measurements]
         meas = dict(zip(ids,measurements))
         models = [self._modelset.get_model(i) for i in ids]
+        # need to trim model grids if H2 is present
+        if utils._has_H2(ids):
+            warnings.warn("Trimming all model grids to match H2 grid: log(n) = 1-5, log(G0) = 1-5")
+            utils._trim_all_to_H2(models)
         i =0 
         nratio = 0
         nintensity = 0
         for val in models:
-            if len(meas[val.id].data) != 1:
+            if np.size(meas[val.id].data) != 1:
                 raise ValueError(f"Can't plot {val.id}. This method only works with single pixel Measurements [len(measurement.data) must be 1]")
             if i > 0: kwargs_opts['reset']=False
             # pass the index of the contour color to use via the "secret" colorcounter keyword.
