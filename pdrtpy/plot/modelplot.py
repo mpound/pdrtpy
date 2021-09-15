@@ -170,8 +170,8 @@ class ModelPlot(PlotBase):
         models = [self._modelset.get_model(i) for i in ids]
         # need to trim model grids if H2 is present
         if utils._has_H2(ids):
+            warnings.warn("Trimming all model grids to match H2 grid: log(n) = 1-5, log(G0) = 1-5")
             utils._trim_all_to_H2(models)
-        print("TRM ",models[0].wcs)
         i =0 
         nratio = 0
         nintensity = 0
@@ -570,7 +570,6 @@ class ModelPlot(PlotBase):
             raise Exception("Unexpected NAXIS value: %d"%_naxis)
 
         km = ma.masked_invalid(k)
-        print("km shape ",np.shape(km))
         if getattr(k,"mask",None) is not None:
             km.mask = np.logical_or(k.mask,km.mask)
         # make sure nans don't affect the color map
@@ -625,7 +624,6 @@ class ModelPlot(PlotBase):
             
         # make the x and y axes.  Since the models are computed on a log grid, we
         # use logarithmic ticks.
-        #print("ModelPlot: DATA[%s] WCS %s"%(data.id,data.wcs))
         x,y = self._get_xy_from_wcs(data,quantity=True,linear=True)
         locmaj = ticker.LogLocator(base=10.0, subs=(1.0, ),numticks=10)
         locmin = ticker.LogLocator(base=10.0, subs=np.arange(2, 10)*.1,numticks=10) 

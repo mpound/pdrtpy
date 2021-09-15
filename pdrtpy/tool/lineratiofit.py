@@ -285,7 +285,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                 except KeyError:
                     raise Exception("Keyword CUNIT2 is required in file %s FITS header to describe units of interstellar radiation field"%thefile)
         if not self._check_model_shapes():
-            warnings.warn("Trimming all model grids to H2 grid: log(n) = 1-5, log(G0) = 1-5")
+            warnings.warn("Trimming all model grids to match H2 grid: log(n) = 1-5, log(G0) = 1-5")
             utils._trim_all_to_H2(self._modelratios)
             
     def _check_compatibility(self):
@@ -548,11 +548,9 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._dof = len(self._deltasq) - 1
         k = utils.firstkey(self._deltasq)
         _wcs = deepcopy(self._deltasq[k].wcs)
-        print("DELTA WCS",_wcs)
         _meta = deepcopy(self._deltasq[k].meta)
         print
         self._chisq = CCDData(sumary,unit='adu',wcs=_wcs,meta=_meta)
-        print("CHI WCS",self._chisq.wcs)
         self._reduced_chisq =  self._chisq.divide(self._dof)
         # must make a copy here otherwise the header is an OrderDict
         # instead of astropy.io.fits.header.Header

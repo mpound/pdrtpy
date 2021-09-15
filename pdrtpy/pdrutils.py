@@ -628,7 +628,6 @@ def _trim_all_to_H2(measurements):
         for id in measurements:
             if "H2" not in id:
                 measurements[id] = _trim_to_H2(measurements[id])
-                print("trm 1 ",id,measurements[id].wcs)
     else:
         # have to iterate over index to ensure "pass by reference"
         # if we did for m in meausurements: m = ..., then measurements
@@ -636,7 +635,6 @@ def _trim_all_to_H2(measurements):
         for j in range(len(measurements)):
             if "H2" not in measurements[j].id:
                 measurements[j] = _trim_to_H2(measurements[j])
-                print("trm ",measurements[j].id,measurements[j].wcs)
         
         
 
