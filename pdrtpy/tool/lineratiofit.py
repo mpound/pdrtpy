@@ -423,7 +423,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             #@TODO create a meaningful header for the ratio map
             self._ratioHeader(p["numerator"],p["denominator"],label)
             self._observedshape = self._observedratios[label].data.shape
-        self._observedshape = np.array(self._observed_shape)
+        self._observedshape = np.array(self._observedshape)
         self._add_oi_cii_fir()
 
 
