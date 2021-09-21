@@ -113,8 +113,8 @@ class PlotBase:
             s = PowerStretch(1)
         elif stretch == 'log':
             s = LogStretch(1000)
-        elif s == 'asinh':
-            stretch = AsinhStretch(0.1)
+        elif stretch == 'asinh':
+            s = AsinhStretch(0.1)
         else:
             raise ValueError(f'Unknown stretch: {stretch}.')
 

@@ -386,15 +386,30 @@ class LineRatioPlot(PlotBase):
                        'norm': None,
                        'title': None,
                        'reset': True,
-                       'legend': True}
+                       'legend': True,
+                        'bbox_to_anchor':None,
+                        'loc': 'upper center'}
 
         kwargs_opts.update(kwargs)
         # force this as ncols !=1 makes no sense.
         kwargs_opts['ncols'] = 1
 
-        i =0 
-        for key,val in self._tool._modelratios.items():
+        i = 0
+        _measurements = list()
+        _models = list()
+        if kwargs_opts.get('measurements',None) is not None:
+            _measurements = kwargs_opts['measurements']
+            for m in _measurements:
+                if i > 0: kwargs_opts['reset']=False
+                val = self._tool.modelset.get_model(m.id)
+                _models.append(val)
+                kwargs_opts['measurements'] = [utils.convert_if_necessary(m)]
+                self._modelplot._plot_no_wcs(_models[i],header=None,colorcounter=i,**kwargs_opts)
+                i = i+1
+                
+        for key,val in self._tool._modelratios.items(): 
             kwargs_opts['measurements'] = [self._tool._observedratios[key]]
+            _measurements.extend(self._tool._observedratios[key])
             if i > 0: kwargs_opts['reset']=False
             # pass the index of the contour color to use via the "secret" colorcounter keyword.
             self._modelplot._plot_no_wcs(val,header=None,colorcounter=i,**kwargs_opts)
@@ -402,8 +417,16 @@ class LineRatioPlot(PlotBase):
 
         if kwargs_opts['legend']:
             lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in kwargs_opts['meas_color'][0:i]]
-            labels = [self._tool._modelratios[k].title for k in self._tool._modelratios]
-            self._plt.legend(lines, labels,loc='upper center',title='Observed Ratios')
+            labels = list()
+            if len(_measurements) != 0:
+                labels = [m.title for m in _models]
+                title = "Observed Ratios and Intensities"
+            else:
+                title = "Observed Ratios"
+            labels.extend([self._tool._modelratios[k].title for k in self._tool._modelratios])
+            self._plt.legend(lines, labels,loc=kwargs_opts['loc'],
+                             bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
+                             title=title)
         self._figure = self._modelplot.figure
         self._axis = self._modelplot.axis
 
