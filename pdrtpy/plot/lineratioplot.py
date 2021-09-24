@@ -398,6 +398,7 @@ class LineRatioPlot(PlotBase):
         _measurements = list()
         _models = list()
         if kwargs_opts.get('measurements',None) is not None:
+            # (i,_models,_measurements) = self._overlay_measurements(kwargs_opts['measurements'])
             _measurements = kwargs_opts['measurements']
             for m in _measurements:
                 if i > 0: kwargs_opts['reset']=False
