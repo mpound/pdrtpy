@@ -94,27 +94,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         :rtype: list of str
         '''
         return list(self._observedratios.keys())
-
-
-#    @property
-#    def has_maps(self):
-#        '''Are the Measurements used map-based?. (i.e., have 2 spatial axes)
-#        
-#        :returns: True, if the observational inputs are spatial maps, False otherwise
-# 
-#        :rtype: bool
-#        '''
-#        
-#        return self._measurementnaxis > 1
-#    @property
-#    
-#    def has_vectors(self):
-#        '''Are the Measurements used a Nx1 vector, e.g. read in from a table with #:meth:`~pdrtpy.Measurement.from_table`.
-#        
-#        :returns: True, if the observational inputs are a vector, False otherwise
-##        :rtype: bool
-#        '''
-#        return self._measurementnaxis == 1
         
     @property
     def ratiocount(self):
@@ -175,11 +154,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._measurements = dict()
         for mm in m:
             self._measurements[mm.id] = mm
-
-    #@deprecated
-    #def _initialize_modelTable(self,filename):
-    #    """initialize models from an IPAC format ASCII file"""
-    #    self._modelTable=Table.read(filename,format="ascii.ipac")
 
     def _set_model_files_used(self):
         self._model_files_used = dict()
