@@ -12,6 +12,8 @@ import astropy.stats as astats
 from astropy.table import Table, Column
 from astropy.nddata import NDDataArray, CCDData, StdDevUncertainty
 import warnings
+from lmfit import Model, Parameters, Minimizer, minimize, fit_report
+import corner
 
 from ..tool.toolbase import ToolBase
 from ..plot.lineratioplot import LineRatioPlot
@@ -54,6 +56,8 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._deltasq = None
         self._reduced_chisq = None
         self._likelihood = None
+        self._radiation_field = None
+        self._density = None
         self.radiation_field_unit = None
         self.radiation_field_type = None
         self.density_unit = None
@@ -425,16 +429,16 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                 self._ratioHeader("OI_145+CII_158","FIR",lab)
                 
     # function to minimize in single-pixel case            
-    def _residual_single_pix(params):
+    def _residual_single_pix(self,params,index):
         parvals = params.valuesdict()
-        mvalue = np.ones(self.ratiocount)
-        dvalue = np.ones(self.ratiocount)
-        evalue = np.ones(self.ratiocount)
+        mvalue = np.empty(self.ratiocount)
+        dvalue = np.empty(self.ratiocount)
+        evalue = np.empty(self.ratiocount)
         i=0
         for k in self._modelratios:
             mvalue[i] = self._modelratios[k].get(parvals['density'],parvals['radiation_field']) 
-            dvalue[i] = self._observedratios[k].value
-            evalue[i] = self._observedratios[k].error
+            dvalue[i] = self._observedratios[k].data.flatten()[index]
+            evalue[i] = self._observedratios[k].uncertainty.array.flatten()[index]
             i = i+1
         return  (dvalue - mvalue)/evalue
     
@@ -595,6 +599,68 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         #fix the headers
         #self._density_radiation_field_header() 
         
+    def compute_density_radiation_field2(self,method='leastsq'):
+        # First get the range of density n and radiation field FUV from the 
+        # model space, in order to provide them to the Parameters object.
+        # Since the wk2006 H2 models have a smaller model space, 
+        # we have to check if H2 is in one of the models used.  
+        par = Parameters()
+        keys = list(self._modelratios.keys())
+        if utils._has_H2(keys):
+            # this will get the index for the first modelratio that has H2 in it
+            # https://stackoverflow.com/questions/2170900/get-first-list-index-containing-sub-string
+            i =[idx for idx, s in enumerate(ss) if 'H2' in s][0]
+            fk = keys[i]
+        else:
+            fk = keys[0]
+        # this will work regardless if Y axis is Habing, CGS, Draine, etc
+        # We do this in linear space because we want the fit report to be in linear space
+        # which is what observers care about.
+        x,y=utils.get_xy_from_wcs(self._modelratios[fk],linear=True)
+        minn=x[0]
+        maxn=x[-1]
+        minfuv=y[0]
+        maxfuv=y[-1]
+        #if self._radiation_field is None or self._density is None:
+        startn = x[int(len(x)/2)]
+        startfuv=y[int(len(y)/2)]
+        #else:
+        #    startn = self._density.value
+        #    startfuv = self._radiation_field.value
+        par.add('density',min=minn,max=maxn,value=startn)
+        par.add('radiation_field',min=minfuv,max=maxfuv,value=startfuv)
+        self._fitresult = list()
+        par.pretty_print()
+        rf = np.empty(self._observedratios[fk].size)
+        den = np.empty(self._observedratios[fk].size)
+        rfe = np.empty(self._observedratios[fk].size)
+        dene = np.empty(self._observedratios[fk].size)
+        chi = np.empty(self._observedratios[fk].size)
+        rchi = np.empty(self._observedratios[fk].size)
+        dflat = self._density.value.flatten()
+        rflat = self._radiation_field.value.flatten()
+        for j in range(self._observedratios[fk].size):
+            par['density'].value = dflat[j]
+            par['radiation_field'].value = rflat[j]
+            fr=minimize(self._residual_single_pix,params=par,method=method,args=(j,),nan_policy='omit')
+            den[j] = fr.params['density'].value
+            dene[j] = fr.params['density'].stderr
+            rf[j] = fr.params['radiation_field'].value
+            rfe[j] = fr.params['radiation_field'].stderr
+            chi[j] = fr.chisqr
+            rchi[j] = fr.redchi
+            self._fitresult.append(fr)
+        self._rf2 = deepcopy(self._radiation_field)
+        self._rf2.data = rf.reshape(self._rf2.data.shape)
+        self._rf2.uncertainty.array = rfe.reshape(self._rf2.uncertainty.array.shape)
+        self._d2 = deepcopy(self._density)
+        self._d2.data = den.reshape(self._d2.data.shape)
+        self._d2.uncertainty.array = dene.reshape(self._d2.uncertainty.array.shape)
+        self._chi2 = deepcopy(self._chisq_min)
+        self._rchi2 = deepcopy(self._reduced_chisq_min)
+        self._chi2.data = chi.reshape(self._chi2.data.shape)
+        self._rchi2.data = rchi.reshape(self._rchi2.data.shape)
+        
     def compute_density_radiation_field(self):
         '''Compute the best-fit density and radiation field spatial maps 
            by searching for the minimum chi-squared at each spatial pixel.'''
@@ -639,8 +705,8 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         n =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,0]
         self._radiation_field=deepcopy(self._observedratios[fk2])
         if spatial_idx == 0 and len(newshape) == 0:
-            self._radiation_field.data=g0[0]
-            self._radiation_field.uncertainty.array=float("NAN")
+            self._radiation_field.data=np.array([g0[0]])
+            self._radiation_field.uncertainty.array=np.array([np.nan])
         else:
             if len(newshape) == 1: # Measurement with data vector
                 self._radiation_field.data = g0
@@ -660,8 +726,8 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
 
         self._density=deepcopy(self._observedratios[fk2])
         if spatial_idx == 0 and len(newshape) == 0:
-            self._density.data=n[0]
-            self._density.uncertainty.array=float("NAN")
+            self._density.data=np.array([n[0]])
+            self._density.uncertainty.array=np.array([np.nan])
         else:
             if len(newshape) == 1: # Measurement with data vector
                 self._density.data = n
@@ -683,8 +749,8 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
 
         # now save copies of the 2D min chisquares
         self._chisq_min=deepcopy(self._observedratios[fk2])
-        if spatial_idx == 0:
-            self._chisq_min.data = chi_min
+        if spatial_idx == 0 and len(newshape) == 0:
+            self._chisq_min.data = np.array([chi_min])
         else:
             if self._modelnaxis == 2:
                 self._chisq_min.data=chi_min
@@ -692,11 +758,12 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                 self._chisq_min.data=chi_min[0,:,:]
             self._chisq_min.data[np.isnan(self._observedratios[fk2])] = np.nan
         self._chisq_min.unit = u.dimensionless_unscaled
+        self._chisq_min.uncertainty.array = [0.0]
         self._chisq_min.uncertainty.unit = u.dimensionless_unscaled
 
         self._reduced_chisq_min=deepcopy(self._observedratios[fk2])
-        if spatial_idx == 0:
-            self._reduced_chisq_min.data = rchi_min
+        if spatial_idx == 0 and len(newshape) == 0:
+            self._reduced_chisq_min.data = np.array([rchi_min])
         else:
             if self._modelnaxis == 2:
                 self._reduced_chisq_min.data=rchi_min
@@ -704,6 +771,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                 self._reduced_chisq_min.data=rchi_min[0,:,:]
             self._reduced_chisq_min.data[np.isnan(self._observedratios[fk2])] = np.nan
         self._reduced_chisq_min.unit = u.dimensionless_unscaled
+        self._reduced_chisq_min.uncertainty.array = [0.0]
         self._reduced_chisq_min.uncertainty.unit = u.dimensionless_unscaled
 
         # update histories
