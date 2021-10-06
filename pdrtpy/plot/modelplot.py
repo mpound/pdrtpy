@@ -609,7 +609,8 @@ class ModelPlot(PlotBase):
                                         subplot_kw={'aspect':kwargs_imshow['aspect']},
                                         constrained_layout=kwargs_subplot['constrained_layout'])
 
-
+        ####### IS THIS AXIS STUFF ONLY NEEDED IF reset==True? ############
+        # \/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
         # Make sure self._axis is an array because we will index it below.
         if type(self._axis) is not np.ndarray:
             self._axis = np.array([self._axis])
@@ -683,7 +684,8 @@ class ModelPlot(PlotBase):
         self._axis[axidx].xaxis.set_major_locator(locmaj)
         self._axis[axidx].xaxis.set_minor_locator(locmin)
         self._axis[axidx].xaxis.set_minor_formatter(ticker.NullFormatter())
-
+        # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^#
+        ####### IS THIS AXIS STUFF ONLY NEEDED IF reset==True? ############
         if kwargs_opts['image']:
             # pass shading = auto to avoid deprecation warning
             # see https://matplotlib.org/3.3.0/gallery/images_contours_and_fields/pcolormesh_grids.html
