@@ -402,6 +402,7 @@ class LineRatioPlot(PlotBase):
             _measurements = kwargs_opts['measurements']
             for m in _measurements:
                 if i > 0: kwargs_opts['reset']=False
+                # get_model will correctly raise exception if m.id not in ModelSet
                 val = self._tool.modelset.get_model(m.id)
                 _models.append(val)
                 kwargs_opts['measurements'] = [utils.convert_if_necessary(m)]
