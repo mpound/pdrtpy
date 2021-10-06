@@ -7,6 +7,7 @@ import numpy as np
 from pathlib import Path
 import warnings
 from copy import deepcopy
+from collections import OrderedDict
 
 import astropy.units as u
 from astropy.constants import k_B
@@ -263,7 +264,7 @@ def dataminmax(image):
     setkey("DATAMAX",np.nanmax(image.data),image)
         
 def signature(image):
-    """Add AUTHOR and DATE keywords to the image header
+    """Add AUfrom collections import OrderedDictTHOR and DATE keywords to the image header
        Author is 'PDR Toolbox', date as returned by now()
 
        :param image: The image which to add the key,val to.
@@ -641,6 +642,16 @@ def _trim_all_to_H2(models):
         for j in range(len(models)):
             if "H2" not in models[j].id:
                 models[j] = _trim_to_H2(models[j])
-        
+# not needed
+def _sort_H2_to_last(d):
+    print("old keys: ",d.keys())
+    d2 = OrderedDict(d)
+    for k in list(d2.keys()):  #use list to prevent concurrent modification exception
+        if _has_H2([k]):
+            print("moving Key %s"%k)
+            d2.move_to_end(k,last=True)
+    print("new keys: ",d2.keys())
+    return dict(d2)
+    
         
 
