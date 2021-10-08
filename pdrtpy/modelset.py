@@ -25,7 +25,7 @@ class ModelSet(object):
         self._all_models = get_table("all_models.tab")
         self._all_models.add_index("name")
         if name not in self._all_models["name"]:
-            raise ValueError("Unrecognized model %s. Choices are: %s"%(name,self._possible_models))
+            raise ValueError("Unrecognized model %s. Choices are: %s"%(name,list(self._all_models['name']))
 
         matching_rows = np.where(self._all_models["z"]==z)
         possible_z =  self._all_models.loc[name]["z"]
