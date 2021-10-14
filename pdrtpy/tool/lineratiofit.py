@@ -503,7 +503,8 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                 _meta= deepcopy(self._observedratios[r].meta)
             # result order is y,x,g0,n
             #newshape = np.hstack((self._observedratios[r].shape,self._modelratios[r].shape))
-            _qq = np.reshape(residuals,newshape)
+            _qq = np.squeeze(np.reshape(residuals,newshape))
+            print("QQ SHAPE ",_qq.shape)
             # WCS will be None for single pixel
             _wcs = deepcopy(self._observedratios[r].wcs)
             returnval[r] = CCDData(_qq,unit="adu",wcs=_wcs,meta=_meta)
@@ -528,13 +529,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._likelihood = CCDData(sumary,unit='adu',wcs=_wcs,meta=_meta)
         self._fixheader(self._likelihood)
         self._makehistory(self._likelihood)
-
-
-#    def log_likelihood(self, theta):
-#       ratio, log_f = theta
-#       l = self._likelihood(f=np.exp(log_f))
-#       sumary = -0.5* sum((self._likelihood[r]._data for r in self._likelihood))
-#       return sumary
 
     def _compute_chisq(self):
         '''Compute the chi-squared values from observed ratios and models'''
@@ -687,6 +681,8 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         rchi_min=np.amin(self._reduced_chisq.data,(firstindex,secondindex))
         chi_min=np.amin(self._chisq,(firstindex,secondindex))
         gnxy = np.where(self._reduced_chisq==rchi_min)
+        print("chimin shape ",np.shape(chi_min))
+        print("gnxy shape ",np.shape(gnxy))
         gi = gnxy[firstindex]
         ni = gnxy[secondindex]
         if len(gnxy) >= 4:
@@ -701,13 +697,16 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             model_idx = np.insert(model_idx,0,[0],axis=1)
         fk2 = utils.firstkey(self._observedratios)
         newshape = self._observedratios[fk2].shape
+        print("NEWSHAPE ",len(newshape), " SPATIAL_IDX ",spatial_idx)
         g0 =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,1]
         n =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,0]
         self._radiation_field=deepcopy(self._observedratios[fk2])
         if spatial_idx == 0 and len(newshape) == 0:
+            print("00 branch")
             self._radiation_field.data=np.array([g0[0]])
             self._radiation_field.uncertainty.array=np.array([np.nan])
         else:
+            print("other branch")
             if len(newshape) == 1: # Measurement with data vector
                 self._radiation_field.data = g0
             else: #Measurement with image
@@ -749,12 +748,15 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
 
         # now save copies of the 2D min chisquares
         self._chisq_min=deepcopy(self._observedratios[fk2])
+        print("CHIMIN SHAPE :",self._chisq_min.data.shape)
         if spatial_idx == 0 and len(newshape) == 0:
             self._chisq_min.data = np.array([chi_min])
         else:
             if self._modelnaxis == 2:
+                print("modelnaxis 2")
                 self._chisq_min.data=chi_min
             else:
+                print("modelnaxis!= 2")
                 self._chisq_min.data=chi_min[0,:,:]
             self._chisq_min.data[np.isnan(self._observedratios[fk2])] = np.nan
         self._chisq_min.unit = u.dimensionless_unscaled
@@ -821,6 +823,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             naxis = len(image.shape)
         else:
             naxis = len(image.shape)-1
+        print(f"fixheader modelnaxis {self._modelnaxis} naxis {naxis}")
         ax1=str(naxis-1)
         ax2=str(naxis)
         utils.setkey("CTYPE"+ax1,self.density_type,image)
