@@ -101,7 +101,13 @@ class Measurement(CCDData):
 
         # Also works: super().__init__(*args, **kwargs, unit=_unit)
         CCDData.__init__(self,*args, **kwargs, unit=_unit)
-
+        # force single pixel data to be interable arrays.
+        # I consider this a bug in CCDData, StdDevUncertainty that they don't do this.
+        if np.shape(self.data) == ():
+            self.data = self.data.reshape((1,))
+        if self.error is not None and np.shape(self.error) == ():
+            self.uncertainty.array = self.uncertainty.array.reshape((1,))
+            
         # If user provided restfreq, insert it into header
         # FITS standard is Hz
         if self._restfreq is not None:
@@ -402,6 +408,13 @@ class Measurement(CCDData):
         z._identifier = self._modify_id(other,'/')
         return z
     
+    def is_single_pixel(self):
+        ''' Is this Measurement a single value?
+        :returns: True if a single value (pixel)
+        :rtype: bool
+        '''
+        return self.data.size == 1
+    
     def __add__(self,other):
         '''Add this Measurement to another using + operator, propagating errors, units,  and updating identifiers'''
         z=self.add(other)
@@ -421,18 +434,16 @@ class Measurement(CCDData):
         z=self.divide(other)
         return z
 
-    def __len__(self):
-        return len(self.shape)
-
     def __repr__(self):
-        m = "%s +/- %s %s" % (self.data,self.error,self.unit)
+        m = "%s +/- %s %s" % (np.squeeze(self.data),np.squeeze(self.error),self.unit)
         return m
     
 
     def __str__(self):
         # this fails for array data
         #return  "{:3.2e} +/- {:3.2e} {:s}".format(self.data,self.error,self.unit)
-        m = "%s +/- %s %s" % (self.data,self.error,self.unit)
+        # m = "%s +/- %s %s" % (self.data,self.error,self.unit)
+        m = "%s +/- %s %s" % (np.squeeze(self.data),np.squeeze(self.error),self.unit)
         return m
     
     def __format__(self,spec):
@@ -442,11 +453,11 @@ class Measurement(CCDData):
             return str(self)
         # this can't possibly be the way you are supposed to use this, but it works
         spec = "{:"+spec+"}"
-        if len(self) == 0:
-            return spec.format(self.data) + " +/- " + spec.format(self.error)+" {:s}".format(self.unit)
+        if len(self) == 0: #this will no longer happen
+            return spec.format(np.squeeze(self.data)) + " +/- " + spec.format(np.squeeze(self.error))+" {:s}".format(self.unit)
         else:
-            a = np.array2string(self.data, formatter={'float': lambda x: spec.format(x)})
-            b = np.array2string(self.data, formatter={'float': lambda x: spec.format(x)})
+            a = np.array2string(np.squeeze(self.data), formatter={'float': lambda x: spec.format(x)})
+            b = np.array2string(np.squeeze(self.data), formatter={'float': lambda x: spec.format(x)})
             # this does not always work
             # a = np.vectorize(spec.__mod__,otypes=[np.float64])(self.data)
             #b = np.vectorize(spec.__mod__,otypes=[np.float64])(self.error)
