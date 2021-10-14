@@ -194,6 +194,7 @@ class LineRatioPlot(PlotBase):
             self._plot(data,**kwargs_opts)
         else:
             data = self._tool.chisq(min=False)
+            print("chisq shape ",data.shape)
             self._modelplot._plot_no_wcs(data,header=None,**kwargs_opts)
             # Put a crosshair where the chisq minimum is.
             # To do this we first get the array index of the minimum
