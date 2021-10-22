@@ -104,9 +104,9 @@ class Measurement(CCDData):
         # force single pixel data to be interable arrays.
         # I consider this a bug in CCDData, StdDevUncertainty that they don't do this.
         if np.shape(self.data) == ():
-            self.data = self.data.reshape((1,))
+            self.data = np.array([self.data])
         if self.error is not None and np.shape(self.error) == ():
-            self.uncertainty.array = self.uncertainty.array.reshape((1,))
+            self.uncertainty.array = np.array([self.uncertainty.array])
             
         # If user provided restfreq, insert it into header
         # FITS standard is Hz
@@ -453,15 +453,15 @@ class Measurement(CCDData):
             return str(self)
         # this can't possibly be the way you are supposed to use this, but it works
         spec = "{:"+spec+"}"
-        if len(self) == 0: #this will no longer happen
-            return spec.format(np.squeeze(self.data)) + " +/- " + spec.format(np.squeeze(self.error))+" {:s}".format(self.unit)
-        else:
-            a = np.array2string(np.squeeze(self.data), formatter={'float': lambda x: spec.format(x)})
-            b = np.array2string(np.squeeze(self.data), formatter={'float': lambda x: spec.format(x)})
-            # this does not always work
-            # a = np.vectorize(spec.__mod__,otypes=[np.float64])(self.data)
-            #b = np.vectorize(spec.__mod__,otypes=[np.float64])(self.error)
-            return "%s +/- %s %s" % (a,b,self.unit)
+        #if len(self) == 0: #this will no longer happen
+        #    return spec.format(np.squeeze(self.data)) + " +/- " + spec.format(np.squeeze(self.error))+" {:s}".format(self.unit)
+        #else:
+        a = np.array2string(np.squeeze(self.data), formatter={'float': lambda x: spec.format(x)})
+        b = np.array2string(np.squeeze(self.error), formatter={'float': lambda x: spec.format(x)})
+        # this does not always work
+        # a = np.vectorize(spec.__mod__,otypes=[np.float64])(self.data)
+        #b = np.vectorize(spec.__mod__,otypes=[np.float64])(self.error)
+        return "%s +/- %s %s" % (a,b,self.unit)
         
     def __getitem__(self,index):
         '''Allows us to use [] to index into the data array

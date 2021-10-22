@@ -2,7 +2,6 @@ from copy import deepcopy
 
 import numpy as np
 import numpy.ma as ma
-import scipy.stats as stats
 
 from astropy.io import fits
 from astropy.io.fits.header import Header
@@ -10,11 +9,10 @@ import astropy.wcs as wcs
 import astropy.units as u
 import astropy.stats as astats
 from astropy.table import Table, Column
-from astropy.nddata import NDDataArray, CCDData, StdDevUncertainty
+from astropy.nddata import CCDData
 import warnings
 
 from ..tool.toolbase import ToolBase
-from ..plot.lineratioplot import LineRatioPlot
 from .. import pdrutils as utils
 from ..modelset import ModelSet
 from ..measurement import Measurement
@@ -58,7 +56,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self.radiation_field_type = None
         self.density_unit = None
         self.density_type = None
-        #self._plotter = LineRatioPlot(self) #not needed
     
     #def _set_measurementnaxis(self):
     #    fk = utils.firstkey(self._measurements)
