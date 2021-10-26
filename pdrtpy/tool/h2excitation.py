@@ -166,10 +166,10 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         y2 = 10**(x*m2+n2)
 
         model = np.log10(y1+y2)
-        if not np.isfinite(model).all():
-            print("BAD MODEL ",model)
-            print("m1 %.2e m2 %.2e n1 %.2e n2 %.2e" % (m1,m2,n1,n2))
-            print("y1 %s y2 %s" % (y1,y2))
+        #if not np.isfinite(model).all():
+        ##    print("BAD MODEL ",model)
+        #    print("m1 %.2e m2 %.2e n1 %.2e n2 %.2e" % (m1,m2,n1,n2))
+         #   print("y1 %s y2 %s" % (y1,y2))
         # We assume that the column densities passed in have been normalized 
         # using the canonical OPR=3. Therefore what we are actually fitting is 
         # the ratio of the actual OPR to the canonical OPR.
@@ -215,16 +215,16 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         # unc, unh = uncertainties in cold and hot temperatures
         # opr = ortho to para ratio
         # uopr = uncertainty in OPR
-        tc = np.full(shape=fitmap.data.shape,fill_value=np.nan,dtype=float)
-        th = np.full(shape=fitmap.data.shape,fill_value=np.nan,dtype=float)
-        utc = np.full(shape=fitmap.data.shape,fill_value=np.nan,dtype=float)
-        uth = np.full(shape=fitmap.data.shape,fill_value=np.nan,dtype=float)
-        nc = np.full(shape=fitmap.data.shape,fill_value=np.nan,dtype=float)
-        nh = np.full(shape=fitmap.data.shape,fill_value=np.nan,dtype=float)
-        unh = np.full(shape=fitmap.data.shape,fill_value=np.nan,dtype=float)
-        unc = np.full(shape=fitmap.data.shape,fill_value=np.nan,dtype=float)
-        opr = np.full(shape=fitmap.data.shape,fill_value=np.nan,dtype=float)
-        uopr = np.full(shape=fitmap.data.shape,fill_value=np.nan,dtype=float)
+        tc = np.full(shape=size,fill_value=np.nan,dtype=float)
+        th = np.full(shape=size,fill_value=np.nan,dtype=float)
+        utc = np.full(shape=size,fill_value=np.nan,dtype=float)
+        uth = np.full(shape=size,fill_value=np.nan,dtype=float)
+        nc = np.full(shape=size,fill_value=np.nan,dtype=float)
+        nh = np.full(shape=size,fill_value=np.nan,dtype=float)
+        unh = np.full(shape=size,fill_value=np.nan,dtype=float)
+        unc = np.full(shape=size,fill_value=np.nan,dtype=float)
+        opr = np.full(shape=size,fill_value=np.nan,dtype=float)
+        uopr = np.full(shape=size,fill_value=np.nan,dtype=float)
         ff = fitmap.data.flatten()
         ffmask = fitmap.mask.flatten()
         print(type(ff))
@@ -257,25 +257,38 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
             tc[i] = -utils.LOGE/params[mcold]
             uth[i] = params[mhot].stderr/params[mhot]
             th[i] = -utils.LOGE/params[mhot]  
-            nc = 10**params[ncold]
-            unc = utils.LN10*params[ncold].stderr*nc  
-            nh = 10**params[nhot]
-            unh = utils.LN10*params[nhot].stderr*nh   
+            nc[i] = 10**params[ncold]
+            unc[i] = utils.LN10*params[ncold].stderr*nc[i]
+            nh[i] = 10**params[nhot]
+            unh[i] = utils.LN10*params[nhot].stderr*nh[i]
             opr[i] = params['opr'].value
             uopr[i] = params['opr'].stderr
-        mask = np.isnan(tc)  # they all better be the same mask
+            
+        # now reshape them all back to map shape
+        tc = tc.reshape(fitmap.data.shape)
+        th = th.reshape(fitmap.data.shape)
+        utc = utc.reshape(fitmap.data.shape)
+        uth = uth.reshape(fitmap.data.shape)
+        nc = nc.reshape(fitmap.data.shape)
+        nh = nh.reshape(fitmap.data.shape)
+        unh = unh.reshape(fitmap.data.shape)
+        unc = unc.reshape(fitmap.data.shape)
+        opr = opr.reshape(fitmap.data.shape)
+        uopr = uopr.reshape(fitmap.data.shape)
+        
+        mask = fitmap.mask | np.logical_not(np.isfinite(tc)) # they all better be the same mask
         ucc= StdDevUncertainty(np.abs(tc*utc))
-        self._temperature["cold"]=Measurement(data=tc,unit=self._t_units,uncertainty=ucc,wcs=fitmap.wcs) #mask = mask
+        self._temperature["cold"]=Measurement(data=tc,unit=self._t_units,uncertainty=ucc,wcs=fitmap.wcs, mask = mask)
         uch = StdDevUncertainty(np.abs(th*uth))
-        self._temperature["hot"]=Measurement(data=th,unit=self._t_units,uncertainty=uch,wcs=fitmap.wcs)  #mask = mask
+        self._temperature["hot"]=Measurement(data=th,unit=self._t_units,uncertainty=uch,wcs=fitmap.wcs, mask = mask)
         # cold and hot total column density
         ucn = StdDevUncertainty(np.abs(unc))
-        self._j0_colden["cold"] = Measurement(nc,unit=self._cd_units,uncertainty=ucn,wcs=fitmap.wcs) # mask=mask
+        self._j0_colden["cold"] = Measurement(nc,unit=self._cd_units,uncertainty=ucn,wcs=fitmap.wcs, mask=mask)
         uhn = StdDevUncertainty(np.abs(unh))
-        self._j0_colden["hot"] = Measurement(nh,unit=self._cd_units,uncertainty=uhn,wcs=fitmap.wcs) #mask = mask
+        self._j0_colden["hot"] = Measurement(nh,unit=self._cd_units,uncertainty=uhn,wcs=fitmap.wcs, mask = mask)
         self._total_colden["cold"] = self._j0_colden["cold"] * self._partition_function(self.tcold)
         self._total_colden["hot"] = self._j0_colden["hot"] * self._partition_function(self.thot)      
-        self._opr = Measurement(opr, unit=u.dimensionless_unscaled, uncertainty=StdDevUncertainty(uopr),wcs=fitmap.wcs) #mask = mask
+        self._opr = Measurement(opr, unit=u.dimensionless_unscaled, uncertainty=StdDevUncertainty(uopr),wcs=fitmap.wcs, mask=mask)
         
     def _compute_quantities_old(self,params):
         """Compute the temperatures and column densities for the hot and cold gas components.  This method will set class variables `_temperature` and `_colden`.
@@ -809,10 +822,16 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                     fmdata[i] = self._model.fit(data=yr[:,i], weights=wts, x=x, 
                                                   idx=idx,fit_opr=fit_opr,method=kwargs['method'],
                                                   nan_policy = kwargs['nan_policy'])
-                    count = count+1
+                    if fmdata[i].success and fmdata[i].errorbars:
+                        count = count+1
+                    else:
+                        #print("1 bad fit for pixel %d"%i)
+                        #print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K"% (tcold[i],thot[i]))
+                        fmdata[i] = np.nan
+                        fm_mask[i] = True
                 except ValueError:
-                    print("bad fit for pixel %d"%i)
-                    print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K"% (tcold[i],thot[i]))
+                    #print("2 bad fit for pixel %d"%i)
+                    #print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K"% (tcold[i],thot[i]))
                     fmdata[i] = np.nan
                     fm_mask[i] = True
             else:
