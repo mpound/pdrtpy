@@ -685,6 +685,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         print("gnxy shape ",np.shape(gnxy))
         gi = gnxy[firstindex]
         ni = gnxy[secondindex]
+        # spatial_idx is which indices are the spatial axes
         if len(gnxy) >= 4:
             # astronomical spatial indices
             spatial_idx = (gnxy[thirdindex],gnxy[fourthindex])
@@ -697,17 +698,20 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             model_idx = np.insert(model_idx,0,[0],axis=1)
         fk2 = utils.firstkey(self._observedratios)
         newshape = self._observedratios[fk2].shape
-        print("NEWSHAPE ",len(newshape), " SPATIAL_IDX ",spatial_idx)
+        print("NEWSHAPE ",newshape, " SPATIAL_IDX ",spatial_idx)
         g0 =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,1]
         n =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,0]
         self._radiation_field=deepcopy(self._observedratios[fk2])
-        if spatial_idx == 0 and len(newshape) == 0:
+        print("G0 ",g0)
+        print("N ",n)
+        if spatial_idx == 0 and newshape == (1,):
             print("00 branch")
-            self._radiation_field.data=np.array([g0[0]])
+            self._radiation_field.data=g0
             self._radiation_field.uncertainty.array=np.array([np.nan])
         else:
             print("other branch")
-            if len(newshape) == 1: # Measurement with data vector
+            if self.has_vectors:
+                print("has vctors")
                 self._radiation_field.data = g0
             else: #Measurement with image
                 # note this will reshape g0 in radiation_field for us! 
@@ -724,16 +728,16 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._radiation_field.uncertainty.unit = self.radiation_field_unit
 
         self._density=deepcopy(self._observedratios[fk2])
-        if spatial_idx == 0 and len(newshape) == 0:
-            self._density.data=np.array([n[0]])
+        if spatial_idx == 0 and len(newshape) == (1,):
+            self._density.data=n
             self._density.uncertainty.array=np.array([np.nan])
         else:
-            if len(newshape) == 1: # Measurement with data vector
+            if self.has_vectors: # Measurement with data vector
                 self._density.data = n
             else: #Measurement with image
                 # note this will reshape g0 in radiation_field for us! 
                 self._density.data[spatial_idx]=n
-            self._density.data[np.isnan(self._observedratios[fk2])] = np.nan
+                self._density.data[np.isnan(self._observedratios[fk2])] = np.nan
             # kluge because we dont know how to properly calcultate undertainty on this.
             #self._density.uncertainty.array=np.zeroes(self._density.uncertainty.array)
             self._density.uncertainty.array[:] = np.nan
@@ -749,22 +753,23 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         # now save copies of the 2D min chisquares
         self._chisq_min=deepcopy(self._observedratios[fk2])
         print("CHIMIN SHAPE :",self._chisq_min.data.shape)
-        if spatial_idx == 0 and len(newshape) == 0:
+        if spatial_idx == 0 and len(newshape) == (1,):
             self._chisq_min.data = np.array([chi_min])
         else:
             if self._modelnaxis == 2:
+                self._chisq_min.data = chi_min
                 print("modelnaxis 2")
                 self._chisq_min.data=chi_min
             else:
                 print("modelnaxis!= 2")
                 self._chisq_min.data=chi_min[0,:,:]
-            self._chisq_min.data[np.isnan(self._observedratios[fk2])] = np.nan
+                self._chisq_min.data[np.isnan(self._observedratios[fk2])] = np.nan
         self._chisq_min.unit = u.dimensionless_unscaled
         self._chisq_min.uncertainty.array = [0.0]
         self._chisq_min.uncertainty.unit = u.dimensionless_unscaled
 
         self._reduced_chisq_min=deepcopy(self._observedratios[fk2])
-        if spatial_idx == 0 and len(newshape) == 0:
+        if spatial_idx == 0 and newshape == (1,):
             self._reduced_chisq_min.data = np.array([rchi_min])
         else:
             if self._modelnaxis == 2:
@@ -826,6 +831,10 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         print(f"fixheader modelnaxis {self._modelnaxis} naxis {naxis}")
         ax1=str(naxis-1)
         ax2=str(naxis)
+        if "NAXIS" not in image.header:
+            utils.setkey("NAXIS",naxis,image)
+            utils.setkey("NAXIS"+ax1,image.shape[1],image)
+            utils.setkey("NAXIS"+ax2,image.shape[0],image)
         utils.setkey("CTYPE"+ax1,self.density_type,image)
         utils.setkey("CTYPE"+ax2,self.radiation_field_type,image)
         utils.setkey("CUNIT"+ax1,str(self.density_unit),image)

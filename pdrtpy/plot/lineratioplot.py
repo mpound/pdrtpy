@@ -82,7 +82,7 @@ class LineRatioPlot(PlotBase):
            :raises KeyError: if is id not in existing model ratios
 
         """
-        if len(self._tool._modelratios[id].shape) == 0:
+        if self._tool._modelratios[id].shape == (1,):  #does this ever occur??
             return self._tool._modelratios[id]
 
         kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'units': u.dimensionless_unscaled , 'colorbar':True}
@@ -98,7 +98,7 @@ class LineRatioPlot(PlotBase):
            :type id: - str
            :raises KeyError: if id is not in existing observed ratios
         """
-        if len(self._tool._observedratios[id].shape) == 0:
+        if self._tool._observedratios[id].shape == (1,0) or self._tool.has_vectors:
             return self._tool._observedratios[id]
 
         kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'units': u.dimensionless_unscaled , 'colorbar':False}
@@ -121,7 +121,7 @@ class LineRatioPlot(PlotBase):
         kwargs_opts.update(kwargs)
 
         # handle single pixel or multi-pixel non-map cases.
-        if len( self._tool._density.shape) == 0 or self._tool.has_vectors:
+        if self._tool._density.shape == (1,) or self._tool.has_vectors:
             return utils.to(kwargs_opts['units'],self._tool._density)
 
         tunit=u.Unit(kwargs_opts['units'])
@@ -144,7 +144,7 @@ class LineRatioPlot(PlotBase):
         kwargs_opts.update(kwargs)
 
         # handle single pixel or multi-pixel non-map cases.
-        if len( self._tool.radiation_field.shape) == 0 or self._tool.has_vectors:
+        if self._tool.radiation_field.shape == (1,) or self._tool.has_vectors:
             return utils.to(kwargs_opts['units'],self._tool.radiation_field)
 
         if kwargs_opts['title'] is None:
@@ -195,6 +195,8 @@ class LineRatioPlot(PlotBase):
         else:
             data = self._tool.chisq(min=False)
             print("chisq shape ",data.shape)
+            print("chisq header ",data.header)
+            print("chisq wcs", data.wcs)
             self._modelplot._plot_no_wcs(data,header=None,**kwargs_opts)
             # Put a crosshair where the chisq minimum is.
             # To do this we first get the array index of the minimum
@@ -399,7 +401,8 @@ class LineRatioPlot(PlotBase):
         _measurements = list()
         _models = list()
         if kwargs_opts.get('measurements',None) is not None:
-            _measurements = kwargs_opts['measurements']
+            # avoid modifying a passed parameter
+            _measurements = deepcopy(kwargs_opts['measurements'])
             for m in _measurements:
                 if i > 0: kwargs_opts['reset']=False
                 val = self._tool.modelset.get_model(m.id)
