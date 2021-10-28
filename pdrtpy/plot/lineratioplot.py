@@ -218,7 +218,7 @@ class LineRatioPlot(PlotBase):
             else:
                 y = self._tool._radiation_field.value
                 
-            print("Plot x,y %s,%s"%(x,y))
+            #print("Plot x,y %s,%s"%(x,y))
 
             if kwargs_opts['title'] is None:
                 kwargs_opts['title'] = r'$\chi^2$ (dof=%d)'%self._tool._dof
@@ -295,14 +295,13 @@ class LineRatioPlot(PlotBase):
                 y = utils.to(kwargs_opts['yaxis_unit'],self._tool._radiation_field).value
             else:
                 y = self._tool._radiation_field.value
-            print("Plot x,y %s,%s"%(x,y))           
+            #print("Plot x,y %s,%s"%(x,y))           
             if kwargs_opts['title'] is None:
                 kwargs_opts['title'] = r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof
             label = r'$\chi_{\nu,min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)'%(self._tool._reduced_chisq_min.value,x,y)
             self._modelplot.axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
             # handle legend locally
             if kwargs_opts['legend']:
-                print("doing legend")
                 legend = self._modelplot.axis[0].legend(loc='upper center',title=kwargs_opts['title'])
             self._figure = self._modelplot.figure
             self._axis = self._modelplot.axis

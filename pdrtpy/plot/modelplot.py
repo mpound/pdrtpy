@@ -37,7 +37,6 @@ class ModelPlot(PlotBase):
         self._modelset = modelset
         self._figure = figure
         self._axis = axis
-        print(utils.habing_unit)
     
     def plot(self,identifier,**kwargs):
         """Plot a model intensity or ratio
@@ -479,12 +478,8 @@ class ModelPlot(PlotBase):
             _header = deepcopy(_dataheader)
             # CRxxx might be in wcs and not in header
             if getattr(data,"wcs",None) is not None:
-                print("doing update")
-                #print(data.wcs.to_header())
                 _header.update(data.wcs.to_header())
-                #print("updated header: ",_header)
             else:
-                print("resseting cunit")
                 # needed for get_xy_from_wcs call later.
                 data.wcs = wcs.WCS(_header)
                 # however, get the usual complaint about non-FITS units

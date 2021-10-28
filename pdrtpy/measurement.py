@@ -103,10 +103,13 @@ class Measurement(CCDData):
         CCDData.__init__(self,*args, **kwargs, unit=_unit)
         # force single pixel data to be interable arrays.
         # I consider this a bug in CCDData, StdDevUncertainty that they don't do this.
+        # also StdDevUncertainty does not convert float to np.float!
+        #print("DU",np.shape(self.data),np.shape(self.uncertainty.array))
+        #print(type(self.data))
         if np.shape(self.data) == ():
-            self.data = self.data.reshape((1,))
+            self.data = np.array([self.data])
         if self.error is not None and np.shape(self.error) == ():
-            self.uncertainty.array = self.uncertainty.array.reshape((1,))
+            self.uncertainty.array = np.array([self.uncertainty.array])
             
         # If user provided restfreq, insert it into header
         # FITS standard is Hz

@@ -449,9 +449,9 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         dvalue = np.empty(self.ratiocount)
         evalue = np.empty(self.ratiocount)
         i=0
-        print("index ",index)
         #@todo create temporary model, data, error as np arrays so the loop over k dictionary key
         # isn't necessary. 
+        # OR save residuals from computeDelta so you don't do this twice.
         for k in self._modelratios:
             mvalue[i] = self._modelratios[k].get(parvals['density'],parvals['radiation_field']) 
             dvalue[i] = self._observedratios[k].data.flatten()[index]
@@ -602,6 +602,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         rchi = np.empty(self._observedratios[fk].size)
         dflat = self._density.value.flatten()
         rflat = self._radiation_field.value.flatten()
+        # TODO use a FitMap -- need to merge with SEP7 branch
         for j in range(self._observedratios[fk].size):
             #use previous coarse fit as first guess
             par['density'].value = dflat[j] 
@@ -660,8 +661,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         rchi_min=np.amin(self._reduced_chisq.data,(firstindex,secondindex))
         chi_min=np.amin(self._chisq,(firstindex,secondindex))
         gnxy = np.where(self._reduced_chisq==rchi_min)
-        print("chimin shape ",np.shape(chi_min))
-        print("gnxy shape ",np.shape(gnxy))
         gi = gnxy[firstindex]
         ni = gnxy[secondindex]
         # spatial_idx is which indices are the spatial axes
@@ -677,20 +676,14 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             model_idx = np.insert(model_idx,0,[0],axis=1)
         fk2 = utils.firstkey(self._observedratios)
         newshape = self._observedratios[fk2].shape
-        print("NEWSHAPE ",newshape, " SPATIAL_IDX ",spatial_idx)
         g0 =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,1]
         n =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,0]
         self._radiation_field=deepcopy(self._observedratios[fk2])
-        print("G0 ",g0)
-        print("N ",n)
         if spatial_idx == 0 and newshape == (1,):
-            print("00 branch")
             self._radiation_field.data=g0
             self._radiation_field.uncertainty.array=np.array([np.nan])
         else:
-            print("other branch")
             if self.has_vectors:
-                print("has vctors")
                 self._radiation_field.data = g0
             else: #Measurement with image
                 # note this will reshape g0 in radiation_field for us! 
@@ -731,15 +724,14 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
 
         # now save copies of the 2D min chisquares
         self._chisq_min=deepcopy(self._observedratios[fk2])
-        print("CHIMIN SHAPE :",self._chisq_min.data.shape)
         if spatial_idx == 0 and newshape == (1,):
             self._chisq_min.data = np.array([chi_min])
         else:
             if self._modelnaxis == 2:
-                print("modelnaxis 2")
+                #print("modelnaxis 2")
                 self._chisq_min.data = chi_min
             else:
-                print("modelnaxis!= 2")
+                #print("modelnaxis!= 2")
                 self._chisq_min.data=chi_min[0,:,:]
                 self._chisq_min.data[np.isnan(self._observedratios[fk2])] = np.nan
         self._chisq_min.unit = u.dimensionless_unscaled
@@ -806,7 +798,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             naxis = len(image.shape)
         else:
             naxis = len(image.shape)-1
-        print(f"fixheader modelnaxis {self._modelnaxis} naxis {naxis}")
         ax1=str(naxis-1)
         ax2=str(naxis)
         if "NAXIS" not in image.header:
