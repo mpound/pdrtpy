@@ -435,10 +435,14 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         dvalue = np.empty(self.ratiocount)
         evalue = np.empty(self.ratiocount)
         i=0
+        print("index ",index)
+        #@todo create temporary model, data, error as np arrays so the loop over k dictionary key
+        # isn't necessary. 
         for k in self._modelratios:
             mvalue[i] = self._modelratios[k].get(parvals['density'],parvals['radiation_field']) 
             dvalue[i] = self._observedratios[k].data.flatten()[index]
             evalue[i] = self._observedratios[k].uncertainty.array.flatten()[index]
+            #print("model = ",mvalue[i]," obs = ",dvalue[i]," error = ",evalue[i])
             i = i+1
         return  (dvalue - mvalue)/evalue
     
@@ -504,31 +508,12 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             # result order is y,x,g0,n
             #newshape = np.hstack((self._observedratios[r].shape,self._modelratios[r].shape))
             _qq = np.squeeze(np.reshape(residuals,newshape))
-            print("QQ SHAPE ",_qq.shape)
+            #print("QQ SHAPE ",_qq.shape)
             # WCS will be None for single pixel
             _wcs = deepcopy(self._observedratios[r].wcs)
             returnval[r] = CCDData(_qq,unit="adu",wcs=_wcs,meta=_meta)
     
         return returnval
-
-    def _compute_log_likelihood(self,f):
-        """***Experimental***
-
-           :param f: fractional amount by which the variance is underestimated. 
-           For traditional chi-squared calculation f is zero.  
-           For log-likelihood calculation f is positive and less than 1.
-           See, e.g. https://emcee.readthedocs.io/en/stable/tutorials/line/#maximum-likelihood-estimation
-
-           :type f: float
-        """
-        l = self._computeDelta(f)
-        sumary = -0.5* sum((l[r]._data for r in l))
-        k = utils.firstkey(self._deltasq)
-        _wcs = deepcopy(self._deltasq[k].wcs)
-        _meta = deepcopy(self._deltasq[k].meta)
-        self._likelihood = CCDData(sumary,unit='adu',wcs=_wcs,meta=_meta)
-        self._fixheader(self._likelihood)
-        self._makehistory(self._likelihood)
 
     def _compute_chisq(self):
         '''Compute the chi-squared values from observed ratios and models'''
@@ -562,36 +547,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         '''
         self._chisq.write(chi,overwrite=overwrite,hdu_mask='MASK')
         self._reduced_chisq.write(rchi,overwrite=overwrite,hdu_mask='MASK')  
-
-    def _compute_likeliest(self):
-        """***Experimental*** 
-        Compute the likeliest density n and radiation field spatial maps
-        """
-        if self._likelihood is None: return
-        
-        # get the likelihood maxima of each pixel along the g,n axes
-        z=np.amax(self._likelihood,(0,1))
-        gi,ni,yi,xi=np.where(self._likelihood==z)
-        spatial_idx = (yi,xi)
-        model_idx   = np.transpose(np.array([ni,gi]))
-        # qq[:,:2] takes the first two columns of qq
-        # [:,[1,0]] swaps those columns
-        # np.flip would also swap them.
-        fk = utils.firstkey(self._modelratios)
-        fk2 = utils.firstkey(self._observedratios)
-        newshape = self._observedratios[fk2].shape
-        g0=10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,1]
-        n =10**(self._modelratios[fk].wcs.wcs_pix2world(model_idx,0))[:,0]
-        self.L_radiation_field=deepcopy(self._observedratios[fk2])
-        self.L_radiation_field.data[spatial_idx]=g0
-        self.L_radiation_field.unit = self.radiation_field_unit
-        self.L_radiation_field.uncertainty.unit = self.radiation_field_unit
-        self.L_density=deepcopy(self._observedratios[fk2])
-        self.L_density.data[spatial_idx]=n
-        self.L_density.unit = self.density_unit
-        self.L_density.uncertainty.unit = self.density_unit
-        #fix the headers
-        #self._density_radiation_field_header() 
         
     def compute_density_radiation_field2(self,method='leastsq'):
         # First get the range of density n and radiation field FUV from the 
@@ -624,7 +579,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         par.add('density',min=minn,max=maxn,value=startn)
         par.add('radiation_field',min=minfuv,max=maxfuv,value=startfuv)
         self._fitresult = list()
-        par.pretty_print()
+        #par.pretty_print()
         rf = np.empty(self._observedratios[fk].size)
         den = np.empty(self._observedratios[fk].size)
         rfe = np.empty(self._observedratios[fk].size)
@@ -637,6 +592,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             par['density'].value = dflat[j]
             par['radiation_field'].value = rflat[j]
             fr=minimize(self._residual_single_pix,params=par,method=method,args=(j,),nan_policy='omit')
+            #print(fr)
             den[j] = fr.params['density'].value
             dene[j] = fr.params['density'].stderr
             rf[j] = fr.params['radiation_field'].value
