@@ -300,7 +300,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                utils.warn(self,"No beam parameters in Measurement headers, assuming they are all equal!")
         #if not self._check_header("BUNIT") ...
 
-    def run(self,mask=None):
+    def run(self,**kwargs):
         '''Run the full computation using all the :class:`observations <pdrtpy.measurement.Measurement>` added.   This will 
         check compatibility of input observations (e.g., beam parameters, coordinate types, axes lengths) and 
         raise exceptions if the observations don't match each other.
@@ -321,16 +321,29 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                               None - Don't mask data. This is the default.
 
            :type mask:  list or None
-
+           :param method: the fitting method to be used. The default is 'leastsq', which is Levenberg-Marquardt least squares.  For other options see https://lmfit-py.readthedocs.io/en/latest/fitting.html#fit-methods-table
+           :type method: str
+           :param nan_policy: Specifies action if fit returns NaN values. One of:
+                * ’raise’ : a ValueError is raised [Default]
+                * ’propagate’ : the values returned from userfcn are un-altered
+                * ’omit’ : non-finite values are filtered
+           :type nan_policy: str
+               
            :raises Exception: if no models match the input observations, observations are not compatible, 
-                              or on unrecognized parameters
+                              or on unrecognized parameters, or NaN encountered.
         '''
         #@todo global masking for 'data', 'clip', 'error' not entirely useful unless all data/error have same ranges.
         #need something like ['data',['key1':(low,hi), 'key2',(low,hi),...], which is very complicated.
         # or data/error cut based on histogram 
+        kwargs_opts = { 'mask': None,
+                        'method': 'leastsq',
+                        'nan_policy': 'raise'
+        }
+        kwargs_opts.update(kwargs)
+
         self._check_compatibility()
         self.read_models()
-        self._mask_measurements(mask)
+        self._mask_measurements(kwargs_opts['mask'])
         self._compute_valid_ratios()
         if self.ratiocount == 0 :
             raise Exception("No models were found that match your data. Check ModelSet.supported_ratios.")
@@ -338,6 +351,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._compute_delta_sq()
         self._compute_chisq()
         self.compute_density_radiation_field()
+        self.compute_density_radiation_field2(**kwargs_opts)
      
 
     def _mask_measurements(self,mask):
@@ -548,7 +562,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._chisq.write(chi,overwrite=overwrite,hdu_mask='MASK')
         self._reduced_chisq.write(rchi,overwrite=overwrite,hdu_mask='MASK')  
         
-    def compute_density_radiation_field2(self,method='leastsq'):
+    def compute_density_radiation_field2(self,**kwargs):
         # First get the range of density n and radiation field FUV from the 
         # model space, in order to provide them to the Parameters object.
         # Since the wk2006 H2 models have a smaller model space, 
@@ -589,10 +603,10 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         dflat = self._density.value.flatten()
         rflat = self._radiation_field.value.flatten()
         for j in range(self._observedratios[fk].size):
-            par['density'].value = dflat[j]
+            #use previous coarse fit as first guess
+            par['density'].value = dflat[j] 
             par['radiation_field'].value = rflat[j]
-            fr=minimize(self._residual_single_pix,params=par,method=method,args=(j,),nan_policy='omit')
-            #print(fr)
+            fr=minimize(self._residual_single_pix,params=par,method=kwargs['method'],args=(j,),nan_policy=kwargs['nan_policy'])
             den[j] = fr.params['density'].value
             dene[j] = fr.params['density'].stderr
             rf[j] = fr.params['radiation_field'].value
@@ -600,16 +614,25 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             chi[j] = fr.chisqr
             rchi[j] = fr.redchi
             self._fitresult.append(fr)
-        self._rf2 = deepcopy(self._radiation_field)
-        self._rf2.data = rf.reshape(self._rf2.data.shape)
-        self._rf2.uncertainty.array = rfe.reshape(self._rf2.uncertainty.array.shape)
-        self._d2 = deepcopy(self._density)
-        self._d2.data = den.reshape(self._d2.data.shape)
-        self._d2.uncertainty.array = dene.reshape(self._d2.uncertainty.array.shape)
-        self._chi2 = deepcopy(self._chisq_min)
-        self._rchi2 = deepcopy(self._reduced_chisq_min)
-        self._chi2.data = chi.reshape(self._chi2.data.shape)
-        self._rchi2.data = rchi.reshape(self._rchi2.data.shape)
+        if False:
+            self._rf2 = deepcopy(self._radiation_field)
+            self._rf2.data = rf.reshape(self._rf2.data.shape)
+            self._rf2.uncertainty.array = rfe.reshape(self._rf2.uncertainty.array.shape)
+            self._d2 = deepcopy(self._density)
+            self._d2.data = den.reshape(self._d2.data.shape)
+            self._d2.uncertainty.array = dene.reshape(self._d2.uncertainty.array.shape)
+            self._chi2 = deepcopy(self._chisq_min)
+            self._rchi2 = deepcopy(self._reduced_chisq_min)
+            self._chi2.data = chi.reshape(self._chi2.data.shape)
+            self._rchi2.data = rchi.reshape(self._rchi2.data.shape)
+        rshape = self._radiation_field.data.shape
+        dshape = self._density.data.shape
+        self._radiation_field.data = rf.reshape(rshape)
+        self._radiation_field.uncertainty.array = rfe.reshape(rshape)
+        self._density.data = den.reshape(dshape)
+        self._density.uncertainty.array = dene.reshape(dshape)
+        self._chisq_min.data = chi.reshape(self._chisq_min.data.shape)
+        self._reduced_chisq_min.data = rchi.reshape(self._reduced_chisq_min.data.shape)
         
     def compute_density_radiation_field(self):
         '''Compute the best-fit density and radiation field spatial maps 
@@ -684,7 +707,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._radiation_field.uncertainty.unit = self.radiation_field_unit
 
         self._density=deepcopy(self._observedratios[fk2])
-        if spatial_idx == 0 and len(newshape) == (1,):
+        if spatial_idx == 0 and newshape == (1,):
             self._density.data=n
             self._density.uncertainty.array=np.array([np.nan])
         else:
@@ -709,13 +732,12 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         # now save copies of the 2D min chisquares
         self._chisq_min=deepcopy(self._observedratios[fk2])
         print("CHIMIN SHAPE :",self._chisq_min.data.shape)
-        if spatial_idx == 0 and len(newshape) == (1,):
+        if spatial_idx == 0 and newshape == (1,):
             self._chisq_min.data = np.array([chi_min])
         else:
             if self._modelnaxis == 2:
-                self._chisq_min.data = chi_min
                 print("modelnaxis 2")
-                self._chisq_min.data=chi_min
+                self._chisq_min.data = chi_min
             else:
                 print("modelnaxis!= 2")
                 self._chisq_min.data=chi_min[0,:,:]

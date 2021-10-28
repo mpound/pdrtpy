@@ -194,30 +194,31 @@ class LineRatioPlot(PlotBase):
             self._plot(data,**kwargs_opts)
         else:
             data = self._tool.chisq(min=False)
-            print("chisq shape ",data.shape)
-            print("chisq header ",data.header)
-            print("chisq wcs", data.wcs)
             self._modelplot._plot_no_wcs(data,header=None,**kwargs_opts)
             # Put a crosshair where the chisq minimum is.
-            # To do this we first get the array index of the minimum
-            # then use WCS to translate to world coordinates.
-            [row,col] = np.where(self._tool._chisq==self._tool._chisq_min.value)
-            mywcs = wcs.WCS(data.header)
-            # Suppress WCS warning about 1/cm3 not being FITS
-            warnings.simplefilter('ignore',category=UnitsWarning)
-            logn,logrf = mywcs.array_index_to_world(row,col)
-            warnings.resetwarnings()
-            n = (10**logn.value[0])*u.Unit(logn.unit.to_string())
-            rf = (10**logrf.value[0])*u.Unit(logrf.unit.to_string())
+            if False:
+                # To do this we first get the array index of the minimum
+                # then use WCS to translate to world coordinates.
+                [row,col] = np.where(self._tool._chisq==self._tool._chisq_min.value)
+                mywcs = wcs.WCS(data.header)
+                # Suppress WCS warning about 1/cm3 not being FITS
+                warnings.simplefilter('ignore',category=UnitsWarning)
+                logn,logrf = mywcs.array_index_to_world(row,col)
+                warnings.resetwarnings()
+                n = (10**logn.value[0])*u.Unit(logn.unit.to_string())
+                rf = (10**logrf.value[0])*u.Unit(logrf.unit.to_string())
+            # since the minimum can now be between pixels, we use the value
+            # of radiation field and density directly.  (Why didn't we do this before?)
             if kwargs_opts['xaxis_unit'] is not None:
-                x = n.to(kwargs_opts['xaxis_unit']).value
+                x = utils.to(self._tool._density,kwargs_opts['xaxis_unit']).value
             else:
-                x = n.value
+                x = self._tool._density.value
             if kwargs_opts['yaxis_unit'] is not None:
-                y = rf.to(kwargs_opts['yaxis_unit']).value
+                y = utils.to(kwargs_opts['yaxis_unit'],self._tool._radiation_field).value
             else:
-                y = rf.value
-            #print("Plot x,y %s,%s"%(x,y))
+                y = self._tool._radiation_field.value
+                
+            print("Plot x,y %s,%s"%(x,y))
 
             if kwargs_opts['title'] is None:
                 kwargs_opts['title'] = r'$\chi^2$ (dof=%d)'%self._tool._dof
@@ -265,40 +266,44 @@ class LineRatioPlot(PlotBase):
 
             self._modelplot._plot_no_wcs(data,header=None,**kwargs_opts)
             # Put a crosshair where the chisq minimum is.
-            # To do this we first get the array index of the minimum
-            # then use WCS to translate to world coordinates.
-            [row,col] = np.where(self._tool._reduced_chisq==self._tool._reduced_chisq_min.value)
-            mywcs = wcs.WCS(data.header)
-            # Suppress WCS warning about 1/cm3 not being FITS
-            warnings.simplefilter('ignore',category=UnitsWarning)
-            logn,logrf = mywcs.array_index_to_world(row,col)
-            warnings.resetwarnings()
-            # logn, logrf are Quantities of the log(density) and log(radiation field),
-            # respectively.  The model default units are cm^-2 and erg/s/cm^-2. 
-            # These must be converted to plot units based on user input 
-            # xaxis_unit and yaxis_unit. 
-            # Note: multiplying by n.unit causes the ValueError:
-            # "The unit '1/cm3' is unrecognized, so all arithmetic operations with it are invalid."
-            # Yet by all other measures this appears to be a valid unit. 
-            # The workaround is to us to_string() method.
-            n = (10**logn.value[0])*u.Unit(logn.unit.to_string())
-            rf = (10**logrf.value[0])*u.Unit(logrf.unit.to_string())
+            if False:
+                # To do this we first get the array index of the minimum
+                # then use WCS to translate to world coordinates.
+                [row,col] = np.where(self._tool._reduced_chisq==self._tool._reduced_chisq_min.value)
+                mywcs = wcs.WCS(data.header)
+                # Suppress WCS warning about 1/cm3 not being FITS
+                warnings.simplefilter('ignore',category=UnitsWarning)
+                logn,logrf = mywcs.array_index_to_world(row,col)
+                warnings.resetwarnings()
+                # logn, logrf are Quantities of the log(density) and log(radiation field),
+                # respectively.  The model default units are cm^-2 and erg/s/cm^-2. 
+                # These must be converted to plot units based on user input 
+                # xaxis_unit and yaxis_unit. 
+                # Note: multiplying by n.unit causes the ValueError:
+                # "The unit '1/cm3' is unrecognized, so all arithmetic operations with it are invalid."
+                # Yet by all other measures this appears to be a valid unit. 
+                # The workaround is to us to_string() method.
+                n = (10**logn.value[0])*u.Unit(logn.unit.to_string())
+                rf = (10**logrf.value[0])*u.Unit(logrf.unit.to_string())
+            # since the minimum can now be between pixels, we use the value
+            # of radiation field and density directly.  (Why didn't we do this before?)
             if kwargs_opts['xaxis_unit'] is not None:
-                x = n.to(kwargs_opts['xaxis_unit']).value
+                x = utils.to(self._tool._density,kwargs_opts['xaxis_unit']).value
             else:
-                x = n.value
+                x = self._tool._density.value
             if kwargs_opts['yaxis_unit'] is not None:
-                y = rf.to(kwargs_opts['yaxis_unit']).value
+                y = utils.to(kwargs_opts['yaxis_unit'],self._tool._radiation_field).value
             else:
-                y = rf.value
-
+                y = self._tool._radiation_field.value
+            print("Plot x,y %s,%s"%(x,y))           
             if kwargs_opts['title'] is None:
                 kwargs_opts['title'] = r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof
             label = r'$\chi_{\nu,min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)'%(self._tool._reduced_chisq_min.value,x,y)
-            self._axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
+            self._modelplot.axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
             # handle legend locally
             if kwargs_opts['legend']:
-                legend = self._axis[0].legend(loc='upper center',title=kwargs_opts['title'])
+                print("doing legend")
+                legend = self._modelplot.axis[0].legend(loc='upper center',title=kwargs_opts['title'])
             self._figure = self._modelplot.figure
             self._axis = self._modelplot.axis
 
