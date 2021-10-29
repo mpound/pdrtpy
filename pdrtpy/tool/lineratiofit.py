@@ -337,13 +337,17 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         # or data/error cut based on histogram 
         kwargs_opts = { 'mask': None,
                         'method': 'leastsq',
-                        'nan_policy': 'raise'
+                        'nan_policy': 'raise',
+                       # for emcee
+                        'burn': 0,
+                        'steps': 1000,
         }
         kwargs_opts.update(kwargs)
 
         self._check_compatibility()
         self.read_models()
         self._mask_measurements(kwargs_opts['mask'])
+        kwargs_opts.pop('mask')
         self._compute_valid_ratios()
         if self.ratiocount == 0 :
             raise Exception("No models were found that match your data. Check ModelSet.supported_ratios.")
@@ -567,12 +571,15 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         # model space, in order to provide them to the Parameters object.
         # Since the wk2006 H2 models have a smaller model space, 
         # we have to check if H2 is in one of the models used.  
+        if kwargs['method'] != 'emcee':
+            kwargs.pop('steps')
+            kwargs.pop('burn')
         par = Parameters()
         keys = list(self._modelratios.keys())
         if utils._has_H2(keys):
             # this will get the index for the first modelratio that has H2 in it
             # https://stackoverflow.com/questions/2170900/get-first-list-index-containing-sub-string
-            i =[idx for idx, s in enumerate(ss) if 'H2' in s][0]
+            i =[idx for idx, s in enumerate(keys) if 'H2' in s][0]
             fk = keys[i]
         else:
             fk = keys[0]
@@ -607,7 +614,8 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             #use previous coarse fit as first guess
             par['density'].value = dflat[j] 
             par['radiation_field'].value = rflat[j]
-            fr=minimize(self._residual_single_pix,params=par,method=kwargs['method'],args=(j,),nan_policy=kwargs['nan_policy'])
+            #fr=minimize(self._residual_single_pix,params=par,method=kwargs['method'],args=(j,),nan_policy=kwargs['nan_policy'],steps=kwargs['steps'],burn=kwargs['burn'])
+            fr=minimize(self._residual_single_pix,params=par,args=(j,),**kwargs)
             den[j] = fr.params['density'].value
             dene[j] = fr.params['density'].stderr
             rf[j] = fr.params['radiation_field'].value
