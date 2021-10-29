@@ -404,9 +404,11 @@ class LineRatioPlot(PlotBase):
         i = 0
         _measurements = list()
         _models = list()
+        meas_passed = False
         if kwargs_opts.get('measurements',None) is not None:
             # avoid modifying a passed parameter
             _measurements = deepcopy(kwargs_opts['measurements'])
+            meas_pass = True
             for m in _measurements:
                 if i > 0: kwargs_opts['reset']=False
                 val = self._tool.modelset.get_model(m.id)
@@ -426,8 +428,8 @@ class LineRatioPlot(PlotBase):
         if kwargs_opts['legend']:
             lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in kwargs_opts['meas_color'][0:i]]
             labels = list()
-            if len(_measurements) != 0:
-                labels = [m.title for m in _models]
+            if meas_passed:
+                labels = [m.title for m in _measurements]
                 title = "Observed Ratios and Intensities"
             else:
                 title = "Observed Ratios"
