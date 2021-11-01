@@ -37,6 +37,7 @@ class ModelPlot(PlotBase):
         self._modelset = modelset
         self._figure = figure
         self._axis = axis
+        #print(utils.habing_unit)
     
     def plot(self,identifier,**kwargs):
         """Plot a model intensity or ratio

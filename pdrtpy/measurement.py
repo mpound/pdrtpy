@@ -456,9 +456,6 @@ class Measurement(CCDData):
             return str(self)
         # this can't possibly be the way you are supposed to use this, but it works
         spec = "{:"+spec+"}"
-        #if len(self) == 0: #this will no longer happen
-         #   return spec.format(np.squeeze(self.data)) + " +/- " + spec.format(np.squeeze(self.error))+" {:s}".format(self.unit)
-        #else:
         a = np.array2string(np.squeeze(self.data), formatter={'float': lambda x: spec.format(x)})
         b = np.array2string(np.squeeze(self.error), formatter={'float': lambda x: spec.format(x)})
         # this does not always work

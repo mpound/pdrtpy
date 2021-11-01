@@ -562,10 +562,10 @@ def fliplabel(label):
     ii = label.index('/')
     return label[ii+1:]+'/'+label[0:ii]
 
-# partly stolen from astropy.quanity.to_string, will also work with Measurements
+# partly stolen from astropy.quantity.to_string, will also work with Measurements
 def float_formatter(quantity,precision):
     format_spec = '.{}g'.format(precision)
-    number = Latex.format_exponential_notation(quantity.value, format_spec=format_spec)
+    number = Latex.format_exponential_notation(np.squeeze(quantity.value), format_spec=format_spec)
     # strip the $ signs
     unit = quantity.unit.to_string('latex_inline')[1:-1]
     return f'{number}~{unit}'
@@ -692,4 +692,17 @@ def get_xy_from_wcs(data,quantity=False,linear=False):
            if 'log' in w.wcs.ctype[1]:
                y = np.power(k,y)
     return (x,y)
+
+# not needed
+def _sort_H2_to_last(d):
+    print("old keys: ",d.keys())
+    d2 = OrderedDict(d)
+    for k in list(d2.keys()):  #use list to prevent concurrent modification exception
+        if _has_H2([k]):
+            print("moving Key %s"%k)
+            d2.move_to_end(k,last=True)
+    print("new keys: ",d2.keys())
+    return dict(d2)
+    
+        
 
