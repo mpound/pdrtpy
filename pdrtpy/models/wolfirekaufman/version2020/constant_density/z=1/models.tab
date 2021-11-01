@@ -2,25 +2,35 @@
 |          char|       char|               char|             char       |float| char                                                                     |
 |              |           |                   |                        |     | null                                                                     |
 |          null|       null|               null|             null       |null | null                                                                     |
-          OI_63     CII_158       OI_63/CII_158  OI63_CII158                1   [O I] 63 $\mu$m / [C II] 158 $\mu$m
-  OI_63+CII_158         FIR   OI_63+CII_158/FIR  OI63+CII158_FIR            1   ([O I] 63 $\mu$m + [C II] 158 $\mu$m) / I$_{FIR}$
- OI_145+CII_158         FIR  OI_145+CII_158/FIR  OI145+CII158_FIR           1   ([O I] 145 $\mu$m + [C II] 158 $\mu$m) / I$_{FIR}$
-         CI_370      CI_609       CI_370/CI_609  CI370_CI609                1   [C I] 370 $\mu$m / [C I] 609 $\mu$m
-        CII_158      CI_609      CII_158/CI_609  CII158_CI609               1   [C II] 158 $\mu$m / [C I] 609 $\mu$m
-        CII_158       CO_10       CII_158/CO_10  CII158_CO10                1   [C II] 158 $\mu$m / CO(J=1-0)
-          CO_21       CO_10         CO_21/CO_10  CO21_CO10                  1   CO(J=2-1) / CO(J=1-0)
-          CO_32       CO_10         CO_32/CO_10  CO32_CO10                  1   CO(J=3-2) / CO(J=1-0)
-          CO_65       CO_10         CO_65/CO_10  CO65_CO10                  1   CO(J=6-5) / CO(J=1-0)
-         OI_145       OI_63        OI_145/OI_63  OI145_OI63                 1   [O I] 145 $\mu$m / [O I] 63 $\mu$m          
-         OI_145     CII_158      OI_145/CII_158  OI145_CII158               1   [O I] 145 $\mu$m / [C II] 158 $\mu$m
-         CI_609       CO_43        CI_609/CO_43  CI609_CO43                 1   [C I] 609 $\mu$m / CO(J=4-3)
-          CO_43       CO_21         CO_43/CO_21  CO43_CO21                  1   CO(J=4-3) / CO(J=2-1)
-          CO_65       CO_21         CO_65/CO_21  CO65_CO21                  1   CO(J=6-5) / CO(J=2-1)
-          CO_76       CO_10         CO_76/CO_10  CO76_CO10                  1   CO(J=7-6) / CO(J=1-0)
-          CO_76       CO_21         CO_76/CO_21  CO76_CO21                  1   CO(J=7-6) / CO(J=2-1)
-          CO_76       CO_43         CO_76/CO_43  CO76_CO43                  1   CO(J=7-6) / CO(J=4-3)
-         CI_609           1              CI_609     CI609                   1   [C I] 609 $\mu$m
-          OI_63           1              OI_63       OI63                   1   [O I] 63 $\mu$m
-          CO_10           1              CO_10       CO10                   1   CO(J=1-0)
-          CO_21           1              CO_21       CO21                   1   CO(J=2-1)
-          CO_76           1              CO_76       CO76                   1   CO(J=7-6)
+          OI_63     CII_158       OI_63/CII_158  OI63_CII158sm              1   [O I] 63 $\mu$m / [C II] 158 $\mu$m
+  OI_63+CII_158         FIR   OI_63+CII_158/FIR  OI63+CII158_FIRsm          1   ([O I] 63 $\mu$m + [C II] 158 $\mu$m) / I$_{FIR}$
+ OI_145+CII_158         FIR  OI_145+CII_158/FIR  OI145+CII158_FIRsm         1   ([O I] 145 $\mu$m + [C II] 158 $\mu$m) / I$_{FIR}$
+         OI_145       OI_63        OI_145/OI_63  OI145_OI63sm               1   [O I] 145 $\mu$m / [O I] 63 $\mu$m          
+         CI_370      CI_609       CI_370/CI_609  CI370_CI609sm              1   [C I] 370 $\mu$m / [C I] 609 $\mu$m
+        CII_158      CI_609      CII_158/CI_609  CII158_CI609sm             1   [C II] 158 $\mu$m / [C I] 609 $\mu$m
+        CII_158      OI_145      CII_158/OI_158  CII158_OI145sm             1   [C II] 158 $\mu$m / [O I] 145 $\mu$m 
+        CII_158         FIR         CII_158/FIR  CII158_FIRsm               1   [C II] 158 $\mu$m / I$_{FIR}$
+        CII_158       CO_10       CII_158/CO_10  CII158_CO10sm              1   [C II] 158 $\mu$m / CO(J=1-0)
+        CII_158       CO_21       CII_158/CO_21  CII158_CO21sm              1   [C II] 158 $\mu$m / CO(J=2-1)
+        CII_158       CO_32       CII_158/CO_32  CII158_CO32sm              1   [C II] 158 $\mu$m / CO(J=3-2)
+        CII_158       CO_65       CII_158/CO_65  CII158_CO65sm              1   [C II] 158 $\mu$m / CO(J=6-5)
+          CO_21       CO_10         CO_21/CO_10  CO21_CO10sm                1   CO(J=2-1) / CO(J=1-0)
+          CO_32       CO_10         CO_32/CO_10  CO32_CO10sm                1   CO(J=3-2) / CO(J=1-0)
+          CO_32       CO_21         CO_32/CO_21  CO32_CO21sm                1   CO(J=3-2) / CO(J=2-1)
+         CI_609       CO_43        CI_609/CO_43  CI609_CO43sm               1   [C I] 609 $\mu$m / CO(J=4-3)
+         CI_609       CO_10        CI_609/CO_10  CI609_CO10sm               1   [C I] 609 $\mu$m / CO(J=1-0)
+          CO_43       CO_21         CO_43/CO_21  CO43_CO21sm                1   CO(J=4-3) / CO(J=2-1)
+          CO_65       CO_10         CO_65/CO_10  CO65_CO10sm                1   CO(J=6-5) / CO(J=1-0)
+         H200S2      H200S0       H200S2/H200S0     H200S2_H200S0sm         1   H$_2$0-0S(2) 12.3 $\mu$m / H$_2$0-0S(0) 28.2$ \mu$m
+         H200S2      H200S1       H200S2/H200S1     H200S2_H200S1sm         1   H$_2$0-0S(2) 12.3 $\mu$m / H$_2$0-0S(1) 17$ \mu$m
+         CI_609           1             CI_609      CI609sm                 1   [C I] 609 $\mu$m
+        CII_158           1            CII_158     CII158sm                 1   [C II] 158 $\mu$m
+          OI_63           1              OI_63       OI63sm                 1   [O I] 63 $\mu$m
+          CO_10           1              CO_10       CO10sm                 1   CO(J=1-0)
+          CO_21           1              CO_21       CO21sm                 1   CO(J=2-1)
+          CO_32           1              CO_32       CO32sm                 1   CO(J=3-2)
+          CO_65           1              CO_65       CO65sm                 1   CO(J=65)
+         H200S2           1        H200S2            H200S2sm               1   H$_2$0-0S(2) 12.3 $\mu$m 
+         H200S1           1        H200S1            H200S1sm               1   H$_2$0-0S(1) 28.2 $\mu$m 
+         H200S0           1        H200S0            H200S0sm               1   H$_2$0-0S(0) 17 $\mu$m 
+         TS               1        TS                TSAV0p01sm             1   Temperature  AV=0.01

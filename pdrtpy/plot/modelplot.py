@@ -595,7 +595,7 @@ class ModelPlot(PlotBase):
         locmin = ticker.LogLocator(base=10.0, subs=np.arange(2, 10)*.1,numticks=10) 
         
         #allow unit conversion of density axis
-        xax_unit = u.Unit(_header['cunit'+ax1])
+        xax_unit = u.Unit(_header['CUNIT'+ax1])
         # cover the base where we had to erase the wcs unit to avoid FITS error
         if x._unit is None or x._unit is u.dimensionless_unscaled:
             x._unit = xax_unit
@@ -611,9 +611,9 @@ class ModelPlot(PlotBase):
             x = x.to(xax_unit)
 
         # Set the x label appropriately, use LaTeX inline formatting
-        xlab = r"{0} [{1:latex_inline}]".format(_header['ctype'+ax1],xax_unit)
+        xlab = r"{0} [{1:latex_inline}]".format(_header['CTYPE'+ax1],xax_unit)
         
-        yax_unit = u.Unit(_header['cunit'+ax2])
+        yax_unit = u.Unit(_header['CUNIT'+ax2])
         if y._unit is None or y._unit is u.dimensionless_unscaled:
             y._unit = yax_unit
         ytype = "log({0})".format(utils.get_rad(yax_unit))
