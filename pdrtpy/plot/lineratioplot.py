@@ -472,25 +472,7 @@ class LineRatioPlot(PlotBase):
         kwargs_opts["nrows"] = int(round(self._tool.ratiocount/kwargs_opts["ncols"]+0.49,0))
         # defend against meas_color not being a list
         if type(kwargs_opts['meas_color']) == str:
-            #warnings.warn("meas_color should be a list")<<<<<<< sep7
-408
- 
-        if kwargs_opts.get('measurements',None) is not None:
-409
- 
-            # (i,_models,_measurements) = self._overlay_measurements(kwargs_opts['measurements'])
-410
- 
-            _measurements = kwargs_opts['measurements']
-411
- 
-            for m in _measurements:
-412
- 
-                if i > 0: kwargs_opts['reset']=False
-413
- 
-          
+            #warnings.warn("meas_color should be a list")
             kwargs_opts['meas_color']=[kwargs_opts['meas_color']]
 
         for key,val in self._tool._modelratios.items():

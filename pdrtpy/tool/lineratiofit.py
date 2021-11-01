@@ -14,7 +14,8 @@ import warnings
 from lmfit import Model, Parameters, Minimizer, minimize, fit_report
 import corner
 
-from ..tool.toolbase import ToolBase
+from .toolbase import ToolBase
+from .fitmap import FitMap
 from .. import pdrutils as utils
 from ..modelset import ModelSet
 from ..measurement import Measurement
@@ -60,11 +61,19 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self.radiation_field_type = None
         self.density_unit = None
         self.density_type = None
+        self._fitresult = None
     
     #def _set_measurementnaxis(self):
     #    fk = utils.firstkey(self._measurements)
     #    self._measurementnaxis = len(self._measurements[fk].shape)
-
+    @property
+    def fit_result(self):
+        '''The result of the fitting procedure which includes fit statistics, variable values and uncertainties, and correlations between variables.  For each pixel, there will be one instance of :class:`lmfit.minimizer.MinimizerResult`.
+        
+        :rtype:  :class:`~pdrtpy.tool.FitMap`      
+        '''
+        return self._fitresult
+    
     @property
     def modelset(self):
         """The underlying :class:`~pdrtpy.modelset.ModelSet`"""
@@ -596,7 +605,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         #    startfuv = self._radiation_field.value
         par.add('density',min=minn,max=maxn,value=startn)
         par.add('radiation_field',min=minfuv,max=maxfuv,value=startfuv)
-        self._fitresult = list()
         #par.pretty_print()
         rf = np.empty(self._observedratios[fk].size)
         den = np.empty(self._observedratios[fk].size)
@@ -606,7 +614,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         rchi = np.empty(self._observedratios[fk].size)
         dflat = self._density.value.flatten()
         rflat = self._radiation_field.value.flatten()
-        # TODO use a FitMap -- need to merge with SEP7 branch
+        minimizer_result = np.empty(self._observedratios[fk].size,dtype=object)
         for j in range(self._observedratios[fk].size):
             #use previous coarse fit as first guess
             par['density'].value = dflat[j] 
@@ -619,7 +627,10 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             rfe[j] = fr.params['radiation_field'].stderr
             chi[j] = fr.chisqr
             rchi[j] = fr.redchi
-            self._fitresult.append(fr)
+            minimizer_result[j] = fr
+        minimizer_result.reshape(self._observedratios[fk].data.shape)
+        self._fitresult = FitMap(minimizer_result,wcs=self._observedratios[fk].wcs)#,mask=fm_mask,name="result")
+        
         if False:
             self._rf2 = deepcopy(self._radiation_field)
             self._rf2.data = rf.reshape(self._rf2.data.shape)
