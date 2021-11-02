@@ -614,23 +614,34 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         rchi = np.empty(self._observedratios[fk].size)
         dflat = self._density.value.flatten()
         rflat = self._radiation_field.value.flatten()
-        minimizer_result = np.empty(self._observedratios[fk].size,dtype=object)
+        fmdata = np.empty(self._observedratios[fk].size,dtype=object)
+        fm_mask = np.full(shape=self._observedratios[fk].data.shape,fill_value=False).flatten()
+        count = 0
         for j in range(self._observedratios[fk].size):
             #use previous coarse fit as first guess
             par['density'].value = dflat[j] 
             par['radiation_field'].value = rflat[j]
-            #fr=minimize(self._residual_single_pix,params=par,method=kwargs['method'],args=(j,),nan_policy=kwargs['nan_policy'],steps=kwargs['steps'],burn=kwargs['burn'])
-            fr=minimize(self._residual_single_pix,params=par,args=(j,),**kwargs)
-            den[j] = fr.params['density'].value
-            dene[j] = fr.params['density'].stderr
-            rf[j] = fr.params['radiation_field'].value
-            rfe[j] = fr.params['radiation_field'].stderr
-            chi[j] = fr.chisqr
-            rchi[j] = fr.redchi
-            minimizer_result[j] = fr
-        minimizer_result.reshape(self._observedratios[fk].data.shape)
-        self._fitresult = FitMap(minimizer_result,wcs=self._observedratios[fk].wcs)#,mask=fm_mask,name="result")
-        
+            try: 
+                fmdata[j] = minimize(self._residual_single_pix,params=par,args=(j,),**kwargs)
+                #if fmdata[j].success and fmdata[j].errorbars:
+                count = count+1          
+                den[j] = fmdata[j].params['density'].value
+                dene[j] = fmdata[j].params['density'].stderr
+                rf[j] = fmdata[j].params['radiation_field'].value
+                rfe[j] = fmdata[j].params['radiation_field'].stderr
+                chi[j] = fmdata[j].chisqr
+                rchi[j] = fmdata[j].redchi
+                #else:
+                 #   fmdata[j] = np.nan
+                 #   fm_mask[j] = True
+            except ValueError:
+                fmdata[j] = np.nan
+                fm_mask[j] = True  
+        fmdata.reshape(self._observedratios[fk].data.shape)
+        fm_mask.reshape(self._observedratios[fk].data.shape)
+        #ff_mask = ff_mask | np.logical_not(np.isfinite(/*something*/))
+        self._fitresult = FitMap(fmdata,wcs=self._observedratios[fk].wcs,mask=fm_mask,name="result")
+        print(f"fitted {count} of {self._observedratios[fk].size} pixels")
         if False:
             self._rf2 = deepcopy(self._radiation_field)
             self._rf2.data = rf.reshape(self._rf2.data.shape)
