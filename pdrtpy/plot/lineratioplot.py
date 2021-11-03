@@ -435,7 +435,14 @@ class LineRatioPlot(PlotBase):
             lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in kwargs_opts['meas_color'][0:i]]
             labels = list()
             if meas_passed:
-                labels = [m.id for m in _measurements]
+                # THIS WILL EXCEPT IF m.id NOT IN MODELSET WHICH IS VERY POSSIBLE!
+                for m in _measurements:
+                    try:
+                        tt = self._tool.modelset.get_model(m.id).title
+                    except Exception:
+                        tt = m.id
+                    labels.append(tt)
+                #labels = [m.id for m in _measurements]
                 title = "Observed Ratios and Intensities"
             else:
                 title = "Observed Ratios"
