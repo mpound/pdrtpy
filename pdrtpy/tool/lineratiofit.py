@@ -11,7 +11,7 @@ import astropy.stats as astats
 from astropy.table import Table, Column
 from astropy.nddata import CCDData
 import warnings
-from lmfit import Model, Parameters, Minimizer, minimize, fit_report
+from lmfit import Parameters, Minimizer, minimize, fit_report
 import corner
 
 from .toolbase import ToolBase
@@ -62,7 +62,9 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self.density_unit = None
         self.density_type = None
         self._fitresult = None
-    
+        self._fitparam = None
+        self._minimizer = None
+        
     #def _set_measurementnaxis(self):
     #    fk = utils.firstkey(self._measurements)
     #    self._measurementnaxis = len(self._measurements[fk].shape)
@@ -357,6 +359,9 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._compute_valid_ratios()
         if self.ratiocount == 0 :
             raise Exception("No models were found that match your data. Check ModelSet.supported_ratios.")
+        self._minimizer = Minimizer(self._residual_single_pix,params=None,nan_policy=kwargs_opts['nan_policy'])
+        #need to pop nan_policy so that it does not get passed to Minimzer.minimize()
+        x = kwargs_opts.pop('nan_policy',None)
         # eventually need to check that the maps overlap in real space.
         self._compute_delta_sq()
         self._compute_chisq()
@@ -468,6 +473,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             evalue[i] = self._observedratios[k].uncertainty.array.flatten()[index]
             #print("model = ",mvalue[i]," obs = ",dvalue[i]," error = ",evalue[i])
             i = i+1
+        #print("returning ",(dvalue - mvalue)/evalue)
         return  (dvalue - mvalue)/evalue
     
     #deprecated
@@ -580,7 +586,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         if kwargs['method'] != 'emcee':
             kwargs.pop('steps')
             kwargs.pop('burn')
-        par = Parameters()
         keys = list(self._modelratios.keys())
         if utils._has_H2(keys):
             # this will get the index for the first modelratio that has H2 in it
@@ -597,14 +602,15 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         maxn=x[-1]
         minfuv=y[0]
         maxfuv=y[-1]
-        #if self._radiation_field is None or self._density is None:
-        startn = x[int(len(x)/2)]
-        startfuv=y[int(len(y)/2)]
-        #else:
-        #    startn = self._density.value
-        #    startfuv = self._radiation_field.value
-        par.add('density',min=minn,max=maxn,value=startn)
-        par.add('radiation_field',min=minfuv,max=maxfuv,value=startfuv)
+        if self._radiation_field is None or self._density is None:
+            startn = x[int(len(x)/2)]
+            startfuv=y[int(len(y)/2)]
+        else:
+            startn = self._density.value
+            startfuv = self._radiation_field.value
+        self._fitparam = Parameters()
+        self._fitparam.add('density',min=minn,max=maxn,value=startn)
+        self._fitparam.add('radiation_field',min=minfuv,max=maxfuv,value=startfuv)
         #par.pretty_print()
         rf = np.empty(self._observedratios[fk].size)
         den = np.empty(self._observedratios[fk].size)
@@ -619,22 +625,25 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         count = 0
         for j in range(self._observedratios[fk].size):
             #use previous coarse fit as first guess
-            par['density'].value = dflat[j] 
-            par['radiation_field'].value = rflat[j]
+            self._fitparam['density'].value = dflat[j] 
+            self._fitparam['radiation_field'].value = rflat[j]
             try: 
-                fmdata[j] = minimize(self._residual_single_pix,params=par,args=(j,),**kwargs)
-                #if fmdata[j].success and fmdata[j].errorbars:
-                count = count+1          
-                den[j] = fmdata[j].params['density'].value
-                dene[j] = fmdata[j].params['density'].stderr
-                rf[j] = fmdata[j].params['radiation_field'].value
-                rfe[j] = fmdata[j].params['radiation_field'].stderr
-                chi[j] = fmdata[j].chisqr
-                rchi[j] = fmdata[j].redchi
-                #else:
-                 #   fmdata[j] = np.nan
-                 #   fm_mask[j] = True
-            except ValueError:
+                self._minimizer.userargs=(j,)
+                fmdata[j] = self._minimizer.minimize(params=self._fitparam,**kwargs)
+                #if hasattr(fmdata[j],"success")   ugh.  not guaranteed
+                if fmdata[j].errorbars:
+                    count = count+1          
+                    den[j] = fmdata[j].params['density'].value
+                    dene[j] = fmdata[j].params['density'].stderr
+                    rf[j] = fmdata[j].params['radiation_field'].value
+                    rfe[j] = fmdata[j].params['radiation_field'].stderr
+                    chi[j] = fmdata[j].chisqr
+                    rchi[j] = fmdata[j].redchi
+                else:
+                    fmdata[j] = np.nan
+                    fm_mask[j] = True
+            except ValueError as exc:
+                #print("got valuerror ", exc)
                 fmdata[j] = np.nan
                 fm_mask[j] = True  
         fmdata.reshape(self._observedratios[fk].data.shape)
