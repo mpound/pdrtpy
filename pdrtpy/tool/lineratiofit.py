@@ -365,8 +365,8 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         # eventually need to check that the maps overlap in real space.
         self._compute_delta_sq()
         self._compute_chisq()
-        self.compute_density_radiation_field()
-        self.compute_density_radiation_field2(**kwargs_opts)
+        self._coarse_density_radiation_field()
+        self._fine_density_radiation_field2(**kwargs_opts)
      
 
     def _mask_measurements(self,mask):
@@ -578,14 +578,14 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._chisq.write(chi,overwrite=overwrite,hdu_mask='MASK')
         self._reduced_chisq.write(rchi,overwrite=overwrite,hdu_mask='MASK')  
         
-    def compute_density_radiation_field2(self,**kwargs):
-        # First get the range of density n and radiation field FUV from the 
-        # model space, in order to provide them to the Parameters object.
-        # Since the wk2006 H2 models have a smaller model space, 
-        # we have to check if H2 is in one of the models used.  
+    def _fine_density_radiation_field2(self,**kwargs):
         if kwargs['method'] != 'emcee':
             kwargs.pop('steps')
             kwargs.pop('burn')
+        # First get the range of density n and radiation field FUV from the 
+        # model space, in order to provide them to the Parameters object.
+        # Since the wk2006 H2 models have a smaller model space, 
+        # we have to check if H2 is in one of the models used.          
         keys = list(self._modelratios.keys())
         if utils._has_H2(keys):
             # this will get the index for the first modelratio that has H2 in it
@@ -671,7 +671,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._chisq_min.data = chi.reshape(self._chisq_min.data.shape)
         self._reduced_chisq_min.data = rchi.reshape(self._reduced_chisq_min.data.shape)
         
-    def compute_density_radiation_field(self):
+    def _coarse_density_radiation_field(self):
         '''Compute the best-fit density and radiation field spatial maps 
            by searching for the minimum chi-squared at each spatial pixel.'''
         if self._chisq is None or self._reduced_chisq is None: return
