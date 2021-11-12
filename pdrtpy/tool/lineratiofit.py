@@ -349,6 +349,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                        # for emcee
                         'burn': 0,
                         'steps': 1000,
+                        'test': False # debugging
         }
         kwargs_opts.update(kwargs)
 
@@ -363,7 +364,11 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         #need to pop nan_policy so that it does not get passed to Minimzer.minimize()
         x = kwargs_opts.pop('nan_policy',None)
         # eventually need to check that the maps overlap in real space.
-        self._compute_delta_sq()
+        if kwargs_opts['test']:
+            self._compute_residual()
+        else:
+            self._compute_delta_sq()
+        kwargs_opts.pop('test')
         self._compute_chisq()
         self._coarse_density_radiation_field()
         self._fine_density_radiation_field2(**kwargs_opts)
@@ -536,7 +541,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                 newshape = np.hstack((self._modelratios[r].shape,self._observedratios[r].shape))
                 _meta= deepcopy(self._observedratios[r].meta)
             # result order is y,x,g0,n
-            #newshape = np.hstack((self._observedratios[r].shape,self._modelratios[r].shape))
             _qq = np.squeeze(np.reshape(residuals,newshape))
             #print("QQ SHAPE ",_qq.shape)
             # WCS will be None for single pixel
@@ -544,17 +548,74 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             returnval[r] = CCDData(_qq,unit="adu",wcs=_wcs,meta=_meta)
     
         return returnval
+    
+    def _compute_residual(self):
+        '''Compute the difference-squared values from the observed ratios 
+           and models - multi-pixel version
+           
+           :param f: fractional amount by which the variance is underestimated. 
+           For traditional chi-squared calculation f is zero.  
+           For log-likelihood calculation f is positive and less than 1.
+           See, e.g. https://emcee.readthedocs.io/en/stable/tutorials/line/#maximum-likelihood-estimation
+           :type f: float
+        '''
+        if not self._modelratios: # empty list or None
+            raise Exception("No model data ready.  Was read_models() called?")
+            
+        if self.ratiocount < 2 :
+            raise Exception("Not enough ratios.  You need to provide at least 3 observations that can be used to compute 2 ratios that are covered by the ModelSet. From your observations, only %d ratios can be computed."%self.ratiocount)
 
+        if not self._check_ratio_shapes():
+            raise Exception("Observed ratio maps have different dimensions")
+            
+        self._residual = dict()
+        for r in self._observedratios:
+            modelpix = self._modelratios[r].data.flatten()
+            residuals = list()
+            mdata = ma.masked_invalid(self._observedratios[r].value)
+            merror = ma.masked_invalid(self._observedratios[r].error)  
+            for pix in modelpix:
+                #optional fractional error correction for log likelihood.
+                _q = (mdata - pix)/merror
+                _q = ma.masked_invalid(_q)
+                residuals.append(_q)
+            # result order is g0,n,y,x
+
+            # Catch the case of a single pixel
+            if len(self._observedratios[r].shape) == 0:
+                newshape = np.hstack((self._modelratios[r].shape))
+                _meta= deepcopy(self._modelratios[r].meta)
+                # clean potential crap
+                _meta.pop("",None)
+                _meta.pop("TITLE",None)
+            else:
+                newshape = np.hstack((self._modelratios[r].shape,self._observedratios[r].shape))
+                _meta= deepcopy(self._observedratios[r].meta)
+            # result order is y,x,g0,n
+            _qq = np.squeeze(np.reshape(residuals,newshape))
+            #print("QQ SHAPE ",_qq.shape)
+            # WCS will be None for single pixel
+            _wcs = deepcopy(self._observedratios[r].wcs)
+            self._residual[r] = Measurement(_qq,unit="adu",wcs=_wcs,meta=_meta,identifier='residual')
+        #for r in self._residual:
+        #    self._deltasq[r] = self._residual[r]*self._residual[r]
+    
     def _compute_chisq(self):
         '''Compute the chi-squared values from observed ratios and models'''
         if self.ratiocount < 2 :
             raise Exception("Not enough ratios to compute chisq.  Need 2, got %d"%self.ratiocount)
-        sumary = sum((self._deltasq[r]._data for r in self._deltasq))
-        self._dof = len(self._deltasq) - 1
-        k = utils.firstkey(self._deltasq)
-        _wcs = deepcopy(self._deltasq[k].wcs)
-        _meta = deepcopy(self._deltasq[k].meta)
-        print
+        if False:
+            sumary = sum((self._deltasq[r]._data for r in self._deltasq))
+            self._dof = len(self._deltasq) - 1
+            k = utils.firstkey(self._deltasq)
+            _wcs = deepcopy(self._deltasq[k].wcs)
+            _meta = deepcopy(self._deltasq[k].meta)
+        else:
+            sumary = sum((self._residual[r]._data**2 for r in self._residual))
+            self._dof = len(self._residual) - 1
+            k = utils.firstkey(self._residual)
+            _wcs = deepcopy(self._residual[k].wcs)
+            _meta = deepcopy(self._residual[k].meta)
         self._chisq = CCDData(sumary,unit='adu',wcs=_wcs,meta=_meta)
         self._reduced_chisq =  self._chisq.divide(self._dof)
         # must make a copy here otherwise the header is an OrderDict
@@ -804,7 +865,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             s = s + k + ", "
         utils.history(s,image)
         s = "Ratios used: "
-        for k in self._deltasq.keys():
+        for k in self._residual.keys():
             s = s + k + ", "
         utils.history(s,image)
         utils.signature(image)
