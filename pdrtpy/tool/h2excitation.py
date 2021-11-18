@@ -827,15 +827,15 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                     else:
                         #print("1 bad fit for pixel %d"%i)
                         #print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K"% (tcold[i],thot[i]))
-                        fmdata[i] = np.nan
+                        fmdata[i] = None
                         fm_mask[i] = True
                 except ValueError:
                     #print("2 bad fit for pixel %d"%i)
                     #print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K"% (tcold[i],thot[i]))
-                    fmdata[i] = np.nan
+                    fmdata[i] = None
                     fm_mask[i] = True
             else:
-                fmdata[i] = np.nan
+                fmdata[i] = None
                 fm_mask[i] = True
                 continue
         warnings.resetwarnings()

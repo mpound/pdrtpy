@@ -13,6 +13,10 @@ from astropy.nddata import CCDData
 import warnings
 from lmfit import Parameters, Minimizer, minimize, fit_report
 import corner
+from emcee.pbar import get_progress_bar
+
+import cProfile, pstats, io
+from pstats import SortKey
 
 from .toolbase import ToolBase
 from .fitmap import FitMap
@@ -63,10 +67,8 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._fitresult = None
         self._fitparam = None
         self._minimizer = None
+        self._deltasq = None
         
-    #def _set_measurementnaxis(self):
-    #    fk = utils.firstkey(self._measurements)
-    #    self._measurementnaxis = len(self._measurements[fk].shape)
     @property
     def fit_result(self):
         '''The result of the fitting procedure which includes fit statistics, variable values and uncertainties, and correlations between variables.  For each pixel, there will be one instance of :class:`lmfit.minimizer.MinimizerResult`.
@@ -348,10 +350,17 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                        # for emcee
                         'burn': 0,
                         'steps': 1000,
-                        'test': False # debugging
+                        'fine':True,
+                        'test': False, # debugging
+                        'profile': False, # debugging
         }
         kwargs_opts.update(kwargs)
 
+        profile = kwargs_opts.pop('profile')
+        self._stats = None
+        if profile:
+            pr = cProfile.Profile()
+            pr.enable()
         self._check_compatibility()
         self.read_models()
         self._mask_measurements(kwargs_opts['mask'])
@@ -370,8 +379,18 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         kwargs_opts.pop('test')
         self._compute_chisq()
         self._coarse_density_radiation_field()
-        self._fine_density_radiation_field2(**kwargs_opts)
-     
+        if kwargs_opts['fine']:
+            kwargs_opts.pop('fine')
+            self._fine_density_radiation_field2(**kwargs_opts)
+        if profile:
+            pr.disable()
+            s = io.StringIO()
+            sortby = SortKey.CUMULATIVE
+            ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+            ps.print_stats()
+            self._stats = s
+            #print(s.getvalue())
+
 
     def _mask_measurements(self,mask):
         ''' Set the mask on the measurements based on noise characteristics.  This is so that
@@ -515,31 +534,40 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             # result order is g0,n,y,x
 
             # Catch the case of a single pixel
-            if len(self._observedratios[r].shape) == 0:
+            if self._observedratios[r].is_single_pixel():
                 newshape = np.hstack((self._modelratios[r].shape))
-                _meta= deepcopy(self._modelratios[r].meta)
+                _meta = deepcopy(self._modelratios[r].meta)
+                _wcs = deepcopy(self._modelratios[r].wcs)
+                #print("META",_meta)
                 # clean potential crap
                 _meta.pop("",None)
                 _meta.pop("TITLE",None)
             else:
                 newshape = np.hstack((self._modelratios[r].shape,self._observedratios[r].shape))
-                _meta= deepcopy(self._observedratios[r].meta)
+                _meta = deepcopy(self._observedratios[r].meta)
+                _wcs = deepcopy(self._observedratios[r].wcs)
             # result order is y,x,g0,n
             _qq = np.squeeze(np.reshape(residuals,newshape))
-            #print("QQ SHAPE ",_qq.shape)
-            # WCS will be None for single pixel
-            _wcs = deepcopy(self._observedratios[r].wcs)
+            print("QQ SHAPE ",_qq.shape)
+            print("QQ WCS",_wcs)
             self._residual[r] = Measurement(_qq,unit="adu",wcs=_wcs,meta=_meta,identifier='residual')
     
-    def _compute_chisq(self):
+    def _compute_chisq(self,test=False):
         '''Compute the chi-squared values from observed ratios and models'''
         if self.ratiocount < 2 :
             raise Exception("Not enough ratios to compute chisq.  Need 2, got %d"%self.ratiocount)
-        sumary = sum((self._residual[r]._data**2 for r in self._residual))
-        self._dof = len(self._residual) - 1
-        k = utils.firstkey(self._residual)
-        _wcs = deepcopy(self._residual[k].wcs)
-        _meta = deepcopy(self._residual[k].meta)
+        if test:
+            sumary = sum((self._residual[r]._data**2 for r in self._residual))
+            self._dof = len(self._residual) - 1
+            k = utils.firstkey(self._residual)
+            _wcs = deepcopy(self._residual[k].wcs)
+            _meta = deepcopy(self._residual[k].meta)
+        else:
+            sumary = sum((self._deltasq[r]._data for r in self._deltasq))
+            self._dof = len(self._deltasq) - 1
+            k = utils.firstkey(self._deltasq)
+            _wcs = deepcopy(self._deltasq[k].wcs)
+            _meta = deepcopy(self._deltasq[k].meta)
         self._chisq = CCDData(sumary,unit='adu',wcs=_wcs,meta=_meta)
         self._reduced_chisq =  self._chisq.divide(self._dof)
         # must make a copy here otherwise the header is an OrderDict
@@ -567,6 +595,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         if kwargs['method'] != 'emcee':
             kwargs.pop('steps')
             kwargs.pop('burn')
+        progress = kwargs.pop("progress",True) # progress bar
         # First get the range of density n and radiation field FUV from the 
         # model space, in order to provide them to the Parameters object.
         # Since the wk2006 H2 models have a smaller model space, 
@@ -591,8 +620,8 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             startn = x[int(len(x)/2)]
             startfuv=y[int(len(y)/2)]
         else:
-            startn = self._density.value
-            startfuv = self._radiation_field.value
+            startn = np.nanmean(self._density.value)
+            startfuv = np.nanmean(self._radiation_field.value)
         self._fitparam = Parameters()
         self._fitparam.add('density',min=minn,max=maxn,value=startn)
         self._fitparam.add('radiation_field',min=minfuv,max=maxfuv,value=startfuv)
@@ -608,34 +637,56 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         fmdata = np.empty(self._observedratios[fk].size,dtype=object)
         fm_mask = np.full(shape=self._observedratios[fk].data.shape,fill_value=False).flatten()
         count = 0
-        for j in range(self._observedratios[fk].size):
-            #use previous coarse fit as first guess
-            self._fitparam['density'].value = dflat[j] 
-            self._fitparam['radiation_field'].value = rflat[j]
-            try: 
-                self._minimizer.userargs=(j,)
-                fmdata[j] = self._minimizer.minimize(params=self._fitparam,**kwargs)
-                #if hasattr(fmdata[j],"success")   ugh.  not guaranteed
-                if fmdata[j].errorbars:
-                    count = count+1          
-                    den[j] = fmdata[j].params['density'].value
-                    dene[j] = fmdata[j].params['density'].stderr
-                    rf[j] = fmdata[j].params['radiation_field'].value
-                    rfe[j] = fmdata[j].params['radiation_field'].stderr
-                    chi[j] = fmdata[j].chisqr
-                    rchi[j] = fmdata[j].redchi
-                else:
-                    fmdata[j] = np.nan
+        excount = 0
+        with get_progress_bar(progress,self._observedratios[fk].size) as pbar:
+            for j in range(self._observedratios[fk].size):
+                #use previous coarse fit as first guess
+                #print("doing pixel ",j, " of ",self._observedratios[fk].size)
+                self._fitparam['density'].value = dflat[j] 
+                self._fitparam['radiation_field'].value = rflat[j]
+                if np.isnan(dflat[j]) or np.isnan(rflat[j]):
+                    fmdata[j] = None
                     fm_mask[j] = True
-            except ValueError as exc:
-                #print("got valuerror ", exc)
-                fmdata[j] = np.nan
-                fm_mask[j] = True  
-        fmdata.reshape(self._observedratios[fk].data.shape)
-        fm_mask.reshape(self._observedratios[fk].data.shape)
+                    den[j] = np.nan
+                    dene[j] = np.nan
+                    rfe[j] = np.nan
+                    rf[j] = np.nan
+                    chi[j] = np.nan
+                    rchi[j] = np.nan
+                else:
+                    try: 
+                        self._minimizer.userargs=(j,)
+                        fmdata[j] = self._minimizer.minimize(params=self._fitparam,**kwargs)
+                        #if hasattr(fmdata[j],"success")   ugh.  not guaranteed
+                        #if fmdata[j].errorbars:
+                        count = count+1          
+                        den[j] = fmdata[j].params['density'].value
+                        dene[j] = fmdata[j].params['density'].stderr
+                        rf[j] = fmdata[j].params['radiation_field'].value
+                        rfe[j] = fmdata[j].params['radiation_field'].stderr
+                        chi[j] = fmdata[j].chisqr
+                        rchi[j] = fmdata[j].redchi
+                        #else:
+                        #fmdata[j] = None
+                        #fm_mask[j] = True
+                    except ValueError as exc:
+                        print("got valuerror ", exc)
+                        excount = excount+1
+                        fmdata[j] = None
+                        fm_mask[j] = True
+                        den[j] = np.nan
+                        dene[j] = np.nan
+                        rfe[j] = np.nan
+                        rf[j] = np.nan
+                        chi[j] = np.nan
+                        rchi[j] = np.nan
+                pbar.update(1)
+        fmdata = fmdata.reshape(self._observedratios[fk].data.shape)
+        fm_mask = fm_mask.reshape(self._observedratios[fk].data.shape)
         #ff_mask = ff_mask | np.logical_not(np.isfinite(/*something*/))
         self._fitresult = FitMap(fmdata,wcs=self._observedratios[fk].wcs,mask=fm_mask,name="result")
         print(f"fitted {count} of {self._observedratios[fk].size} pixels")
+        print(f'got {excount} exceptions')
         if False:
             self._rf2 = deepcopy(self._radiation_field)
             self._rf2.data = rf.reshape(self._rf2.data.shape)
@@ -649,12 +700,13 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             self._rchi2.data = rchi.reshape(self._rchi2.data.shape)
         rshape = self._radiation_field.data.shape
         dshape = self._density.data.shape
+        print("reshaping to ",rshape,dshape)
         self._radiation_field.data = rf.reshape(rshape)
         self._radiation_field.uncertainty.array = rfe.reshape(rshape)
         self._density.data = den.reshape(dshape)
         self._density.uncertainty.array = dene.reshape(dshape)
-        self._chisq_min.data = chi.reshape(self._chisq_min.data.shape)
-        self._reduced_chisq_min.data = rchi.reshape(self._reduced_chisq_min.data.shape)
+        self._chisq_min.data = chi.reshape(dshape)
+        self._reduced_chisq_min.data = rchi.reshape(dshape)
         
     def _coarse_density_radiation_field(self):
         '''Compute the best-fit density and radiation field spatial maps 
@@ -789,7 +841,8 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             s = s + k + ", "
         utils.history(s,image)
         s = "Ratios used: "
-        for k in self._residual.keys():
+        for k in self._deltasq.keys():
+        #for k in self._residual.keys():
             s = s + k + ", "
         utils.history(s,image)
         utils.signature(image)
@@ -893,3 +946,72 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         for j in t.columns:
             t[j].format = '3.2E'
         return t
+
+    #=========
+    def _compute_delta_sq(self):
+        '''Compute the difference-squared values from the observed ratios 
+           and models - multi-pixel version and store in _deltasq member'''
+        self._deltasq = self._computeDelta(f=0)
+
+    def _computeDelta(self,f):
+        '''Compute the difference-squared values from the observed ratios 
+           and models - multi-pixel version
+           
+           :param f: fractional amount by which the variance is underestimated. 
+           For traditional chi-squared calculation f is zero.  
+           For log-likelihood calculation f is positive and less than 1.
+           See, e.g. https://emcee.readthedocs.io/en/stable/tutorials/line/#maximum-likelihood-estimation
+           :type f: float
+        '''
+        if not self._modelratios: # empty list or None
+            raise Exception("No model data ready.  Was read_models() called?")
+            
+        if self.ratiocount < 2 :
+            raise Exception("Not enough ratios.  You need to provide at least 3 observations that can be used to compute 2 ratios that are covered by the ModelSet. From your observations, only %d ratios can be computed."%self.ratiocount)
+
+        if not self._check_ratio_shapes():
+            raise Exception("Observed ratio maps have different dimensions")
+            
+        returnval = dict()
+        for r in self._observedratios:
+            sz = self._modelratios[r].size
+            modelpix = np.reshape(self._modelratios[r],sz)
+
+            residuals = list()
+            mf = ma.masked_invalid(self._observedratios[r].value)
+            me = ma.masked_invalid(self._observedratios[r].error)  
+            #frac_error = f*modelpix  # this is actually slower than looping over modelpix
+            s2 = me**2
+            add_term = 0
+            for pix in modelpix:
+                #optional fractional error correction for log likelihood.
+                if f != 0:
+                   #term is actually log(2*pi*s2) but addition of 
+                   #constant makes no difference in likelihood.
+                    frac_error  = f*pix
+                    s2 += frac_error**2
+                    add_term += np.log(s2)
+                _q = (mf - pix)**2/s2 + add_term
+                _q = ma.masked_invalid(_q)
+                residuals.append(_q)
+            # result order is g0,n,y,x
+
+            # Catch the case of a single pixel
+            if len(self._observedratios[r].shape) == 0:
+                newshape = np.hstack((self._modelratios[r].shape))
+                _meta= deepcopy(self._modelratios[r].meta)
+                # clean potential crap
+                _meta.pop("",None)
+                _meta.pop("TITLE",None)
+            else:
+                newshape = np.hstack((self._modelratios[r].shape,self._observedratios[r].shape))
+                _meta= deepcopy(self._observedratios[r].meta)
+            # result order is y,x,g0,n
+            #newshape = np.hstack((self._observedratios[r].shape,self._modelratios[r].shape))
+            _qq = np.squeeze(np.reshape(residuals,newshape))
+            #print("QQ SHAPE ",_qq.shape)
+            # WCS will be None for single pixel
+            _wcs = deepcopy(self._observedratios[r].wcs)
+            returnval[r] = CCDData(_qq,unit="adu",wcs=_wcs,meta=_meta)
+    
+        return returnval
