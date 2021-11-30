@@ -625,7 +625,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._fitparam = Parameters()
         self._fitparam.add('density',min=minn,max=maxn,value=startn)
         self._fitparam.add('radiation_field',min=minfuv,max=maxfuv,value=startfuv)
-        #par.pretty_print()
+        self._fitparam.pretty_print()
         rf = np.empty(self._observedratios[fk].size)
         den = np.empty(self._observedratios[fk].size)
         rfe = np.empty(self._observedratios[fk].size)
