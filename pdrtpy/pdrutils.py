@@ -659,6 +659,7 @@ def get_xy_from_wcs(data,quantity=False,linear=False):
         raise Exception("No WCS in the input image")
     xind=np.arange(w._naxis[0])
     yind=np.arange(w._naxis[1])
+    #print("GETXY xind,yind ",xind,yind)
     # wcs methods want broadcastable arrays, but in our
     # case naxis1 != naxis2, so make two 
     # calls and take x from the one and y from the other.

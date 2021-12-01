@@ -347,12 +347,13 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         kwargs_opts = { 'mask': None,
                         'method': 'leastsq',
                         'nan_policy': 'raise',
+                        'fine':True,
                        # for emcee
                         'burn': 0,
                         'steps': 1000,
-                        'fine':True,
-                        'test': False, # debugging
-                        'profile': False, # debugging
+                       # debugging
+                        'test': False, 
+                        'profile': False,
         }
         kwargs_opts.update(kwargs)
 
