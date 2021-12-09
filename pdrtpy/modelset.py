@@ -25,7 +25,7 @@ class ModelSet(object):
         self._all_models = get_table("all_models.tab")
         self._all_models.add_index("name")
         if name not in self._all_models["name"]:
-            raise ValueError("Unrecognized model %s. Choices are: %s"%(name,self._possible_models))
+            raise ValueError("Unrecognized model %s. Choices are: %s"%(name,list(self._all_models['name'])))
 
         matching_rows = np.where(self._all_models["z"]==z)
         possible_z =  self._all_models.loc[name]["z"]
@@ -237,11 +237,13 @@ class ModelSet(object):
         _wcs = _model.wcs
         _model.header["MODELTYP"] = modeltype
         _model.modeltype = modeltype
-        if self.name == "wk2006" or self.name == "smc":
-        # fix WK2006 model headers
+        if self.is_wk2006 or self.name == "smc":
+        # fix WK2006 model headerslisthd
             if _wcs.wcs.cunit[0] == "":
                 _model.header["CUNIT1"] = "cm^-3"
                 _wcs.wcs.cunit[0] = u.Unit("cm^-3")
+            else:
+                 _model.header["CUNIT1"] = str(_wcs.wcs.cunit[0])
             if _wcs.wcs.cunit[1] == "":
                 _model.header["CUNIT2"] = "Habing"
                 # Raises UnitScaleError:
@@ -395,6 +397,15 @@ class ModelSet(object):
         t['ID'].unit = None
         t.rename_column('title','canonical name')
         self._identifiers = t
+
+    @property
+    def is_wk2006(self):
+        """method to indicate this is a wk2006 model, to deal with quirks 
+           of that modelset
+        
+           :returns: True if it is.
+        """
+        return self.name == "wk2006"
         
 
     # ============= Static Methods =============

@@ -64,8 +64,8 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
         cdavg = self._tool.average_column_density(norm=norm, position=position, size=size, line=False)
         energies = self._tool.energies(line=False)
         energy = np.array([c for c in energies.values()])
-        colden = np.array([c.data for c in cdavg.values()])
-        error = np.array([c.error for c in cdavg.values()])
+        colden = np.squeeze(np.array([c.data for c in cdavg.values()]))
+        error = np.squeeze(np.array([c.error for c in cdavg.values()]))
         sigma = LOGE*error/colden
         self._figure,self._axis  = self._plt.subplots(figsize=kwargs_opts['figsize'])
         if self._tool.opr_fitted and show_fit:
@@ -83,7 +83,7 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
             #color = ec.lines[0].get_color() # want these to be same color as data
             self._axis.errorbar(x=energy[odd_index], 
                                 y=np.log10(cddn[odd_index]),marker="^",
-                                label=f"OPR = {self._tool.opr.value:.2f}",
+                                label=f"OPR = {self._tool.opr:.2f}",
                                 yerr=sigma[odd_index], 
                                 capsize=2*kwargs_opts['capsize'],
                                 linestyle='none',color='k',
@@ -113,8 +113,10 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
             #    self.colorcycle(self._CB_color_cycle[1:])
             x_fit = np.linspace(0,max(energy), 30)  
             outpar = tt.fit_result.params.valuesdict()
-            labcold = r"$T_{cold}=$" + f"{tt.tcold.value:3.0f}" +r"$\pm$" + f"{tt.tcold.error:.1f} {tt.tcold.unit}"
-            labhot= r"$T_{hot}=$" + f"{tt.thot.value:3.0f}"+ r"$\pm$" + f"{tt.thot.error:.1f} {tt.thot.unit}"
+            #labcold = r"$T_{cold}=$" + f"{tt.tcold.value:3.0f}" +r"$\pm$" + f"{tt.tcold.error:.1f} {tt.tcold.unit}"
+            labcold = r"$T_{cold}=$" + f"{tt.tcold:3.1f}"
+            #labhot= r"$T_{hot}=$" + f"{tt.thot.value:3.0f}"+ r"$\pm$" + f"{tt.thot.error:.1f} {tt.thot.unit}"
+            labhot= r"$T_{hot}=$" + f"{tt.thot:3.1f}"
             labnh = r"$N("+self._label+")=" + float_formatter(tt.total_colden,2)+"$"
             self._axis.plot(x_fit,tt._one_line(x_fit, outpar['m1'], 
                             outpar['n1']), '.' ,label=labcold,

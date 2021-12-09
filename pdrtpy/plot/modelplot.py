@@ -37,6 +37,7 @@ class ModelPlot(PlotBase):
         self._modelset = modelset
         self._figure = figure
         self._axis = axis
+        #print(utils.habing_unit)
     
     def plot(self,identifier,**kwargs):
         """Plot a model intensity or ratio
@@ -459,42 +460,7 @@ class ModelPlot(PlotBase):
         :return: The axis values as arrays.  Values are center of pixel.
         :rtype: :class:`numpy.ndarray` or :class:`astropy.units.Quantity`
         """
-        w = data.wcs
-        if w is None:
-            raise Exception("No WCS in the input image")
-        xind=np.arange(w._naxis[0])
-        yind=np.arange(w._naxis[1])
-        # wcs methods want broadcastable arrays, but in our
-        # case naxis1 != naxis2, so make two 
-        # calls and take x from the one and y from the other.
-        if quantity:
-            x=w.array_index_to_world(xind,xind)[0]
-            y=w.array_index_to_world(yind,yind)[1]
-            # Need to handle Habing units which are non-standard FITS.
-            # Can't apply them to a WCS because it will raise an Exception.
-            # See ModelSet.get_model
-            cunit=data.header.get("CUNIT2",None) 
-            if cunit == "Habing":
-               y._unit=utils.habing_unit     
-            if linear:
-               j = 10*np.ones(len(x.value))
-               k = 10*np.ones(len(y.value))
-               #ugh we are depending on CTYPE being properly indicated as log(whatever)
-               if 'log' in w.wcs.ctype[0]:
-                   x = np.power(j,x.value)*x.unit
-               if 'log' in w.wcs.ctype[1]:
-                   y = np.power(k,y.value)*y.unit
-        else:
-            x=w.array_index_to_world_values(xind,xind)[0]
-            y=w.array_index_to_world_values(yind,yind)[1]
-            if linear:
-               j = 10*np.ones(len(x))
-               k = 10*np.ones(len(y))
-               if 'log' in w.wcs.ctype[0]:
-                   x = np.power(j,x)
-               if 'log' in w.wcs.ctype[1]:
-                   y = np.power(k,y)
-        return (x,y)
+        return utils.get_xy_from_wcs(data,quantity,linear)
     
         
     #@todo allow data to be an array? see overlay()
@@ -609,8 +575,7 @@ class ModelPlot(PlotBase):
                                         subplot_kw={'aspect':kwargs_imshow['aspect']},
                                         constrained_layout=kwargs_subplot['constrained_layout'])
 
-        ####### IS THIS AXIS STUFF ONLY NEEDED IF reset==True? ############
-        # \/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/\/
+
         # Make sure self._axis is an array because we will index it below.
         if type(self._axis) is not np.ndarray:
             self._axis = np.array([self._axis])
@@ -630,7 +595,7 @@ class ModelPlot(PlotBase):
         locmin = ticker.LogLocator(base=10.0, subs=np.arange(2, 10)*.1,numticks=10) 
         
         #allow unit conversion of density axis
-        xax_unit = u.Unit(_header['cunit'+ax1])
+        xax_unit = u.Unit(_header['CUNIT'+ax1])
         # cover the base where we had to erase the wcs unit to avoid FITS error
         if x._unit is None or x._unit is u.dimensionless_unscaled:
             x._unit = xax_unit
@@ -646,9 +611,9 @@ class ModelPlot(PlotBase):
             x = x.to(xax_unit)
 
         # Set the x label appropriately, use LaTeX inline formatting
-        xlab = r"{0} [{1:latex_inline}]".format(_header['ctype'+ax1],xax_unit)
+        xlab = r"{0} [{1:latex_inline}]".format(_header['CTYPE'+ax1],xax_unit)
         
-        yax_unit = u.Unit(_header['cunit'+ax2])
+        yax_unit = u.Unit(_header['CUNIT'+ax2])
         if y._unit is None or y._unit is u.dimensionless_unscaled:
             y._unit = yax_unit
         ytype = "log({0})".format(utils.get_rad(yax_unit))
@@ -684,8 +649,7 @@ class ModelPlot(PlotBase):
         self._axis[axidx].xaxis.set_major_locator(locmaj)
         self._axis[axidx].xaxis.set_minor_locator(locmin)
         self._axis[axidx].xaxis.set_minor_formatter(ticker.NullFormatter())
-        # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^#
-        ####### IS THIS AXIS STUFF ONLY NEEDED IF reset==True? ############
+
         if kwargs_opts['image']:
             # pass shading = auto to avoid deprecation warning
             # see https://matplotlib.org/3.3.0/gallery/images_contours_and_fields/pcolormesh_grids.html
