@@ -315,7 +315,7 @@ class Measurement(CCDData):
         hdu = self.to_hdu()
         hdu.writeto(filename,**kwd)
     
-    def _set_up_for_interp(self,kind='cubic'):
+    def _set_up_for_interp(self,kind='linear'):
         """
         We don't want to have to do a call to get a pixel value at a particular WCS every time it's needed.
         So make one call that converts the entire NAXIS1 and NAXIS2 to an array of world coordinates and stash that away
@@ -324,9 +324,9 @@ class Measurement(CCDData):
         self._world_axis = utils.get_xy_from_wcs(self,quantity=False,linear=False)
         self._world_axis_lin = utils.get_xy_from_wcs(self,quantity=False,linear=True)
         #print("M WORLD AXIS LOG: ",self._world_axis)
-        print("LEN WALOG",len(self._world_axis[0]),len(self._world_axis[1]))
+        #print("LEN WALOG",len(self._world_axis[0]),len(self._world_axis[1]))
         #print("M WORLD AXIS LIN: ",self._world_axis_lin)
-        print("LEN WALIN",len(self._world_axis_lin[0]),len(self._world_axis_lin[1]))
+        #print("LEN WALIN",len(self._world_axis_lin[0]),len(self._world_axis_lin[1]))
         self._interp_log = interp2d(self._world_axis[0],self._world_axis[1],z=self.data,kind=kind,bounds_error=True)
         self._interp_lin = interp2d(self._world_axis_lin[0],self._world_axis_lin[1],z=self.data,kind=kind,bounds_error=True)
         

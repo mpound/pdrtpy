@@ -12,6 +12,7 @@ from astropy.table import Table, Column
 from astropy.nddata import CCDData
 import warnings
 from lmfit import Parameters, Minimizer, minimize, fit_report
+from scipy.interpolate import interpn
 import corner
 from emcee.pbar import get_progress_bar
 
@@ -68,7 +69,8 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._fitparam = None
         self._minimizer = None
         self._deltasq = None
-        
+        self._ratiocount = None
+
     @property
     def fit_result(self):
         '''The result of the fitting procedure which includes fit statistics, variable values and uncertainties, and correlations between variables.  For each pixel, there will be one instance of :class:`lmfit.minimizer.MinimizerResult`.
@@ -114,7 +116,10 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
  
         :rtype: int
         '''
-        return self._modelset.ratiocount(self.measurementIDs)
+        # call to  modelset._get_ratio_elements is expensive. So set it once for each run. 
+        if self._ratiocount is None:
+            self._ratiocount = self._modelset.ratiocount(self.measurementIDs)
+        return self._ratiocount
 
     @property
     def density(self):
@@ -347,7 +352,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         kwargs_opts = { 'mask': None,
                         'method': 'leastsq',
                         'nan_policy': 'raise',
-                        'fine':True,
+                        'refine':True,
                        # for emcee
                         'burn': 0,
                         'steps': 1000,
@@ -363,26 +368,32 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             pr = cProfile.Profile()
             pr.enable()
         self._check_compatibility()
+        self._ratiocount = None
         self.read_models()
         self._mask_measurements(kwargs_opts['mask'])
         kwargs_opts.pop('mask')
         self._compute_valid_ratios()
         if self.ratiocount == 0 :
             raise Exception("No models were found that match your data. Check ModelSet.supported_ratios.")
-        self._minimizer = Minimizer(self._residual_single_pix,params=None,nan_policy=kwargs_opts['nan_policy'])
-        #need to pop nan_policy so that it does not get passed to Minimzer.minimize()
-        x = kwargs_opts.pop('nan_policy',None)
+
+
         # eventually need to check that the maps overlap in real space.
-        if kwargs_opts['test']:
-            self._compute_residual()
-        else:
-            self._compute_delta_sq()
-        kwargs_opts.pop('test')
+        #if kwargs_opts['test']:
+        self._compute_residual()
+        #    self._minimizer= Minimizer(self._residual_multi_pixel, 
+        #                               params=None, nan_policy=kwargs_opts['nan_policy'])
+        #else:
+        #    self._compute_delta_sq()
+        self._minimizer= Minimizer(self._residual_single_pixel, 
+                                   params=None, nan_policy=kwargs_opts['nan_policy'])
+        #need to pop nan_policy and test so that it does not get passed to Minimzer.minimize()
+        kwargs_opts.pop('nan_policy',None)
+        kwargs_opts.pop('test',None)
         self._compute_chisq()
         self._coarse_density_radiation_field()
-        if kwargs_opts['fine']:
-            kwargs_opts.pop('fine')
-            self._fine_density_radiation_field2(**kwargs_opts)
+        if kwargs_opts['refine']:
+            kwargs_opts.pop('refine')
+            self._refine_density_radiation_field2(**kwargs_opts)
         if profile:
             pr.disable()
             s = io.StringIO()
@@ -391,7 +402,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             ps.print_stats()
             self._stats = s
             #print(s.getvalue())
-
 
     def _mask_measurements(self,mask):
         ''' Set the mask on the measurements based on noise characteristics.  This is so that
@@ -485,9 +495,9 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                 self._ratioHeader("OI_145+CII_158","FIR",lab)
                 
     # function to minimize in single-pixel case            
-    def _residual_single_pix(self,params,index):
+    def _residual_single_pixel(self,params,index):
         parvals = params.valuesdict()
-        mvalue = np.empty(self.ratiocount)
+        mvalue = np.empty(self.ratiocount)  
         dvalue = np.empty(self.ratiocount)
         evalue = np.empty(self.ratiocount)
         i=0
@@ -502,13 +512,12 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             i = i+1
         #print("returning ",(dvalue - mvalue)/evalue)
         return  (dvalue - mvalue)/evalue
-    #def _residual_single_pix2(self,params,index):
-    #    parvals = params.valuesdict()
-    #    rvalue = np.empty(self.ratiocount)
-    #    i = 0
-    #    for k in self._residuals:
-    #        
-    #    self._residuals[k].get(parvals['density'],parvals['radiation_field'])
+    
+    def _residual_multi_pixel(self,params,index):
+        # this is currently slower than the 'dumb' way of residual_single_pixel!
+        parvals = params.valuesdict()
+        return self._interp_resid(parvals['density'],parvals['radiation_field'],index)
+
     def _compute_residual(self):
         '''Compute the residual values from the observed ratios and models
         '''
@@ -547,28 +556,50 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                 newshape = np.hstack((self._modelratios[r].shape,self._observedratios[r].shape))
                 _meta = deepcopy(self._observedratios[r].meta)
                 _wcs = deepcopy(self._observedratios[r].wcs)
-            # result order is y,x,g0,n
+            # result order is g0,n,y,x
             _qq = np.squeeze(np.reshape(residuals,newshape))
-            print("QQ SHAPE ",_qq.shape)
-            print("QQ WCS",_wcs)
-            self._residual[r] = Measurement(_qq,unit="adu",wcs=_wcs,meta=_meta,identifier='residual')
-    
-    def _compute_chisq(self,test=False):
+            self._residual[r] = CCDData(_qq,unit="adu",wcs=_wcs,meta=_meta)
+        self._fancy_index_residual()
+        
+    def _fancy_index_residual(self):
+        # create a custom numpy array for interpolating the residuals
+        # during fitting.
+        fk = utils.firstkey(self._modelratios)
+        resid_index = np.array(np.arange(len(self._residual)))
+        # use linear interpolation grid from model
+        rad_index = self._modelratios[fk]._world_axis_lin[1]
+        density_index = self._modelratios[fk]._world_axis_lin[0]
+        image_index = np.arange(self._observedratios[fk].size)
+        self._interpgrid = (resid_index,rad_index,density_index,image_index)
+        # put the residual data into a single numpy array
+        self._interpvalues = np.stack([self._residual[r].data for r in self._residual.keys()])
+        # the flatten the spatial indices, so indices are then [radiation_field,density,pixel]
+        self._interpvalues = self._interpvalues.reshape(*self._interpvalues.shape[:-2], -1)
+        
+    def _interp_resid(self,density,radiation_field,pixel):
+        # density and radiation field must be linear not logarithmic values.
+        # pixel is 0-based pixel index into flattened map data array.
+        vals = list()
+        for i in range(len(self._residual)):
+            vals.append(interpn(self._interpgrid,self._interpvalues,(i,radiation_field,density,pixel)))
+        return np.array(vals)
+        
+    def _compute_chisq(self):#,test=False):
         '''Compute the chi-squared values from observed ratios and models'''
         if self.ratiocount < 2 :
             raise Exception("Not enough ratios to compute chisq.  Need 2, got %d"%self.ratiocount)
-        if test:
-            sumary = sum((self._residual[r]._data**2 for r in self._residual))
-            self._dof = len(self._residual) - 1
-            k = utils.firstkey(self._residual)
-            _wcs = deepcopy(self._residual[k].wcs)
-            _meta = deepcopy(self._residual[k].meta)
-        else:
-            sumary = sum((self._deltasq[r]._data for r in self._deltasq))
-            self._dof = len(self._deltasq) - 1
-            k = utils.firstkey(self._deltasq)
-            _wcs = deepcopy(self._deltasq[k].wcs)
-            _meta = deepcopy(self._deltasq[k].meta)
+        #if test:
+        sumary = sum((self._residual[r]._data**2 for r in self._residual))
+        self._dof = len(self._residual) - 1
+        k = utils.firstkey(self._residual)
+        _wcs = deepcopy(self._residual[k].wcs)
+        _meta = deepcopy(self._residual[k].meta)
+        #else:
+        #    sumary = sum((self._deltasq[r]._data for r in self._deltasq))
+        #    self._dof = len(self._deltasq) - 1
+        #    k = utils.firstkey(self._deltasq)
+        #    _wcs = deepcopy(self._deltasq[k].wcs)
+        #    _meta = deepcopy(self._deltasq[k].meta)
         self._chisq = CCDData(sumary,unit='adu',wcs=_wcs,meta=_meta)
         self._reduced_chisq =  self._chisq.divide(self._dof)
         # must make a copy here otherwise the header is an OrderDict
@@ -592,7 +623,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._chisq.write(chi,overwrite=overwrite,hdu_mask='MASK')
         self._reduced_chisq.write(rchi,overwrite=overwrite,hdu_mask='MASK')  
         
-    def _fine_density_radiation_field2(self,**kwargs):
+    def _refine_density_radiation_field2(self,**kwargs):
         if kwargs['method'] != 'emcee':
             kwargs.pop('steps')
             kwargs.pop('burn')
@@ -626,7 +657,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._fitparam = Parameters()
         self._fitparam.add('density',min=minn,max=maxn,value=startn)
         self._fitparam.add('radiation_field',min=minfuv,max=maxfuv,value=startfuv)
-        self._fitparam.pretty_print()
+        #self._fitparam.pretty_print()
         rf = np.empty(self._observedratios[fk].size)
         den = np.empty(self._observedratios[fk].size)
         rfe = np.empty(self._observedratios[fk].size)
@@ -671,7 +702,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                         #fmdata[j] = None
                         #fm_mask[j] = True
                     except ValueError as exc:
-                        print("got valuerror ", exc)
+                        #print("At pixel %d, got valuerror %s with fitparams %s" %(j, exc,self._fitparam))
                         excount = excount+1
                         fmdata[j] = None
                         fm_mask[j] = True
@@ -701,7 +732,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             self._rchi2.data = rchi.reshape(self._rchi2.data.shape)
         rshape = self._radiation_field.data.shape
         dshape = self._density.data.shape
-        print("reshaping to ",rshape,dshape)
         self._radiation_field.data = rf.reshape(rshape)
         self._radiation_field.uncertainty.array = rfe.reshape(rshape)
         self._density.data = den.reshape(dshape)
@@ -837,14 +867,9 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
        :param image: The image which to add the history to.
        :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
         '''
-        s = "Measurements provided: "
-        for k in self._measurements.keys():
-            s = s + k + ", "
+        s = "Measurements provided: " + str(list(self._measurements.keys()))
         utils.history(s,image)
-        s = "Ratios used: "
-        for k in self._deltasq.keys():
-        #for k in self._residual.keys():
-            s = s + k + ", "
+        s = "Ratios used: " + str(list(self._residual.keys()))
         utils.history(s,image)
         utils.signature(image)
         utils.dataminmax(image)
@@ -948,7 +973,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             t[j].format = '3.2E'
         return t
 
-    #=========
+    #========= Below is deprecated
     def _compute_delta_sq(self):
         '''Compute the difference-squared values from the observed ratios 
            and models - multi-pixel version and store in _deltasq member'''
