@@ -23,18 +23,31 @@ class ModelSet(object):
     :type medium: str
     :raises ValueError: If model set not recognized/found.
     """
-    def __init__(self,name,z,medium="constant density"):
+    def __init__(self,name,z,medium="constant density",mass=None):
         self._all_models = get_table("all_models.tab")
         self._all_models.add_index("name")
         if name not in self._all_models["name"]:
             raise ValueError(f'Unrecognized model {name:s}. Choices  are: {list(self._all_models["name"])}')
-
-        matching_rows = np.where((self._all_models["z"]==z) &
+            
+        if np.all(self._all_models.loc[name]["mass"].mask):
+            matching_rows = np.where((self._all_models["z"]==z) &
                                  (self._all_models["medium"]==medium))
-        possible_z =  self._all_models.loc[name]["z"]
-        possible_medium = self._all_models.loc[name]["medium"]
+            possible_mass = None
+        else:
+            matching_rows = np.where((self._all_models["z"]==z) &
+                     (self._all_models["medium"]==medium) & 
+                     (self._all_models["mass"] == mass))
+            possible_mass = sorted(set(self._all_models.loc[name]["mass"].data))
+        #print("Matching rows: ",matching_rows)
+        possible_z =  sorted(set(self._all_models.loc[name]["z"].data))
+        #print("possible z:",possible_z)
+        possible_medium = sorted(set(self._all_models.loc[name]["medium"].data))
+        #print("possiblemedium",possible_medium)
         if matching_rows[0].size == 0:
-            raise ValueError("ModelSet not found in {name:s}. Check your value of z and medium.  Allowed z are {possible_z}.  Allowed medium are {possible_medium}.")
+            msg = f"ModelSet not found in {name:s}. Check your value of z and medium.  Allowed z are {possible_z}.  Allowed medium are {possible_medium}."
+            if possible_mass is not None:
+                msg = msg + f" Allowed mass are {possible_mass}."
+            raise ValueError(msg)
         self._tabrow = self._all_models[matching_rows].loc[name]
         self._table = get_table(path=self._tabrow["path"],filename=self._tabrow["filename"])
         self._table.add_index("ratio")
@@ -257,11 +270,13 @@ class ModelSet(object):
         _wcs = _model.wcs
         _model.header["MODELTYP"] = modeltype
         _model.modeltype = modeltype
-        if self.name == "wk2006" or self.name == "smc":
-        # fix WK2006 model headers
+        if self.is_wk2006 or self.name == "smc":
+        # fix WK2006 model headerslisthd
             if _wcs.wcs.cunit[0] == "":
                 _model.header["CUNIT1"] = "cm^-3"
                 _wcs.wcs.cunit[0] = u.Unit("cm^-3")
+            else:
+                 _model.header["CUNIT1"] = str(_wcs.wcs.cunit[0])
             if _wcs.wcs.cunit[1] == "":
                 _model.header["CUNIT2"] = "Habing"
                 # Raises UnitScaleError:
@@ -387,6 +402,7 @@ class ModelSet(object):
         self._supported_ratios.remove_rows(matching_rows)
         self._supported_ratios['title'].unit = None
         self._supported_ratios['ratio'].unit = None
+        self._supported_ratios.remove_column("denominator")
         self._supported_ratios.rename_column("ratio","ratio label")
         self._supported_lines.rename_column("ratio","intensity label")
 
@@ -421,13 +437,30 @@ class ModelSet(object):
         t['ID'].unit = None
         t.rename_column('title','canonical name')
         self._identifiers = t
+
+    @property
+    def is_wk2006(self):
+        """method to indicate this is a wk2006 model, to deal with quirks 
+           of that modelset
+        
+           :returns: True if it is.
+        """
+        return self.name == "wk2006"
         
 
     # ============= Static Methods =============
     @staticmethod
     def list():
-        """List the names and descriptions of available models (not just this one)"""
+        """Print the names and descriptions of available ModelSets (not just this one) """
+        ModelSet.all_sets().pprint_all(align="<")
+
+    @staticmethod
+    def all_sets():
+        """Return a table of the names and descriptions of available ModelSets (not just this one)
+        
+        :rtype:`:class:~astropy.table.Table`
+        """
         t = get_table("all_models.tab")
         t.remove_column("path")
         t.remove_column("filename")
-        t.pprint_all(align="<")
+        return t
