@@ -13,7 +13,7 @@ from .measurement import Measurement
 #@ToDo:
 #   addModelSet() - for custom model sets. See model convention white paper
 class ModelSet(object):
-    """Class for computed PDR Model Sets. :class:`ModelSet` will interface with a directory containing the model FITS files.
+    """Class for computed PDR Model Sets. :class:`ModelSet` provides interface with a directory containing the model FITS files and the ability to query details about 
 
     :param name: identifying name, e.g., 'wk2006'
     :type name: str
@@ -21,6 +21,8 @@ class ModelSet(object):
     :type z: float
     :param medium:  medium type, e.g. 'constant density', 'clumpy', 'non-clumpy'
     :type medium: str
+    :param mass: maximum clump mass (for KosmaTau models).  Default:None (appropriate for Wolfire/Kaufman models)
+    :type float:
     :raises ValueError: If model set not recognized/found.
     """
     def __init__(self,name,z,medium="constant density",mass=None):
