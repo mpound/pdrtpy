@@ -278,7 +278,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         
         mask = fitmap.mask | np.logical_not(np.isfinite(tc)) # they all better be the same mask
         ucc= StdDevUncertainty(np.abs(tc*utc))
-        self._temperature["cold"]=Measurement(data=tc,unit=self._t_units,uncertainty=ucc,wcs=fitmap.wcs, mask = mask)
+        self._temperature["cold"]=Measurement(data=tc,unit=from .fitmap import FitMapself._t_units,uncertainty=ucc,wcs=fitmap.wcs, mask = mask)
         uch = StdDevUncertainty(np.abs(th*uth))
         self._temperature["hot"]=Measurement(data=th,unit=self._t_units,uncertainty=uch,wcs=fitmap.wcs, mask = mask)
         # cold and hot total column density
@@ -827,15 +827,15 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                     else:
                         #print("1 bad fit for pixel %d"%i)
                         #print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K"% (tcold[i],thot[i]))
-                        fmdata[i] = np.nan
+                        fmdata[i] = None
                         fm_mask[i] = True
                 except ValueError:
                     #print("2 bad fit for pixel %d"%i)
                     #print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K"% (tcold[i],thot[i]))
-                    fmdata[i] = np.nan
+                    fmdata[i] = None
                     fm_mask[i] = True
             else:
-                fmdata[i] = np.nan
+                fmdata[i] = None
                 fm_mask[i] = True
                 continue
         warnings.resetwarnings()

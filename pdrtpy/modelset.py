@@ -238,10 +238,12 @@ class ModelSet(object):
         _model.header["MODELTYP"] = modeltype
         _model.modeltype = modeltype
         if self.is_wk2006 or self.name == "smc":
-        # fix WK2006 model headers
+        # fix WK2006 model headerslisthd
             if _wcs.wcs.cunit[0] == "":
                 _model.header["CUNIT1"] = "cm^-3"
                 _wcs.wcs.cunit[0] = u.Unit("cm^-3")
+            else:
+                 _model.header["CUNIT1"] = str(_wcs.wcs.cunit[0])
             if _wcs.wcs.cunit[1] == "":
                 _model.header["CUNIT2"] = "Habing"
                 # Raises UnitScaleError:
