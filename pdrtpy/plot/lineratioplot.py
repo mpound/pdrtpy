@@ -624,7 +624,7 @@ class LineRatioPlot(PlotBase):
                        'constrained_layout','figsize','stretch','legend']:
                 kwargs_imshow.pop(kx,None)
             # eliminate deprecation warning.  vmin,vmax are passed to Normalization object.
-            if kwargs['norm'] is not None:
+            if kwargs_opts['norm'] is not None:
                 kwargs_imshow.pop('vmin',None)
                 kwargs_imshow.pop('vmax',None)
             im=self._axis[axidx].imshow(km,**kwargs_imshow)

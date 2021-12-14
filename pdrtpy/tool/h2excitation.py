@@ -6,9 +6,12 @@ import math
 import numpy as np
 from lmfit import Parameters, fit_report
 from lmfit.model import Model, ModelResult
+from emcee.pbar import get_progress_bar
+import cProfile, pstats, io
+from pstats import SortKey
+
 from .toolbase import ToolBase
 from .fitmap import FitMap
-    
 from .. import pdrutils as utils
 from ..measurement import Measurement
 import warnings
@@ -278,7 +281,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         
         mask = fitmap.mask | np.logical_not(np.isfinite(tc)) # they all better be the same mask
         ucc= StdDevUncertainty(np.abs(tc*utc))
-        self._temperature["cold"]=Measurement(data=tc,unit=from .fitmap import FitMapself._t_units,uncertainty=ucc,wcs=fitmap.wcs, mask = mask)
+        self._temperature["cold"]=Measurement(data=tc,unit=self._t_units,uncertainty=ucc,wcs=fitmap.wcs, mask = mask)
         uch = StdDevUncertainty(np.abs(th*uth))
         self._temperature["hot"]=Measurement(data=th,unit=self._t_units,uncertainty=uch,wcs=fitmap.wcs, mask = mask)
         # cold and hot total column density
@@ -355,7 +358,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         '''
         if self._fitresult is None: 
             return False
-        return self._fitresult.params['opr'].vary
+        return self._params['opr'].vary
     
     @property
     def opr(self):
@@ -417,6 +420,13 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         '''   
         return self._temperature['hot']#self._fitparams.thot
     
+    @property
+    def temperature(self):
+        '''The fitted gas temperatures, returned in a dictionary with keys 'hot' and 'cold'.
+        :rtype: dict
+        '''
+        return self._temperature
+
     def column_densities(self,norm=False,unit=utils._CM2, line=False):
         r'''The computed upper state column densities of stored intensities
 
@@ -490,7 +500,9 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         '''
         kwargs_opts = { 'mask': None,
                         'method': 'leastsq',
-                        'nan_policy': None
+                        'nan_policy': 'raise',
+                        'test':False,
+                        'profile':False,
                       }
         kwargs_opts.update(kwargs)
         return self._fit_excitation(position,size,fit_opr,**kwargs_opts)
@@ -725,11 +737,16 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
      ,dtype=object   :returns: The fit result which contains slopes, intercepts, the ortho to para ratio (OPR), and fit statistics
         :rtype:  :class:`lmfit.model.ModelResult`  
         """
+        profile = kwargs.pop('profile')
+        self._stats = None
+        if profile:
+            pr = cProfile.Profile()
+            pr.enable()
         if fit_opr:
             min_points = 5
         else:
             min_points = 4
-            
+        self._params['opr'].vary = fit_opr    
         energy = self.energies(line=True)
         _ee = np.array([c for c in energy.values()])
         #@ todo: allow fitting of one-temperature model
@@ -739,6 +756,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
             warnings.warn(f"Number of data points is equal to number of free parameters ({min_points:d}). Fit will be over-constrained")
         _energy = Measurement(_ee,unit="K")
         _ids = list(energy.keys())
+        idx=self._get_ortho_indices(_ids)
         # Get Nu/gu.  Canonical opr will be used. 
         if position is None or size is None:
             colden = self.column_densities(norm=True,line=True)
@@ -797,47 +815,53 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         print("YR, SIG SHAPE",yr.shape,sig.shape)
         count = 0
         print("LEN(TCOLD)",len(tcold))
+        total = len(tcold)
         fm_mask = np.full(shape=tcold.shape,fill_value=False)
         # Suppress the incorrect warning about model parameters
         warnings.simplefilter('ignore',category=UserWarning)
-        for i in range(len(tcold)):
-            #print("FINITE CHECK i=%d"%i)
-            #print(yr[:,i],np.isfinite(yr[:,i]).all())
-            #print(sig[:,i],np.isfinite(sig[:,i]).all())
-            if np.isfinite(yr[:,i]).all() and np.isfinite(sig[:,i]).all():
-                # update Parameter hints based on first guess.
-                #print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K"%(tcold[i],thot[i]))
-                self._model.set_param_hint('m1',value=slopecold[i],vary=True)
-                self._model.set_param_hint('n1',value=intcold[i],vary=True)
-                self._model.set_param_hint('m2',value=slopehot[i],vary=True)
-                self._model.set_param_hint('n2',value=inthot[i],vary=True)
-                # update whether opr is allowed to vary or not.
-                self._model.set_param_hint('opr',vary = fit_opr)
-                p=self._model.make_params()
-            #p.pretty_print()
-                wts = 1.0/(sig[:,i]*sig[:,i])
-                #print("X,Y,W shapes to be fit:",np.shape(x),np.shape(yr[:,i]),np.shape(wts))
-                idx=self._get_ortho_indices(_ids)
-                try: 
-                    fmdata[i] = self._model.fit(data=yr[:,i], weights=wts, x=x, 
-                                                  idx=idx,fit_opr=fit_opr,method=kwargs['method'],
-                                                  nan_policy = kwargs['nan_policy'])
-                    if fmdata[i].success and fmdata[i].errorbars:
-                        count = count+1
-                    else:
-                        #print("1 bad fit for pixel %d"%i)
+        excount = 0
+        badfit = 0
+        # update whether opr is allowed to vary or not.
+        self._model.set_param_hint('opr',vary = fit_opr)
+        progress = kwargs.pop("progress",True) # progress bar
+        with get_progress_bar(progress,total) as pbar:
+            for i in range(total):
+                #print("FINITE CHECK i=%d"%i)
+                #print(yr[:,i],np.isfinite(yr[:,i]).all())
+                #print(sig[:,i],np.isfinite(sig[:,i]).all())
+                if np.isfinite(yr[:,i]).all() and np.isfinite(sig[:,i]).all():
+                    # update Parameter hints based on first guess.
+                    #print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K"%(tcold[i],thot[i]))
+                    self._model.set_param_hint('m1',value=slopecold[i],vary=True)
+                    self._model.set_param_hint('n1',value=intcold[i],vary=True)
+                    self._model.set_param_hint('m2',value=slopehot[i],vary=True)
+                    self._model.set_param_hint('n2',value=inthot[i],vary=True)
+                    p=self._model.make_params()
+                    #p.pretty_print()
+                    wts = 1.0/(sig[:,i]*sig[:,i])
+                    #print("X,Y,W shapes to be fit:",np.shape(x),np.shape(yr[:,i]),np.shape(wts))
+                    try: 
+                        fmdata[i] = self._model.fit(data=yr[:,i], weights=wts, x=x, 
+                                                      idx=idx,fit_opr=fit_opr,method=kwargs['method'],
+                                                      nan_policy = kwargs['nan_policy'])
+                        if fmdata[i].success and fmdata[i].errorbars:
+                            count = count+1
+                        else:
+                            #print("1 bad fit for pixel %d"%i)
+                            #print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K"% (tcold[i],thot[i]))
+                            fmdata[i] = None
+                            fm_mask[i] = True
+                            badfit = badfit + 1
+                    except ValueError:
+                        #print("2 bad fit for pixel %d"%i)
                         #print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K"% (tcold[i],thot[i]))
                         fmdata[i] = None
                         fm_mask[i] = True
-                except ValueError:
-                    #print("2 bad fit for pixel %d"%i)
-                    #print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K"% (tcold[i],thot[i]))
+                        excount = excount+1
+                else:
                     fmdata[i] = None
                     fm_mask[i] = True
-            else:
-                fmdata[i] = None
-                fm_mask[i] = True
-                continue
+                pbar.update(1)
         warnings.resetwarnings()
         fmdata = fmdata.reshape(saveshape)
         fm_mask = fm_mask.reshape(saveshape)
@@ -852,10 +876,18 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         print(f" N_total = {self.total_colden:.2e}")
 
         print(f"fitted {count} of {slopecold.size} pixels")
+        print(f'got {excount} exceptions and {badfit} bad fits')
         #if successful, set the used position and size
         self._position = position
         self._size = size
-
+        if profile:
+            pr.disable()
+            s = io.StringIO()
+            sortby = SortKey.CUMULATIVE
+            ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+            ps.print_stats()
+            self._stats = s
+            #print(s.getvalue())
     def _two_lines(self,x, m1, n1, m2, n2):
         '''This function is used to partition a fit to data using two lines and 
            an inflection point.  Second slope is steeper because slopes are 
