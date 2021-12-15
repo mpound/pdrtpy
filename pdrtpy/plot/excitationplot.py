@@ -106,10 +106,11 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
             self._axis.text(x=energies[lab]+100,y=np.log10(cdavg[lab]),s=ss)
         handles,labels=self._axis.get_legend_handles_labels()
         if show_fit:
-            if size is None and position is None:  # single pixel case
-                tt = self._tool
-                if tt.fit_result is None:
-                    raise ValueError("No fit to show. Have you run the fit in your H2ExcitationFit?")
+
+            tt = self._tool
+            if tt.fit_result is None:
+                raise ValueError("No fit to show. Have you run the fit in your H2ExcitationFit?")
+            if np.size(tt.fit_result) == 1:  # single pixel case
                 # Doesn't work
                 #if kwargs_opts['color'] is not None:
                 #    self.colorcycle(self._CB_color_cycle[1:])
@@ -167,7 +168,9 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
         self._plot(self._tool.colden(component),log=log,**kwargs)
            
     def opr(self,**kwargs):
-        self._plot(self._opr,**kwargs)
+        if type(self._tool.opr) == float:
+            return self._tool.opr
+        self._plot(self._tool.opr,**kwargs)
         
     def _plot(self,data,**kwargs):
         '''generic plotting method used by other plot methods'''

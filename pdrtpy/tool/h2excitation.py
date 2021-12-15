@@ -796,20 +796,13 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                                              size=size, line=True)
 
         # Need to stuff the data into a single vector
-
-        xxxx  = np.array([c.data for c in colden.values()])
-        print("SHAPE BEFOER SQUEEZE ",xxxx.shape) 
-        _cd = np.squeeze(xxxx)
-        #_cd = xxxx
-        print("SHAPE AFTER SQUEEZE ",_cd.shape)
-        _er  = np.squeeze(np.array([c.error for c in colden.values()]))
-        #_er  = np.array([c.error for c in colden.values()])
+        _cd = np.squeeze(np.array([c.data for c in colden.values()]))
+        _er = np.squeeze(np.array([c.error for c in colden.values()]))
         _colden = Measurement(_cd,uncertainty=StdDevUncertainty(_er),unit="cm-2")
-        print("-olden wcs:",_colden.wcs)
         fk = utils.firstkey(colden)
         x = _energy.data
         y = np.log10(_colden.data)
-        print("SHAPE Y LEN(SHAPE(Y) ",y.shape,len(y.shape))
+        #print("SHAPE Y LEN(SHAPE(Y) ",y.shape,len(y.shape))
         #kwargs_opts = {"guess": self._first_guess(x,y)}
         #kwargs_opts.update(kwargs)
         sigma = utils.LOGE*_colden.error/_colden.data
@@ -835,16 +828,16 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         #sigma = sigma.flatten()
         # flatten any dimensions past 0
         shp = y.shape
-        print("NS ",shp[0],shp[1:])
+        #print("NS ",shp[0],shp[1:])
         if len(shp) == 1:
-            print("adding new axis")
+            #print("adding new axis")
             y = y[:,np.newaxis]
             shp = y.shape
         yr = y.reshape((shp[0],np.prod(shp[1:])))
         sig = sigma.reshape((shp[0],np.prod(shp[1:])))
-        print("YR, SIG SHAPE",yr.shape,sig.shape)
+        #print("YR, SIG SHAPE",yr.shape,sig.shape)
         count = 0
-        print("LEN(TCOLD)",len(tcold))
+        #print("LEN(TCOLD)",len(tcold))
         total = len(tcold)
         fm_mask = np.full(shape=tcold.shape,fill_value=False)
         # Suppress the incorrect warning about model parameters
