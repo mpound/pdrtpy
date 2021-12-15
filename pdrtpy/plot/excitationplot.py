@@ -164,10 +164,7 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
         :type component: str
         :param log: take the log10 of the column density before plotting
         """
-        valid_keys = list(self._tool.temperature.keys()).append('total')
-        if component not in valid_keys ':
-            raise KeyError(f"{component} not a valid component. Must be one of {valid_keys}")
-        self._plot(self._tool._total_colden[component],**kwargs)
+        self._plot(self._tool.colden(component),log=log,**kwargs)
            
     def opr(self,**kwargs):
         self._plot(self._opr,**kwargs)
@@ -205,12 +202,13 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
         # do the log here, because we won't take log of a mask.
         if kwargs_opts['log']:
             _data.data = np.log10(_data.data)
+        kwargs_opts.pop('log',None)
+        kwargs.pop('log',None)
         if kwargs_plot['show'] == 'mask':
             _data = deepcopy(data)
             _data.data = _data.mask
             # can't contour a boolean
             kwargs_opts['contours'] = False
-
 
         if self._tool._modelnaxis == 2 or len(_data.shape)==2:
             if kwargs_opts['units'] is not None:

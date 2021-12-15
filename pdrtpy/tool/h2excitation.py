@@ -28,6 +28,7 @@ class ExcitationFit(ToolBase):
         self._intensity_units = "erg cm^-2 s^-1 sr^-1"
         self._cd_units = 'cm^-2'
         self._t_units = "K"
+        self._valid_components = ['hot','cold','total']
         if type(measurements) == dict or measurements is None:
             self._measurements = measurements
         else:
@@ -279,19 +280,29 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         opr = opr.reshape(fitmap.data.shape)
         uopr = uopr.reshape(fitmap.data.shape)
         
-        mask = fitmap.mask | np.logical_not(np.isfinite(tc)) # they all better be the same mask
+        mask = fitmap.mask | np.logical_not(np.isfinite(tc)) 
         ucc= StdDevUncertainty(np.abs(tc*utc))
-        self._temperature["cold"]=Measurement(data=tc,unit=self._t_units,uncertainty=ucc,wcs=fitmap.wcs, mask = mask)
+        self._temperature["cold"]=Measurement(data=tc,unit=self._t_units,
+                                              uncertainty=ucc,wcs=fitmap.wcs, mask = mask)
+        mask = fitmap.mask | np.logical_not(np.isfinite(th)) 
         uch = StdDevUncertainty(np.abs(th*uth))
-        self._temperature["hot"]=Measurement(data=th,unit=self._t_units,uncertainty=uch,wcs=fitmap.wcs, mask = mask)
+        self._temperature["hot"]=Measurement(data=th,unit=self._t_units,
+                                             uncertainty=uch,wcs=fitmap.wcs, mask = mask)
         # cold and hot total column density
         ucn = StdDevUncertainty(np.abs(unc))
-        self._j0_colden["cold"] = Measurement(nc,unit=self._cd_units,uncertainty=ucn,wcs=fitmap.wcs, mask=mask)
+        mask = fitmap.mask | np.logical_not(np.isfinite(nc))
+        self._j0_colden["cold"] = Measurement(nc,unit=self._cd_units,
+                                              uncertainty=ucn,wcs=fitmap.wcs, mask=mask)
+        mask = fitmap.mask | np.logical_not(np.isfinite(nh)) 
         uhn = StdDevUncertainty(np.abs(unh))
-        self._j0_colden["hot"] = Measurement(nh,unit=self._cd_units,uncertainty=uhn,wcs=fitmap.wcs, mask = mask)
+        self._j0_colden["hot"] = Measurement(nh,unit=self._cd_units,
+                                             uncertainty=uhn,wcs=fitmap.wcs, mask = mask)    
+        #
         self._total_colden["cold"] = self._j0_colden["cold"] * self._partition_function(self.tcold)
-        self._total_colden["hot"] = self._j0_colden["hot"] * self._partition_function(self.thot)      
-        self._opr = Measurement(opr, unit=u.dimensionless_unscaled, uncertainty=StdDevUncertainty(uopr),wcs=fitmap.wcs, mask=mask)
+        self._total_colden["hot"] = self._j0_colden["hot"] * self._partition_function(self.thot) 
+        mask = fitmap.mask | np.logical_not(np.isfinite(opr)) 
+        self._opr = Measurement(opr, unit=u.dimensionless_unscaled, 
+                                uncertainty=StdDevUncertainty(uopr),wcs=fitmap.wcs, mask=mask)
         
     def _compute_quantities_old(self,params):
         """Compute the temperatures and column densities for the hot and cold gas components.  This method will set class variables `_temperature` and `_colden`.
@@ -380,6 +391,25 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         '''
         return self._measurements  
     
+    def colden(self,component):#,log=False):
+        '''The column density of hot or cold gas component, or total column density.
+        
+        :param component: 'hot', 'cold', or 'total
+        :type component: str
+        
+        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        '''
+        #:param log: take the log10 of the column density
+        cl = component.lower()
+        if cl not in self._valid_components:
+            raise KeyError(f"{cl} not a valid component. Must be one of {self._valid_components}")
+        print(f'returning {cl}')
+        if cl == 'total':
+            print("TOTAL")
+            return self.total_colden
+        else:
+            return self._total_colden[cl]
+        
     @property
     def total_colden(self):
         '''The fitted total column density
@@ -530,7 +560,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         i._identifier = val.id
         return i
 
-    def colden(self,intensity,unit):
+    def upper_colden(self,intensity,unit):
         '''Compute the column density in upper state :math:`N_u`, given an 
            intensity :math:`I` and assuming optically thin emission.  
            Units of :math:`I` need to be equivalent to 
@@ -577,7 +607,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                 index = m
             else:
                 index = self._ac.loc[m]["J_u"]             
-            self._column_density[index] = self.colden(self._measurements[m],unit)
+            self._column_density[index] = self.upper_colden(self._measurements[m],unit)
 
     def gu(self,id,opr):
         r'''Get the upper state statistical weight $g_u$ for the given transition identifer, and, if the transition is odd-$J$, scale the result by the given ortho-to-para ratio.  If the transition is even-$J$, the LTE value is returned.
@@ -934,7 +964,8 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         # Z(T) =  = 0.0247T * [1—exp(—6000/T)]^-1
         
         # This is just being defensive.  I know the temperatures used internally are in K.
-        t = (tex.value*u.Unit(tex.unit)).to("K",equivalencies=u.temperature()).value
+        t = np.ma.masked_invalid((tex.value*u.Unit(tex.unit)).to("K",equivalencies=u.temperature()).value)
+        t.mask = np.logical_or(t.mask,np.logical_not(np.isfinite(t)))
         z = 0.0247*t/(1.0 - np.exp(-6000.0/t))
         return z
 
