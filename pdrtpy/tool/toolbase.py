@@ -8,6 +8,7 @@ class ToolBase(object):
     def __init__(self):
         self._measurements = None
         self._measurementnaxis = -1 
+        self._modelnaxis = -1
         
     def run(self):
         """Runs the tool. Each subclass Tool must implement its own run() method.

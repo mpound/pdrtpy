@@ -14,7 +14,7 @@ import warnings
 from lmfit import Parameters, Minimizer, minimize, fit_report
 from scipy.interpolate import interpn
 import corner
-from emcee.pbar import get_progress_bar
+from pdrtpy.pbar import get_progress_bar
 
 import cProfile, pstats, io
 from pstats import SortKey
@@ -627,7 +627,9 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         if kwargs['method'] != 'emcee':
             kwargs.pop('steps')
             kwargs.pop('burn')
-        progress = kwargs.pop("progress",True) # progress bar
+            progress = kwargs.pop("progress",True) # progress bar
+        else:
+            progress = kwargs.get("progress",False) #keep the progress keyword for emcee
         # First get the range of density n and radiation field FUV from the 
         # model space, in order to provide them to the Parameters object.
         # Since the wk2006 H2 models have a smaller model space, 
@@ -670,7 +672,10 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         fm_mask = np.full(shape=self._observedratios[fk].data.shape,fill_value=False).flatten()
         count = 0
         excount = 0
-        with get_progress_bar(progress,self._observedratios[fk].size) as pbar:
+        # turn off progress bar for single pixel or emcee prints out multiple bars.
+        if self._observedratios[fk].size == 1:
+            progress = False
+        with get_progress_bar(progress,self._observedratios[fk].size,leave=True,position=0) as pbar:
             for j in range(self._observedratios[fk].size):
                 #use previous coarse fit as first guess
                 #print("doing pixel ",j, " of ",self._observedratios[fk].size)
