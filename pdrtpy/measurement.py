@@ -316,6 +316,8 @@ class Measurement(CCDData):
         hdu.writeto(filename,**kwd)
     
     def _set_up_for_interp(self,kind='linear'):
+        #@TODO this will always return nan if there are nan in the data. 
+        # See eg. https://stackoverflow.com/questions/35807321/scipy-interpolation-with-masked-data
         """
         We don't want to have to do a call to get a pixel value at a particular WCS every time it's needed.
         So make one call that converts the entire NAXIS1 and NAXIS2 to an array of world coordinates and stash that away
@@ -329,6 +331,12 @@ class Measurement(CCDData):
         #print("LEN WALIN",len(self._world_axis_lin[0]),len(self._world_axis_lin[1]))
         self._interp_log = interp2d(self._world_axis[0],self._world_axis[1],z=self.data,kind=kind,bounds_error=True)
         self._interp_lin = interp2d(self._world_axis_lin[0],self._world_axis_lin[1],z=self.data,kind=kind,bounds_error=True)
+     
+    def get_pixel(self,world_x,world_y):
+        '''Return the nearest pixel coordinates to the input world coordinates'''
+        if self.wcs is None:
+            raise Exception(f"No wcs in this Measurement {self.id}")
+        return tuple(np.round(self.wcs.world_to_pixel_values(world_x,world_y)).astype(int))
         
     def get(self,world_x,world_y,log=False):
         """Get the value(s) at the give world coordinates
