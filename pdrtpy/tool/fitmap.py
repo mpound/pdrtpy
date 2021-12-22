@@ -39,3 +39,9 @@ class FitMap(NDData):
     def __getitem__(self,i):
         """get the value object at array index i"""
         return self._data[i]
+    
+    def get_pixel(self,world_x,world_y):
+        '''Return the nearest pixel coordinates to the input world coordinates'''
+        if self.wcs is None:
+            raise Exception(f"No wcs in this Measurement {self.id}")
+        return tuple(np.round(self.wcs.world_to_pixel_values(world_x,world_y)).astype(int))
