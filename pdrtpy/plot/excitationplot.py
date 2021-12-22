@@ -22,6 +22,7 @@ from astropy.visualization import simple_norm, ZScaleInterval , ImageNormalize
 from astropy.visualization.stretch import SinhStretch,  LinearStretch
 from matplotlib.colors import LogNorm
 
+
 from .plotbase import PlotBase
 from ..pdrutils import to,float_formatter,LOGE,isOdd
 
@@ -37,8 +38,8 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
 
     def ex_diagram(self,position=None,size=None,norm=True,show_fit=False,**kwargs):
         #@todo position and size might not necessarily match how the fit was done.
-                #:type position: tuple or :class:`astropy.coordinates.SkyCoord`
-                #or a :class:`~astropy.coordinates.SkyCoord`, which will use the :class:`~astropy.wcs.WCS` of the ::class:`~pdrtpy.measurement.Measurement`s added to this tool.
+        #:type position: tuple or :class:`astropy.coordinates.SkyCoord`
+        #or a :class:`~astropy.coordinates.SkyCoord`, which will use the :class:`~astropy.wcs.WCS` of the ::class:`~pdrtpy.measurement.Measurement`s added to this tool.
         r"""Plot the excitation diagram
         
         :param position: The position of the cutout array's center with respect to the data array. The position is specified as a `(x, y)` tuple of pixel coordinates. 
@@ -60,20 +61,24 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
                       'capsize':3,
                       'linewidth': 2.0,
                       'markersize': 8,
-                      'color':None}
+                      'color':None,
+                      'axis':None}
         kwargs_opts.update(kwargs)
+
         cdavg = self._tool.average_column_density(norm=norm, position=position, size=size, line=False)
         energies = self._tool.energies(line=False)
         energy = np.array([c for c in energies.values()])
         colden = np.squeeze(np.array([c.data for c in cdavg.values()]))
         error = np.squeeze(np.array([c.error for c in cdavg.values()]))
         sigma = LOGE*error/colden
-        self._figure,self._axis  = self._plt.subplots(figsize=kwargs_opts['figsize'])
+        if kwargs_opts['axis'] is None:
+            self._figure, self._axis = self._plt.subplots(figsize=kwargs_opts['figsize'])
+            kwargs_opts['axis'] = self._axis
         if self._tool.opr_fitted and show_fit:
             _label = "LTE"
         else:
             _label = '$'+self._label+'$ data'
-        ec = self._axis.errorbar(energy,np.log10(colden),yerr=sigma,
+        ec = kwargs_opts['axis'].errorbar(energy,np.log10(colden),yerr=sigma,
                             fmt="o", capsize=kwargs_opts['capsize'],
                             label=_label, lw=kwargs_opts['linewidth'],
                             ms=kwargs_opts['markersize'],color=kwargs_opts['color'])
@@ -82,7 +87,7 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
             cddn = colden*self._tool._canonical_opr/self._tool.opr
             odd_index = np.where([isOdd(c) for c in cdavg.keys()])
             #color = ec.lines[0].get_color() # want these to be same color as data
-            self._axis.errorbar(x=energy[odd_index], 
+            kwargs_opts['axis'].errorbar(x=energy[odd_index], 
                                 y=np.log10(cddn[odd_index]),marker="^",
                                 label=f"OPR = {self._tool.opr:.2f}",
                                 yerr=sigma[odd_index], 
@@ -90,11 +95,11 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
                                 linestyle='none',color='k',
                                 lw=kwargs_opts['linewidth'],
                                 ms=kwargs_opts['markersize'])
-        self._axis.set_xlabel("$E_u/k$ (K)")
+        kwargs_opts['axis'].set_xlabel("$E_u/k$ (K)")
         if norm:
-            self._axis.set_ylabel("log $(N_u/g_u) ~({\\rm cm}^{-2})$")
+            kwargs_opts['axis'].set_ylabel("log $(N_u/g_u) ~({\\rm cm}^{-2})$")
         else:
-            self._axis.set_ylabel("log $(N_u) ~({\\rm cm}^{-2})$")
+            kwargs_opts['axis'].set_ylabel("log $(N_u) ~({\\rm cm}^{-2})$")
         # label the points with e.g. J=2,3,4...
         first=True
         for lab in sorted(cdavg):
@@ -103,50 +108,54 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
                 first=False
             else: 
                 ss=str(lab)
-            self._axis.text(x=energies[lab]+100,y=np.log10(cdavg[lab]),s=ss)
-        handles,labels=self._axis.get_legend_handles_labels()
+            kwargs_opts['axis'].text(x=energies[lab]+100,y=np.log10(cdavg[lab]),s=ss)
+        handles,labels=kwargs_opts['axis'].get_legend_handles_labels()
         if show_fit:
 
             tt = self._tool
             if tt.fit_result is None:
                 raise ValueError("No fit to show. Have you run the fit in your H2ExcitationFit?")
-            if np.size(tt.fit_result) == 1:  # single pixel case
-                # Doesn't work
-                #if kwargs_opts['color'] is not None:
-                #    self.colorcycle(self._CB_color_cycle[1:])
-                x_fit = np.linspace(0,max(energy), 30)  
-                outpar = tt.fit_result[0].params.valuesdict()
-                #labcold = r"$T_{cold}=$" + f"{tt.tcold.value:3.0f}" +r"$\pm$" + f"{tt.tcold.error:.1f} {tt.tcold.unit}"
-                labcold = r"$T_{cold}=$" + f"{tt.tcold:3.1f}"
-                #labhot= r"$T_{hot}=$" + f"{tt.thot.value:3.0f}"+ r"$\pm$" + f"{tt.thot.error:.1f} {tt.thot.unit}"
-                labhot= r"$T_{hot}=$" + f"{tt.thot:3.1f}"
-                labnh = r"$N("+self._label+")=" + float_formatter(tt.total_colden,2)+"$"
-                self._axis.plot(x_fit,tt._one_line(x_fit, outpar['m1'], 
-                                outpar['n1']), '.' ,label=labcold,
-                                lw=kwargs_opts['linewidth'])
-                self._axis.plot(x_fit,tt._one_line(x_fit, outpar['m2'], 
-                                outpar['n2']), '.', label=labhot,
-                                lw=kwargs_opts['linewidth'])
-                opr_p = tt._fitresult[0].params['opr']
-                self._axis.plot(x_fit, tt.fit_result[0].eval(x=x_fit,fit_opr=False), label="fit")
-                handles,labels=self._axis.get_legend_handles_labels()
-                #kluge to ensure N(H2) label is last
-                phantom = self._axis.plot([],marker="", markersize=0,ls="",lw=0)
-                handles.append(phantom[0])
-                labels.append(labnh)
+            if np.shape(tt.fit_result.data) == (1,):
+                position = 0
+            elif position is None:
+                raise ValueError("position must be provided for map fit results")
+            if tt.fit_result[position] is None:
+                raise ValueError(f"The Excitation Tool was unable to fit pixel {position}. Try show_fit=False")
+            x_fit = np.linspace(0,max(energy), 30)  
+            outpar = tt.fit_result[position].params.valuesdict()
+            #labcold = r"$T_{cold}=$" + f"{tt.tcold.value:3.0f}" +r"$\pm$" + f"{tt.tcold.error:.1f} {tt.tcold.unit}"
+            labcold = r"$T_{cold}=$" + f"{tt.tcold[position]:3.1f}"
+            #labhot= r"$T_{hot}=$" + f"{tt.thot.value:3.0f}"+ r"$\pm$" + f"{tt.thot.error:.1f} {tt.thot.unit}"
+            labhot= r"$T_{hot}=$" + f"{tt.thot[position]:3.1f}"
+            if position == 0:
+                labnh = r"$N("+self._label+")=" + float_formatter(tt.total_colden,2)+"$" 
             else:
-                raise Exception("Can't handle maps yet")
-        self._axis.set_xlim(kwargs_opts['xmin'],kwargs_opts['xmax'])
-        self._axis.set_ylim(kwargs_opts['ymin'],kwargs_opts['ymax'])
-        self._axis.xaxis.set_major_locator(MultipleLocator(1000))
-        self._axis.yaxis.set_major_locator(MultipleLocator(1))
-        self._axis.xaxis.set_minor_locator(MultipleLocator(200))
-        self._axis.yaxis.set_minor_locator(MultipleLocator(0.2))
+                labnh = r"$N("+self._label+")=" + float_formatter(tt.total_colden[position],2)+"$"
+            kwargs_opts['axis'].plot(x_fit,tt._one_line(x_fit, outpar['m1'], 
+                            outpar['n1']), '.' ,label=labcold,
+                            lw=kwargs_opts['linewidth'])
+            kwargs_opts['axis'].plot(x_fit,tt._one_line(x_fit, outpar['m2'], 
+                            outpar['n2']), '.', label=labhot,
+                            lw=kwargs_opts['linewidth'])
+            opr_p = tt._fitresult[position].params['opr']
+            kwargs_opts['axis'].plot(x_fit, tt.fit_result[position].eval(x=x_fit,fit_opr=False), label="fit")
+            handles,labels=kwargs_opts['axis'].get_legend_handles_labels()
+            #kluge to ensure N(H2) label is last
+            phantom = kwargs_opts['axis'].plot([],marker="", markersize=0,ls="",lw=0)
+            handles.append(phantom[0])
+            labels.append(labnh)
+
+        kwargs_opts['axis'].set_xlim(kwargs_opts['xmin'],kwargs_opts['xmax'])
+        kwargs_opts['axis'].set_ylim(kwargs_opts['ymin'],kwargs_opts['ymax'])
+        kwargs_opts['axis'].xaxis.set_major_locator(MultipleLocator(1000))
+        kwargs_opts['axis'].yaxis.set_major_locator(MultipleLocator(1))
+        kwargs_opts['axis'].xaxis.set_minor_locator(MultipleLocator(200))
+        kwargs_opts['axis'].yaxis.set_minor_locator(MultipleLocator(0.2))
         if kwargs_opts['grid']:
-            self._axis.grid(b=True,which='both',axis='both',lw=kwargs_opts['linewidth'],
+            kwargs_opts['axis'].grid(b=True,which='both',axis='both',lw=kwargs_opts['linewidth'],
                             color='k',alpha=0.33)
             
-        self._axis.legend(handles,labels)
+        kwargs_opts['axis'].legend(handles,labels)
     
     def temperature(self,component,**kwargs):
         """Plot the temperature of hot or cold gas component.
@@ -185,7 +194,8 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
                        'label': False,
                        'title': None,
                        'norm': 'simple',
-                       'log': False
+                       'log': False,
+                       'axis': None
                        }
 
         kwargs_contour = {'levels': None, 
@@ -259,27 +269,29 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
         kwargs_subplot['figsize'] = kwargs.get("figsize",(kwargs_subplot["ncols"]*5,kwargs_subplot["nrows"]*5))
 
         axidx = kwargs_subplot['index']-1
-        if kwargs_subplot['reset']:
+        if kwargs_opts['axis'] is None:
             self._figure,self._axis = self._plt.subplots(kwargs_subplot['nrows'],kwargs_subplot['ncols'],
                                                     figsize=kwargs_subplot['figsize'],
                                                     subplot_kw={'projection':k.wcs,
                                                                 'aspect':kwargs_imshow['aspect']},
                                                     constrained_layout=kwargs_subplot['constrained_layout'])
+            kwargs_opts['axis'] = self._axis
 
         # Make sure self._axis is an array because we will index it below.
-        if type(self._axis) is not np.ndarray:
-            self._axis = np.array([self._axis])
-        for a in self._axis:
+        if type(kwargs_opts['axis']) is not np.ndarray:
+            kwargs_opts['axis'] = np.array([kwargs_opts['axis']])
+        for a in kwargs_opts['axis']:
             a.tick_params(axis='both',direction='in') # axes vs axis???
-            for c in a.coords:
-                c.display_minor_ticks(True)
+            if hasattr(a,'coords'):
+                for c in a.coords:
+                    c.display_minor_ticks(True)
         if kwargs_opts['image']:
             current_cmap = copy(mcm.get_cmap(kwargs_imshow['cmap']))
             current_cmap.set_bad(color='white',alpha=1)
             # suppress errors and warnings about unused keywords
             #@todo need a better solution for this, it is not scalable.
             #push onto a stack?
-            for kx in ['units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols', 
+            for kx in ['https://umd.zoom.us/j/8313226726?pwd=Yml2bUUxOXVsRkk5ZGlyQktjVnJYQT09units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols', 
                        'index', 'reset','colors','colorbar','show','yaxis_unit','xaxis_unit',
                        'constrained_layout','figsize','stretch','legend']:
                 kwargs_imshow.pop(kx,None)
@@ -287,9 +299,9 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
             if kwargs_opts['norm'] is not None:
                 kwargs_imshow.pop('vmin',None)
                 kwargs_imshow.pop('vmax',None)
-            im=self._axis[axidx].imshow(km,**kwargs_imshow)
+            im=kwargs_opts['axis'][axidx].imshow(km,**kwargs_imshow)
             if kwargs_opts['colorbar']:
-                self._wcs_colorbar(im,self._axis[axidx])
+                self._wcs_colorbar(im,kwargs_opts['axis'][axidx])
 
         if kwargs_opts['contours']:
             if kwargs_contour['levels'] is None:
@@ -315,8 +327,62 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
             self.figure.suptitle(kwargs_opts['title'],y=0.95)
 
         if k.wcs is not None:
-            self._axis[axidx].set_xlabel(k.wcs.wcs.lngtyp)
-            self._axis[axidx].set_ylabel(k.wcs.wcs.lattyp)
+            kwargs_opts['axis'][axidx].set_xlabel(k.wcs.wcs.lngtyp)
+            kwargs_opts['axis'][axidx].set_ylabel(k.wcs.wcs.lattyp)
 
 
+    def explore(self,data=None,maptype="cd",interaction_type="click",**kwargs): 
+        #self.column_density(reset=1,index=0)
+
+        kwargs_opts = {'units' : None,
+                       'image':True,
+                       'colorbar': True,
+                       'contours': True,
+                       'label': False,
+                       'title': None,
+                       'norm': 'simple',
+                       'log': False,
+                       'position' : None,
+                       'show_fit':True
+                       }
+
+        kwargs_contour = {'levels': None, 
+                          'colors': ['white'],
+                          'linewidths': 1.0}    
+        k = self._tool.colden('total')
+        print("WCS ",k.wcs,type(k.wcs))
+        km = ma.masked_invalid(k)
+        if getattr(k,"mask",None) is not None:
+            km.mask = np.logical_or(k.mask,km.mask)
+        # make sure nans don't affect the color map
+        min_ = np.nanmin(km)
+        max_ = np.nanmax(km)
+        kwargs_imshow = { 'origin': 'lower', 
+                          'norm': 'simple',
+                          'stretch': 'linear',
+                          'vmin': min_, 
+                          'vmax': max_,
+                          'cmap': 'plasma',
+                          'aspect': 'auto'}
+ 
+        kwargs_subplot = {'nrows': 1,
+                          'ncols': 2,
+                          'index': 2,
+                          'reset': True,
+                          'figsize':(10,5),
+                          'constrained_layout': False # this appears to have no effect
+                         }
+
+        kwargs_contour.update(kwargs)
+        kwargs_opts.update(kwargs)
+        #kwargs_plot.update(kwargs)
+        kwargs_subplot.update(kwargs)
+        self._figure = self._plt.figure(figsize=kwargs_subplot['figsize'],clear=True,
+                                        constrained_layout=kwargs_subplot['constrained_layout'])
+        self._axis = np.empty([2],dtype=object)
+        self._axis[0] = self._figure.add_subplot(121,projection=k.wcs,aspect='auto')
+        self._axis[1] = self._figure.add_subplot(122,projection=None,aspect='auto')
+        self.column_density(component='total',axis=self._axis,index=1)
+        self.ex_diagram(axis=self._axis[1], reset=False,position=kwargs_opts['position'],figsize=(5,3),
+                        norm=True,show_fit=kwargs_opts['show_fit'])
         
