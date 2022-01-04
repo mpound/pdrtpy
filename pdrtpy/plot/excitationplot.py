@@ -89,7 +89,6 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
                 opr_p = tt._fitresult[position].params['opr'].value
             else:
                 opr_p = tt.opr.value[0]
-            print("OPR_P ",opr_p,type(opr_p))
             cddn = colden*self._tool._canonical_opr/opr_p
             odd_index = np.where([isOdd(c) for c in cdavg.keys()])
             #color = ec.lines[0].get_color() # want these to be same color as data
@@ -212,10 +211,9 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
         kwargs_opts.update(kwargs)
         kwargs_plot.update(kwargs)
 
-        _data = data  # default is show the data
+        _data = deepcopy(data)  # default is show the data
 
         if kwargs_plot['show'] == 'error':
-            _data = deepcopy(data)
             _data.data = _data.error
         # do the log here, because we won't take log of a mask.
         if kwargs_opts['log']:
