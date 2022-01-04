@@ -231,10 +231,6 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         uopr = np.full(shape=size,fill_value=np.nan,dtype=float)
         ff = fitmap.data.flatten()
         ffmask = fitmap.mask.flatten()
-        print(type(ff))
-        print(type(ff[0]))
-        print(np.shape(ff.data))
-        print(ff[0])
         for i in range(size):
             if ffmask[i]:
                 continue
@@ -403,9 +399,8 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         cl = component.lower()
         if cl not in self._valid_components:
             raise KeyError(f"{cl} not a valid component. Must be one of {self._valid_components}")
-        print(f'returning {cl}')
+        #print(f'returning {cl}')
         if cl == 'total':
-            print("TOTAL")
             return self.total_colden
         else:
             return self._total_colden[cl]
@@ -888,15 +883,16 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         warnings.resetwarnings()
         fmdata = fmdata.reshape(saveshape)
         fm_mask = fm_mask.reshape(saveshape)
-        print(type(fmdata),fmdata.shape)
+        #print(type(fmdata),fmdata.shape)
         self._fitresult = FitMap(fmdata,wcs=colden[fk].wcs,mask=fm_mask,name="result")
-        print("FR SHAPE",np.shape(self._fitresult.data)," WCS ",self._fitresult.wcs)
+        #print("FR SHAPE",np.shape(self._fitresult.data)," WCS ",self._fitresult.wcs)
         # this will raise an exception if the fit was bad (fit errors == None)
         self._compute_quantities(self._fitresult)
-        print("Fitted excitation temperatures and column densities:")
+        # not helpful for maps...
+        #print("Fitted excitation temperatures and column densities:")
         
-        print(f" N_cold = {self.cold_colden:.2e}\n N_hot = {self.hot_colden:.2e}")
-        print(f" N_total = {self.total_colden:.2e}")
+        #print(f" N_cold = {self.cold_colden:.2e}\n N_hot = {self.hot_colden:.2e}")
+        #print(f" N_total = {self.total_colden:.2e}")
 
         print(f"fitted {count} of {slopecold.size} pixels")
         print(f'got {excount} exceptions and {badfit} bad fits')

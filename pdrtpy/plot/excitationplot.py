@@ -82,14 +82,20 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
                             fmt="o", capsize=kwargs_opts['capsize'],
                             label=_label, lw=kwargs_opts['linewidth'],
                             ms=kwargs_opts['markersize'],color=kwargs_opts['color'])
+        tt = self._tool
         if self._tool.opr_fitted and show_fit:
             # Plot only the odd-J ones!
-            cddn = colden*self._tool._canonical_opr/self._tool.opr
+            if position is not None:
+                opr_p = tt._fitresult[position].params['opr'].value
+            else:
+                opr_p = tt.opr.value[0]
+            print("OPR_P ",opr_p,type(opr_p))
+            cddn = colden*self._tool._canonical_opr/opr_p
             odd_index = np.where([isOdd(c) for c in cdavg.keys()])
             #color = ec.lines[0].get_color() # want these to be same color as data
             kwargs_opts['axis'].errorbar(x=energy[odd_index], 
                                 y=np.log10(cddn[odd_index]),marker="^",
-                                label=f"OPR = {self._tool.opr:.2f}",
+                                label=f"OPR = {opr_p:.2f}",
                                 yerr=sigma[odd_index], 
                                 capsize=2*kwargs_opts['capsize'],
                                 linestyle='none',color='k',
@@ -111,8 +117,6 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
             kwargs_opts['axis'].text(x=energies[lab]+100,y=np.log10(cdavg[lab]),s=ss)
         handles,labels=kwargs_opts['axis'].get_legend_handles_labels()
         if show_fit:
-
-            tt = self._tool
             if tt.fit_result is None:
                 raise ValueError("No fit to show. Have you run the fit in your H2ExcitationFit?")
             if np.shape(tt.fit_result.data) == (1,):
@@ -123,21 +127,22 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
                 raise ValueError(f"The Excitation Tool was unable to fit pixel {position}. Try show_fit=False")
             x_fit = np.linspace(0,max(energy), 30)  
             outpar = tt.fit_result[position].params.valuesdict()
-            #labcold = r"$T_{cold}=$" + f"{tt.tcold.value:3.0f}" +r"$\pm$" + f"{tt.tcold.error:.1f} {tt.tcold.unit}"
-            labcold = r"$T_{cold}=$" + f"{tt.tcold[position]:3.1f}"
+            labcold = r"$T_{cold}=$" + f"{tt.tcold[position]:3.0f}" +r"$\pm$" + f"{tt.tcold.error[position]:.1f} {tt.tcold.unit}"
+            #labcold = r"$T_{cold}=$" + f"{tt.tcold[position]:3.1f}"
             #labhot= r"$T_{hot}=$" + f"{tt.thot.value:3.0f}"+ r"$\pm$" + f"{tt.thot.error:.1f} {tt.thot.unit}"
-            labhot= r"$T_{hot}=$" + f"{tt.thot[position]:3.1f}"
+            #labhot= r"$T_{hot}=$" + f"{tt.thot[position]:3.1f}"
+            labhot= r"$T_{hot}=$" + f"{tt.thot[position]:3.0f}"+ r"$\pm$" + f"{tt.thot.error[position]:.1f} {tt.thot.unit}"
             if position == 0:
                 labnh = r"$N("+self._label+")=" + float_formatter(tt.total_colden,2)+"$" 
             else:
-                labnh = r"$N("+self._label+")=" + float_formatter(tt.total_colden[position],2)+"$"
+                labnh = r"$N("+self._label+")=" + float_formatter(u.Quantity(tt.total_colden[position],tt.total_colden.unit),2)+"$"
             kwargs_opts['axis'].plot(x_fit,tt._one_line(x_fit, outpar['m1'], 
                             outpar['n1']), '.' ,label=labcold,
                             lw=kwargs_opts['linewidth'])
             kwargs_opts['axis'].plot(x_fit,tt._one_line(x_fit, outpar['m2'], 
                             outpar['n2']), '.', label=labhot,
                             lw=kwargs_opts['linewidth'])
-            opr_p = tt._fitresult[position].params['opr']
+
             kwargs_opts['axis'].plot(x_fit, tt.fit_result[position].eval(x=x_fit,fit_opr=False), label="fit")
             handles,labels=kwargs_opts['axis'].get_legend_handles_labels()
             #kluge to ensure N(H2) label is last
@@ -275,12 +280,14 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
                                                     subplot_kw={'projection':k.wcs,
                                                                 'aspect':kwargs_imshow['aspect']},
                                                     constrained_layout=kwargs_subplot['constrained_layout'])
-            kwargs_opts['axis'] = self._axis
+            _axis = self._axis
+        else:
+            _axis = kwargs_opts['axis']
 
         # Make sure self._axis is an array because we will index it below.
-        if type(kwargs_opts['axis']) is not np.ndarray:
-            kwargs_opts['axis'] = np.array([kwargs_opts['axis']])
-        for a in kwargs_opts['axis']:
+        if type(_axis) is not np.ndarray:
+            _axis= np.array([_axis])
+        for a in _axis:
             a.tick_params(axis='both',direction='in') # axes vs axis???
             if hasattr(a,'coords'):
                 for c in a.coords:
@@ -291,17 +298,17 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
             # suppress errors and warnings about unused keywords
             #@todo need a better solution for this, it is not scalable.
             #push onto a stack?
-            for kx in ['https://umd.zoom.us/j/8313226726?pwd=Yml2bUUxOXVsRkk5ZGlyQktjVnJYQT09units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols', 
-                       'index', 'reset','colors','colorbar','show','yaxis_unit','xaxis_unit',
-                       'constrained_layout','figsize','stretch','legend']:
+            for kx in ['units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols', 
+                       'index', 'reset','colors','colorbar','show','yaxis_unit','xaxis_unit','axis',
+                       'constrained_layout','figsize','stretch','legend','markersize','show_fit']:
                 kwargs_imshow.pop(kx,None)
             # eliminate deprecation warning.  vmin,vmax are passed to Normalization object.
             if kwargs_opts['norm'] is not None:
                 kwargs_imshow.pop('vmin',None)
                 kwargs_imshow.pop('vmax',None)
-            im=kwargs_opts['axis'][axidx].imshow(km,**kwargs_imshow)
+            im=_axis[axidx].imshow(km,**kwargs_imshow)
             if kwargs_opts['colorbar']:
-                self._wcs_colorbar(im,kwargs_opts['axis'][axidx])
+                self._wcs_colorbar(im,_axis[axidx])
 
         if kwargs_opts['contours']:
             if kwargs_contour['levels'] is None:
@@ -310,13 +317,13 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
 
             # suppress errors and warnings about unused keywords
             for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect',
-                       'colorbar','reset', 'nrows', 'ncols', 'index','show','yaxis_unit',
-                       'xaxis_unit','norm','constrained_layout','figsize','stretch','legend']:
+                       'colorbar','reset', 'nrows', 'ncols', 'index','show','yaxis_unit','axis',
+                       'xaxis_unit','norm','constrained_layout','figsize','stretch','legend','markersize','show_fit']:
                 kwargs_contour.pop(kx,None)
 
-            contourset = self._axis[axidx].contour(km, **kwargs_contour)
+            contourset = _axis[axidx].contour(km, **kwargs_contour)
             if kwargs_opts['label']:
-                self._axis[axidx].clabel(contourset,contourset.levels,inline=True,fmt='%1.1e')
+                _axis[axidx].clabel(contourset,contourset.levels,inline=True,fmt='%1.1e')
 
         if kwargs_opts['title'] is not None: 
             #self.figure.subplots_adjust(top=0.95)
@@ -327,62 +334,74 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
             self.figure.suptitle(kwargs_opts['title'],y=0.95)
 
         if k.wcs is not None:
-            kwargs_opts['axis'][axidx].set_xlabel(k.wcs.wcs.lngtyp)
-            kwargs_opts['axis'][axidx].set_ylabel(k.wcs.wcs.lattyp)
+            _axis[axidx].set_xlabel(k.wcs.wcs.lngtyp)
+            _axis[axidx].set_ylabel(k.wcs.wcs.lattyp)
 
 
-    def explore(self,data=None,maptype="cd",interaction_type="click",**kwargs): 
-        #self.column_density(reset=1,index=0)
-
+    def explore(self,data=None,interaction_type="click",**kwargs): 
         kwargs_opts = {'units' : None,
                        'image':True,
                        'colorbar': True,
-                       'contours': True,
+                       'contours': False,
                        'label': False,
                        'title': None,
                        'norm': 'simple',
                        'log': False,
-                       'position' : None,
-                       'show_fit':True
+                       'show_fit': True,
+                       'figsize': (5,3),
+                       'markersize': 20,
+                       'fmt': 'r+'
                        }
-
-        kwargs_contour = {'levels': None, 
-                          'colors': ['white'],
-                          'linewidths': 1.0}    
-        k = self._tool.colden('total')
-        print("WCS ",k.wcs,type(k.wcs))
-        km = ma.masked_invalid(k)
-        if getattr(k,"mask",None) is not None:
-            km.mask = np.logical_or(k.mask,km.mask)
-        # make sure nans don't affect the color map
-        min_ = np.nanmin(km)
-        max_ = np.nanmax(km)
-        kwargs_imshow = { 'origin': 'lower', 
-                          'norm': 'simple',
-                          'stretch': 'linear',
-                          'vmin': min_, 
-                          'vmax': max_,
-                          'cmap': 'plasma',
-                          'aspect': 'auto'}
- 
-        kwargs_subplot = {'nrows': 1,
-                          'ncols': 2,
-                          'index': 2,
-                          'reset': True,
-                          'figsize':(10,5),
-                          'constrained_layout': False # this appears to have no effect
-                         }
-
-        kwargs_contour.update(kwargs)
+        # starting position is middle pixel of image. note // for integer arithmetic
+        position = tuple(np.array(np.shape(data))//2)
         kwargs_opts.update(kwargs)
-        #kwargs_plot.update(kwargs)
-        kwargs_subplot.update(kwargs)
-        self._figure = self._plt.figure(figsize=kwargs_subplot['figsize'],clear=True,
-                                        constrained_layout=kwargs_subplot['constrained_layout'])
+        self._figure = self._plt.figure(figsize=kwargs_opts['figsize'],clear=True)
         self._axis = np.empty([2],dtype=object)
-        self._axis[0] = self._figure.add_subplot(121,projection=k.wcs,aspect='auto')
+        self._axis[0] = self._figure.add_subplot(121,projection=data.wcs,aspect='auto')
         self._axis[1] = self._figure.add_subplot(122,projection=None,aspect='auto')
-        self.column_density(component='total',axis=self._axis,index=1)
-        self.ex_diagram(axis=self._axis[1], reset=False,position=kwargs_opts['position'],figsize=(5,3),
-                        norm=True,show_fit=kwargs_opts['show_fit'])
+        self._axis[1].tick_params('y',labelright=True,labelleft=False) # avoid overlap with colorbar
+        self._axis[1].get_yaxis().set_label_position("right")
+        fmt      = kwargs_opts.pop('fmt','r+')
+        show_fit = kwargs_opts.pop('show_fit')
+        self._plot(data,axis=self._axis,index=1,**kwargs_opts)
+        self.ex_diagram(axis=self._axis[1], reset=False,position=position,size=1,
+                        norm=True,show_fit=show_fit)
+
+        self._marker = self.axis[0].plot(position[0],position[1],fmt,markersize=kwargs_opts['markersize'])
+
+        
+        def update_lines(event):
+            try:
+                #self._logfile = open(f"/tmp/test.log","a")
+               # self._logfile.write(f"event.inaxes = {event.inaxes} x,y={event.xdata,event.ydata}\n")
+                if event.inaxes == self._axis[0]:  # the click must be on the left panel (map)
+                    position = (int(round(event.xdata)),int(round(event.ydata)))
+                    self._marker[0].set_marker(None)
+                    self._marker = self.axis[0].plot(position[0],position[1],fmt,markersize=kwargs_opts['markersize'])
+                    self._axis[1].clear()
+                    self._axis[1].remove()
+                    self._axis[1] = self._figure.add_subplot(122,projection=None,aspect='auto')
+                    self._axis[1].tick_params('y',labelright=True,labelleft=False) 
+                    self._axis[1].get_yaxis().set_label_position("right")
+                    self.ex_diagram(axis=self._axis[1], reset=False,position=position,size=1,figsize=(5,3),
+                                norm=True,show_fit=show_fit)
+                    #self._axis[0].set_title(f'{position}')
+            except Exception as err:
+                pass
+                #self._logfile.write("Exception {0}".format(err))
+                
+            #self._logfile.close()
+            self._figure.canvas.draw_idle()
+            
+        if interaction_type == "move":
+            self._figure.canvas.mpl_connect("motion_notify_event", update_lines)
+        elif interaction_type == "click":
+            print("connect button press to update_lines")
+            self._figure.canvas.mpl_connect("button_press_event", update_lines)
+        else:
+            close(self._figure)
+            raise ValueError(
+                f"{interaction_type} is not a valid option for interaction_type, valid options are 'click' or 'move'"
+            )
+                
         
