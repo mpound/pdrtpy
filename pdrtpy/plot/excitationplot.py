@@ -155,9 +155,13 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
         kwargs_opts['axis'].yaxis.set_major_locator(MultipleLocator(1))
         kwargs_opts['axis'].xaxis.set_minor_locator(MultipleLocator(200))
         kwargs_opts['axis'].yaxis.set_minor_locator(MultipleLocator(0.2))
+        kwargs_opts['axis'].tick_params(axis='both',direction='in',which='both')
+        kwargs_opts['axis'].tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both')
         if kwargs_opts['grid']:
-            kwargs_opts['axis'].grid(b=True,which='both',axis='both',lw=kwargs_opts['linewidth'],
+            kwargs_opts['axis'].grid(b=True,which='major',axis='both',lw=kwargs_opts['linewidth']/2,
                             color='k',alpha=0.33)
+            kwargs_opts['axis'].grid(b=True,which='minor',axis='both',lw=kwargs_opts['linewidth']/2,
+                            color='k',alpha=0.22,linestyle='--')
             
         kwargs_opts['axis'].legend(handles,labels)
     
@@ -286,7 +290,8 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
         if type(_axis) is not np.ndarray:
             _axis= np.array([_axis])
         for a in _axis:
-            a.tick_params(axis='both',direction='in') # axes vs axis???
+            a.tick_params(axis='both',direction='in',which='both')        
+            a.tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both')          
             if hasattr(a,'coords'):
                 for c in a.coords:
                     c.display_minor_ticks(True)
