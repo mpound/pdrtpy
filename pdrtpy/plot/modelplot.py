@@ -71,6 +71,7 @@ class ModelPlot(PlotBase):
                        'meas_color': [self._CB_color_cycle[0]],
                        'legend':True,
                        'image':True,
+                       'measurements':None
                       }
         kwargs_opts.update(kwargs)
 
