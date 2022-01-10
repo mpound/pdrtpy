@@ -198,6 +198,7 @@ class ModelPlot(PlotBase):
             labels = [k.title for k in models]
             self._plt.legend(lines, labels,loc='upper center',title='Observed '+word)
 
+
     # note when plotting the units as axis labels, the order is not what we specify in _OBS_UNIT because astropy's Unit class 
     # sorts by power .  They have a good reason for this (hashing), but it does mean we get sub-optimal unit ordering.  
     # There is a possible workaround, but it must be custom for each CompositeUnit.https://github.com/astropy/astropy/issues/1578
@@ -230,6 +231,16 @@ class ModelPlot(PlotBase):
         :type legend: bool
         :param title: Title to draw on the plot.  Default: None
         :type title: str
+        :param linewidth: line width
+        :type linewidth: float
+        :param grid: show grid or not, Default: True
+        :type grid: bool
+        :param figsize: Figure dimensions (width, height) in inches. Default: (8,5)
+        :type figsize: 2-tuple of floats
+        :param capsize: end cap length of errorbars if shown, in points. Default: 3.
+        :type capsize: float
+        :param markersize: size of data point marker in points. Default: 8
+        :type markersize: float
         '''
         kwargs_opts = {'errorbar':False,
                        'fmt': None,
@@ -237,6 +248,11 @@ class ModelPlot(PlotBase):
                        'legend': True,
                        'measurements':None,
                        'title': None,
+                       'grid' :True,
+                       'figsize':(8,5),
+                       'linewidth': 2.0,
+                       'capsize': 5.0,
+                       'markersize': 8.0
                        }
     
         kwargs_opts.update(kwargs)
@@ -286,7 +302,7 @@ class ModelPlot(PlotBase):
         xi2=np.intersect1d(xi,x2)
         yi2=np.intersect1d(yi,y2)
         
-        self._figure,self._axis = self._plt.subplots(nrows=1,ncols=1)
+        self._figure,self._axis = self._plt.subplots(nrows=1,ncols=1,figsize=kwargs_opts['figsize'])
         linesN=[]
         linesG=[]
         # Sort out the axes labels depending on whether reciprocal=True or not.
@@ -375,12 +391,21 @@ class ModelPlot(PlotBase):
                 # Note use of zorder to ensure points are on top of lines.
                 if kwargs_opts['errorbar']:
                     self._axis.errorbar(x=_x.data,y=_y.data,xerr=_x.error,yerr=_y.error,
-                                        capsize=5.0,fmt=fmt[i],capthick=2,ls=None,zorder=6)
+                                        capsize=kwargs_opts['capsize'],fmt=fmt[i],capthick=2,ls=None,zorder=6,
+                                        markersize=kwargs_opts['markersize'])
                 i=i+1
             # the data points
-            dataline = self._axis.loglog(*args,zorder=5)
+            dataline = self._axis.loglog(*args,zorder=5,markersize=kwargs_opts['markersize'])
             self._axis.set_xscale('log')
             self._axis.set_yscale('log')
+            self._axis.tick_params(axis='both',direction='in',which='both')
+            self._axis.tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both')
+            if kwargs_opts['grid']:
+                self._axis.grid(b=True,which='major',axis='both',lw=kwargs_opts['linewidth']/2,
+                                color='k',alpha=0.33)
+                self._axis.grid(b=True,which='minor',axis='both',lw=kwargs_opts['linewidth']/2,
+                                color='k',alpha=0.22,linestyle='--')
+            
             
         if kwargs_opts['legend']:            
             # Manually build the legend. Create the column headers for the legend
