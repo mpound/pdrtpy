@@ -8,6 +8,7 @@ class ToolBase(object):
     def __init__(self):
         self._measurements = None
         self._measurementnaxis = -1 
+        self._modelnaxis = -1
         
     def run(self):
         """Runs the tool. Each subclass Tool must implement its own run() method.
@@ -29,6 +30,7 @@ class ToolBase(object):
         '''
         
         return self._measurementnaxis > 1
+    
     @property  
     def has_vectors(self):
         '''Are the Measurements used a Nx1 vector, e.g. read in from a table with :meth:`~pdrtpy.Measurement.from_table`.
@@ -36,8 +38,10 @@ class ToolBase(object):
         :returns: True, if the observational inputs are a vector, False otherwise
         :rtype: bool
         '''
-        return self._measurementnaxis == 1
+        fk = utils.firstkey(self._measurements)
+        return self._measurementnaxis == 1 and self._measurements[fk].data.size  >1
     
+    #deprecated
     @property
     def has_scalar(self):
         '''Are the Measurements used scalars.

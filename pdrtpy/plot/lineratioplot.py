@@ -33,7 +33,7 @@ from .. import pdrutils as utils
 
 
 class LineRatioPlot(PlotBase):
-    """Class to plot various results from PDR Toolbox model fitting.
+    """LineRatioPlot plots the results of :class:`~pdrtpy.tools.lineratiofit.LineRatioFit`.  It can plot maps of fit results, observations with errors on top of models, chi-square and confidence intervals and more.
     
 
     :Keyword Arguments:
@@ -82,7 +82,7 @@ class LineRatioPlot(PlotBase):
            :raises KeyError: if is id not in existing model ratios
 
         """
-        if len(self._tool._modelratios[id].shape) == 0:
+        if self._tool._modelratios[id].shape == (1,):  #does this ever occur??
             return self._tool._modelratios[id]
 
         kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'units': u.dimensionless_unscaled , 'colorbar':True}
@@ -98,7 +98,7 @@ class LineRatioPlot(PlotBase):
            :type id: - str
            :raises KeyError: if id is not in existing observed ratios
         """
-        if len(self._tool._observedratios[id].shape) == 0:
+        if self._tool._observedratios[id].shape == (1,0) or self._tool.has_vectors:
             return self._tool._observedratios[id]
 
         kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'units': u.dimensionless_unscaled , 'colorbar':False}
@@ -121,7 +121,7 @@ class LineRatioPlot(PlotBase):
         kwargs_opts.update(kwargs)
 
         # handle single pixel or multi-pixel non-map cases.
-        if len( self._tool._density.shape) == 0 or self._tool.has_vectors:
+        if self._tool._density.shape == (1,) or self._tool.has_vectors:
             return utils.to(kwargs_opts['units'],self._tool._density)
 
         tunit=u.Unit(kwargs_opts['units'])
@@ -144,7 +144,7 @@ class LineRatioPlot(PlotBase):
         kwargs_opts.update(kwargs)
 
         # handle single pixel or multi-pixel non-map cases.
-        if len( self._tool.radiation_field.shape) == 0 or self._tool.has_vectors:
+        if self._tool.radiation_field.shape == (1,) or self._tool.has_vectors:
             return utils.to(kwargs_opts['units'],self._tool.radiation_field)
 
         if kwargs_opts['title'] is None:
@@ -196,24 +196,28 @@ class LineRatioPlot(PlotBase):
             data = self._tool.chisq(min=False)
             self._modelplot._plot_no_wcs(data,header=None,**kwargs_opts)
             # Put a crosshair where the chisq minimum is.
-            # To do this we first get the array index of the minimum
-            # then use WCS to translate to world coordinates.
-            [row,col] = np.where(self._tool._chisq==self._tool._chisq_min.value)
-            mywcs = wcs.WCS(data.header)
-            # Suppress WCS warning about 1/cm3 not being FITS
-            warnings.simplefilter('ignore',category=UnitsWarning)
-            logn,logrf = mywcs.array_index_to_world(row,col)
-            warnings.resetwarnings()
-            n = (10**logn.value[0])*u.Unit(logn.unit.to_string())
-            rf = (10**logrf.value[0])*u.Unit(logrf.unit.to_string())
+            if False:
+                # To do this we first get the array index of the minimum
+                # then use WCS to translate to world coordinates.
+                [row,col] = np.where(self._tool._chisq==self._tool._chisq_min.value)
+                mywcs = wcs.WCS(data.header)
+                # Suppress WCS warning about 1/cm3 not being FITS
+                warnings.simplefilter('ignore',category=UnitsWarning)
+                logn,logrf = mywcs.array_index_to_world(row,col)
+                warnings.resetwarnings()
+                n = (10**logn.value[0])*u.Unit(logn.unit.to_string())
+                rf = (10**logrf.value[0])*u.Unit(logrf.unit.to_string())
+            # since the minimum can now be between pixels, we use the value
+            # of radiation field and density directly.  (Why didn't we do this before?)
             if kwargs_opts['xaxis_unit'] is not None:
-                x = n.to(kwargs_opts['xaxis_unit']).value
+                x = utils.to(self._tool._density,kwargs_opts['xaxis_unit']).value
             else:
-                x = n.value
+                x = self._tool._density.value
             if kwargs_opts['yaxis_unit'] is not None:
-                y = rf.to(kwargs_opts['yaxis_unit']).value
+                y = utils.to(kwargs_opts['yaxis_unit'],self._tool._radiation_field).value
             else:
-                y = rf.value
+                y = self._tool._radiation_field.value
+                
             #print("Plot x,y %s,%s"%(x,y))
 
             if kwargs_opts['title'] is None:
@@ -262,40 +266,43 @@ class LineRatioPlot(PlotBase):
 
             self._modelplot._plot_no_wcs(data,header=None,**kwargs_opts)
             # Put a crosshair where the chisq minimum is.
-            # To do this we first get the array index of the minimum
-            # then use WCS to translate to world coordinates.
-            [row,col] = np.where(self._tool._reduced_chisq==self._tool._reduced_chisq_min.value)
-            mywcs = wcs.WCS(data.header)
-            # Suppress WCS warning about 1/cm3 not being FITS
-            warnings.simplefilter('ignore',category=UnitsWarning)
-            logn,logrf = mywcs.array_index_to_world(row,col)
-            warnings.resetwarnings()
-            # logn, logrf are Quantities of the log(density) and log(radiation field),
-            # respectively.  The model default units are cm^-2 and erg/s/cm^-2. 
-            # These must be converted to plot units based on user input 
-            # xaxis_unit and yaxis_unit. 
-            # Note: multiplying by n.unit causes the ValueError:
-            # "The unit '1/cm3' is unrecognized, so all arithmetic operations with it are invalid."
-            # Yet by all other measures this appears to be a valid unit. 
-            # The workaround is to us to_string() method.
-            n = (10**logn.value[0])*u.Unit(logn.unit.to_string())
-            rf = (10**logrf.value[0])*u.Unit(logrf.unit.to_string())
+            if False:
+                # To do this we first get the array index of the minimum
+                # then use WCS to translate to world coordinates.
+                [row,col] = np.where(self._tool._reduced_chisq==self._tool._reduced_chisq_min.value)
+                mywcs = wcs.WCS(data.header)
+                # Suppress WCS warning about 1/cm3 not being FITS
+                warnings.simplefilter('ignore',category=UnitsWarning)
+                logn,logrf = mywcs.array_index_to_world(row,col)
+                warnings.resetwarnings()
+                # logn, logrf are Quantities of the log(density) and log(radiation field),
+                # respectively.  The model default units are cm^-2 and erg/s/cm^-2. 
+                # These must be converted to plot units based on user input 
+                # xaxis_unit and yaxis_unit. 
+                # Note: multiplying by n.unit causes the ValueError:
+                # "The unit '1/cm3' is unrecognized, so all arithmetic operations with it are invalid."
+                # Yet by all other measures this appears to be a valid unit. 
+                # The workaround is to us to_string() method.
+                n = (10**logn.value[0])*u.Unit(logn.unit.to_string())
+                rf = (10**logrf.value[0])*u.Unit(logrf.unit.to_string())
+            # since the minimum can now be between pixels, we use the value
+            # of radiation field and density directly.  (Why didn't we do this before?)
             if kwargs_opts['xaxis_unit'] is not None:
-                x = n.to(kwargs_opts['xaxis_unit']).value
+                x = utils.to(self._tool._density,kwargs_opts['xaxis_unit']).value
             else:
-                x = n.value
+                x = self._tool._density.value
             if kwargs_opts['yaxis_unit'] is not None:
-                y = rf.to(kwargs_opts['yaxis_unit']).value
+                y = utils.to(kwargs_opts['yaxis_unit'],self._tool._radiation_field).value
             else:
-                y = rf.value
-
+                y = self._tool._radiation_field.value
+            #print("Plot x,y %s,%s"%(x,y))           
             if kwargs_opts['title'] is None:
                 kwargs_opts['title'] = r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof
             label = r'$\chi_{\nu,min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)'%(self._tool._reduced_chisq_min.value,x,y)
-            self._axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
+            self._modelplot.axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
             # handle legend locally
             if kwargs_opts['legend']:
-                legend = self._axis[0].legend(loc='upper center',title=kwargs_opts['title'])
+                legend = self._modelplot.axis[0].legend(loc='upper center',title=kwargs_opts['title'])
             self._figure = self._modelplot.figure
             self._axis = self._modelplot.axis
 
@@ -386,24 +393,64 @@ class LineRatioPlot(PlotBase):
                        'norm': None,
                        'title': None,
                        'reset': True,
-                       'legend': True}
+                       'legend': True,
+                        'bbox_to_anchor':None,
+                        'loc': 'upper center'}
 
         kwargs_opts.update(kwargs)
         # force this as ncols !=1 makes no sense.
         kwargs_opts['ncols'] = 1
 
-        i =0 
-        for key,val in self._tool._modelratios.items():
-            kwargs_opts['measurements'] = [self._tool._observedratios[key]]
+        i = 0
+        _measurements = list()
+        _models = list()
+        # get_model will correctly raise exception if m.id not in ModelSet
+        meas_passed = False
+        if kwargs_opts.get('measurements',None) is not None:
+            # avoid modifying a passed parameter
+            _measurements = deepcopy(kwargs_opts['measurements'])
+            meas_passed = True
+            for m in _measurements:
+                if i > 0: kwargs_opts['reset']=False
+                val = self._tool.modelset.get_model(m.id)
+                _models.append(val)
+                kwargs_opts['measurements'] = [utils.convert_if_necessary(m)]
+                self._modelplot._plot_no_wcs(_models[i],header=None,colorcounter=i,**kwargs_opts)
+                i = i+1
+            km = kwargs_opts.pop('measurements')
+        #for m in _measurements:
+        #    print("A ",type(m))
+
+        for key,val in self._tool._modelratios.items(): 
+            #kwargs_opts['measurements'] = [self._tool._observedratios[key]]
+            #print(" K ",type(self._tool._observedratios[key]))
+            #_measurements.append(self._tool._observedratios[key])
             if i > 0: kwargs_opts['reset']=False
             # pass the index of the contour color to use via the "secret" colorcounter keyword.
-            self._modelplot._plot_no_wcs(val,header=None,colorcounter=i,**kwargs_opts)
+            self._modelplot._plot_no_wcs(val,header=None,colorcounter=i,**kwargs_opts,measurements=[self._tool._observedratios[key]])
             i = i+1
-
+        #for m in _measurements:
+        #    print("B ",type(m))
         if kwargs_opts['legend']:
             lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in kwargs_opts['meas_color'][0:i]]
-            labels = [self._tool._modelratios[k].title for k in self._tool._modelratios]
-            self._plt.legend(lines, labels,loc='upper center',title='Observed Ratios')
+            labels = list()
+            if meas_passed:
+                # THIS WILL EXCEPT IF m.id NOT IN MODELSET WHICH IS VERY POSSIBLE!
+                for m in _measurements:
+                    try:
+                        tt = self._tool.modelset.get_model(m.id).title
+                    except Exception:
+                        tt = m.id
+                    labels.append(tt)
+                #labels = [m.id for m in _measurements]
+                title = "Observed Ratios and Intensities"
+            else:
+                title = "Observed Ratios"
+            labels.extend([self._tool._modelratios[k].title for k in self._tool._modelratios])
+            #print("LABELS ",labels)
+            self._plt.legend(lines, labels,loc=kwargs_opts['loc'],
+                             bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
+                             title=title)
         self._figure = self._modelplot.figure
         self._axis = self._modelplot.axis
 
@@ -577,7 +624,7 @@ class LineRatioPlot(PlotBase):
                        'constrained_layout','figsize','stretch','legend']:
                 kwargs_imshow.pop(kx,None)
             # eliminate deprecation warning.  vmin,vmax are passed to Normalization object.
-            if kwargs['norm'] is not None:
+            if kwargs_opts['norm'] is not None:
                 kwargs_imshow.pop('vmin',None)
                 kwargs_imshow.pop('vmax',None)
             im=self._axis[axidx].imshow(km,**kwargs_imshow)

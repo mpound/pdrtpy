@@ -22,7 +22,7 @@ from .. import pdrutils as utils
 
 
 class ModelPlot(PlotBase):
-    """Class to plot models and optionally Measurements.  It does not require :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` first.
+    """ ModelPlot is a tool for exploring sets of models.  It can plot individual intensity or ratio models, phase-space diagrams, and optionally overlay observations.   Units are seamlessly transformed, so you can plot in Habing units, Draine units, or any conformable quantity.  ModelPlot does not require model fitting with :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` first.
 
     :Keyword Arguments:
     The methods of this class can take a variety of optional keywords.  See the general `Plot Keywords`_ documentation
@@ -37,6 +37,7 @@ class ModelPlot(PlotBase):
         self._modelset = modelset
         self._figure = figure
         self._axis = axis
+        #print(utils.habing_unit)
     
     def plot(self,identifier,**kwargs):
         """Plot a model intensity or ratio
@@ -169,11 +170,15 @@ class ModelPlot(PlotBase):
         ids = [m.id for m in measurements]
         meas = dict(zip(ids,measurements))
         models = [self._modelset.get_model(i) for i in ids]
+        # need to trim model grids if H2 is present
+        if utils._has_H2(ids):
+            warnings.warn("Trimming all model grids to match H2 grid: log(n) = 1-5, log(G0) = 1-5")
+            utils._trim_all_to_H2(models)
         i =0 
         nratio = 0
         nintensity = 0
         for val in models:
-            if len(meas[val.id].data) != 1:
+            if np.size(meas[val.id].data) != 1:
                 raise ValueError(f"Can't plot {val.id}. This method only works with single pixel Measurements [len(measurement.data) must be 1]")
             if i > 0: kwargs_opts['reset']=False
             # pass the index of the contour color to use via the "secret" colorcounter keyword.
@@ -193,6 +198,7 @@ class ModelPlot(PlotBase):
             lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in kwargs_opts['meas_color'][0:i]]
             labels = [k.title for k in models]
             self._plt.legend(lines, labels,loc='upper center',title='Observed '+word)
+
 
     # note when plotting the units as axis labels, the order is not what we specify in _OBS_UNIT because astropy's Unit class 
     # sorts by power .  They have a good reason for this (hashing), but it does mean we get sub-optimal unit ordering.  
@@ -226,6 +232,16 @@ class ModelPlot(PlotBase):
         :type legend: bool
         :param title: Title to draw on the plot.  Default: None
         :type title: str
+        :param linewidth: line width
+        :type linewidth: float
+        :param grid: show grid or not, Default: True
+        :type grid: bool
+        :param figsize: Figure dimensions (width, height) in inches. Default: (8,5)
+        :type figsize: 2-tuple of floats
+        :param capsize: end cap length of errorbars if shown, in points. Default: 3.
+        :type capsize: float
+        :param markersize: size of data point marker in points. Default: 8
+        :type markersize: float
         '''
         kwargs_opts = {'errorbar':False,
                        'fmt': None,
@@ -233,6 +249,11 @@ class ModelPlot(PlotBase):
                        'legend': True,
                        'measurements':None,
                        'title': None,
+                       'grid' :True,
+                       'figsize':(8,5),
+                       'linewidth': 2.0,
+                       'capsize': 5.0,
+                       'markersize': 8.0
                        }
     
         kwargs_opts.update(kwargs)
@@ -282,7 +303,7 @@ class ModelPlot(PlotBase):
         xi2=np.intersect1d(xi,x2)
         yi2=np.intersect1d(yi,y2)
         
-        self._figure,self._axis = self._plt.subplots(nrows=1,ncols=1)
+        self._figure,self._axis = self._plt.subplots(nrows=1,ncols=1,figsize=kwargs_opts['figsize'])
         linesN=[]
         linesG=[]
         # Sort out the axes labels depending on whether reciprocal=True or not.
@@ -371,12 +392,21 @@ class ModelPlot(PlotBase):
                 # Note use of zorder to ensure points are on top of lines.
                 if kwargs_opts['errorbar']:
                     self._axis.errorbar(x=_x.data,y=_y.data,xerr=_x.error,yerr=_y.error,
-                                        capsize=5.0,fmt=fmt[i],capthick=2,ls=None,zorder=6)
+                                        capsize=kwargs_opts['capsize'],fmt=fmt[i],capthick=2,ls=None,zorder=6,
+                                        markersize=kwargs_opts['markersize'])
                 i=i+1
             # the data points
-            dataline = self._axis.loglog(*args,zorder=5)
+            dataline = self._axis.loglog(*args,zorder=5,markersize=kwargs_opts['markersize'])
             self._axis.set_xscale('log')
             self._axis.set_yscale('log')
+            self._axis.tick_params(axis='both',direction='in',which='both')
+            self._axis.tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both')
+            if kwargs_opts['grid']:
+                self._axis.grid(b=True,which='major',axis='both',lw=kwargs_opts['linewidth']/2,
+                                color='k',alpha=0.33)
+                self._axis.grid(b=True,which='minor',axis='both',lw=kwargs_opts['linewidth']/2,
+                                color='k',alpha=0.22,linestyle='--')
+            
             
         if kwargs_opts['legend']:            
             # Manually build the legend. Create the column headers for the legend
@@ -456,42 +486,7 @@ class ModelPlot(PlotBase):
         :return: The axis values as arrays.  Values are center of pixel.
         :rtype: :class:`numpy.ndarray` or :class:`astropy.units.Quantity`
         """
-        w = data.wcs
-        if w is None:
-            raise Exception("No WCS in the input image")
-        xind=np.arange(w._naxis[0])
-        yind=np.arange(w._naxis[1])
-        # wcs methods want broadcastable arrays, but in our
-        # case naxis1 != naxis2, so make two 
-        # calls and take x from the one and y from the other.
-        if quantity:
-            x=w.array_index_to_world(xind,xind)[0]
-            y=w.array_index_to_world(yind,yind)[1]
-            # Need to handle Habing units which are non-standard FITS.
-            # Can't apply them to a WCS because it will raise an Exception.
-            # See ModelSet.get_model
-            cunit=data.header.get("CUNIT2",None) 
-            if cunit == "Habing":
-               y._unit=utils.habing_unit     
-            if linear:
-               j = 10*np.ones(len(x.value))
-               k = 10*np.ones(len(y.value))
-               #ugh we are depending on CTYPE being properly indicated as log(whatever)
-               if 'log' in w.wcs.ctype[0]:
-                   x = np.power(j,x.value)*x.unit
-               if 'log' in w.wcs.ctype[1]:
-                   y = np.power(k,y.value)*y.unit
-        else:
-            x=w.array_index_to_world_values(xind,xind)[0]
-            y=w.array_index_to_world_values(yind,yind)[1]
-            if linear:
-               j = 10*np.ones(len(x))
-               k = 10*np.ones(len(y))
-               if 'log' in w.wcs.ctype[0]:
-                   x = np.power(j,x)
-               if 'log' in w.wcs.ctype[1]:
-                   y = np.power(k,y)
-        return (x,y)
+        return utils.get_xy_from_wcs(data,quantity,linear)
     
         
     #@todo allow data to be an array? see overlay()
@@ -626,7 +621,7 @@ class ModelPlot(PlotBase):
         locmin = ticker.LogLocator(base=10.0, subs=np.arange(2, 10)*.1,numticks=10) 
         
         #allow unit conversion of density axis
-        xax_unit = u.Unit(_header['cunit'+ax1])
+        xax_unit = u.Unit(_header['CUNIT'+ax1])
         # cover the base where we had to erase the wcs unit to avoid FITS error
         if x._unit is None or x._unit is u.dimensionless_unscaled:
             x._unit = xax_unit
@@ -642,9 +637,9 @@ class ModelPlot(PlotBase):
             x = x.to(xax_unit)
 
         # Set the x label appropriately, use LaTeX inline formatting
-        xlab = r"{0} [{1:latex_inline}]".format(_header['ctype'+ax1],xax_unit)
+        xlab = r"{0} [{1:latex_inline}]".format(_header['CTYPE'+ax1],xax_unit)
         
-        yax_unit = u.Unit(_header['cunit'+ax2])
+        yax_unit = u.Unit(_header['CUNIT'+ax2])
         if y._unit is None or y._unit is u.dimensionless_unscaled:
             y._unit = yax_unit
         ytype = "log({0})".format(utils.get_rad(yax_unit))

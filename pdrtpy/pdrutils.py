@@ -562,10 +562,10 @@ def fliplabel(label):
     ii = label.index('/')
     return label[ii+1:]+'/'+label[0:ii]
 
-# partly stolen from astropy.quanity.to_string, will also work with Measurements
+# partly stolen from astropy.quantity.to_string, will also work with Measurements
 def float_formatter(quantity,precision):
     format_spec = '.{}g'.format(precision)
-    number = Latex.format_exponential_notation(quantity.value, format_spec=format_spec)
+    number = Latex.format_exponential_notation(np.squeeze(quantity.value), format_spec=format_spec)
     # strip the $ signs
     unit = quantity.unit.to_string('latex_inline')[1:-1]
     return f'{number}~{unit}'
@@ -598,4 +598,112 @@ def isEven(number):
 
 def isOdd(number):
     return not isEven(number)
+
+def _has_substring(s,ids):
+    return any([s in c for c in ids])
+
+def _has_H2(ids):
+    return _has_substring('H2',ids)
+
+def _trim_to_H2(image):
+    '''H2 models in wk2006 are a smaller grid 17x17 vs 25x29. So when performing operations
+    involving other models, we have to trim the other models to 17x17;  log(n,G0) from 1 to 5
+    
+    :param image: the model to trim
+    :type image: :class:`~pdrtpy.measurement.Measurement`
+    :returns: the trimmed model
+    :rtype: :class:`~pdrtpy.measurement.Measurement`
+    '''
+    f = deepcopy(image)
+    #Slice the WCS. Note this is in numpy array order, not WCS axis order
+    f.wcs = f.wcs[6:23,0:17]
+    f.data = f.data[6:23,0:17]
+    f.meta['NAXIS1'] = 17
+    f.meta['NAXIS2'] = 17
+    comment("Trimmed model",f)
+    return f
+
+def _trim_all_to_H2(models):
+    '''H2 models in wk2006 are a smaller grid 17x17 vs 25x29. So when performing operations
+    involving other models, we have to trim the other models to 17x17;  log(n,G0) from 1 to 5
+    
+    :param models: models to trim
+    :type models: :list or dict of class:`~pdrtpy.measurement.Measurement`
+    '''
+    if type(models) is dict:
+        for id in models:
+            if "H2" not in id:
+                models[id] = _trim_to_H2(models[id])
+    else:
+        # have to iterate over index to ensure "pass by reference"
+        # if we did for m in models: m = ..., then models
+        # remains unchanged at end of function.  Wheee, python!
+        for j in range(len(models)):
+            if "H2" not in models[j].id:
+                models[j] = _trim_to_H2(models[j])
+                
+def get_xy_from_wcs(data,quantity=False,linear=False):
+    """Get the x,y axis vectors from the WCS of the input image.
+   
+    :param data: the input image
+    :type data: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+    :param quantity: If True, return the arrays as :class:`astropy.units.Quantity`. If False, the returned arrays are :class:`numpy.ndarray`.
+    :type quantity: bool
+    :param linear: If True, returned arrays are in linear space, if False they are in log space.
+    :type linear: bool
+    :return: The axis values as arrays.  Values are center of pixel.
+    :rtype: :class:`numpy.ndarray` or :class:`astropy.units.Quantity`
+    """
+    w = data.wcs
+    if w is None:
+        raise Exception("No WCS in the input image")
+    xind=np.arange(w._naxis[0])
+    yind=np.arange(w._naxis[1])
+    #print("GETXY xind,yind ",xind,yind)
+    # wcs methods want broadcastable arrays, but in our
+    # case naxis1 != naxis2, so make two 
+    # calls and take x from the one and y from the other.
+    if quantity:
+        x=w.array_index_to_world(xind,xind)[0]
+        y=w.array_index_to_world(yind,yind)[1]
+        # Need to handle Habing or Draine units which are non-standard FITS.
+        # Can't apply them to a WCS because it will raise an Exception.
+        # See ModelSet.get_model
+        cunit=data.header.get("CUNIT2",None) 
+        if cunit == "Habing":
+           y._unit = habing_unit     
+        if cunit == "Draine":
+           y._unit = draine_unit     
+        if linear:
+           j = 10*np.ones(len(x.value))
+           k = 10*np.ones(len(y.value))
+           #ugh we are depending on CTYPE being properly indicated as log(whatever)
+           if 'log' in w.wcs.ctype[0].lower():
+               x = np.power(j,x.value)*x.unit
+           if 'log' in w.wcs.ctype[1].lower():
+                   y = np.power(k,y.value)*y.unit
+    else:
+        x=w.array_index_to_world_values(xind,xind)[0]
+        y=w.array_index_to_world_values(yind,yind)[1]
+        if linear:
+           j = 10*np.ones(len(x))
+           k = 10*np.ones(len(y))
+           if 'log' in w.wcs.ctype[0].lower():
+               x = np.power(j,x)
+           if 'log' in w.wcs.ctype[1].lower():
+               y = np.power(k,y)
+    return (x,y)
+
+# not needed
+def _sort_H2_to_last(d):
+    print("old keys: ",d.keys())
+    d2 = OrderedDict(d)
+    for k in list(d2.keys()):  #use list to prevent concurrent modification exception
+        if _has_H2([k]):
+            print("moving Key %s"%k)
+            d2.move_to_end(k,last=True)
+    print("new keys: ",d2.keys())
+    return dict(d2)
+    
+        
 
