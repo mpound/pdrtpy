@@ -4,7 +4,7 @@ import itertools
 import collections
 from copy import deepcopy
 import numpy as np
-from astropy.table import Table, unique, vstack
+from astropy.table import Table, Column, unique, vstack
 import astropy.units as u
 from .pdrutils import get_table,model_dir, _OBS_UNIT_
 #,habing_unit,draine_unit,mathis_unit
@@ -39,12 +39,25 @@ class ModelSet(object):
             matching_rows = np.where((self._all_models["z"]==z) &
                      (self._all_models["medium"]==medium) & 
                      (self._all_models["mass"] == mass))
-            possible_mass = sorted(set(self._all_models.loc[name]["mass"].data))
+            possible_mass = self._all_models.loc[name]["mass"]
+
         #print("Matching rows: ",matching_rows)
-        possible_z =  sorted(set(self._all_models.loc[name]["z"].data))
+        possible_z =  self._all_models.loc[name]["z"]
+        possible_medium = self._all_models.loc[name]["medium"]
+        # ugh, possible_xxresulting from this can be a Python native or a Column.
+        # If only one row matches it will be a native, otherwise it will be a Column,
+        # so we have to check if it is a Column or not, so that we can successfully 
+        # import numberscreate a numpy array.
+        for num in [possible_mass, possible_z, possible_medium]:
+            if num is None: 
+                continue
+            if isinstance(num,Column):
+                num = sorted(set(np.array(num))) # convert Column to np.array
+            else:
+                num = sorted(set(np.array([num]))) # convert native to np.array
         #print("possible z:",possible_z)
-        possible_medium = sorted(set(self._all_models.loc[name]["medium"].data))
-        #print("possiblemedium",possible_medium)
+        #print("possble mass:",possible_mass)
+        #print("possible medium",possible_medium)
         if matching_rows[0].size == 0:
             msg = f"ModelSet not found in {name:s}. Check your value of z and medium.  Allowed z are {possible_z}.  Allowed medium are {possible_medium}."
             if possible_mass is not None:
