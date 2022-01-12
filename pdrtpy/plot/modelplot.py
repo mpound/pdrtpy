@@ -13,8 +13,6 @@ from cycler import cycler
 from astropy.io import fits
 import astropy.wcs as wcs
 import astropy.units as u
-from astropy.units import UnitsWarning
-from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
 
 from .plotbase import PlotBase
 from ..measurement import Measurement

@@ -7,11 +7,8 @@ import numpy as np
 from astropy.table import Table, Column, unique, vstack
 import astropy.units as u
 from .pdrutils import get_table,model_dir, _OBS_UNIT_
-#,habing_unit,draine_unit,mathis_unit
 from .measurement import Measurement
 
-#@ToDo:
-#   addModelSet() - for custom model sets. See model convention white paper
 class ModelSet(object):
     """Class for computed PDR Model Sets. :class:`ModelSet` provides interface with a directory containing the model FITS files and the ability to query details about 
 
@@ -25,6 +22,7 @@ class ModelSet(object):
     :type float:
     :raises ValueError: If model set not recognized/found.
     """
+    #@ToDo replace with kwargs?
     def __init__(self,name,z,medium="constant density",mass=None):
         self._all_models = get_table("all_models.tab")
         self._all_models.add_index("name")
@@ -174,10 +172,6 @@ class ModelSet(object):
         :rtype: int
         """
         return len(self._get_ratio_elements(m))
-        # Cute, but no longer needed:
-        # Since find_files is a generator, we can't use len(), so do this sum.
-        # See https://stackoverflow.com/questions/393053/length-of-generator-output
-        #return(sum(1 for _ in self.find_files(m)))
 
     def find_pairs(self,m):
         """Find the valid model ratios labels in this ModelSet for a given list of measurement IDs
@@ -255,7 +249,7 @@ class ModelSet(object):
         '''Get a specific model by its identifier
 
         :param identifier: a :class:`~pdrtpy.measurement.Measurement` ID. It can be an intensity or a ratio,
-         e.g., "CII_158","CI_609/FIR"
+   #,habing_unit,draine_unit,mathis_unit      e.g., "CII_158","CI_609/FIR"
         :type identifier: str
         :returns: The model matching the identifier
         :rtype: :class:`~pdrtpy.measurement.Measurement`

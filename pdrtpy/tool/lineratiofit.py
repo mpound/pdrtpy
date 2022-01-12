@@ -378,12 +378,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
 
 
         # eventually need to check that the maps overlap in real space.
-        #if kwargs_opts['test']:
         self._compute_residual()
-        #    self._minimizer= Minimizer(self._residual_multi_pixel, 
-        #                               params=None, nan_policy=kwargs_opts['nan_policy'])
-        #else:
-        #    self._compute_delta_sq()
         self._minimizer= Minimizer(self._residual_single_pixel, 
                                    params=None, nan_policy=kwargs_opts['nan_policy'])
         #need to pop nan_policy and test so that it does not get passed to Minimzer.minimize()
@@ -401,7 +396,6 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
             ps.print_stats()
             self._stats = s
-            #print(s.getvalue())
 
     def _mask_measurements(self,mask):
         ''' Set the mask on the measurements based on noise characteristics.  This is so that
@@ -459,11 +453,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             # deepcopy workaround for bug: https://github.com/astropy/astropy/issues/9006
             num = utils.convert_if_necessary(self._measurements[p["numerator"]])
             denom = utils.convert_if_necessary(self._measurements[p["denominator"]])
-           #print("num header",num.meta)
             self._observedratios[label] = deepcopy(num/denom)
-            #print("META BEFORE",self._observedratios[label].meta)
-            #self._observedratios[label].meta = deepcopy(num.header)
-            #print("META AFTER",self._observedratios[label].meta)
             #@TODO create a meaningful header for the ratio map
             self._ratioHeader(p["numerator"],p["denominator"],label)
             self._observedshape = self._observedratios[label].data.shape
@@ -508,9 +498,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             mvalue[i] = self._modelratios[k].get(parvals['density'],parvals['radiation_field']) 
             dvalue[i] = self._observedratios[k].data.flatten()[index]
             evalue[i] = self._observedratios[k].uncertainty.array.flatten()[index]
-            #print("model = ",mvalue[i]," obs = ",dvalue[i]," error = ",evalue[i])
             i = i+1
-        #print("returning ",(dvalue - mvalue)/evalue)
         return  (dvalue - mvalue)/evalue
     
     def _residual_multi_pixel(self,params,index):
@@ -584,22 +572,15 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             vals.append(interpn(self._interpgrid,self._interpvalues,(i,radiation_field,density,pixel)))
         return np.array(vals)
         
-    def _compute_chisq(self):#,test=False):
+    def _compute_chisq(self):
         '''Compute the chi-squared values from observed ratios and models'''
         if self.ratiocount < 2 :
             raise Exception("Not enough ratios to compute chisq.  Need 2, got %d"%self.ratiocount)
-        #if test:
         sumary = sum((self._residual[r]._data**2 for r in self._residual))
         self._dof = len(self._residual) - 1
         k = utils.firstkey(self._residual)
         _wcs = deepcopy(self._residual[k].wcs)
         _meta = deepcopy(self._residual[k].meta)
-        #else:
-        #    sumary = sum((self._deltasq[r]._data for r in self._deltasq))
-        #    self._dof = len(self._deltasq) - 1
-        #    k = utils.firstkey(self._deltasq)
-        #    _wcs = deepcopy(self._deltasq[k].wcs)
-        #    _meta = deepcopy(self._deltasq[k].meta)
         self._chisq = CCDData(sumary,unit='adu',wcs=_wcs,meta=_meta)
         self._reduced_chisq =  self._chisq.divide(self._dof)
         # must make a copy here otherwise the header is an OrderDict
@@ -629,7 +610,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             kwargs.pop('burn')
             progress = kwargs.pop("progress",True) # progress bar
         else:
-            progress = kwargs.get("progress",False) #keep the progress keyword for emcee
+            progress = kwargs.get("progress",False) #keep the progress keyword for emcee, get vs pop
         # First get the range of density n and radiation field FUV from the 
         # model space, in order to provide them to the Parameters object.
         # Since the wk2006 H2 models have a smaller model space, 

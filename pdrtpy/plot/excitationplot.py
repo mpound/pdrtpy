@@ -17,14 +17,9 @@ from astropy.nddata.utils import Cutout2D
 from astropy.io import fits
 import astropy.wcs as wcs
 import astropy.units as u
-from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
-from astropy.visualization import simple_norm, ZScaleInterval , ImageNormalize
-from astropy.visualization.stretch import SinhStretch,  LinearStretch
-from matplotlib.colors import LogNorm
-
 
 from .plotbase import PlotBase
-from ..pdrutils import to,float_formatter,LOGE,isOdd
+from ..pdrutils import to,float_formatter,LOGE,is_odd
 
 class ExcitationPlot(PlotBase):
     """
@@ -73,12 +68,14 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
         sigma = LOGE*error/colden
         if kwargs_opts['axis'] is None:
             self._figure, self._axis = self._plt.subplots(figsize=kwargs_opts['figsize'])
-            kwargs_opts['axis'] = self._axis
+            _axis = self._axis
+        else:
+            _axis = kwargs_opts['axis']
         if self._tool.opr_fitted and show_fit:
             _label = "LTE"
         else:
             _label = '$'+self._label+'$ data'
-        ec = kwargs_opts['axis'].errorbar(energy,np.log10(colden),yerr=sigma,
+        ec = _axis.errorbar(energy,np.log10(colden),yerr=sigma,
                             fmt="o", capsize=kwargs_opts['capsize'],
                             label=_label, lw=kwargs_opts['linewidth'],
                             ms=kwargs_opts['markersize'],color=kwargs_opts['color'])
@@ -86,13 +83,14 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
         if self._tool.opr_fitted and show_fit:
             # Plot only the odd-J ones!
             if position is not None:
-                opr_p = tt._fitresult[position].params['opr'].value
+                opr_v = tt.opr[position]
+                opr_e = tt.opr.error[position]
             else:
-                opr_p = tt.opr.value[0]
+                opr_p = tt.opr
             cddn = colden*self._tool._canonical_opr/opr_p
-            odd_index = np.where([isOdd(c) for c in cdavg.keys()])
+            odd_index = np.where([is_odd(c) for c in cdavg.keys()])
             #color = ec.lines[0].get_color() # want these to be same color as data
-            kwargs_opts['axis'].errorbar(x=energy[odd_index], 
+            _axis.errorbar(x=energy[odd_index], 
                                 y=np.log10(cddn[odd_index]),marker="^",
                                 label=f"OPR = {opr_p:.2f}",
                                 yerr=sigma[odd_index], 
@@ -100,11 +98,11 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
                                 linestyle='none',color='k',
                                 lw=kwargs_opts['linewidth'],
                                 ms=kwargs_opts['markersize'])
-        kwargs_opts['axis'].set_xlabel("$E_u/k$ (K)")
+        _axis.set_xlabel("$E_u/k$ (K)")
         if norm:
-            kwargs_opts['axis'].set_ylabel("log $(N_u/g_u) ~({\\rm cm}^{-2})$")
+            _axis.set_ylabel("log $(N_u/g_u) ~({\\rm cm}^{-2})$")
         else:
-            kwargs_opts['axis'].set_ylabel("log $(N_u) ~({\\rm cm}^{-2})$")
+            _axis.set_ylabel("log $(N_u) ~({\\rm cm}^{-2})$")
         # label the points with e.g. J=2,3,4...
         first=True
         for lab in sorted(cdavg):
@@ -113,8 +111,8 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
                 first=False
             else: 
                 ss=str(lab)
-            kwargs_opts['axis'].text(x=energies[lab]+100,y=np.log10(cdavg[lab]),s=ss)
-        handles,labels=kwargs_opts['axis'].get_legend_handles_labels()
+            _axis.text(x=energies[lab]+100,y=np.log10(cdavg[lab]),s=ss)
+        handles,labels=_axis.get_legend_handles_labels()
         if show_fit:
             if tt.fit_result is None:
                 raise ValueError("No fit to show. Have you run the fit in your H2ExcitationFit?")
@@ -135,35 +133,35 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
                 labnh = r"$N("+self._label+")=" + float_formatter(tt.total_colden,2)+"$" 
             else:
                 labnh = r"$N("+self._label+")=" + float_formatter(u.Quantity(tt.total_colden[position],tt.total_colden.unit),2)+"$"
-            kwargs_opts['axis'].plot(x_fit,tt._one_line(x_fit, outpar['m1'], 
+            _axis.plot(x_fit,tt._one_line(x_fit, outpar['m1'], 
                             outpar['n1']), '.' ,label=labcold,
                             lw=kwargs_opts['linewidth'])
-            kwargs_opts['axis'].plot(x_fit,tt._one_line(x_fit, outpar['m2'], 
+            _axis.plot(x_fit,tt._one_line(x_fit, outpar['m2'], 
                             outpar['n2']), '.', label=labhot,
                             lw=kwargs_opts['linewidth'])
 
-            kwargs_opts['axis'].plot(x_fit, tt.fit_result[position].eval(x=x_fit,fit_opr=False), label="fit")
-            handles,labels=kwargs_opts['axis'].get_legend_handles_labels()
+            _axis.plot(x_fit, tt.fit_result[position].eval(x=x_fit,fit_opr=False), label="fit")
+            handles,labels=_axis.get_legend_handles_labels()
             #kluge to ensure N(H2) label is last
-            phantom = kwargs_opts['axis'].plot([],marker="", markersize=0,ls="",lw=0)
+            phantom = _axis.plot([],marker="", markersize=0,ls="",lw=0)
             handles.append(phantom[0])
             labels.append(labnh)
 
-        kwargs_opts['axis'].set_xlim(kwargs_opts['xmin'],kwargs_opts['xmax'])
-        kwargs_opts['axis'].set_ylim(kwargs_opts['ymin'],kwargs_opts['ymax'])
-        kwargs_opts['axis'].xaxis.set_major_locator(MultipleLocator(1000))
-        kwargs_opts['axis'].yaxis.set_major_locator(MultipleLocator(1))
-        kwargs_opts['axis'].xaxis.set_minor_locator(MultipleLocator(200))
-        kwargs_opts['axis'].yaxis.set_minor_locator(MultipleLocator(0.2))
-        kwargs_opts['axis'].tick_params(axis='both',direction='in',which='both')
-        kwargs_opts['axis'].tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both')
+        _axis.set_xlim(kwargs_opts['xmin'],kwargs_opts['xmax'])
+        _axis.set_ylim(kwargs_opts['ymin'],kwargs_opts['ymax'])
+        _axis.xaxis.set_major_locator(MultipleLocator(1000))
+        _axis.yaxis.set_major_locator(MultipleLocator(1))
+        _axis.xaxis.set_minor_locator(MultipleLocator(200))
+        _axis.yaxis.set_minor_locator(MultipleLocator(0.2))
+        _axis.tick_params(axis='both',direction='in',which='both')
+        _axis.tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both')
         if kwargs_opts['grid']:
-            kwargs_opts['axis'].grid(b=True,which='major',axis='both',lw=kwargs_opts['linewidth']/2,
+            _axis.grid(b=True,which='major',axis='both',lw=kwargs_opts['linewidth']/2,
                             color='k',alpha=0.33)
-            kwargs_opts['axis'].grid(b=True,which='minor',axis='both',lw=kwargs_opts['linewidth']/2,
+            _axis.grid(b=True,which='minor',axis='both',lw=kwargs_opts['linewidth']/2,
                             color='k',alpha=0.22,linestyle='--')
             
-        kwargs_opts['axis'].legend(handles,labels)
+        _axis.legend(handles,labels)
     
     def temperature(self,component,**kwargs):
         """Plot the temperature of hot or cold gas component.
@@ -290,8 +288,10 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
         if type(_axis) is not np.ndarray:
             _axis= np.array([_axis])
         for a in _axis:
-            a.tick_params(axis='both',direction='in',which='both')        
-            a.tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both')          
+            a.tick_params(axis='both',direction='in',which='both')
+            # astropy complains if you use axis=both and bottom, top etc. 
+            a.tick_params(axis='x',bottom=True,top=True,left=True,right=True, which='both')
+            a.tick_params(axis='y',bottom=True,top=True,left=True,right=True, which='both')
             if hasattr(a,'coords'):
                 for c in a.coords:
                     c.display_minor_ticks(True)
