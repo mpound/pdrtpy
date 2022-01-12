@@ -335,7 +335,13 @@ class Measurement(CCDData):
         self._interp_lin = interp2d(self._world_axis_lin[0],self._world_axis_lin[1],z=self.data,kind=kind,bounds_error=True)
      
     def get_pixel(self,world_x,world_y):
-        '''Return the nearest pixel coordinates to the input world coordinates'''
+        '''Return the nearest pixel coordinates to the input world coordinates
+        
+        :param world_x: The horizontal world coordinate
+        :type world_x: float 
+        :param world_y: The vertical world coordinate
+        :type world_y: float 
+        '''
         if self.wcs is None:
             raise Exception(f"No wcs in this Measurement {self.id}")
         return tuple(np.round(self.wcs.world_to_pixel_values(world_x,world_y)).astype(int))
