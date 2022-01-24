@@ -183,6 +183,7 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
         self._plot(self._tool.colden(component),log=log,**kwargs)
            
     def opr(self,**kwargs):
+        """Plot the ortho-to-para ratio.  This will be a map if the input data are a map, otherwise a float value is returned."""
         if type(self._tool.opr) == float:
             return self._tool.opr
         self._plot(self._tool.opr,**kwargs)
@@ -342,6 +343,21 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
 
 
     def explore(self,data=None,interaction_type="click",**kwargs): 
+        """Explore the fitted parameters of a map. A user-requested map is displayed in the left panel and in the right panel is the fitted excitation diagram for a point selected by the user.  The user clicks on a point in the left panel and the right panel will update with the excitation diagram for that point. 
+
+        :param data: A reference image to use for the left panel, e.g. the total column density, the cold temperature, etc.  This should be a reference results in the :class:`~pdrtpy.tool.h2excitation.H2Excitation` tool used for this :class:`~pdrtpy.plot.excitationplot.ExcitationPlot` (e.g., *htool.temperature['cold']*)
+        :type data: :class:`~pdrtpy.measurement.Measurement`
+        :param interaction_type: whether to use mouse click or mouse move to update the right hand panel.   Valid values are 'click' or 'move'.
+        :type interaction_type: str
+        :param \*\*kwargs: Other parameters passed to :meth:`~pdrtpy.plot.excitationplot.ExcitationPlot._plot`, :meth:`~pdrtpy.plot.excitationplot.ExcitationPlot.ex_diagram`, or matplotlib methods.
+
+            - *units,image, contours, label, title, norm, figsize* -- See the general `Plot Keywords`_ documentation
+            - *show_fit* - show the fit in the excitation diagram, Default: True
+            - *log* - plot the log10 of the image, can be useful for column density,  Default: False
+            - *markersize* - size of the marker displayed where clicked, in points, Default: 20
+            - *fmt* - matplotlib format for the marker, Default:. 'r+'
+        """
+
         kwargs_opts = {'units' : None,
                        'image':True,
                        'colorbar': True,

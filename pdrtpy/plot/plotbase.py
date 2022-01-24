@@ -105,9 +105,9 @@ class PlotBase:
         :type y: float
         :param s: the text
         :type s: str
-        :param fontdict :A dictionary to override the default text properties. If fontdict is None, the defaults are determined by rcParams.
+        :param fontdict: A dictionary to override the default text properties. If fontdict is None, the defaults are determined by rcParams.
         :type fontdict: dict    
-        :param **kwargs: Other miscellaneous class:`~matplotlib.text.Text` parameters.       
+        :param \*\*kwargs: Other miscellaneous :class:`~matplotlib.text.Text` parameters.       
         """
         n = self._plt.text(x,y,s,fontdict,**kwargs)
 
