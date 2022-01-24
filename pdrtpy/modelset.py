@@ -26,41 +26,42 @@ class ModelSet(object):
     def __init__(self,name,z,medium="constant density",mass=None):
         self._all_models = get_table("all_models.tab")
         self._all_models.add_index("name")
+        possible = dict()
         if name not in self._all_models["name"]:
             raise ValueError(f'Unrecognized model {name:s}. Choices  are: {list(self._all_models["name"])}')
             
         if np.all(self._all_models.loc[name]["mass"].mask):
             matching_rows = np.where((self._all_models["z"]==z) &
                                  (self._all_models["medium"]==medium))
-            possible_mass = None
+            possible["mass"] = None
         else:
             matching_rows = np.where((self._all_models["z"]==z) &
                      (self._all_models["medium"]==medium) & 
                      (self._all_models["mass"] == mass))
-            possible_mass = self._all_models.loc[name]["mass"]
-
-        #print("Matching rows: ",matching_rows)
-        possible_z =  self._all_models.loc[name]["z"]
-        possible_medium = self._all_models.loc[name]["medium"]
-        # ugh, possible_xxresulting from this can be a Python native or a Column.
+            possible["mass"] = self._all_models.loc[name]["mass"]
+        for key in ["z", "medium"]:
+            possible[key]=  self._all_models.loc[name][key]
+        # ugh, possible[] resulting from above can be a Python native or a Column.
         # If only one row matches it will be a native, otherwise it will be a Column,
         # so we have to check if it is a Column or not, so that we can successfully 
         # import numberscreate a numpy array.
-        for num in [possible_mass, possible_z, possible_medium]:
-            if num is None: 
+        for i in possible:
+            if possible[i] is None: 
                 continue
-            if isinstance(num,Column):
-                num = sorted(set(np.array(num))) # convert Column to np.array
+            if isinstance(possible[i],Column):
+                possible[i] = sorted(set(np.array(possible[i]))) # convert Column to np.array
             else:
-                num = sorted(set(np.array([num]))) # convert native to np.array
-        #print("possible z:",possible_z)
-        #print("possble mass:",possible_mass)
-        #print("possible medium",possible_medium)
+                possible[i] = sorted(set(np.array([possible[i]]))) # convert native to np.array
+
+        #print("possible:",possible)
+        if mass is None and possible['mass'] is not None:
+            raise ValueError(f'mass value is required for model {name:s}. Allowed values are {possible["mass"]}')
         if matching_rows[0].size == 0:
-            msg = f"ModelSet not found in {name:s}. Check your value of z and medium.  Allowed z are {possible_z}.  Allowed medium are {possible_medium}."
-            if possible_mass is not None:
-                msg = msg + f" Allowed mass are {possible_mass}."
+            msg = f"Requested ModelSet not found in {name:s}. Check your input values.  Allowed z are {possible['z']}.  Allowed medium are {possible['medium']}."
+            if possible['mass'] is not None:
+                msg = msg + f" Allowed mass are {possible['mass']}."
             raise ValueError(msg)
+
         self._tabrow = self._all_models[matching_rows].loc[name]
         self._table = get_table(path=self._tabrow["path"],filename=self._tabrow["filename"])
         self._table.add_index("ratio")
