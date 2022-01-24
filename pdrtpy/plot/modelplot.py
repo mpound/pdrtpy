@@ -131,7 +131,7 @@ class ModelPlot(PlotBase):
             if kwargs_opts['contours']:
                 lines.append(Line2D([0], [0], color=kwargs_opts['colors'][0], linewidth=3, linestyle='-'))
                 labels.append("model")
-            if kwargs_opts['measurements'] is not None:
+            if meas is not None:
                 lines.append(Line2D([0], [0], color=kwargs_opts['meas_color'][0], linewidth=3, linestyle='-'))
                 labels.append("observed")
             #maybe loc should be 'best' but then it bounces around
