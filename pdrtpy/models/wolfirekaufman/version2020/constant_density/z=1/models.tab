@@ -18,6 +18,7 @@
           CO_32             CO_10                CO_32/CO_10       CO32_CO10sm                1   CO(J=3-2) / CO(J=1-0)
           CO_32             CO_21                CO_32/CO_21       CO32_CO21sm                1   CO(J=3-2) / CO(J=2-1)
          CI_609             CO_43               CI_609/CO_43       CI609_CO43sm               1   [C I] 609 $\mu$m / CO(J=4-3)
+         CI_609             CO_10               CI_609/CO_21       CI609_CO21sm               1   [C I] 609 $\mu$m / CO(J=2-1)
          CI_609             CO_10               CI_609/CO_10       CI609_CO10sm               1   [C I] 609 $\mu$m / CO(J=1-0)
           CO_43             CO_21                CO_43/CO_21       CO43_CO21sm                1   CO(J=4-3) / CO(J=2-1)
           CO_65             CO_10                CO_65/CO_10       CO65_CO10sm                1   CO(J=6-5) / CO(J=1-0)
@@ -71,4 +72,4 @@
       FEII_5.67         FEII_5.34       FEII_5.67/FEII_5.34       FEII5p67_FEII5p34           1   [Fe II] 5.67 $\mu$m/[Fe II] 5.34 $\mu$m
      FEII_17.94         FEII_5.34      FEII_17.94/FEII_5.34      FEII17p94_FEII5p34           1   [Fe II] 17.94 $\mu$m/[Fe II] 5.34 $\mu$m
      FEII_22.90         FEII_5.34      FEII_22.90/FEII_5.34      FEII22p90_FEII5p34           1   [Fe II] 22.90 $\mu$m/[Fe II] 5.34 $\mu$m
-     FEII_25.99         FEII_5.34      FEII_25.99/FEII_5.34      FEII25p99_FEII5p34           1   [Fe II] 25.99 $\mu$m/[Fe II] 5.34 $\mu$m
+        FEII_26         FEII_5.34         FEII_26/FEII_5.34      FEII25p99_FEII5p34           1   [Fe II] 25.99 $\mu$m/[Fe II] 5.34 $\mu$m
