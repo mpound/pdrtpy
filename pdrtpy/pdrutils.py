@@ -589,15 +589,33 @@ def is_image(image):
     return True
 
 def is_ratio(identifier):
+    """Is the identifier a ratio (as opposed to an intensity)
+    
+    :rtype: bool
+    """
     # find() returns -1 if char not found.
     # in our case, also rule out that the / is in the zeroth position.
     return identifier.find('/') > 0
 
-def isEven(number):
+def is_even(number):
+    """ Check if number is even
+    
+    :param number: a number
+    :return: True if even, False otherwise
+    :type number: float
+    :rtype: bool
+    """
     return abs(number) % 2 == 0
 
-def isOdd(number):
-    return not isEven(number)
+def is_odd(number):
+    """ Check if number is odd
+    
+    :param number: a number
+    :type number: float
+    :return: True if odd, False otherwise
+    :rtype: bool
+    """    
+    return not is_even(number)
 
 def _has_substring(s,ids):
     return any([s in c for c in ids])
@@ -693,17 +711,5 @@ def get_xy_from_wcs(data,quantity=False,linear=False):
            if 'log' in w.wcs.ctype[1].lower():
                y = np.power(k,y)
     return (x,y)
-
-# not needed
-def _sort_H2_to_last(d):
-    print("old keys: ",d.keys())
-    d2 = OrderedDict(d)
-    for k in list(d2.keys()):  #use list to prevent concurrent modification exception
-        if _has_H2([k]):
-            print("moving Key %s"%k)
-            d2.move_to_end(k,last=True)
-    print("new keys: ",d2.keys())
-    return dict(d2)
-    
         
 

@@ -13,8 +13,6 @@ from cycler import cycler
 from astropy.io import fits
 import astropy.wcs as wcs
 import astropy.units as u
-from astropy.units import UnitsWarning
-from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
 
 from .plotbase import PlotBase
 from ..measurement import Measurement
@@ -71,6 +69,7 @@ class ModelPlot(PlotBase):
                        'meas_color': [self._CB_color_cycle[0]],
                        'legend':True,
                        'image':True,
+                       'measurements':None
                       }
         kwargs_opts.update(kwargs)
 
@@ -132,7 +131,7 @@ class ModelPlot(PlotBase):
             if kwargs_opts['contours']:
                 lines.append(Line2D([0], [0], color=kwargs_opts['colors'][0], linewidth=3, linestyle='-'))
                 labels.append("model")
-            if kwargs_opts['measurements'] is not None:
+            if meas is not None:
                 lines.append(Line2D([0], [0], color=kwargs_opts['meas_color'][0], linewidth=3, linestyle='-'))
                 labels.append("observed")
             #maybe loc should be 'best' but then it bounces around
@@ -170,7 +169,7 @@ class ModelPlot(PlotBase):
         meas = dict(zip(ids,measurements))
         models = [self._modelset.get_model(i) for i in ids]
         # need to trim model grids if H2 is present
-        if utils._has_H2(ids):
+        if utils._has_H2(ids) and self._modelset.is_wk2006:
             warnings.warn("Trimming all model grids to match H2 grid: log(n) = 1-5, log(G0) = 1-5")
             utils._trim_all_to_H2(models)
         i =0 

@@ -4,33 +4,64 @@ import itertools
 import collections
 from copy import deepcopy
 import numpy as np
-from astropy.table import Table, unique, vstack
+from astropy.table import Table, Column, unique, vstack
 import astropy.units as u
 from .pdrutils import get_table,model_dir, _OBS_UNIT_
-#,habing_unit,draine_unit,mathis_unit
 from .measurement import Measurement
 
-#@ToDo:
-#   addModelSet() - for custom model sets. See model convention white paper
 class ModelSet(object):
-    """Class for computed PDR Model Sets. :class:`ModelSet` will interface with a directory containing the model FITS files.
+    """Class for computed PDR Model Sets. :class:`ModelSet` provides interface with a directory containing the model FITS files and the ability to query details about 
 
-    :param name: identifier.
+    :param name: identifying name, e.g., 'wk2006'
     :type name: str
     :param z:  metallicity in solar units.  
     :type z: float
-    :raises ValueError: If identifier or z not recognized/found.
+    :param medium:  medium type, e.g. 'constant density', 'clumpy', 'non-clumpy'
+    :type medium: str
+    :param mass: maximum clump mass (for KosmaTau models).  Default:None (appropriate for Wolfire/Kaufman models)
+    :type float:
+    :raises ValueError: If model set not recognized/found.
     """
-    def __init__(self,name,z):
+    #@ToDo replace with kwargs?
+    def __init__(self,name,z,medium="constant density",mass=None):
         self._all_models = get_table("all_models.tab")
         self._all_models.add_index("name")
+        possible = dict()
         if name not in self._all_models["name"]:
-            raise ValueError("Unrecognized model %s. Choices are: %s"%(name,list(self._all_models['name'])))
+            raise ValueError(f'Unrecognized model {name:s}. Choices  are: {list(self._all_models["name"])}')
+            
+        if np.all(self._all_models.loc[name]["mass"].mask):
+            matching_rows = np.where((self._all_models["z"]==z) &
+                                 (self._all_models["medium"]==medium))
+            possible["mass"] = None
+        else:
+            matching_rows = np.where((self._all_models["z"]==z) &
+                     (self._all_models["medium"]==medium) & 
+                     (self._all_models["mass"] == mass))
+            possible["mass"] = self._all_models.loc[name]["mass"]
+        for key in ["z", "medium"]:
+            possible[key]=  self._all_models.loc[name][key]
+        # ugh, possible[] resulting from above can be a Python native or a Column.
+        # If only one row matches it will be a native, otherwise it will be a Column,
+        # so we have to check if it is a Column or not, so that we can successfully 
+        # import numberscreate a numpy array.
+        for i in possible:
+            if possible[i] is None: 
+                continue
+            if isinstance(possible[i],Column):
+                possible[i] = sorted(set(np.array(possible[i]))) # convert Column to np.array
+            else:
+                possible[i] = sorted(set(np.array([possible[i]]))) # convert native to np.array
 
-        matching_rows = np.where(self._all_models["z"]==z)
-        possible_z =  self._all_models.loc[name]["z"]
+        #print("possible:",possible)
+        if mass is None and possible['mass'] is not None:
+            raise ValueError(f'mass value is required for model {name:s}. Allowed values are {possible["mass"]}')
         if matching_rows[0].size == 0:
-            raise ValueError("Z=%2.1f not found in %s. Choices are: %s"%(z,name,possible_z.data))
+            msg = f"Requested ModelSet not found in {name:s}. Check your input values.  Allowed z are {possible['z']}.  Allowed medium are {possible['medium']}."
+            if possible['mass'] is not None:
+                msg = msg + f" Allowed mass are {possible['mass']}."
+            raise ValueError(msg)
+
         self._tabrow = self._all_models[matching_rows].loc[name]
         self._table = get_table(path=self._tabrow["path"],filename=self._tabrow["filename"])
         self._table.add_index("ratio")
@@ -49,22 +80,38 @@ class ModelSet(object):
         return self._tabrow["description"]+", Z=%2.1f"%self.z
 
     @property
+    def code(self):
+        """The PDR code that created this ModelSet, e.g. 'KOSMA-tau'
+        
+        :rtype: str
+        """
+        return self._tabrow["PDR code"]
+    
+    @property
     def name(self):
-        """The name of this model
+        """The name of this ModelSet
 
         :rtype: str 
         """
         return self._tabrow["name"]
 
     @property
-    def version (self):
-        """The version of this model
+    def version(self):
+        """The version of this ModelSet
 
         :rtype: str
         """
         return self._tabrow["version"]
-
+    
     @property
+    def medium(self):
+        """The medium type of this model, e.g. 'constant density', 'clumpy', 'non-clumpy'
+        
+        :rtype: str
+        """
+        return self._tabrow["medium"]
+    
+    @property 
     def z(self):
         """The metallicity of this ModelSet
 
@@ -126,10 +173,6 @@ class ModelSet(object):
         :rtype: int
         """
         return len(self._get_ratio_elements(m))
-        # Cute, but no longer needed:
-        # Since find_files is a generator, we can't use len(), so do this sum.
-        # See https://stackoverflow.com/questions/393053/length-of-generator-output
-        #return(sum(1 for _ in self.find_files(m)))
 
     def find_pairs(self,m):
         """Find the valid model ratios labels in this ModelSet for a given list of measurement IDs
@@ -207,7 +250,7 @@ class ModelSet(object):
         '''Get a specific model by its identifier
 
         :param identifier: a :class:`~pdrtpy.measurement.Measurement` ID. It can be an intensity or a ratio,
-         e.g., "CII_158","CI_609/FIR"
+   #,habing_unit,draine_unit,mathis_unit      e.g., "CII_158","CI_609/FIR"
         :type identifier: str
         :returns: The model matching the identifier
         :rtype: :class:`~pdrtpy.measurement.Measurement`
@@ -250,6 +293,13 @@ class ModelSet(object):
                 # "The FITS unit format is not able to represent scales that are not powers of 10.  Multiply your data by 1.600000e-03."
                 # This causes all sorts of downstream problems.  Workaround in LineRatioFit.read_models().
                 #_model.wcs.wcs.cunit[1] = habing_unit
+        elif self.code == "KOSMA-tau":
+        # fix KosmaTau model headers
+            if _wcs.wcs.cunit[0] == "":
+                _model.header["CUNIT1"] = "cm^-3"
+                _wcs.wcs.cunit[0] = u.Unit("cm^-3")
+            if _wcs.wcs.cunit[1] == "":
+                _model.header["CUNIT2"] = "Draine"
         else:
             # copy wcs cunit to header. used later.
             _model.header["CUNIT1"] = str(_wcs.wcs.cunit[0])
@@ -411,8 +461,16 @@ class ModelSet(object):
     # ============= Static Methods =============
     @staticmethod
     def list():
-        """List the names and descriptions of available models (not just this one)"""
+        """Print the names and descriptions of available ModelSets (not just this one) """
+        ModelSet.all_sets().pprint_all(align="<")
+
+    @staticmethod
+    def all_sets():
+        """Return a table of the names and descriptions of available ModelSets (not just this one)
+        
+        :rtype:`:class:~astropy.table.Table`
+        """
         t = get_table("all_models.tab")
         t.remove_column("path")
         t.remove_column("filename")
-        t.pprint_all(align="<")
+        return t

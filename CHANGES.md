@@ -1,5 +1,47 @@
 ## Change Log
 
+### Release 2.2.1
+#### _H2 Excitation Fitting_
+
+- H2 Excitation fitting for maps completed.  
+
+    - user can see maps of column density, hot and cold temperature, ortho-to-para ratios
+
+    - "explore" function to see fit at various points in a map
+
+#### _Density and Radiation Field Fitting_
+
+- Now uses LMFIT package for fitting.
+
+- Map fitting updated to allow interpolated solutions between model grid points
+
+- MCMC method available (best for single pixel fitting) via emcee package
+
+#### _Models_
+
+- updated and expanded Wolfire/Kaufman 2020 models covering many more spectral lines
+
+- large set of KOSMA-Tau models now available 
+
+
+#### _Plotting_
+
+- consolidated some plotting functions
+
+- added text() method to add text to any plot
+
+#### _Documentation_
+
+- updated
+
+#### _Issues_
+
+- issues 28, 34, 38 closed
+
+#### _Notebooks_ ###
+
+- existing example notebooks updated 
+
 ### Release 2.1.1
 
 #### _H2 Excitation Fitting_
