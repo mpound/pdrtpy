@@ -169,7 +169,7 @@ class ModelPlot(PlotBase):
         meas = dict(zip(ids,measurements))
         models = [self._modelset.get_model(i) for i in ids]
         # need to trim model grids if H2 is present
-        if utils._has_H2(ids):
+        if utils._has_H2(ids) and self._modelset.is_wk2006:
             warnings.warn("Trimming all model grids to match H2 grid: log(n) = 1-5, log(G0) = 1-5")
             utils._trim_all_to_H2(models)
         i =0 
