@@ -3,6 +3,8 @@
 # a float. This is the behavior for CCDData, somehow lost in Measurement  See NDUncertainty __getitem__
 # this will have ripple effects if implemented.
 from copy import deepcopy
+from os import remove
+from os.path import exists
 
 from astropy import log
 import astropy.units as u
@@ -12,8 +14,6 @@ from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertaint
 import numpy as np
 import numpy.ma as ma
 from scipy.interpolate import interp2d
-from os import remove
-from os.path import exists
 from . import pdrutils as utils
 
 class Measurement(CCDData):
@@ -641,9 +641,9 @@ def fits_measurement_reader(filename, hdu=0, unit=None,
     # @TODO if uncertainty plane not present, look for RMS keyword
     # @TODO header values get stuffed into WCS, others may be dropped by CCDData._generate_wcs_and_update_header
     try:
-       z=Measurement(z,unit=z._unit,title=_title)
+        z=Measurement(z,unit=z._unit,title=_title)
     except Exception:
-       raise TypeError('could not convert fits_measurement_reader output to Measurement')
+        raise TypeError('could not convert fits_measurement_reader output to Measurement')
     z.identifier(_id)
     # astropy.io.registry.read creates a FileIO object before calling the registered
     # reader (this method), so the filename is FileIO.name. 
