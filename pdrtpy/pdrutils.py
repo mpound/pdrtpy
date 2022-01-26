@@ -2,11 +2,10 @@
 
 import datetime
 import os.path
-import sys
-import numpy as np
-from pathlib import Path
 import warnings
 from copy import deepcopy
+from pathlib import Path
+import numpy as np
 
 import astropy.units as u
 from astropy.constants import k_B
@@ -326,140 +325,140 @@ def check_units(input_unit,compare_to):
 
 
 def to(unit,image):
-  r"""Convert the image values to another unit.
-     While generally this is intended for converting radiation field
-     strength maps between Habing, Draine, cgs, etc, it will work for
-     any image that has a unit member variable. So, e.g., it would work
-     to convert density from :math:`{\rm cm ^{-3}}` to :math:`{\rm m^{-3}}`.
-     If the input image is a :class:`~pdrtpy.measurement.Measurement`, its
-     uncertainty will also be converted.
+    r"""Convert the image values to another unit.
+    While generally this is intended for converting radiation field
+    strength maps between Habing, Draine, cgs, etc, it will work for
+    any image that has a unit member variable. So, e.g., it would work
+    to convert density from :math:`{\rm cm ^{-3}}` to :math:`{\rm m^{-3}}`.
+    If the input image is a :class:`~pdrtpy.measurement.Measurement`, its
+    uncertainty will also be converted.
 
-     :param unit: identifying the unit to convert to 
-     :type unit: string or `astropy.units.Unit` 
-     :param image: the image to convert. It must have a :class:`numpy.ndarray`
+    :param unit: identifying the unit to convert to 
+    :type unit: string or `astropy.units.Unit` 
+    :param image: the image to convert. It must have a :class:`numpy.ndarray`
         data member and :class:`astropy.units.Unit` unit member.
-     :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
-     :return: an image with converted values and units
-  """
+    :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+    :return: an image with converted values and units
+    """
   #print("converting [%s] in %s to [%s]"%(image.unit,image.header["TITLE"],unit))
   #@todo check out NDDataArray.convert_unit_to
   # https://docs.astropy.org/en/stable/api/astropy.nddata.NDDataArray.html#astropy.nddata.NDDataArray.convert_unit_to
     # todo equivalencies needed for e.g. temperature
-  value = image.unit.to(unit)
-  newmap = deepcopy(image)
-  newmap.data = newmap.data * value
-  newmap.unit = u.Unit(unit)
-  #@TODO deal with identifier.
-  # deal with uncertainty in Measurements.
-  if getattr(newmap,"_uncertainty") is not None:
-     newmap._uncertainty.array = newmap.uncertainty.array * value
-     newmap._uncertainty.unit = u.Unit(unit)
-  return newmap
+    value = image.unit.to(unit)
+    newmap = deepcopy(image)
+    newmap.data = newmap.data * value
+    newmap.unit = u.Unit(unit)
+    #@TODO deal with identifier.
+    # deal with uncertainty in Measurements.
+    if getattr(newmap,"_uncertainty") is not None:
+        newmap._uncertainty.array = newmap.uncertainty.array * value
+        newmap._uncertainty.unit = u.Unit(unit)
+    return newmap
 
 def toHabing(image):
-  r"""Convert a radiation field strength image to Habing units :math:`(G_0)`.
-
-     :math:`{\rm G_0 \equiv 1~Habing = 1.6\times10^{-3}~erg~s^{-1}~cm^{-2}}`
-
-     between 6eV and 13.6eV (912-2066 :math:`\unicode{xC5}`).  See `Weingartner and Draine 2001, ApJS, 134, 263 <https://ui.adsabs.harvard.edu/abs/2001ApJS..134..263W/abstract>`_, section 4.1 
-
-     :param image: the image to convert. It must have a :class:`numpy.ndarray`
-        data member and :class:`astropy.units.Unit` unit member.
-     :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
-     :return: an image with converted values and units
-  """
-  return to('Habing',image)
+    r"""Convert a radiation field strength image to Habing units :math:`(G_0)`.
+  
+       :math:`{\rm G_0 \equiv 1~Habing = 1.6\times10^{-3}~erg~s^{-1}~cm^{-2}}`
+  
+       between 6eV and 13.6eV (912-2066 :math:`\unicode{xC5}`).  See `Weingartner and Draine 2001, ApJS, 134, 263 <https://ui.adsabs.harvard.edu/abs/2001ApJS..134..263W/abstract>`_, section 4.1 
+  
+       :param image: the image to convert. It must have a :class:`numpy.ndarray`
+          data member and :class:`astropy.units.Unit` unit member.
+       :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+       :return: an image with converted values and units
+    """
+    return to('Habing',image)
    
 def toDraine(image):
-  r"""Convert a radiation field strength image to Draine units (\chi).
-
-     :math:`{\rm 1~Draine = 2.72\times10^{-3}~erg~s^{-1}~cm^{-2}}`
-
-     between 6eV and 13.6eV (912-2066 :math:`\unicode{xC5}`).  See `Weingartner and Draine 2001, ApJS, 134, 263 <https://ui.adsabs.harvard.edu/abs/2001ApJS..134..263W/abstract>`_, section 4.1 
-
-     :param image: the image to convert. It must have a :class:`numpy.ndarray`
-        data member and :class:`astropy.units.Unit` unit member.
-     :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
-     :return: an image with converted values and units
-  """
-  return to('Draine',image)
+    r"""Convert a radiation field strength image to Draine units (\chi).
+  
+       :math:`{\rm 1~Draine = 2.72\times10^{-3}~erg~s^{-1}~cm^{-2}}`
+  
+       between 6eV and 13.6eV (912-2066 :math:`\unicode{xC5}`).  See `Weingartner and Draine 2001, ApJS, 134, 263 <https://ui.adsabs.harvard.edu/abs/2001ApJS..134..263W/abstract>`_, section 4.1 
+  
+       :param image: the image to convert. It must have a :class:`numpy.ndarray`
+          data member and :class:`astropy.units.Unit` unit member.
+       :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+       :return: an image with converted values and units
+    """
+    return to('Draine',image)
 
 def toMathis(image):
-  r"""Convert a radiation field strength image to Mathis units
-
-     :math:`{\rm 1~Mathis = 1.81\times10^{-3}~erg~s^{-1}~cm^{-2}}`
-
-     between 6eV and 13.6eV (912-2066 :math:`\unicode{xC5}`).  See `Weingartner and Draine 2001, ApJS, 134, 263 <https://ui.adsabs.harvard.edu/abs/2001ApJS..134..263W/abstract>`_, section 4.1 
-
-     :param image: the image to convert. It must have a :class:`numpy.ndarray`
-        data member and :class:`astropy.units.Unit` unit member.
-     :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
-     :return: an image with converted values and units
-  """
-  return to('Mathis',image)
+    r"""Convert a radiation field strength image to Mathis units
+  
+       :math:`{\rm 1~Mathis = 1.81\times10^{-3}~erg~s^{-1}~cm^{-2}}`
+  
+       between 6eV and 13.6eV (912-2066 :math:`\unicode{xC5}`).  See `Weingartner and Draine 2001, ApJS, 134, 263 <https://ui.adsabs.harvard.edu/abs/2001ApJS..134..263W/abstract>`_, section 4.1 
+  
+       :param image: the image to convert. It must have a :class:`numpy.ndarray`
+          data member and :class:`astropy.units.Unit` unit member.
+       :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+       :return: an image with converted values and units
+    """
+    return to('Mathis',image)
 
 def tocgs(image):
-  r"""Convert a radiation field strength image to :math:`{\rm erg~s^{-1}~cm^{-2}}`.
-
-     :param image: the image to convert. It must have a :class:`numpy.ndarray` data member and :class:`astropy.units.Unit` unit member.
-     :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
-     :return: an image with converted values and units
-  """
-  return to(_RFS_UNIT_,image)
+    r"""Convert a radiation field strength image to :math:`{\rm erg~s^{-1}~cm^{-2}}`.
+  
+       :param image: the image to convert. It must have a :class:`numpy.ndarray` data member and :class:`astropy.units.Unit` unit member.
+       :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+       :return: an image with converted values and units
+    """
+    return to(_RFS_UNIT_,image)
 
 def convert_integrated_intensity(image,wavelength=None):
   # cute. Put r in front of docstring to prevent python interpreter from 
   # processing \.  Otherwise \times gets interpreted as tab imes
   #https://stackoverflow.com/questions/8385538/how-to-enable-math-in-sphinx
-  r"""Convert integrated intensity from :math:`{\rm K~km~s}^{-1}` to 
-  :math:`{\rm erg~s^{-1}~cm^{-2}~sr^{-1}}`, assuming
-  :math:`B_\lambda d\lambda = 2kT/\lambda^3 dV` where :math:`T dV` is the integrated intensity in K km/s and :math:`\lambda` is the wavelength.  The derivation:
+    r"""Convert integrated intensity from :math:`{\rm K~km~s}^{-1}` to 
+    :math:`{\rm erg~s^{-1}~cm^{-2}~sr^{-1}}`, assuming
+    :math:`B_\lambda d\lambda = 2kT/\lambda^3 dV` where :math:`T dV` is the integrated intensity in K km/s and :math:`\lambda` is the wavelength.  The derivation:
 
-  .. math::
+    .. math::
 
-     B_\lambda = 2 h c^2/\lambda^5  {1\over{exp[hc/\lambda k T] - 1}} 
+       B_\lambda = 2 h c^2/\lambda^5  {1\over{exp[hc/\lambda k T] - 1}} 
 
-  The integrated line is :math:`B_\lambda d\lambda` and for :math:`hc/\lambda k T << 1`:
+    The integrated line is :math:`B_\lambda d\lambda` and for :math:`hc/\lambda k T << 1`:
 
-  .. math::
+    .. math::
 
-     B_\lambda d\lambda = 2c^2/\lambda^5  \times (\lambda kT/hc)~d\lambda 
+       B_\lambda d\lambda = 2c^2/\lambda^5  \times (\lambda kT/hc)~d\lambda 
 
-  The relationship between velocity and wavelength, :math:`dV = \lambda/c~d\lambda`, giving 
+    The relationship between velocity and wavelength, :math:`dV = \lambda/c~d\lambda`, giving 
 
-  .. math::
+    .. math::
 
-     B_\lambda d\lambda = 2\times10^5~kT/\lambda^3~dV,  
+       B_\lambda d\lambda = 2\times10^5~kT/\lambda^3~dV,  
 
-  with :math:`\lambda`  in cm, the factor :math:`10^5` is to convert :math:`dV` in :math:`{\rm km~s}^{-1}` to :math:`{\rm cm~s}^{-1}`.
+    with :math:`\lambda`  in cm, the factor :math:`10^5` is to convert :math:`dV` in :math:`{\rm km~s}^{-1}` to :math:`{\rm cm~s}^{-1}`.
 
-  :param image: the image to convert. It must have a :class:`numpy.ndarray` data member and :class:`astropy.units.Unit` unit member or header BUNIT keyword. It's units must be K km/s
-  :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
-  :param wavelength: the wavelength of the observation. The default is to determine wavelength from the image header RESTFREQ keyword
-  :type wavelength: :class:`astropy.units.Quantity`
-  :return: an image with converted values and units
-  """
-  f = image.header.get("RESTFREQ",None)
-  if f is None and wavelength is None:
-     raise Exception("Image header has no RESTFREQ. You must supply wavelength")
-  if f is not None and wavelength is None:
-     # FITS restfreq's are in Hz
-     wavelength = u.Quantity(f,"Hz").to(_CM,equivalencies=u.spectral())
-  if image.header.get("BUNIT",None) is None:
-     raise Exception("Image BUNIT must be present and equal to 'K km/s'")
-  if u.Unit(image.header.get("BUNIT")) != _KKMS:
-     raise Exception("Image BUNIT must be 'K km/s'")
-  factor = 2E5*k_B/wavelength**3
-  print("Converting K km/s to %s using Factor = %s"%(_OBS_UNIT_, "{0:+0.3E}".format(factor.decompose(u.cgs.bases))))
-  newmap = deepcopy(image)
-  value = factor.decompose(u.cgs.bases).value
-  newmap.data = newmap.data * value
-  newmap.unit = _OBS_UNIT_
-  # deal with uncertainty in Measurements.
-  if getattr(newmap,"_uncertainty") is not None:
-     newmap._uncertainty.array = newmap.uncertainty.array * value
-     newmap._uncertainty.unit = _OBS_UNIT_
-  return newmap
+    :param image: the image to convert. It must have a :class:`numpy.ndarray` data member and :class:`astropy.units.Unit` unit member or header BUNIT keyword. It's units must be K km/s
+    :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+    :param wavelength: the wavelength of the observation. The default is to determine wavelength from the image header RESTFREQ keyword
+    :type wavelength: :class:`astropy.units.Quantity`
+    :return: an image with converted values and units
+    """
+    f = image.header.get("RESTFREQ",None)
+    if f is None and wavelength is None:
+        raise Exception("Image header has no RESTFREQ. You must supply wavelength")
+    if f is not None and wavelength is None:
+       # FITS restfreq's are in Hz
+        wavelength = u.Quantity(f,"Hz").to(_CM,equivalencies=u.spectral())
+    if image.header.get("BUNIT",None) is None:
+        raise Exception("Image BUNIT must be present and equal to 'K km/s'")
+    if u.Unit(image.header.get("BUNIT")) != _KKMS:
+        raise Exception("Image BUNIT must be 'K km/s'")
+    factor = 2E5*k_B/wavelength**3
+    print("Converting K km/s to %s using Factor = %s"%(_OBS_UNIT_, "{0:+0.3E}".format(factor.decompose(u.cgs.bases))))
+    newmap = deepcopy(image)
+    value = factor.decompose(u.cgs.bases).value
+    newmap.data = newmap.data * value
+    newmap.unit = _OBS_UNIT_
+    # deal with uncertainty in Measurements.
+    if getattr(newmap,"_uncertainty") is not None:
+        newmap._uncertainty.array = newmap.uncertainty.array * value
+        newmap._uncertainty.unit = _OBS_UNIT_
+    return newmap
 
 def convert_if_necessary(image):
     r"""Helper method to convert integrated intensity units in an
@@ -491,7 +490,7 @@ def mask_union(arrays):
     """
     z = list()
     for m in arrays:
-       z.append(m.mask)
+        z.append(m.mask)
     return np.any(z,axis=0)
    
 def dropaxis(w):
@@ -519,34 +518,34 @@ def has_single_axis(w):
     return False
 
 def squeeze(image):
-  """Remove single-dimensional entries from image data and WCS.
+    """Remove single-dimensional entries from image data and WCS.
 
-  :param image: the image to convert. It must have a :class:`numpy.ndarray` data member and :class:`astropy.units.Unit` unit member. 
-  :type image: :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+    :param image: the image to convert. It must have a :class:`numpy.ndarray` data member and :class:`astropy.units.Unit` unit member. 
+    :type image: :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
  
-  :return: an image with single axes removed
-  :rtype: :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement` as input
-  """
-  while has_single_axis(image.wcs):
-    image.wcs = dropaxis(image.wcs)
+    :return: an image with single axes removed
+    :rtype: :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement` as input
+    """
+    while has_single_axis(image.wcs):
+        image.wcs = dropaxis(image.wcs)
 
-  # np.squeeze is a no-op if there are no dimensions to squeeze
-  if image.data is not None:
-      image.data = np.squeeze(image.data)
-  if image.uncertainty is not None:
-      image.uncertainty._array = np.squeeze(image.uncertainty._array)
-  if image.mask is not None:
-      image.mask = np.squeeze(image.mask)
+    # np.squeeze is a no-op if there are no dimensions to squeeze
+    if image.data is not None:
+        image.data = np.squeeze(image.data)
+    if image.uncertainty is not None:
+        image.uncertainty._array = np.squeeze(image.uncertainty._array)
+    if image.mask is not None:
+        image.mask = np.squeeze(image.mask)
 
-  # update the header which can be independent of WCS
-  image.header["NAXIS"] = image.wcs.wcs.naxis
-  i =  image.wcs.wcs.naxis+1
-  nax = "NAXIS"+str(i)
-  while image.header.pop(nax,None) is not None:
-    i=i+1
+    # update the header which can be independent of WCS
+    image.header["NAXIS"] = image.wcs.wcs.naxis
+    i =  image.wcs.wcs.naxis+1
     nax = "NAXIS"+str(i)
-  
-  return image
+    while image.header.pop(nax,None) is not None:
+        i=i+1
+        nax = "NAXIS"+str(i)
+    
+    return image
 
 def fliplabel(label):
     """Given a label that has a numerator and a denominator separated by a '/', return the 
@@ -689,27 +688,25 @@ def get_xy_from_wcs(data,quantity=False,linear=False):
         # See ModelSet.get_model
         cunit=data.header.get("CUNIT2",None) 
         if cunit == "Habing":
-           y._unit = habing_unit     
+            y._unit = habing_unit     
         if cunit == "Draine":
-           y._unit = draine_unit     
+            y._unit = draine_unit     
         if linear:
-           j = 10*np.ones(len(x.value))
-           k = 10*np.ones(len(y.value))
+            j = 10*np.ones(len(x.value))
+            k = 10*np.ones(len(y.value))
            #ugh we are depending on CTYPE being properly indicated as log(whatever)
-           if 'log' in w.wcs.ctype[0].lower():
-               x = np.power(j,x.value)*x.unit
-           if 'log' in w.wcs.ctype[1].lower():
-                   y = np.power(k,y.value)*y.unit
+        if 'log' in w.wcs.ctype[0].lower():
+            x = np.power(j,x.value)*x.unit
+        if 'log' in w.wcs.ctype[1].lower():
+            y = np.power(k,y.value)*y.unit
     else:
         x=w.array_index_to_world_values(xind,xind)[0]
         y=w.array_index_to_world_values(yind,yind)[1]
         if linear:
-           j = 10*np.ones(len(x))
-           k = 10*np.ones(len(y))
-           if 'log' in w.wcs.ctype[0].lower():
-               x = np.power(j,x)
-           if 'log' in w.wcs.ctype[1].lower():
-               y = np.power(k,y)
+            j = 10*np.ones(len(x))
+            k = 10*np.ones(len(y))
+            if 'log' in w.wcs.ctype[0].lower():
+                x = np.power(j,x)
+            if 'log' in w.wcs.ctype[1].lower():
+                y = np.power(k,y)
     return (x,y)
-        
-
