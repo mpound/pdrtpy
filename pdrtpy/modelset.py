@@ -127,10 +127,6 @@ class ModelSet(object):
         """
         return self._tabrow["z"]
 
-    #@property
-    #def isSolarMetallicity(self):
-    #    return self._metallicity == 1
-
     @property
     def table(self):
         """The table containing details of the models in this ModelSet.
@@ -140,16 +136,16 @@ class ModelSet(object):
         return self._table
 
     @property
-    def supported_intensities(self):
-        """Table of lines and continuum that are included in ratios models of this ModelSet. 
+    def identifiers(self):
+        """Table of lines and continuum that are included in ratio models of this ModelSet. Only lines and continuum that are part of ratios are included in this list.   For a separate list of line and continuum intensity models see :meth:`~pdrtpy.modelset.ModelSet.supported_intensities`.
 
         :rtype: :class:`astropy.table.Table` 
         """
         return self._identifiers
 
     @property
-    def supported_lines(self):
-        """Table of lines that are covered by this ModelSet and have models separate from 
+    def supported_intensities(self):
+        """Table of lines and continuum that are covered by this ModelSet and have models separate from 
         the any ratio model they might be in.
 
         :rtype: :class:`astropy.table.Table` 
@@ -417,7 +413,7 @@ class ModelSet(object):
         self._supported_lines.rename_column("ratio","intensity label")
 
     def _set_identifiers(self):
-        """make a useful table of identifiers of lines covered by this model"""
+        """make a useful table of identifiers of lines covered by ratios in this ModelSet"""
         # remove the single line intensity models from the list.
         matching_rows = np.where((self._table['denominator'] != "1"))[0]
         n=deepcopy(self._table['numerator'][matching_rows])
