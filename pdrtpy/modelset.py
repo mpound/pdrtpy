@@ -10,11 +10,11 @@ from .pdrutils import get_table,model_dir, _OBS_UNIT_
 from .measurement import Measurement
 
 class ModelSet(object):
-    """Class for computed PDR Model Sets. :class:`ModelSet` provides interface with a directory containing the model FITS files and the ability to query details about 
+    """Class for computed PDR Model Sets. :class:`ModelSet` provides interface with a directory containing the model FITS files and the ability to query details about
 
     :param name: identifying name, e.g., 'wk2006'
     :type name: str
-    :param z:  metallicity in solar units.  
+    :param z:  metallicity in solar units.
     :type z: float
     :param medium:  medium type, e.g. 'constant density', 'clumpy', 'non-clumpy'
     :type medium: str
@@ -29,29 +29,30 @@ class ModelSet(object):
         possible = dict()
         if name not in self._all_models["name"]:
             raise ValueError(f'Unrecognized model {name:s}. Choices  are: {list(self._all_models["name"])}')
-            
         if np.all(self._all_models.loc[name]["mass"].mask):
             matching_rows = np.where((self._all_models["z"]==z) &
                                  (self._all_models["medium"]==medium))
             possible["mass"] = None
         else:
             matching_rows = np.where((self._all_models["z"]==z) &
-                     (self._all_models["medium"]==medium) & 
+                     (self._all_models["medium"]==medium) &
                      (self._all_models["mass"] == mass))
             possible["mass"] = self._all_models.loc[name]["mass"]
         for key in ["z", "medium"]:
             possible[key]=  self._all_models.loc[name][key]
         # ugh, possible[] resulting from above can be a Python native or a Column.
         # If only one row matches it will be a native, otherwise it will be a Column,
-        # so we have to check if it is a Column or not, so that we can successfully 
+        # so we have to check if it is a Column or not, so that we can successfully
         # import numberscreate a numpy array.
         for i in possible:
-            if possible[i] is None: 
+            if possible[i] is None:
                 continue
             if isinstance(possible[i],Column):
-                possible[i] = sorted(set(np.array(possible[i]))) # convert Column to np.array
+                # convert Column to np.array
+                possible[i] = sorted(set(np.array(possible[i])))
             else:
-                possible[i] = sorted(set(np.array([possible[i]]))) # convert native to np.array
+                # convert native to np.array
+                possible[i] = sorted(set(np.array([possible[i]])))
 
         #print("possible:",possible)
         if mass is None and possible['mass'] is not None:
@@ -75,7 +76,7 @@ class ModelSet(object):
     def description(self):
         """The description of this model
 
-        :rtype: str 
+        :rtype: str
         """
         return self._tabrow["description"]+", Z=%2.1f"%self.z
 
@@ -187,7 +188,7 @@ class ModelSet(object):
             else:
                 s = q[0]+"/"+q[1]
             if s in self.table["ratio"]:
-                yield(s)
+                yield s 
 
     def find_files(self,m,ext="fits"):
         """Find the valid model ratios files in this ModelSet for a given list of measurement IDs.  See :meth:`~pdrtpy.measurement.Measurement.id`
@@ -213,7 +214,7 @@ class ModelSet(object):
             if s in self.table["ratio"]:
                 fullpath = self._tabrow["path"]+self.table.loc[s]["filename"]+"."+ext
                 tup = (s,fullpath)
-                yield(tup)
+                yield tup 
             
     def model_ratios(self,m):
         '''Return the model ratios that match the input Measurement ID list.  You must provide at least 2 Measurements IDs
@@ -282,7 +283,7 @@ class ModelSet(object):
                 _model.header["CUNIT1"] = "cm^-3"
                 _wcs.wcs.cunit[0] = u.Unit("cm^-3")
             else:
-                 _model.header["CUNIT1"] = str(_wcs.wcs.cunit[0])
+                _model.header["CUNIT1"] = str(_wcs.wcs.cunit[0])
             if _wcs.wcs.cunit[1] == "":
                 _model.header["CUNIT2"] = "Habing"
                 # Raises UnitScaleError:
@@ -355,7 +356,7 @@ class ModelSet(object):
             if s in self.table["ratio"]:
                 z={"numerator":self.table.loc[s]["numerator"],
                    "denominator":self.table.loc[s]["denominator"]}
-                yield(z)
+                yield z 
 
     def _get_ratio_elements(self,m):   
         """Get the valid model numerator,denominator pairs in this ModelSet for a given list of measurement IDs. See :meth:`~pdrtpy.measurement.Measurement.id`
