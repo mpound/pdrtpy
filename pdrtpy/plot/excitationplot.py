@@ -1,25 +1,17 @@
 import numpy as np
 import numpy.ma as ma
 import scipy.stats as stats
-import math
 from copy import deepcopy,copy
 
-import matplotlib.figure
-import matplotlib.colors as mpcolors
 import matplotlib.cm as mcm
 from matplotlib import ticker
-from matplotlib.lines import Line2D
-from mpl_toolkits.axes_grid1 import make_axes_locatable
-import matplotlib.axes as maxes
-from matplotlib.ticker import MultipleLocator, FormatStrFormatter,AutoMinorLocator
+from matplotlib.ticker import MultipleLocator
 
-from astropy.nddata.utils import Cutout2D
-from astropy.io import fits
-import astropy.wcs as wcs
 import astropy.units as u
 
+from ..measurement import Measurement
 from .plotbase import PlotBase
-from ..pdrutils import to,float_formatter,LOGE,is_odd
+from ..pdrutils import float_formatter,LOGE,is_odd
 
 class ExcitationPlot(PlotBase):
     """
@@ -85,6 +77,8 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
             if position is not None:
                 opr_v = tt.opr[position]
                 opr_e = tt.opr.error[position]
+                # a Measurement.get_as_measurement() would be nice
+                opr_p = Measurement(opr_v,uncertainty=StdDevUncertainty(opr_e),unit=u.adu)
             else:
                 opr_p = tt.opr
             cddn = colden*self._tool._canonical_opr/opr_p

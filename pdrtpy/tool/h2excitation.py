@@ -4,8 +4,8 @@ import astropy.constants as constants
 from astropy.nddata import StdDevUncertainty
 import math
 import numpy as np
-from lmfit import Parameters, fit_report
-from lmfit.model import Model, ModelResult
+from lmfit import Parameters#, fit_report
+#from lmfit.model import Model, ModelResult
 from emcee.pbar import get_progress_bar
 import cProfile, pstats, io
 from pstats import SortKey
@@ -83,12 +83,12 @@ class ExcitationFit(ToolBase):
 
     def replace_measurement(self,m):
         '''Safely replace an existing intensity Measurement.  Do not 
-           change a Measurement inisnan place, use this method. 
+           change a Measurement in place, use this method. 
            Otherwise, the column densities will be inconsistent.
 
            :param m: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
         '''
-        self.add_measurement(self,m)
+        self.add_measurement(m)
         
 class H2ExcitationFit(ExcitationFit):
     r"""Tool for fitting temperatures, column densities, and ortho-to-para ratio(`OPR`) from an :math:`H_2` excitation diagram. It takes as input a set of :math:`H_2` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.   

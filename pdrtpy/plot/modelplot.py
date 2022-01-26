@@ -1,16 +1,11 @@
-from copy import deepcopy,copy
 import warnings
   
 import numpy as np
 import numpy.ma as ma
-import scipy.stats as stats
 
-import matplotlib.figure
 from matplotlib import ticker
 from matplotlib.lines import Line2D
-from cycler import cycler
 
-from astropy.io import fits
 import astropy.wcs as wcs
 import astropy.units as u
 

@@ -1,6 +1,4 @@
-
 import numpy as np
-import astropy.wcs as wcs
 from astropy.nddata import NDData
 
 
