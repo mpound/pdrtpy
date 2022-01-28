@@ -170,8 +170,10 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         :type m: list
         """
         self._measurements = dict()
+        self._masks = dict() # need to save these so they can be reset later
         for mm in m:
             self._measurements[mm.id] = mm
+            self._masks[mm.id] = deepcopy(mm.mask)
 
     def _set_model_files_used(self):
         self._model_files_used = dict()
@@ -370,6 +372,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._check_compatibility()
         self._ratiocount = None
         self.read_models()
+        self._reset_masks()
         self._mask_measurements(kwargs_opts['mask'])
         kwargs_opts.pop('mask')
         self._compute_valid_ratios()
@@ -396,14 +399,19 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
             ps.print_stats()
             self._stats = s
-
+            
+    def _reset_masks(self):
+        for m in self._measurements:
+            self._measurements[m].mask = deepcopy(self._masks[m])
+            
     def _mask_measurements(self,mask):
         ''' Set the mask on the measurements based on noise characteristics.  This is so that
             we don't compute garbage n,G0 where observed ratios are noise divided by noise.
             
            :param mask: Indicate how to mask image observations before computing the density and radiation field. See run()>
         '''
-        if mask is None: return
+        if mask is None: 
+            return
         if self._measurementnaxis == 0:
             utils.warn(self,"Ignoring 'mask' parameter for single pixel observations")
             return
