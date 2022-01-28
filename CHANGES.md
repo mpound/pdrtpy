@@ -1,10 +1,12 @@
 ## Change Log
 
-### Release 2.2.1
+### Release 2.2.2
 #### _H2 Excitation Fitting_
 
 - H2 Excitation fitting for maps completed.  
 
+    - each unmasked pixel in a map fitted 
+    
     - user can see maps of column density, hot and cold temperature, ortho-to-para ratios
 
     - "explore" function to see fit at various points in a map
