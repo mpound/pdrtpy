@@ -695,10 +695,10 @@ def get_xy_from_wcs(data,quantity=False,linear=False):
             j = 10*np.ones(len(x.value))
             k = 10*np.ones(len(y.value))
            #ugh we are depending on CTYPE being properly indicated as log(whatever)
-        if 'log' in w.wcs.ctype[0].lower():
-            x = np.power(j,x.value)*x.unit
-        if 'log' in w.wcs.ctype[1].lower():
-            y = np.power(k,y.value)*y.unit
+            if 'log' in w.wcs.ctype[0].lower():
+                x = np.power(j,x.value)*x.unit
+            if 'log' in w.wcs.ctype[1].lower():
+                y = np.power(k,y.value)*y.unit
     else:
         x=w.array_index_to_world_values(xind,xind)[0]
         y=w.array_index_to_world_values(yind,yind)[1]
