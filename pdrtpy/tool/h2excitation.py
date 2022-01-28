@@ -5,7 +5,7 @@ from astropy.nddata import StdDevUncertainty
 import math
 import numpy as np
 from lmfit import Parameters#, fit_report
-#from lmfit.model import Model, ModelResult
+from lmfit.model import Model#, ModelResult
 from emcee.pbar import get_progress_bar
 import cProfile, pstats, io
 from pstats import SortKey
