@@ -1,5 +1,5 @@
 import warnings
-  
+from copy import deepcopy
 import numpy as np
 import numpy.ma as ma
 
@@ -394,11 +394,11 @@ class ModelPlot(PlotBase):
             self._axis.set_yscale('log')
             self._axis.tick_params(axis='both',direction='in',which='both')
             self._axis.tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both')
-            if kwargs_opts['grid']:
-                self._axis.grid(b=True,which='major',axis='both',lw=kwargs_opts['linewidth']/2,
-                                color='k',alpha=0.33)
-                self._axis.grid(b=True,which='minor',axis='both',lw=kwargs_opts['linewidth']/2,
-                                color='k',alpha=0.22,linestyle='--')
+        if kwargs_opts['grid']:
+            self._axis.grid(b=True,which='major',axis='both',lw=kwargs_opts['linewidth']/2,
+                            color='k',alpha=0.33)
+            self._axis.grid(b=True,which='minor',axis='both',lw=kwargs_opts['linewidth']/2,
+                            color='k',alpha=0.22,linestyle='--')
             
             
         if kwargs_opts['legend']:            

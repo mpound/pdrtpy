@@ -8,6 +8,7 @@ from matplotlib import ticker
 from matplotlib.ticker import MultipleLocator
 
 import astropy.units as u
+from astropy.nddata import StdDevUncertainty
 
 from ..measurement import Measurement
 from .plotbase import PlotBase
@@ -73,15 +74,15 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
                             ms=kwargs_opts['markersize'],color=kwargs_opts['color'])
         tt = self._tool
         if self._tool.opr_fitted and show_fit:
-            # Plot only the odd-J ones!
-            if position is not None:
+            if position is not None and len(np.shape(tt.opr))>1: 
                 opr_v = tt.opr[position]
                 opr_e = tt.opr.error[position]
                 # a Measurement.get_as_measurement() would be nice
-                opr_p = Measurement(opr_v,uncertainty=StdDevUncertainty(opr_e),unit=u.adu)
+                opr_p = Measurement(opr_v,uncertainty=StdDevUncertainty(opr_e),unit="")
             else:
                 opr_p = tt.opr
             cddn = colden*self._tool._canonical_opr/opr_p
+            # Plot only the odd-J ones scaled by fitted OPR
             odd_index = np.where([is_odd(c) for c in cdavg.keys()])
             #color = ec.lines[0].get_color() # want these to be same color as data
             _axis.errorbar(x=energy[odd_index], 
@@ -367,6 +368,7 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
                        }
         # starting position is middle pixel of image. note // for integer arithmetic
         position = tuple(np.array(np.shape(data))//2)
+        print("Explore using position: ",position, " size=1")
         kwargs_opts.update(kwargs)
         self._figure = self._plt.figure(figsize=kwargs_opts['figsize'],clear=True)
         self._axis = np.empty([2],dtype=object)
@@ -409,7 +411,6 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
         if interaction_type == "move":
             self._figure.canvas.mpl_connect("motion_notify_event", update_lines)
         elif interaction_type == "click":
-            print("connect button press to update_lines")
             self._figure.canvas.mpl_connect("button_press_event", update_lines)
         else:
             close(self._figure)
