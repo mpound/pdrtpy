@@ -40,6 +40,8 @@
 
 - issues 28, 34, 38 closed
 
+- various other bugs discovered and fixed
+
 #### _Notebooks_ ###
 
 - existing example notebooks updated 
