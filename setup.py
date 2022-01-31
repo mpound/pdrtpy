@@ -16,8 +16,8 @@ def readme():
     with open('README.rst') as f:
         return f.read()
 
-# Ensure they are using Python 3.7 or above
-check_python(3,7)
+# Ensure they are using Python 3.8 or above
+check_python(3,8)
 
 #excludelist= ["build","dist"]
 excludelist= []
@@ -55,5 +55,5 @@ setup(
     ],
     license = "GPLv3",
     zip_safe = False,
-    python_requires = '>=3.7'
+    python_requires = '>=3.8'
 )
