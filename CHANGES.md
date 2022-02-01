@@ -1,6 +1,6 @@
 ## Change Log
 
-### Release 2.2.2
+### Release 2.2.3
 #### _H2 Excitation Fitting_
 
 - H2 Excitation fitting for maps completed.  
