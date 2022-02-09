@@ -127,7 +127,7 @@ class PlotBase:
         elif stretch == 'sqrt':
             s = SqrtStretch()
         elif stretch == 'power':
-            s = PowerStretch(1)
+            s = PowerStretch(2)
         elif stretch == 'log':
             s = LogStretch(1000)
         elif stretch == 'asinh':
