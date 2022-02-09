@@ -70,7 +70,7 @@
          H200S2                 1               H200S2                 H200S2sm               1   H$_2$0-0S(2) 12.3 $\mu$m 
          H200S1                 1               H200S1                 H200S1sm               1   H$_2$0-0S(1) 17 $\mu$m 
          H200S0                 1               H200S0                 H200S0sm               1   H$_2$0-0S(0) 28.2 $\mu$m 
-         TS                     1               TS                     TSAV0p01sm             1   Temperature  AV=0.01
+         TS                     1               TS                     TSAV0p01sm             1   Temperature at $A_V=0.01$
       FEII_1.60         FEII_1.64       FEII_1.60/FEII_1.64       FEII1p60_FEII1p64           1   [Fe II] 1.60 $\mu$m/[Fe II] 1.64 $\mu$m
       FEII_1.64         FEII_5.34       FEII_1.64/FEII_5.34       FEII1p64_FEII5p34           1   [Fe II] 1.64 $\mu$m/[Fe II] 5.34 $\mu$m
       FEII_5.67         FEII_5.34       FEII_5.67/FEII_5.34       FEII5p67_FEII5p34           1   [Fe II] 5.67 $\mu$m/[Fe II] 5.34 $\mu$m
