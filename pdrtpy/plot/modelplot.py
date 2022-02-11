@@ -578,7 +578,7 @@ class ModelPlot(PlotBase):
 
         # delay merge until min_ and max_ are known
         kwargs_imshow.update(kwargs)
-        kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km,
+        _norm=self._get_norm(kwargs_imshow['norm'],km,
                                              kwargs_imshow['vmin'],kwargs_imshow['vmax'],
                                              kwargs_imshow['stretch'])
 
@@ -673,15 +673,20 @@ class ModelPlot(PlotBase):
             # pass shading = auto to avoid deprecation warning
             # see https://matplotlib.org/3.3.0/gallery/images_contours_and_fields/pcolormesh_grids.html
             im = self._axis[axidx].pcolormesh(x.value,y.value,km,cmap=kwargs_imshow['cmap'],
-                                              norm=kwargs_imshow['norm'],shading='auto')
+                                              norm=_norm,shading='auto')
             if kwargs_opts['colorbar']:
-            #@TODO figure out how to have $\times 10^power$ instead of 1epower
-            # in scale factor.  See https://stackoverflow.com/questions/43324152/python-matplotlib-colorbar-scientific-notation-base
-                cbar = self._figure.colorbar(im,ax=self._axis[axidx])
+                #cbar = self._wcs_colorbar(im,self._axis[axidx],pad=0.05,width="5%") looks like crap
+                cbar = self._figure.colorbar(im,ax=self._axis[axidx])#,format=ticker.ScalarFormatter(useMathText=True))
+
+                if kwargs_imshow['norm'].lower() != "log":
+                    #avoid AttributeError: 'LogFormatterSciNotation' object has no attribute 'set_powerlimits'
+                    cbar.formatter = ticker.ScalarFormatter(useMathText=True)
+                    cbar.formatter.set_scientific(True)
+                    cbar.formatter.set_powerlimits((0,0))
+                    cbar.update_ticks()
                 if "BUNIT" in _header:
                     lstr = u.Unit(_header["BUNIT"]).to_string('latex_inline')
-                    #cbar.formatter.set_powerlimits((0, 0))
-                    #AttributeError: 'LogFormatterSciNotation' object has no attribute 'set_powerlimits'
+                    
                     cbar.ax.set_ylabel(lstr,rotation=90)
 
         if kwargs_opts['contours']:
