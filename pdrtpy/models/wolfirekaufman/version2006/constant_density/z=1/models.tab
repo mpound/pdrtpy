@@ -50,10 +50,10 @@
   OI_63+CII_158         FIR   OI_63+CII_158/FIR            firweb    1   ([O I] 63 $\mu$m + [C II] 158 $\mu$m) / I$_{FIR}$
  OI_145+CII_158         FIR  OI_145+CII_158/FIR       firoi145web    1   ([O I] 145 $\mu$m + [C II] 158 $\mu$m) / I$_{FIR}$
         SIII_35     FEII_26     SIII_35/FEII_26 siii35feii26z1web    1   [S III] 35 $\mu$m / [Fe II] 26 $\mu$m
-         H200S1      H200S0       H200S1/H200S0     h200s1s0z1web    1   H$_2$0-0S(1) 17 $\mu$m / H$_2$0-0S(0) 28.2$ \mu$m
-         H200S2      H200S0       H200S2/H200S0     h200s2s0z1web    1   H$_2$0-0S(2) 12.3 $\mu$m / H$_2$0-0S(0) 28.2$ \mu$m
-         H200S2      H200S1       H200S2/H200S1     h200s2s1z1web    1   H$_2$0-0S(2) 12.3 $\mu$m / H$_2$0-0S(1) 17$ \mu$m
-         H200S3      H200S1       H200S3/H200S1     h200s3s1z1web    1   H$_2$0-0S(3) 9.7 $\mu$m / H$_2$0-0S(1) 17$ \mu$m
+         H200S1      H200S0       H200S1/H200S0     h200s1s0z1web    1   H$_2$0-0S(1) 17 $\mu$m / H$_2$0-0S(0) 28.2 $\mu$m
+         H200S2      H200S0       H200S2/H200S0     h200s2s0z1web    1   H$_2$0-0S(2) 12.3 $\mu$m / H$_2$0-0S(0) 28.2 $\mu$m
+         H200S2      H200S1       H200S2/H200S1     h200s2s1z1web    1   H$_2$0-0S(2) 12.3 $\mu$m / H$_2$0-0S(1) 17 $\mu$m
+         H200S3      H200S1       H200S3/H200S1     h200s3s1z1web    1   H$_2$0-0S(3) 9.7 $\mu$m / H$_2$0-0S(1) 17 $\mu$m
          H200S1     SIII_35      H200S1/SIII_35   h200s1siiiz1web    1   H$_2$0-0S(1) 17 $\mu$m / [S III] 35 $\mu$m
          H200S2     SIII_35      H200S2/SIII_35   h200s2siiiz1web    1   H$_2$0-0S(2) 12.3 $\mu$m / [S III] 35 $\mu$m
          H264Q1      H210S1      H264Q11/H210S1   h264q110s1z1web    1   H$_2$6-5Q(1) 1.6 $\mu$m / H$_2$1-0S(1) 2.12 $\mu$m
@@ -68,7 +68,7 @@
           CO_54           1               CO_54           co54web    1   CO(J=5-4)
           CO_65           1               CO_65           co65web    1   CO(J=6-5)
           CO_76           1               CO_76           co76web    1   CO(J=7-6)
-         H200S0           1              H200S0       h200s0z1web    1   H$_2$0-0S(0) 28.2$ \mu$m
+         H200S0           1              H200S0       h200s0z1web    1   H$_2$0-0S(0) 28.2 $\mu$m
          H200S1           1              H200S1       h200s1z1web    1   H$_2$0-0S(1) 17 $\mu$m
          H200S2           1              H200S2       h200s2z1web    1   H$_2$0-0S(2) 12.3 $\mu$m
          H200S3           1              H200S3       h200s3z1web    1   H$_2$0-0S(3) 9.7 $\mu$m
