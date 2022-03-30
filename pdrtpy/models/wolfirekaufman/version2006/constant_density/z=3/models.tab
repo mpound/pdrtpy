@@ -3,14 +3,14 @@
 |              |           |                   |                 |     | null                                                                     |
 |          null|       null|               null|             null|null | null                                                                     |
         SIII_35     FEII_26     SIII_35/FEII_26 siii35feii26z3web   3     [S III] 35 $\mu$m / [Fe II] 25 $\mu$m
-        H200S1      H200S0       H200S1/H200S0     h200s1s0z3web    3     H$_2$0-0S(1) 17 $\mu$m / H$_2$0-0S(0) 28.2$ \mu$m
-        H200S2      H200S0       H200S2/H200S0     h200s2s0z3web    3     H$_2$0-0S(2) 12.3 $\mu$m / H$_2$0-0S(0) 28.2$ \mu$m
-        H200S2      H200S1       H200S2/H200S1     h200s2s1z3web    3     H$_2$0-0S(2) 12.3 $\mu$m / H$_2$0-0S(1) 17$ \mu$m
-        H200S3      H200S1       H200S3/H200S1     h200s3s1z3web    3     H$_2$0-0S(3) 9.7 $\mu$m / H$_2$0-0S(1) 17$ \mu$m
+        H200S1      H200S0       H200S1/H200S0     h200s1s0z3web    3     H$_2$0-0S(1) 17 $\mu$m / H$_2$0-0S(0) 28.2 $\mu$m
+        H200S2      H200S0       H200S2/H200S0     h200s2s0z3web    3     H$_2$0-0S(2) 12.3 $\mu$m / H$_2$0-0S(0) 28.2 $\mu$m
+        H200S2      H200S1       H200S2/H200S1     h200s2s1z3web    3     H$_2$0-0S(2) 12.3 $\mu$m / H$_2$0-0S(1) 17 $\mu$m
+        H200S3      H200S1       H200S3/H200S1     h200s3s1z3web    3     H$_2$0-0S(3) 9.7 $\mu$m / H$_2$0-0S(1) 17 $\mu$m
         H200S1     SIII_35      H200S1/SIII_35   h200s1siiiz3web    3     H$_2$0-0S(1) 17 $\mu$m / [S III] 35 $\mu$m
         H200S2     SIII_35      H200S2/SIII_35   h200s2siiiz3web    3     H$_2$0-0S(2) 12.3 $\mu$m / [S III] 35 $\mu$m
         H264Q1      H210S1       H264Q1/H210S1   h264q110s1z3web    3     H$_2$6-5Q(1) 1.6 $\mu$m / H$_2$1-0S(1) 2.12 $\mu$m
-        H200S0           1              H200S0       h200s0z3web    3   H$_2$0-0S(0) 28.2$ \mu$m
+        H200S0           1              H200S0       h200s0z3web    3   H$_2$0-0S(0) 28.2 $\mu$m
         H200S1           1              H200S1       h200s1z3web    3   H$_2$0-0S(1) 17 $\mu$m
         H200S2           1              H200S2       h200s2z3web    3   H$_2$0-0S(2) 12.3 $\mu$m
         H200S3           1              H200S3       h200s3z3web    3   H$_2$0-0S(3) 9.7 $\mu$m
