@@ -50,11 +50,19 @@
         CO_1716             CO_65              CO_1716/CO_65       CO1716_CO65sm              1   CO(J=17-16) / CO(J=6-5)
         CO_1817             CO_54              CO_1817/CO_54       CO1817_CO54sm              1   CO(J=18-17) / CO(J=5-4)
         CO_1817             CO_65              CO_1817/CO_65       CO1817_CO65sm              1   CO(J=18-17) / CO(J=6-5)
-         H200S2            H200S0              H200S2/H200S0          H200S2_H200S0sm         1   H$_2$0-0S(2) 12.3 $\mu$m / H$_2$0-0S(0) 28.2$ \mu$m
-         H200S2            H200S1              H200S2/H200S1          H200S2_H200S1sm         1   H$_2$0-0S(2) 12.3 $\mu$m / H$_2$0-0S(1) 17$ \mu$m
-         H200S3            H200S0              H200S3/H200S0          H200S3_H200S0sm         1   H$_2$0-0S(3) 9.7 $\mu$m / H$_2$0-0S(0) 28.2$ \mu$m
-         H200S3            H200S1              H200S3/H200S1          H200S3_H200S1sm         1   H$_2$0-0S(3) 9.7 $\mu$m / H$_2$0-0S(1) 17$ \mu$m
-         H200S3            H200S2              H200S3/H200S2          H200S3_H200S1sm         1   H$_2$0-0S(3) 9.7 $\mu$m / H$_2$0-0S(2) 12.3$ \mu$m
+        13CO_10             CO_10              13CO_10/CO_10       13CO10_CO10sm              1   $^{13}$CO(J=1-0) / CO(J=1-0)
+        13CO_21             CO_21              13CO_21/CO_21       13CO21_CO21sm              1   $^{13}$CO(J=2-1) / CO(J=2-1)
+        13CO_32             CO_21              13CO_32/CO_21       13CO32_CO21sm              1   $^{13}$CO(J=3-2) / CO(J=2-1)
+        13CO_43             CO_21              13CO_43/CO_21       13CO43_CO21sm              1   $^{13}$CO(J=4-3) / CO(J=2-1)
+        13CO_54             CO_21              13CO_54/CO_21       13CO54_CO21sm              1   $^{13}$CO(J=5-4) / CO(J=2-1)
+        13CO_65             CO_21              13CO_65/CO_21       13CO65_CO21sm              1   $^{13}$CO(J=6-5) / CO(J=2-1)
+        13CO_76             CO_21              13CO_76/CO_21       13CO76_CO21sm              1   $^{13}$CO(J=7-6) / CO(J=2-1)
+        13CO_32           13CO_10            13CO_32/13CO_10       13CO32_13CO10sm            1   $^{13}$CO(J=3-2) / $^{13}$CO(J=1-0)
+         H200S2            H200S0              H200S2/H200S0          H200S2_H200S0sm         1   H$_2$0-0S(2) 12.3 $\mu$m / H$_2$0-0S(0) 28.2 $\mu$m
+         H200S2            H200S1              H200S2/H200S1          H200S2_H200S1sm         1   H$_2$0-0S(2) 12.3 $\mu$m / H$_2$0-0S(1) 17 $\mu$m
+         H200S3            H200S0              H200S3/H200S0          H200S3_H200S0sm         1   H$_2$0-0S(3) 9.7 $\mu$m / H$_2$0-0S(0) 28.2 $\mu$m
+         H200S3            H200S1              H200S3/H200S1          H200S3_H200S1sm         1   H$_2$0-0S(3) 9.7 $\mu$m / H$_2$0-0S(1) 17 $\mu$m
+         H200S3            H200S2              H200S3/H200S2          H200S3_H200S1sm         1   H$_2$0-0S(3) 9.7 $\mu$m / H$_2$0-0S(2) 12.3 $\mu$m
          CI_609                 1                    CI_609           CI609sm                 1   [C I] 609 $\mu$m
         CII_158                 1                   CII_158          CII158sm                 1   [C II] 158 $\mu$m
           OI_63                 1                     OI_63            OI63sm                 1   [O I] 63 $\mu$m
@@ -66,6 +74,9 @@
           CO_54                 1                     CO_54            CO54sm                 1   CO(J=5-4)
           CO_65                 1                     CO_65            CO65sm                 1   CO(J=6-5)
           CO_76                 1                     CO_76            CO76sm                 1   CO(J=7-6)
+        13CO_10                 1                   13CO_10          13CO10sm                 1   $^{13}$CO(J=1-0)
+        13CO_21                 1                   13CO_21          13CO21sm                 1   $^{13}$CO(J=2-1)
+        13CO_32                 1                   13CO_32          13CO32sm                 1   $^{13}$CO(J=3-2)
          H200S3                 1               H200S3                 H200S3sm               1   H$_2$0-0S(2) 9.7 $\mu$m 
          H200S2                 1               H200S2                 H200S2sm               1   H$_2$0-0S(2) 12.3 $\mu$m 
          H200S1                 1               H200S1                 H200S1sm               1   H$_2$0-0S(1) 17 $\mu$m 
@@ -77,3 +88,4 @@
      FEII_17.94         FEII_5.34      FEII_17.94/FEII_5.34      FEII17p94_FEII5p34           1   [Fe II] 17.94 $\mu$m/[Fe II] 5.34 $\mu$m
      FEII_22.90         FEII_5.34      FEII_22.90/FEII_5.34      FEII22p90_FEII5p34           1   [Fe II] 22.90 $\mu$m/[Fe II] 5.34 $\mu$m
         FEII_26         FEII_5.34         FEII_26/FEII_5.34      FEII25p99_FEII5p34           1   [Fe II] 25.99 $\mu$m/[Fe II] 5.34 $\mu$m
+        FEII_26                 1                   FEII_26               FEII25p99           1   [Fe II] 25.99 $\mu$m
