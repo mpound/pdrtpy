@@ -8,7 +8,7 @@
          OI_145             OI_63               OI_145/OI_63       OI145_OI63sm               1   [O I] 145 $\mu$m / [O I] 63 $\mu$m          
          CI_370            CI_609              CI_370/CI_609       CI370_CI609sm              1   [C I] 370 $\mu$m / [C I] 609 $\mu$m
         CII_158            CI_609             CII_158/CI_609       CII158_CI609sm             1   [C II] 158 $\mu$m / [C I] 609 $\mu$m
-        CII_158            OI_145             CII_158/OI_158       CII158_OI145sm             1   [C II] 158 $\mu$m / [O I] 145 $\mu$m 
+        CII_158            OI_145             CII_158/OI_145       CII158_OI145sm             1   [C II] 158 $\mu$m / [O I] 145 $\mu$m 
         CII_158               FIR                CII_158/FIR       CII158_FIRsm               1   [C II] 158 $\mu$m / I$_{FIR}$
         CII_158             CO_10              CII_158/CO_10       CII158_CO10sm              1   [C II] 158 $\mu$m / CO(J=1-0)
         CII_158             CO_21              CII_158/CO_21       CII158_CO21sm              1   [C II] 158 $\mu$m / CO(J=2-1)
