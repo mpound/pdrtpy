@@ -1,5 +1,17 @@
 ## Change Log
 
+### Release 2.2.6
+#### _Models_
+
+- adds CI/13CO models
+
+- typo fix in  CII\_158/OI\_145  model tag
+
+### Release 2.2.5
+#### _Models_
+
+- adds 13CO models and updates iron line ionized gas models
+
 ### Release 2.2.3
 #### _H2 Excitation Fitting_
 
