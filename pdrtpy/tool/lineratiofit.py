@@ -116,7 +116,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
  
         :rtype: int
         '''
-        # call to  modelset._get_ratio_elements is expensive. So set it once for each run. 
+        # call to  modelset._get_ratio_MA 01938elements is expensive. So set it once for each run. 
         if self._ratiocount is None:
             self._ratiocount = self._modelset.ratiocount(self.measurementIDs)
         return self._ratiocount
@@ -263,6 +263,13 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
            :type unit: string or astropy.Unit
         """
         self._modelratios = self._modelset.get_models(self.measurementIDs,model_type='ratio')
+        if self.ratiocount < 2:
+            msg = f"Not enough ratios.  You need to provide at least 3 observations that can be used to compute 2 ratios that are covered by the ModelSet. From your observations, {self.ratiocount:d} ratio(s)"
+            if self.ratiocount>0:
+                msg += f" {list(self._modelratios.keys())}"
+            msg += " can be computed."
+            raise Exception(msg)
+            
         k = utils.firstkey(self._modelratios)
         self._modelnaxis = self._modelratios[k].wcs.naxis
         self._modelshape = np.array(self._modelratios[k].data.shape)
@@ -517,12 +524,14 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
     def _compute_residual(self):
         '''Compute the residual values from the observed ratios and models
         '''
-        if not self._modelratios: # empty list or None
-            raise Exception("No model data ready.  Was read_models() called?")
-            
-        if self.ratiocount < 2 :
-            raise Exception(f"Not enough ratios.  You need to provide at least 3 observations that can be used to compute 2 ratios that are covered by the ModelSet. From your observations, only {self.ratiocount:d} ratio(s) {list(self._modelratios.keys())} can be computed.")
 
+        if self.ratiocount < 2:
+            msg = f"Not enough ratios.  You need to provide at least 3 observations that can be used to compute 2 ratios that are covered by the ModelSet. From your observations, {self.ratiocount:d} ratio(s)"
+            if self.ratiocount>0:
+                msg += f" {list(self._modelratios.keys())}"
+            msg += " can be computed."
+            raise Exception(msg)
+            
         if not self._check_ratio_shapes():
             raise Exception("Observed ratio maps have different dimensions")
             
