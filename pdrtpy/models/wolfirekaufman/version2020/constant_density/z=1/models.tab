@@ -78,6 +78,8 @@
           CO_54                 1                     CO_54            CO54sm                 1   CO(J=5-4)
           CO_65                 1                     CO_65            CO65sm                 1   CO(J=6-5)
           CO_76                 1                     CO_76            CO76sm                 1   CO(J=7-6)
+          CO_87                 1                     CO_87            CO87sm                 1   CO(J=8-7)
+        CO_1110                 1                   CO_1110          CO1110sm                 1   CO(J=11-10)
         13CO_10                 1                   13CO_10          13CO10sm                 1   $^{13}$CO(J=1-0)
         13CO_21                 1                   13CO_21          13CO21sm                 1   $^{13}$CO(J=2-1)
         13CO_32                 1                   13CO_32          13CO32sm                 1   $^{13}$CO(J=3-2)
@@ -93,3 +95,5 @@
      FEII_22.90         FEII_5.34      FEII_22.90/FEII_5.34      FEII22p90_FEII5p34           1   [Fe II] 22.90 $\mu$m/[Fe II] 5.34 $\mu$m
         FEII_26         FEII_5.34         FEII_26/FEII_5.34      FEII25p99_FEII5p34           1   [Fe II] 25.99 $\mu$m/[Fe II] 5.34 $\mu$m
         FEII_26                 1                   FEII_26               FEII25p99           1   [Fe II] 25.99 $\mu$m
+    ARIII_21.88        ARIII_8.99    ARIII_21.88/ARIII_8.99    ARIII21p88_ARIII8p99           1   [Ar III] 21.88 $\mu$m/[Ar III] 8.99 $\mu$m
+      ARV_13.07          ARV_7.91        ARV_13.07/ARV_7.91        ARV13p07_ARV7p91           1   [Ar V] 13.07 $\mu$m/[Ar V] 7.91 $\mu$m
