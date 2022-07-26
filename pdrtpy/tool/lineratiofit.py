@@ -622,7 +622,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._reduced_chisq.write(rchi,overwrite=overwrite,hdu_mask='MASK')  
         
     def _refine_density_radiation_field2(self,**kwargs):
-        if kwargs['method'] != 'emcee':
+        if kwargs['method'] != 'emcee':    
             kwargs.pop('steps')
             kwargs.pop('burn')
             progress = kwargs.pop("progress",True) # progress bar

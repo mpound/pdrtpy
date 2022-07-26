@@ -54,10 +54,14 @@ class PlotBase:
         #print(type(data))
         max_ =data.max()
         min_ = data.min()
-        if min_ == 0: min_ = 1E-10
+        if min_ <= 0: min_ = 1E-10
         #print("Auto contour levels: min %f max %f"%(min_,max_))
         if numlevels is None:
-            numlevels = int(0.5+3*(np.log(max_)-np.log(min_))/np.log(10))
+            try:
+                numlevels = int(0.5+3*(np.log(max_)-np.log(min_))/np.log(10))
+            except ValueError:
+                print(f"Bad numlevels with [min,max]=[{min_},{max_}]")
+                raise
         #print("levels start %d levels"%numlevels)
         # force number of levels to be between 5 and 15
         numlevels = max(numlevels,5)
@@ -170,8 +174,8 @@ class PlotBase:
         else: 
             return norm
 
-    def _wcs_colorbar(self,image, axis, pos="right", width="10%",pad=0.15,orientation="vertical"):
-        """Create a colorbar for a subplot with WCSAxes 
+    def _wcs_colorbar(self,image, axis, pos="right", width="5%",pad=0.05,orientation="vertical"):
+        """Create a colorbar for a subplot with WCSAxes
            (as opposed to matplolib Axes).  There are some side-effects of
            using WCS projection that need to be ameliorated.  Also for 
            subplots, we want the colorbars to have the same height as the 
@@ -192,9 +196,14 @@ class PlotBase:
         """
         divider = make_axes_locatable(axis)
         # See https://stackoverflow.com/questions/47060939/matplotlib-colorbar-and-wcs-projection
+        # This makes the colorbar the correct height but then offsets it from the x axis by a large amount.
+        # Changing pad, even to a negative number, does not affect this.:w
+        #ax_cb = divider.new_horizontal(size=width,pad=pad)
+        #ax_cb.yaxis.set_ticks_position(pos)
+        #self._figure.add_axes(ax_cb)
         cax = divider.append_axes(pos, size=width, pad=pad, axes_class=maxes.Axes)
         cax.yaxis.set_ticks_position(pos)
-        return self._figure.colorbar(image,ax=axis,cax=cax)
+        return self._figure.colorbar(image,ax=axis,cax=cax,orientation=orientation)
 
     def savefig(self,fname,**kwargs):
         """Save the current figure to a file.

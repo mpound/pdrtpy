@@ -78,7 +78,7 @@ class ModelPlot(PlotBase):
             labels = list()
             if kwargs_opts['contours']:
                 lines.append(Line2D([0], [0], color=kwargs_opts['colors'][0], linewidth=3, linestyle='-'))
-                labels.append("model")
+                labels.append(f"{self._modelset.name} model")
             if kwargs_opts['measurements'] is not None:
                 lines.append(Line2D([0], [0], color=kwargs_opts['meas_color'][0], linewidth=3, linestyle='-'))
                 labels.append("observed")
@@ -520,7 +520,8 @@ class ModelPlot(PlotBase):
                        'ylim':None,
                        'legend': False,
                        'meas_color': ['#4daf4a'],
-                       'shading': 0.4
+                       'shading': 0.4,
+                       'test':False
                        }
 
         kwargs_contour = {'levels': None, 
@@ -567,13 +568,14 @@ class ModelPlot(PlotBase):
                           'vmin': min_, 
                           'vmax': max_,
                           'cmap': 'plasma',
-                          'aspect': 'equal'}
+                          'aspect': 'auto'}
  
         kwargs_subplot = {'nrows': 1,
                           'ncols': 1,
                           'index': 1,
                           'reset': True,
-                          'constrained_layout': True
+                          'constrained_layout': False,
+                          'projection': data.wcs
                          }
 
         # delay merge until min_ and max_ are known
@@ -675,8 +677,10 @@ class ModelPlot(PlotBase):
             im = self._axis[axidx].pcolormesh(x.value,y.value,km,cmap=kwargs_imshow['cmap'],
                                               norm=_norm,shading='auto')
             if kwargs_opts['colorbar']:
-                #cbar = self._wcs_colorbar(im,self._axis[axidx],pad=0.05,width="5%") looks like crap
-                cbar = self._figure.colorbar(im,ax=self._axis[axidx])#,format=ticker.ScalarFormatter(useMathText=True))
+                if kwargs_opts['test']:
+                    cbar = self._wcs_colorbar(im,self._axis[axidx],pad=0.1,width="5%") #looks like crap
+                else:
+                    cbar = self._figure.colorbar(im,ax=self._axis[axidx])#,format=ticker.ScalarFormatter(useMathText=True))
 
                 if kwargs_imshow['norm'].lower() != "log":
                     #avoid AttributeError: 'LogFormatterSciNotation' object has no attribute 'set_powerlimits'

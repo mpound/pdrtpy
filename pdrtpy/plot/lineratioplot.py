@@ -167,7 +167,7 @@ class LineRatioPlot(PlotBase):
         '''
 
         kwargs_opts = {'units': None,
-                       'aspect': 'equal',
+                       'aspect': 'auto',
                        'image':True,
                        'contours': True,
                        'label': False,
@@ -236,7 +236,7 @@ class LineRatioPlot(PlotBase):
         '''
 
         kwargs_opts = {'units': None,
-                       'aspect': 'equal',
+                       'aspect': 'auto',
                        'image':True,
                        'contours': True,
                        'label': False,
@@ -314,7 +314,7 @@ class LineRatioPlot(PlotBase):
         _reset = [True,False]
 
         kwargs_opts = {'image':True,
-                       'aspect': 'equal',
+                       'aspect': 'auto',
                        'contours': False,
                        'label': False,
                        'levels': None,
@@ -348,7 +348,7 @@ class LineRatioPlot(PlotBase):
             raise NotImplementedError("Plotting of confidence intervals is not yet implemented for maps or vectors.")
 
         kwargs_opts = {'units': None,
-                       'aspect': 'equal',
+                       'aspect': 'auto',
                        'image':False,
                        'contours': True,
                        'label': True,
