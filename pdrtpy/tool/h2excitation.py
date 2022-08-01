@@ -38,7 +38,7 @@ class ExcitationFit(ToolBase):
             # set up atomic constants table, default intensity units
             self._ac = utils.get_table(constantsfile)
             self._ac.add_index("Line")
-            self._ac.add_index("J_u")
+            self._ac.add_index("Ju")
         #@todo we don't really even use this.  CD's are computed on the fly in average_column_density()
         self._column_density = dict()      
        
@@ -101,7 +101,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
 :type measurements: list of :class:`~pdrtpy.measurement.Measurement`. 
     """
     def __init__(self,measurements=None,
-                 constantsfile="atomic_constants.tab"):
+                 constantsfile="RoueffEtAl.tab"):
         super().__init__(measurements,constantsfile)
         self._canonical_opr = 3.0
         self._opr = Measurement(data=[self._canonical_opr],uncertainty=None)
@@ -425,12 +425,14 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
             cdnorm = dict()
             for cd in self._column_density:
                 if line:
-                    denom = self._ac.loc[cd]["g_u"]
+                    denom = self._ac.loc[cd]["gu"]
                 else:
-                    denom = self._ac.loc['J_u',cd]["g_u"]
+                    denom = self._ac.loc['Ju',cd]["gu"]
+                    if(len(denom)>0): denom=denom[0] #ARGH kluge.  Need to get rid of line=False option as Ju is no longer unique
+                #print("CD ",cd,"DENOM ",denom)
                 # This fails with complaints about units:
-                #self._column_density[cd] /= self._ac.loc[cd]["g_u"]
-                #gu = Measurement(self._ac.loc[cd]["g_u"],unit=u.dimensionless_unscaled)
+                #self._column_density[cd] /= self._ac.loc[cd]["gu"]
+                #gu = Measurement(self._ac.loc[cd]["gu"],unit=u.dimensionless_unscaled)
                 cdnorm[cd] = self._column_density[cd]/denom
             #return #self._column_density
             return cdnorm
@@ -449,10 +451,10 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         t = dict()
         if line:
             for m in self._measurements:
-                t[m] = self._ac.loc[m]["E_upper/k"]
+                t[m] = self._ac.loc[m]["Tu"]
         else:
             for m in self._measurements:
-                t[self._ac.loc[m]["J_u"]] = self._ac.loc[m]["E_upper/k"]
+                t[self._ac.loc[m]["Ju"]] = self._ac.loc[m]["Tu"]
         return t
 
     def run(self,position=None,size=None,fit_opr=False,**kwargs):
@@ -491,7 +493,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         :rtype: :class:`~pdrtpy.measurement.Measurement`
         '''
         # colden is N_upper
-        dE = self._ac.loc[colden.id]["dE/k"]*constants.k_B.cgs*self._ac["dE/k"].unit
+        dE = self._ac.loc[colden.id]["dE"]*constants.k_B.cgs*self._ac["dE"].unit
         A = self._ac.loc[colden.id]["A"]*self._ac["A"].unit
         v = A*dE/(4.0*math.pi*u.sr)
         val = Measurement(data=v.value,unit=v.unit,identifier=colden.id)
@@ -521,7 +523,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
            :rtype: :class:`~pdrtpy.measurement.Measurement` 
         '''
 
-        dE = self._ac.loc[intensity.id]["dE/k"] * constants.k_B.cgs * self._ac["dE/k"].unit
+        dE = self._ac.loc[intensity.id]["dE"] * constants.k_B.cgs * self._ac["dE"].unit
         A = self._ac.loc[intensity.id]["A"]*self._ac["A"].unit
         v = 4.0*math.pi*u.sr/(A*dE)
         val = Measurement(data=v.value,unit=v.unit)
@@ -546,7 +548,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
             if line:
                 index = m
             else:
-                index = self._ac.loc[m]["J_u"]             
+                index = self._ac.loc[m]["Ju"]             
             self._column_density[index] = self.upper_colden(self._measurements[m],unit)
 
     def gu(self,id,opr):
@@ -559,11 +561,11 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
            :raises KeyError: if id not in existing Measurements 
            :rtype: float
         '''
-        if utils.is_even(self._ac.loc[id]["J_u"]):
-            return self._ac.loc[id]["g_u"]
+        if utils.is_even(self._ac.loc[id]["Ju"]):
+            return self._ac.loc[id]["gu"]
         else:
-            #print("Ju=%d scaling by [%.2f/%.2f]=%.2f"%(self._ac.loc[id]["J_u"],opr,self._canonical_opr,opr/self._canonical_opr))
-            return self._ac.loc[id]["g_u"]*opr/self._canonical_opr
+            #print("Ju=%d scaling by [%.2f/%.2f]=%.2f"%(self._ac.loc[id]["Ju"],opr,self._canonical_opr,opr/self._canonical_opr))
+            return self._ac.loc[id]["gu"]*opr/self._canonical_opr
         
     def average_column_density(self,position=None,size=None,norm=True,
                                unit=utils._CM2,line=False, clip=-1E40*u.Unit("cm-2")):
@@ -648,7 +650,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         :returns: The array indices of the odd J values.
         :rtype: list of int
         """
-        return np.where(self._ac.loc[ids]["J_u"]%2!=0)[0]
+        return np.where(self._ac.loc[ids]["Ju"]%2!=0)[0]
     
     def _get_para_indices(self,ids):
         """Given a list of J values, return the indices of those that are para
@@ -659,7 +661,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         :returns: The array indices of the even J values.
         :rtype: list of int
         """
-        return np.where(self._ac.loc[ids]["J_u"]%2==0)[0]
+        return np.where(self._ac.loc[ids]["Ju"]%2==0)[0]
     
     # currently unused.  in future may allow users to give first guesses at the temperatures, though not clear these will be better than _firstguess().  plus this does nothing for the intercepts  
     def _slopesfromguess(self,guess):
