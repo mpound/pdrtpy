@@ -36,6 +36,7 @@ class LineRatioPlot(PlotBase):
     
 
     :Keyword Arguments:
+
     The methods of this class can take a variety of optional keywords.  See the general `Plot Keywords`_ documentation
        
     """
@@ -373,10 +374,11 @@ class LineRatioPlot(PlotBase):
         self._axis = self._modelplot.axis
     
     def overlay_all_ratios(self,**kwargs):
-        '''Overlay all the measured ratios and their errors on the :math:`(n,G_0)` space. 
+        '''Overlay all the measured ratios and their errors on the :math:`(n,F_{FUV})` space. 
 
-        **Currently only works for single-pixel Measurements**
+        This only works for single-valued Measurements; an overlay for multi-pixel doesn't make sense.
         '''
+#NB: could have position and area though.
 
         if self._tool.has_maps or self._tool.has_vectors:
             raise NotImplementedError("Plotting of ratio overlays is not yet implemented for maps or vectors.")

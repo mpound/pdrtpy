@@ -19,7 +19,7 @@ from . import pdrutils as utils
 class Measurement(CCDData):
     r"""Measurement represents one or more observations of a given spectral
     line or continuum.  It is made up of a value array, an
-    uncertainty array, units, and a string identifier It is based
+    uncertainty array, units, and a string identifier. It is based
     on :class:`astropy.nddata.CCDData`.  It can represent a single pixel
     observation or an image.   Mathematical operations using Measurements
     will correctly propagate errors.  
@@ -67,7 +67,11 @@ class Measurement(CCDData):
        from pdrtpy.measurement import Measurement
 
        my_obs = Measurement.read("file.fits",identifier="CII_158")
-       my_other_obs = Measurement.read("file2.fits",identifier="CO2_1",unit="K km/s",bmaj=9.3*u.arcsec,bmin=14.1*u.arcsec,bpa=23.2*u.degrees)
+       my_other_obs = Measurement.read("file2.fits",identifier="CO2_1",
+                                        unit="K km/s",
+                                        bmaj=9.3*u.arcsec,
+                                        bmin=14.1*u.arcsec,
+                                        bpa=23.2*u.degrees)
 
     By default image axes with only a single dimension are removed on read.  If you do not want this behavior, used `read(squeeze=False)`. See also: :class:`astropy.nddata.CCDData`.
     """
@@ -355,7 +359,7 @@ class Measurement(CCDData):
         :type world_y: float or array-lke
         :param log: True if the input coords are logarithmic Default:False
         :type log: bool
-        :returns The value(s) of the Measurement at input coordinates
+        :returns: The value(s) of the Measurement at input coordinates
         :rtype: float
         """
         if log:
@@ -499,13 +503,14 @@ class Measurement(CCDData):
             *uncertainty* - the error on the data, can be absolute error or percent. If percent, the header unit row entry for this column must be "%"
             
             *identifier* - the identifier of this Measurement which should match a model in the ModelSet you are using, e.g., "CII_158" for [C II] 158 $\\mu$m
+
         The following columns are optional:
 
-             *bmaj* - beam major axis size
+            *bmaj* - beam major axis size
              
-             *bmin* - beam minor axis size
+            *bmin* - beam minor axis size
              
-             *bpa*  - beam position angle
+            *bpa*  - beam position angle
 
         The table must specify the units of each column, e.g. a unit row in the header for IPAC format.  Leave column entry blank if unitless.  Units of value and error should be the same or conformable. Units must be transformable to a valid astropy.unit.Unit.
 

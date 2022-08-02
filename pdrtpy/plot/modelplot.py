@@ -15,10 +15,11 @@ from .. import pdrutils as utils
 
 
 class ModelPlot(PlotBase):
-    """ ModelPlot is a tool for exploring sets of models.  It can plot individual intensity or ratio models, phase-space diagrams, and optionally overlay observations.   Units are seamlessly transformed, so you can plot in Habing units, Draine units, or any conformable quantity.  ModelPlot does not require model fitting with :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` first.
+    """ModelPlot is a tool for exploring sets of models.  It can plot individual intensity or ratio models, phase-space diagrams, and optionally overlay observations.   Units are seamlessly transformed, so you can plot in Habing units, Draine units, or any conformable quantity.  ModelPlot does not require model fitting with :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` first.
 
     :Keyword Arguments:
-    The methods of this class can take a variety of optional keywords.  See the general `Plot Keywords`_ documentation
+
+    The methods of this class can take a variety of optional keywords.  See the general `Plot Keywords`_ documentation.
     """
     def __init__(self,modelset,figure=None,axis=None):
         """Init method
@@ -134,11 +135,11 @@ class ModelPlot(PlotBase):
 
 
     def overlay(self,measurements,**kwargs):
-        '''Overlay one or more single-pixel measurements in the model space ($n,G_0). 
+        '''Overlay one or more single-pixel measurements in the model space :math:`(n,F_{FUV})`.
 
-        :param measurements: a list of one or more :class:`pdrtpy.measurement.Measurement` to overlay.
+        :param measurements: a list of one or more :class:`~pdrtpy.measurement.Measurement` to overlay.
         :type measurements: list
-        :param shading: Controls how measurements and errors are drawn.  If shading is zero, Measurements will be drawn in solid contour for the value and dashed for the +/- errors. If shading is between 0 and 1, Measurements are drawn with as filled contours representing the size of the errors (see :meth:`~matplotlib.pyplot.contourf`) with alpha set to the shading value.  Default value: 0.4
+        :param shading: Controls how measurements and errors are drawn.  If ``shading`` is zero, Measurements will be drawn in solid contour for the value and dashed for the +/- errors. If ``shading`` is between 0 and 1, Measurements are drawn with as filled contours representing the size of the errors (see :meth:`matplotlib.pyplot.contourf`) with alpha set to the ``shading`` value.  Default value: 0.4
         :type shading: float
         
         '''

@@ -16,7 +16,7 @@ from ..pdrutils import float_formatter,LOGE,is_odd
 
 class ExcitationPlot(PlotBase):
     """
-ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy.tool.h2excitationfit.H2ExcitationFit`. It can plot the observed excitation diagram with or without fit results, and allows averaging over user-given spatial areas.  
+ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.tool.h2excitationfit.H2ExcitationFit`. It can plot the observed excitation diagram with or without fit results, and allows averaging over user-given spatial areas.  
     """
     def __init__(self,tool,label):
         super().__init__(tool)
@@ -28,9 +28,9 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
         #@todo position and size might not necessarily match how the fit was done.
         #:type position: tuple or :class:`astropy.coordinates.SkyCoord`
         #or a :class:`~astropy.coordinates.SkyCoord`, which will use the :class:`~astropy.wcs.WCS` of the ::class:`~pdrtpy.measurement.Measurement`s added to this tool.
-        r"""Plot the excitation diagram
+        r"""Plot the excitation diagram.  For maps of excitation parameters, a position and optional size are required.  To examine the entire map, use :meth:`explore`.
         
-        :param position: The position of the cutout array's center with respect to the data array. The position is specified as a `(x, y)` tuple of pixel coordinates. 
+        :param position: The spatial position of excitation diagram.  For spatial averaging this is the cutout array's center with respect to the data array. The position is specified as a `(x, y)` tuple of pixel coordinates. 
         :type position: tuple
         :param size: The size of the cutout array along each axis. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(ny, nx)` order. Scalar numbers in size are assumed to be in units of pixels. `size` can also be a :class:`~astropy.units.Quantity` object or contain :class:`~astropy.units.Quantity` objects. Such :class:`~astropy.units.Quantity` objects must be in pixel or angular units. For all cases, size will be converted to an integer number of pixels, rounding the the nearest integer.  See :class:`~astropy.nddata.utils.Cutout2D`
         :type size: int, array_like, or :class:`astropy.units.Quantity`

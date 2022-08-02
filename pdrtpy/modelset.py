@@ -246,8 +246,7 @@ class ModelSet(object):
     def get_model(self,identifier,unit=None,ext="fits"):
         '''Get a specific model by its identifier
 
-        :param identifier: a :class:`~pdrtpy.measurement.Measurement` ID. It can be an intensity or a ratio,
-   #,habing_unit,draine_unit,mathis_unit      e.g., "CII_158","CI_609/FIR"
+        :param identifier: a :class:`~pdrtpy.measurement.Measurement` ID. It can be an intensity or a ratio, e.g., "CII_158","CI_609/FIR".
         :type identifier: str
         :returns: The model matching the identifier
         :rtype: :class:`~pdrtpy.measurement.Measurement`
@@ -470,7 +469,7 @@ class ModelSet(object):
     def all_sets():
         """Return a table of the names and descriptions of available ModelSets (not just this one)
         
-        :rtype:`:class:~astropy.table.Table`
+        :rtype: :class:`~astropy.table.Table`
         """
         t = get_table("all_models.tab")
         t.remove_column("path")
