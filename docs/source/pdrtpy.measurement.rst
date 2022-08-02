@@ -10,10 +10,10 @@ with two HDUs, the first HDU is the spatial map of intensity and the
 CCDData <https://docs.astropy.org/en/stable/api/astropy.nddata.CCDData.html>`_
 if you are familiar with that. Typical sub-millimeter maps we get from
 telescopes don't have the error plane, but PDRT makes it easy for you to
-create one if you know the magnitude of the error. Your FITS images can
-be in intensity units, equivalent to :math:`{\rm erg~s^{-1}~cm^{-2}~sr^{-1}}` 
-or can be in K km/s.  PDRT will do appropriate conversion as necessary
-when it uses your images (original Measurement remains unchanged).
+create one if you know the magnitude of the error. Typical FITS images will
+be in intensity units, equivalent to :math:`{\rm erg~s^{-1}~cm^{-2}~sr^{-1}}`, 
+or in :math:`{\rm K~km~s^{-1}}`.  For the latter, PDRT will do appropriate conversion as necessary
+when it uses your images (the original Measurement remains unchanged).
 
 For example how to use Measurements, see the notebook `PDRT_Example_Measurements.ipynb <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Measurements.ipynb>`_.
 
