@@ -55,6 +55,8 @@ _rad_title['Habing'] = '$G_0$'
 _rad_title['Draine'] = '$\chi$'
 _rad_title['Mathis'] = 'FUV'
 
+# these only work if pdrtpy-nb is inside pdrtpy.
+# need to fix or remove.
 def _nbversion():
     return open("../VERSION","r").readline().strip(*"\n")
 def check_nb():
