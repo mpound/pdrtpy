@@ -40,10 +40,10 @@ class Measurement(CCDData):
     :param unit: The units of the data.  Required.
     :type unit: :class:`astropy.units.Unit` or str
         
-    :param identifier: string indicating what this is an observation of, e.g., "CO_10" for CO(1-0)
+    :param identifier: A string indicating what this is an observation of, e.g., "CO_10" for CO(1-0)
     :type identifier: str
 
-    :param title: formatted string (e.g., LaTeX) describing this observation that can be used for plotting. Python r-strings are accepted, e.g., r'$^{13}$CO(3-2)'  would give :math:`^{13}{\rm CO(3-2)}`.
+    :param title: A formatted string (e.g., LaTeX) describing this observation that can be used for plotting. Python r-strings are accepted, e.g., r'$^{13}$CO(3-2)'  would give :math:`^{13}{\rm CO(3-2)}`.
     :type title: str
 
     :param bmaj: [optional] beam major axis diameter. This will be converted to degrees for storage in FITS header
