@@ -71,6 +71,7 @@ class ModelSet(object):
         self._default_unit = dict()
         self._default_unit["ratio"] = u.dimensionless_unscaled
         self._default_unit["intensity"] = _OBS_UNIT_
+        self._user_added_models = dict()
 
     @property
     def description(self):
@@ -253,6 +254,9 @@ class ModelSet(object):
         :raises: KeyError if identifier not found in this ModelSet
         '''
 
+        if identifier in self._user_added_models:
+            return self._user_added_models[identifier]
+        
         if identifier not in self.table["ratio"]:
             raise KeyError(f"{identifier} is not in this ModelSet")
 
@@ -342,7 +346,52 @@ class ModelSet(object):
 
         return models
 
+    def add_model(self,identifier,model,title,overwrite=False):
+        r"""Add your own model to this ModelSet.
+        
+        :param identifier: a :class:`~pdrtpy.measurement.Measurement` ID. It can be an intensity or a ratio, e.g., "CII_158","CI_609/FIR".
+        :type identifier: str
+        :param model:  the model to add.  If a string, this must be the fully-qualified path of a FITS file.  If a :class:`~pdrtpy.measurement.Measurement` it must have the same CTYPEs and CUNITs as the models in the ModelSet(?).
+        :type model: str or :class:`~pdrtpy.measurement.Measurement`
+        :param title: A formatted string (e.g., LaTeX) describing this observation that can be used for plotting. Python r-strings are accepted, e.g., r'$^{13}$CO(3-2)'  would give :math:`^{13}{\rm CO(3-2)}`.
+    :type title: str
+        :param overwrite:  Whether to overwrite the model if the identifier already exists in the ModelSet or has been previously added.  Default: False
+        :type overwrite: bool
+        """
+        if identifier not in self.table["ratio"] and identifier not in self._user_added_models:
+            self._really_add_model(identifier,model,title)
+        elif identifier in self._user_added_models and not overwrite:
+            raise Exception(f"{identifier} was previously added to this ModelSet. If you wish to overwrite it, use overwrite=True")
+        elif identifier in self.table["ratio"] and not overwrite:
+            raise Exception(f"{identifier} is already in the {self.name} ModelSet. If you wish to overwrite it, use overwrite=True") 
+        else:
+            #print(f"Overwriting {identifier}.")
+            self._really_add_model(identifier,model,title)
+ 
 
+    def _really_add_model(self,identifier,model,title):
+        print("adding user model %s"%identifier)
+        if type(model) is str:
+            m = Measurement.read(model,identifier=identifier)
+        else: 
+            m = model
+        self._user_added_models[identifier] = m
+        if "/" in identifier: # it's a ratio
+            print("adding to supported ratios")
+            if identifier in self._supported_ratios["ratio label"]:                
+                # ack, there should be a way just to replace title but I can't get Table.loc to work.
+                index = np.where(self._supported_ratios["ratio label"] == identifier)[0][0]
+                print("index = ",index)
+                self._supported_ratios.remove_row(index)
+            self._supported_ratios.add_row([title,identifier])
+        else:
+            print("adding to supported intensities")
+            if identifier in self._supported_lines["intensity label"]:
+                index = np.where(self._supported_lines["intensity label"] == identifier)[0][0]
+                print("index = ",index)
+                self._supported_lines.remove_row(index)
+            self._supported_lines.add_row([title,identifier])
+            
     def _find_ratio_elements(self,m):
         # TODO handle case of OI+CII/FIR so it is not special cased in lineratiofit.py
         """Find the valid model numerator,denominator pairs in this ModelSet for a given list of measurement IDs. See :meth:`~pdrtpy.measurement.Measurement.id`
