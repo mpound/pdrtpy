@@ -162,6 +162,14 @@ class ModelSet(object):
         """
         return self._supported_ratios
 
+    @property
+    def user_added_models(self):
+        """Show which models have been added to this ModelSet by the user
+        
+        :rtype: list
+        """
+        return list(self._user_added_models.keys())
+    
     def ratiocount(self,m):
         """The number of valid ratios in this ModelSet, given a list of observation (:class:`~pdrtpy.measurement.Measurement`) identifiers.
 
@@ -370,25 +378,21 @@ class ModelSet(object):
  
 
     def _really_add_model(self,identifier,model,title):
-        print("adding user model %s"%identifier)
+        print("Adding user model %s"%identifier)
         if type(model) is str:
             m = Measurement.read(model,identifier=identifier)
         else: 
             m = model
         self._user_added_models[identifier] = m
         if "/" in identifier: # it's a ratio
-            print("adding to supported ratios")
             if identifier in self._supported_ratios["ratio label"]:                
                 # ack, there should be a way just to replace title but I can't get Table.loc to work.
                 index = np.where(self._supported_ratios["ratio label"] == identifier)[0][0]
-                print("index = ",index)
                 self._supported_ratios.remove_row(index)
             self._supported_ratios.add_row([title,identifier])
         else:
-            print("adding to supported intensities")
             if identifier in self._supported_lines["intensity label"]:
                 index = np.where(self._supported_lines["intensity label"] == identifier)[0][0]
-                print("index = ",index)
                 self._supported_lines.remove_row(index)
             self._supported_lines.add_row([title,identifier])
             
