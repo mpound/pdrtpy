@@ -71,15 +71,15 @@ class ExcitationFit(ToolBase):
         else:
             self._init_measurements(m)
             
-    def remove_measurement(self,id):
+    def remove_measurement(self,identifier):
         '''Delete a measurement from the internal dictionary used to compute column densities. Any associated column density will also be removed.
 
-           :param id: the measurement identifier
-           :type id: str
-           :raises KeyError: if id not in existing Measurements
+           :param identifier: the measurement identifier
+           :type identifier: str
+           :raises KeyError: if identifier not in existing Measurements
         '''
-        del self._measurements[id] # we want this to raise a KeyError if id not found
-        self._column_density.pop(m.id,None) # but not this.
+        del self._measurements[identifier] # we want this to raise a KeyError if id not found
+        self._column_density.pop(identifier,None) # but not this.
 
     def replace_measurement(self,m):
         '''Safely replace an existing intensity Measurement.  Do not 

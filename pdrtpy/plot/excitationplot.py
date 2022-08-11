@@ -12,7 +12,7 @@ from astropy.nddata import StdDevUncertainty
 
 from ..measurement import Measurement
 from .plotbase import PlotBase
-from ..pdrutils import float_formatter,LOGE,is_odd
+from ..pdrutils import float_formatter,LOGE,is_odd,to
 
 class ExcitationPlot(PlotBase):
     """
@@ -226,12 +226,12 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
 
         if self._tool._modelnaxis == 2 or len(_data.shape)==2:
             if kwargs_opts['units'] is not None:
-                k = utils.to(kwargs_opts['units'], _data)
+                k = to(kwargs_opts['units'], _data)
             else:
                 k = _data
         elif self._tool._modelnaxis == 3:
             if kwargs_opts['units'] is not None:
-                k = utils.to(kwargs_opts['units'], _data[0,:,:])
+                k = to(kwargs_opts['units'], _data[0,:,:])
             else:
                 k = _data[0,:,:]
         else:
@@ -413,7 +413,7 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         elif interaction_type == "click":
             self._figure.canvas.mpl_connect("button_press_event", update_lines)
         else:
-            close(self._figure)
+            self._plt.close(self._figure)
             raise ValueError(
                 f"{interaction_type} is not a valid option for interaction_type, valid options are 'click' or 'move'"
             )

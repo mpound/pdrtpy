@@ -285,7 +285,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
                 try:
                     self.radiation_field_unit = u.Unit(self._modelratios[k].header["CUNIT2"])
                 except KeyError:
-                    raise Exception("Keyword CUNIT2 is required in file %s FITS header to describe units of interstellar radiation field"%thefile)
+                    raise Exception("Keyword CUNIT2 is required in file %s FITS header to describe units of interstellar radiation field"%self._model_files_used[k])
         if not self._check_model_shapes():
             warnings.warn("Trimming all model grids to match H2 grid: log(n) = 1-5, log(G0) = 1-5")
             utils._trim_all_to_H2(self._modelratios)

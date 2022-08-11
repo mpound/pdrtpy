@@ -103,7 +103,7 @@ class ModelPlot(PlotBase):
             if type(meas[0]) is not Measurement:
                 raise TypeError("measurement keyword value must be a list of Measurements")
             if (model[identifier]._unit != meas[0].unit ):
-                raise TypeError(f"Model and Measurement for {identifier} have different units: ({model._unit},{meas_unit})")
+                raise TypeError(f"Model and Measurement for {identifier} have different units: ({model[identifier]._unit},{meas[0].unit})")
             if identifier != meas[0].id:
                 msg = f"Identifiers of model {identifier} and supplied Measurement {meas[0].id} do not match. Plotting anyway."
                 warnings.warn(msg)
