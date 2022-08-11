@@ -30,6 +30,9 @@ PhotoDissociation Region Toolbox --- Python
  :target: https://github.com/mpound/pdrtpy/blob/stable_release/CODE_OF_CONDUCT.md
  :alt: Contributor Covenant Code of Conduct  
 
+.. image:: https://github.com/mpound/pdrtpy/actions/workflows/run-integration-tests.yml/badge.svg?branch=active-devel
+ :alt: Integration test status
+
 ``pdrtpy`` is the new and improved version of the formerly web-based `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/>`_, rewritten in Python with new capabilities and giving more flexibility to end users.  (The web-based /CGI version of PDRT is deprecated and no longer supported). 
 
 The PDR Toolbox is a science-enabling tool for the community, designed to
