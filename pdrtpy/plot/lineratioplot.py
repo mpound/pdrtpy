@@ -14,14 +14,12 @@ import numpy as np
 import numpy.ma as ma
 import scipy.stats as stats
 
-import matplotlib.figure
-import matplotlib.colors as mpcolors
+#import matplotlib.figure
+#import matplotlib.colors as mpcolors
 import matplotlib.cm as mcm
-from matplotlib import ticker
+#from matplotlib import ticker
 from matplotlib.lines import Line2D
 
-from astropy.nddata.utils import Cutout2D
-from astropy.io import fits
 import astropy.wcs as wcs
 import astropy.units as u
 from astropy.units import UnitsWarning

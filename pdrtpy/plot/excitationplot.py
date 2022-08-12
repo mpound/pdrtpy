@@ -1,10 +1,9 @@
 import numpy as np
 import numpy.ma as ma
-import scipy.stats as stats
 from copy import deepcopy,copy
 
 import matplotlib.cm as mcm
-from matplotlib import ticker
+#from matplotlib import ticker
 from matplotlib.ticker import MultipleLocator
 
 import astropy.units as u
@@ -417,5 +416,3 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
             raise ValueError(
                 f"{interaction_type} is not a valid option for interaction_type, valid options are 'click' or 'move'"
             )
-
-

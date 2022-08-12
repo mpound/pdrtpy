@@ -3,27 +3,27 @@ from copy import deepcopy
 import numpy as np
 import numpy.ma as ma
 
-from astropy.io import fits
+#from astropy.io import fits
 from astropy.io.fits.header import Header
-import astropy.wcs as wcs
+#import astropy.wcs as wcs
 import astropy.units as u
 import astropy.stats as astats
 from astropy.table import Table, Column
 from astropy.nddata import CCDData
 import warnings
-from lmfit import Parameters, Minimizer, minimize, fit_report
+from lmfit import Parameters, Minimizer#, fit_report
 from scipy.interpolate import interpn
-import corner
 from pdrtpy.pbar import get_progress_bar
 
-import cProfile, pstats, io
-from pstats import SortKey
+import cProfile
+import pstats 
+import io
 
 from .toolbase import ToolBase
 from .fitmap import FitMap
 from .. import pdrutils as utils
 from ..modelset import ModelSet
-from ..measurement import Measurement
+#from ..measurement import Measurement
 
 class LineRatioFit(ToolBase):
     """LineRatioFit is a tool to fit observations of intensity ratios to a set of PDR models. It takes as input a set of observations with errors represented as :class:`~pdrtpy.measurement.Measurement` and  :class:`~pdrtpy.modelset.ModelSet` for the models to which the data will be fitted. The observations should be spectral line or continuum intensities.  They can be spatial maps or single pixel values. They should have the same spatial resolution.
@@ -402,7 +402,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         if profile:
             pr.disable()
             s = io.StringIO()
-            sortby = SortKey.CUMULATIVE
+            sortby = pstats.SortKey.CUMULATIVE
             ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
             ps.print_stats()
             self._stats = s

@@ -4,11 +4,9 @@ import matplotlib.axes as maxes
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from astropy.visualization import simple_norm, ZScaleInterval , ImageNormalize
-from astropy.visualization.stretch import LinearStretch, SinhStretch, PowerStretch, AsinhStretch, LogStretch, SqrtStretch
+from astropy.visualization.stretch import LinearStretch, PowerStretch, AsinhStretch, LogStretch, SqrtStretch
 from matplotlib.colors import LogNorm
 from cycler import cycler
-
-from ..pdrutils import to
 
 class PlotBase:
     """Base class for plotting.
@@ -239,4 +237,3 @@ class PlotBase:
         :type colorcycle: list
         """
         self._plt.rc('axes', prop_cycle=(cycler('color',  colorcycle)))
-

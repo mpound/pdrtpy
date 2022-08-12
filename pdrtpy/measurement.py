@@ -10,7 +10,7 @@ from astropy import log
 import astropy.units as u
 from astropy.io import fits,registry
 from astropy.table import Table
-from astropy.nddata import NDDataArray, CCDData, NDUncertainty, StdDevUncertainty, VarianceUncertainty, InverseVariance
+from astropy.nddata import CCDData, StdDevUncertainty 
 import numpy as np
 import numpy.ma as ma
 from scipy.interpolate import interp2d

@@ -7,8 +7,9 @@ import numpy as np
 from lmfit import Parameters#, fit_report
 from lmfit.model import Model#, ModelResult
 from emcee.pbar import get_progress_bar
-import cProfile, pstats, io
-from pstats import SortKey
+import cProfile 
+import pstats
+import io
 
 from .toolbase import ToolBase
 from .fitmap import FitMap
@@ -832,7 +833,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         if profile:
             pr.disable()
             s = io.StringIO()
-            sortby = SortKey.CUMULATIVE
+            sortby = pstats.SortKey.CUMULATIVE
             ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
             ps.print_stats()
             self._stats = s
