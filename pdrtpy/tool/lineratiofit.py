@@ -218,15 +218,15 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
            return False
        
     def _check_measurement_shapes(self):
-       if self._measurements == None: return False
+       if self._measurements is None: return False
        return self._check_shapes(self._measurements)
 
     def _check_ratio_shapes(self):
-       if self._observedratios == None: return False
+       if self._observedratios is None: return False
        return self._check_shapes(self._observedratios)
     
     def _check_model_shapes(self):
-        if self._modelratios == None: return False
+        if self._modelratios is None: return False
         return self._check_shapes(self._modelratios)
             
     def add_measurement(self,m):
