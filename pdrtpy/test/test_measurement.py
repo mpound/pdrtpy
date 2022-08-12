@@ -47,7 +47,7 @@ class TestMeasurement(unittest.TestCase):
             #print(q,a,d,e)
             self.assertTrue(np.all(a.data == d))
             self.assertTrue(np.all(np.round(a.error,3) == np.round(e,3)))
-    
+
             self.assertTrue(m[q].unit == u.adu)
     #@todo add operations with numerics (e.g. m*3.14)
 
@@ -57,7 +57,7 @@ class TestMeasurement(unittest.TestCase):
         print("Test FITS files are in: %s"%utils.testdata_dir())
         cii_flux = utils.get_testdata("n22_cii_flux.fits")  # [C II] flux
         cii_err = utils.get_testdata("n22_cii_error.fits")  # [C II] error
-        oi_flux = utils.get_testdata("n22_oi_flux.fits")    # [O I] flux 
+        oi_flux = utils.get_testdata("n22_oi_flux.fits")    # [O I] flux
         oi_err = utils.get_testdata("n22_oi_error.fits")    # [O I] error
         FIR_flux = utils.get_testdata("n22_FIR.fits")       # FIR flux
 
@@ -98,4 +98,3 @@ class TestMeasurement(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

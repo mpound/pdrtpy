@@ -11,15 +11,15 @@ from cycler import cycler
 from ..pdrutils import to
 
 class PlotBase:
-    """Base class for plotting.  
+    """Base class for plotting.
 
     :param tool:  Reference to a :mod:`~pdrtpy.tool` object or `None`.  This is used for classes that inherit from PlotBase and are coupled to a specific tool, e.g. :class:`~pdrtpy.plot.LineRatioPlot` and :class:`~pdrtpy.tool.LineRatioFit`.
     :type tool: Any class derived from :class:`~pdrtpy.tool.toolbase.ToolBase`
     """
     def __init__(self,tool):
-        import matplotlib.pyplot 
+        import matplotlib.pyplot
         self._plt = matplotlib.pyplot
-        # don't use latex in text labels etc by default. 
+        # don't use latex in text labels etc by default.
         # because legends and titles wind up using a different font than axes
         # @TODO figure out how to make them all use the same font (e.g. CMBright)
         self._plt.rcParams["text.usetex"] = False
@@ -35,7 +35,7 @@ class PlotBase:
         self.colorcycle(self._CB_color_cycle)
 
     def _autolevels(self,data,steps='log',numlevels=None,verbose=False):
-        """Compute contour levels automatically based on data. 
+        """Compute contour levels automatically based on data.
 
         :param data: The data to contour
         :type data: numpy.ndarray, astropy.io.fits HDU or CCDData
@@ -47,7 +47,7 @@ class PlotBase:
         :type verbose: boolean
         :returns:  numpy.array containing level values
         """
- 
+
         # tip of the hat to the WIP autolevels code lev.
         # http://admit.astro.umd.edu/wip ,  wip/src/plot/levels.c
         # CVS at http://www.astro.umd.edu/~teuben/miriad/install.html
@@ -66,7 +66,7 @@ class PlotBase:
         # force number of levels to be between 5 and 15
         numlevels = max(numlevels,5)
         numlevels = min(numlevels,15)
-    
+
         if steps[0:3] == 'lin':
             slope = (max_ - min_)/(numlevels-1)
             levels = np.array([min_+slope*j for j in range(0,numlevels)])
@@ -81,8 +81,8 @@ class PlotBase:
         if verbose:
             print("Computed %d contour autolevels: %s"%(numlevels,levels))
         return levels
-        
-    @property 
+
+    @property
     def figure(self):
         """The last figure that was drawn.
 
@@ -97,12 +97,12 @@ class PlotBase:
            :rtype: :class:`matplotlib.axes._subplots.AxesSubplot`
         """
         return self._axis
-    
+
     def text(self,x,y,s,fontdict=None,**kwargs):
-        """ 
+        """
         Add text to the Axes.  Add the text `s` to the Axes at location `x, y` in data coordinates.
-        This calls through to :meth:`matplotlib.pyplot.text`. 
-        
+        This calls through to :meth:`matplotlib.pyplot.text`.
+
         :param x: the horizontal coordinate for the text
         :type x: float
         :param y: the vertical coordinate for the text
@@ -110,18 +110,18 @@ class PlotBase:
         :param s: the text
         :type s: str
         :param fontdict: A dictionary to override the default text properties. If fontdict is None, the defaults are determined by rcParams.
-        :type fontdict: dict    
-        :param \*\*kwargs: Other miscellaneous :class:`~matplotlib.text.Text` parameters.       
+        :type fontdict: dict
+        :param \*\*kwargs: Other miscellaneous :class:`~matplotlib.text.Text` parameters.
         """
         n = self._plt.text(x,y,s,fontdict,**kwargs)
 
     def _zscale(self,image,vmin,vmax,stretch,contrast=0.25):
         """Normalization object using Zscale algorithm
            See :mod:`astropy.visualization.ZScaleInterval`
-        
+
         :param image: the image object
         :type image: :mod:`astropy.io.fits` HDU or CCDData
-        :param contrast: The scaling factor (between 0 and 1) for determining the minimum and maximum value. Larger values increase the difference between the minimum and maximum values used for display. Defaults to 0.25.  
+        :param contrast: The scaling factor (between 0 and 1) for determining the minimum and maximum value. Larger values increase the difference between the minimum and maximum values used for display. Defaults to 0.25.
         :type contrast: float
         :returns: :mod:`astropy.visualization.normalization` object
         """
@@ -143,8 +143,8 @@ class PlotBase:
         return norm
 
     def _get_norm(self,norm,km,vmin,vmax,stretch):
-        """Get a Normalization object 
- 
+        """Get a Normalization object
+
         :param norm: The normalization time ( 'simple', 'zscale', 'log' )
         :type norm: str
         :param km: the image object
@@ -157,7 +157,7 @@ class PlotBase:
         :type stretch: str
         :returns: :mod:`astropy.visualization.normalization` object
         """
-        if type(norm) == str: 
+        if type(norm) == str:
             norm = norm.lower()
             if norm not in self._valid_norms:
                 raise ValueError("Unrecognized normalization %s. Valid values are %s"%(norm,self._valid_norms))
@@ -171,14 +171,14 @@ class PlotBase:
         elif norm == 'log':
             # stretch ignored in this case
             return LogNorm(vmin=vmin,vmax=vmax,clip=False)
-        else: 
+        else:
             return norm
 
     def _wcs_colorbar(self,image, axis, pos="right", width="5%",pad=0.05,orientation="vertical"):
         """Create a colorbar for a subplot with WCSAxes
            (as opposed to matplolib Axes).  There are some side-effects of
-           using WCS projection that need to be ameliorated.  Also for 
-           subplots, we want the colorbars to have the same height as the 
+           using WCS projection that need to be ameliorated.  Also for
+           subplots, we want the colorbars to have the same height as the
            plot, which is not the default behavior.
 
            :param image: the mappable object for the plot. Must not be masked.
@@ -188,7 +188,7 @@ class PlotBase:
            :param pos: colorbar position: ["left"|"right"|"bottom"|"top"]. Default: right
            :type pos: str
            :param width: width of the colorbar in terms of percent width of the plot.
-           :type width: str 
+           :type width: str
            :param pad: padding between colorbar and plot, in inches.
            :type pad: float
            :param orientation: orientation of colorbar ["vertical" | "horizontal" ]
@@ -231,12 +231,12 @@ class PlotBase:
            :type use: bool
         """
         self._plt.rcParams["text.usetex"] = use
-        
+
     def colorcycle(self,colorcycle):
-        """Set the plot color cycle for multi-trace plots.  The default color cycle is optimized for color-blind users. 
-        
+        """Set the plot color cycle for multi-trace plots.  The default color cycle is optimized for color-blind users.
+
         :param colorcycle: List of colors to use, typically a list of hex color strings.  This list will be passed to :meth:`matplotlib.pyplot.rc` as the *axes prop_cycle* parameter using :class:`matplotlib.cycler`.
         :type colorcycle: list
         """
         self._plt.rc('axes', prop_cycle=(cycler('color',  colorcycle)))
-        
+

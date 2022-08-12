@@ -1,4 +1,3 @@
-
 import unittest
 import os
 
@@ -28,7 +27,7 @@ class TestAJPaperListings(unittest.TestCase):
         ###            Listing A.1:  models, ModelSet, and ModelPlot            ###
         ###########################################################################
 
-        # Get the Wolfire-Kaufman 2020 Z=1 models 
+        # Get the Wolfire-Kaufman 2020 Z=1 models
         ms = ModelSet("wk2020",z=1)
 
         # Get KOSMA-tau R=3.1 model
@@ -40,15 +39,15 @@ class TestAJPaperListings(unittest.TestCase):
         model = ms.get_model("OI_63/CII_158")
         modelkt = mskt.get_model("OI_63/CII_158")
 
-        # Find all the models that use some combination of CO(J=1-0), [C II] 158 micron, 
-        # [O I] 145 micron,  and far-infrared intensity. This example gets both intensity 
-        # and ratio models, though one can specify model_type='intensity' 
-        # or model_type='ratio' to get one or the other. 
+        # Find all the models that use some combination of CO(J=1-0), [C II] 158 micron,
+        # [O I] 145 micron,  and far-infrared intensity. This example gets both intensity
+        # and ratio models, though one can specify model_type='intensity'
+        # or model_type='ratio' to get one or the other.
         # The models are returned as a dictionary with the keys set to the model IDs.
 
         mods = ms.get_models(["CII_158","OI_145", "CO_10", "FIR"],model_type='both')
         print(list(mods.keys()))
-        # Output of above: ['OI_145', 'CII_158', 'CO_10', 'CII_158/OI_145', 'CII_158/CO_10', 
+        # Output of above: ['OI_145', 'CII_158', 'CO_10', 'CII_158/OI_145', 'CII_158/CO_10',
         #                   'CII_158/FIR', 'OI_145+CII_158/FIR']
 
         # Plot a selected model and save it to a PDF file.  Note in this example,
@@ -76,28 +75,28 @@ class TestAJPaperListings(unittest.TestCase):
             f2 = utils.get_testdata(f"cii-co-{region}.tab")
             rcw49.append(Measurement.from_table(f1))
             rcw49.append(Measurement.from_table(f2))
-            
+
         mp.phasespace(['CII_158/FIR','CII_158/CO_32'],nax1_clip=[1E2,1E5]*u.Unit("cm-3"),
                        nax2_clip=[1E1,1E6]*utils.habing_unit, measurements=rcw49,label=label,
                        fmt=format_,title="RCW 49 Regions")
         mp.savefig("example1c_figure.pdf")
         self._files.append("example1c_figure.pdf")
 
-    
+
     def test_listingA2(self):
         print("### LISTING A.2")
         #############################################################################
         ###  Listing A.2: Fitting intensity ratios for single-pixel observations  ###
         #############################################################################
 
-        # Example using single-beam observations of [OI] 163 micron, [CI] 609 micron, CO(J=4-3), 
+        # Example using single-beam observations of [OI] 163 micron, [CI] 609 micron, CO(J=4-3),
         # and [CII] 158 micron lines. You create `Measurements` for these using the constructor
-        # which takes the value, error, line identifier string, and units.   The value and the error 
-        # must be in the same units.  You can mix units  in different Measurements; note we use 
-        # K km/s  for the CO observation below.   The PDR Toolbox will convert all `Measurements` 
-        # to a common unit before using them in a fit. You can also add optional beam size 
-        # (bmaj,bmin,bpa), however the tools requires all `Measurements` have the same beam size 
-        # before calculations can be performed.  (If you don't provide beam parameters for any of 
+        # which takes the value, error, line identifier string, and units.   The value and the error
+        # must be in the same units.  You can mix units  in different Measurements; note we use
+        # K km/s  for the CO observation below.   The PDR Toolbox will convert all `Measurements`
+        # to a common unit before using them in a fit. You can also add optional beam size
+        # (bmaj,bmin,bpa), however the tools requires all `Measurements` have the same beam size
+        # before calculations can be performed.  (If you don't provide beam parameters for any of
         # your Measurements,  the Toolbox will assume they are all the same).
 
         myunit = "erg s-1 cm-2 sr-1" # default unit for value and error
@@ -114,13 +113,13 @@ class TestAJPaperListings(unittest.TestCase):
         ms = ModelSet("wk2020",z=1)
 
         # Instantiate the LineRatioFit tool giving it the ModelSet and Measurements
-        p = LineRatioFit(ms,measurements=observations) 
+        p = LineRatioFit(ms,measurements=observations)
         p.run()
         # Print the fitted quantities using Python f-strings and the fit report via lmfit
         print(f"n={p.density:.2e}\nX={utils.to('Draine',p.radiation_field):.2e}")
         print(fit_report(p.fit_result[0]))
 
-        # Create the plotting tool for the LineRatioPlot, 
+        # Create the plotting tool for the LineRatioPlot,
         # then make plots of the observed ratios overlayed on the model ratios
         plot = LineRatioPlot(p)
         plot.ratios_on_models(yaxis_unit="Draine",colorbar=True,norm='log',cmap='cividis',label=True,ncols=3,figsize=(23,7))
@@ -160,7 +159,7 @@ class TestAJPaperListings(unittest.TestCase):
         ms = ModelSet("wk2020",z=1)
 
         # Instantiate the LineRatioFit tool giving it the ModelSet and Measurements
-        p = LineRatioFit(ms,measurements=observations) 
+        p = LineRatioFit(ms,measurements=observations)
         p.run(method='emcee',steps=2000)
 
         res = p.fit_result[0]
@@ -197,7 +196,7 @@ class TestAJPaperListings(unittest.TestCase):
         print("Test FITS files are in: %s"%utils.testdata_dir())
         cii_flux = utils.get_testdata("n22_cii_flux.fits")  # [C II] flux
         cii_err = utils.get_testdata("n22_cii_error.fits")  # [C II] error
-        oi_flux = utils.get_testdata("n22_oi_flux.fits")    # [O I] flux 
+        oi_flux = utils.get_testdata("n22_oi_flux.fits")    # [O I] flux
         oi_err = utils.get_testdata("n22_oi_error.fits")    # [O I] error
         FIR_flux = utils.get_testdata("n22_FIR.fits")       # FIR flux
 
@@ -209,9 +208,9 @@ class TestAJPaperListings(unittest.TestCase):
         self._files.append(oi_combined)
         self._files.append(FIR_combined)
         # create the Measurements and write them out as FITS files with two HDUs.
-        Measurement.make_measurement(cii_flux, cii_err, 
+        Measurement.make_measurement(cii_flux, cii_err,
                                      outfile=cii_combined, overwrite=True)
-        Measurement.make_measurement(oi_flux, oi_err, 
+        Measurement.make_measurement(oi_flux, oi_err,
                                      outfile=oi_combined, overwrite=True)
         # Assign a 10% error in FIR flux
         Measurement.make_measurement(FIR_flux, error='10%',
@@ -265,7 +264,7 @@ class TestAJPaperListings(unittest.TestCase):
                             uncertainty=StdDevUncertainty(0.75*intensity[i]),
                             identifier=i,unit="erg cm-2 s-1 sr-1")
             observations.append(m)
-            
+
         hopr = H2ExcitationFit(observations)
         hopr.run(fit_opr=True)
         hplot = ExcitationPlot(hopr,"H_2")
@@ -292,4 +291,3 @@ class TestAJPaperListings(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-

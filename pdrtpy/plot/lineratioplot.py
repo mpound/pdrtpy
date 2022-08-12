@@ -1,4 +1,4 @@
-#todo: 
+#todo:
 # keywords for show_both need to be arrays. ugh.
 #
 # allow levels to be percent?
@@ -33,12 +33,12 @@ from .. import pdrutils as utils
 
 class LineRatioPlot(PlotBase):
     """LineRatioPlot plots the results of :class:`~pdrtpy.tools.lineratiofit.LineRatioFit`.  It can plot maps of fit results, observations with errors on top of models, chi-square and confidence intervals and more.
-    
+
 
     :Keyword Arguments:
 
     The methods of this class can take a variety of optional keywords.  See the general `Plot Keywords`_ documentation
-       
+
     """
 
     def __init__(self,tool):
@@ -65,7 +65,7 @@ class LineRatioPlot(PlotBase):
         ms = self._tool.modelset
         if id not in ms.supported_lines["intensity label"]:
             raise KeyError(f"{id} is not in the ModelSet of your LineRatioFit")
-        
+
         model = ms.get_models([id],model_type="intensity")
         kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'colorbar':True}
         kwargs_opts.update(kwargs)
@@ -75,7 +75,7 @@ class LineRatioPlot(PlotBase):
 
     def modelratio(self,id,**kwargs):
         """Plot one of the model ratios
-     
+
            :param id: the ratio identifier, such as ``CII_158/CO_32``.
            :type id: str
            :param \**kwargs: see class documentation above
@@ -148,7 +148,7 @@ class LineRatioPlot(PlotBase):
             return utils.to(kwargs_opts['units'],self._tool.radiation_field)
 
         if kwargs_opts['title'] is None:
-            rad_title = utils.get_rad(kwargs_opts['units']) 
+            rad_title = utils.get_rad(kwargs_opts['units'])
             tunit=u.Unit(kwargs_opts['units'])
             kwargs_opts['title'] = r"{0} [{1:latex_inline}]".format(rad_title,tunit)
 
@@ -158,13 +158,13 @@ class LineRatioPlot(PlotBase):
     #    """Make a line plot of chisq as a function of G0 or n for a given pixel"""
     #    axes = {"G0":0,"n":1}
     #    axis = axes[xaxis] #yep key error if you do it wrong
-    #        
+    #
 
     #@TODO refactor this method with reduced_chisq()
-    def chisq(self, **kwargs):           
+    def chisq(self, **kwargs):
         '''Plot the :math:`\chi^2` map that was computed by the
         :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
-        
+
         '''
 
         kwargs_opts = {'units': None,
@@ -217,7 +217,7 @@ class LineRatioPlot(PlotBase):
                 y = utils.to(kwargs_opts['yaxis_unit'],self._tool._radiation_field).value
             else:
                 y = self._tool._radiation_field.value
-                
+
             #print("Plot x,y %s,%s"%(x,y))
 
             if kwargs_opts['title'] is None:
@@ -233,7 +233,7 @@ class LineRatioPlot(PlotBase):
     def reduced_chisq(self, **kwargs):
         '''Plot the reduced :math:`\chi^2` map that was computed by the
         :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
-        
+
         '''
 
         kwargs_opts = {'units': None,
@@ -253,7 +253,7 @@ class LineRatioPlot(PlotBase):
         kwargs_opts.update(kwargs)
         if self._tool.has_vectors:
             raise NotImplementedError("Plotting of chi-square is not yet implemented for vector Measurements.")
-            
+
         if self._tool.has_maps:
             if 'title' not in kwargs:
                 kwargs_opts['title'] = r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof
@@ -276,12 +276,12 @@ class LineRatioPlot(PlotBase):
                 logn,logrf = mywcs.array_index_to_world(row,col)
                 warnings.resetwarnings()
                 # logn, logrf are Quantities of the log(density) and log(radiation field),
-                # respectively.  The model default units are cm^-2 and erg/s/cm^-2. 
-                # These must be converted to plot units based on user input 
-                # xaxis_unit and yaxis_unit. 
+                # respectively.  The model default units are cm^-2 and erg/s/cm^-2.
+                # These must be converted to plot units based on user input
+                # xaxis_unit and yaxis_unit.
                 # Note: multiplying by n.unit causes the ValueError:
                 # "The unit '1/cm3' is unrecognized, so all arithmetic operations with it are invalid."
-                # Yet by all other measures this appears to be a valid unit. 
+                # Yet by all other measures this appears to be a valid unit.
                 # The workaround is to us to_string() method.
                 n = (10**logn.value[0])*u.Unit(logn.unit.to_string())
                 rf = (10**logrf.value[0])*u.Unit(logrf.unit.to_string())
@@ -295,7 +295,7 @@ class LineRatioPlot(PlotBase):
                 y = utils.to(kwargs_opts['yaxis_unit'],self._tool._radiation_field).value
             else:
                 y = self._tool._radiation_field.value
-            #print("Plot x,y %s,%s"%(x,y))           
+            #print("Plot x,y %s,%s"%(x,y))
             if kwargs_opts['title'] is None:
                 kwargs_opts['title'] = r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof
             label = r'$\chi_{\nu,min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)'%(self._tool._reduced_chisq_min.value,x,y)
@@ -333,7 +333,7 @@ class LineRatioPlot(PlotBase):
 
         kwargs_opts['index'] = _index[1]
         kwargs_opts['reset'] = _reset[1]
- 
+
         d = self.density(units=units[1],**kwargs_opts)
         # @todo don't return for plots.  print for non-plots
         return (rf,d)
@@ -341,7 +341,7 @@ class LineRatioPlot(PlotBase):
     def confidence_intervals(self,**kwargs):
         '''Plot the confidence intervals from the :math:`\chi^2` map computed by the
         :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool. Default levels:  [50., 68., 80., 95., 99.]
-        
+
         **Currently only works for single-pixel Measurements**
         '''
 
@@ -361,7 +361,7 @@ class LineRatioPlot(PlotBase):
                        'xaxis_unit': None,
                        'yaxis_unit': None,
                        'title':  "Confidence Intervals"}
-        
+
         # ensure levels are in ascending order
         kwargs_opts['levels'] = sorted(kwargs_opts['levels'])
         kwargs_opts.update(kwargs)
@@ -372,9 +372,9 @@ class LineRatioPlot(PlotBase):
         self._modelplot._plot_no_wcs(data=confidence,header=None,**kwargs_opts)
         self._figure = self._modelplot.figure
         self._axis = self._modelplot.axis
-    
+
     def overlay_all_ratios(self,**kwargs):
-        '''Overlay all the measured ratios and their errors on the :math:`(n,F_{FUV})` space. 
+        '''Overlay all the measured ratios and their errors on the :math:`(n,F_{FUV})` space.
 
         This only works for single-valued Measurements; an overlay for multi-pixel doesn't make sense.
         '''
@@ -422,7 +422,7 @@ class LineRatioPlot(PlotBase):
         #for m in _measurements:
         #    print("A ",type(m))
 
-        for key,val in self._tool._modelratios.items(): 
+        for key,val in self._tool._modelratios.items():
             #kwargs_opts['measurements'] = [self._tool._observedratios[key]]
             #print(" K ",type(self._tool._observedratios[key]))
             #_measurements.append(self._tool._observedratios[key])
@@ -523,7 +523,7 @@ class LineRatioPlot(PlotBase):
         '''generic plotting method used by other plot methods'''
 
         kwargs_plot = {'show' : 'data' # or 'mask' or 'error'
-                      } 
+                      }
 
         kwargs_opts = {'units' : None,
                        'image':True,
@@ -533,7 +533,7 @@ class LineRatioPlot(PlotBase):
                        'title': None
                        }
 
-        kwargs_contour = {'levels': None, 
+        kwargs_contour = {'levels': None,
                           'colors': ['white'],
                           'linewidths': 1.0}
 
@@ -574,14 +574,14 @@ class LineRatioPlot(PlotBase):
         min_ = np.nanmin(km)
         max_ = np.nanmax(km)
 
-        kwargs_imshow = { 'origin': 'lower', 
+        kwargs_imshow = { 'origin': 'lower',
                           'norm': 'simple',
                           'stretch': 'linear',
-                          'vmin': min_, 
+                          'vmin': min_,
                           'vmax': max_,
                           'cmap': 'plasma',
                           'aspect': 'auto'}
- 
+
         kwargs_subplot = {'nrows': 1,
                           'ncols': 1,
                           'index': 1,
@@ -591,7 +591,7 @@ class LineRatioPlot(PlotBase):
 
         # delay merge until min_ and max_ are known
         kwargs_imshow.update(kwargs)
-        kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km, 
+        kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km,
                                              kwargs_imshow['vmin'],kwargs_imshow['vmax'],
                                              kwargs_imshow['stretch'])
 
@@ -620,7 +620,7 @@ class LineRatioPlot(PlotBase):
             # suppress errors and warnings about unused keywords
             #@todo need a better solution for this, it is not scalable.
             #push onto a stack?
-            for kx in ['units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols', 
+            for kx in ['units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols',
                        'index', 'reset','colors','colorbar','show','yaxis_unit','xaxis_unit',
                        'constrained_layout','figsize','stretch','legend']:
                 kwargs_imshow.pop(kx,None)
@@ -634,7 +634,7 @@ class LineRatioPlot(PlotBase):
 
         if kwargs_opts['contours']:
             if kwargs_contour['levels'] is None:
-                # Figure out some autolevels 
+                # Figure out some autolevels
                 kwargs_contour['levels'] = self._autolevels(km,'log')
 
             # suppress errors and warnings about unused keywords
@@ -647,7 +647,7 @@ class LineRatioPlot(PlotBase):
             if kwargs_opts['label']:
                 self._axis[axidx].clabel(contourset,contourset.levels,inline=True,fmt='%1.1e')
 
-        if kwargs_opts['title'] is not None: 
+        if kwargs_opts['title'] is not None:
             #self.figure.subplots_adjust(top=0.95)
             #self._axis[axidx].set_title(kwargs_opts['title'])
             # Using ax.set_title causes the title to be cut off.  No amount of
@@ -658,5 +658,5 @@ class LineRatioPlot(PlotBase):
         if k.wcs is not None:
             self._axis[axidx].set_xlabel(k.wcs.wcs.lngtyp)
             self._axis[axidx].set_ylabel(k.wcs.wcs.lattyp)
-     
+
         #self._figure.tight_layout()
