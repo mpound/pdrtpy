@@ -410,7 +410,8 @@ class LineRatioPlot(PlotBase):
             _measurements = deepcopy(kwargs_opts['measurements'])
             meas_passed = True
             for m in _measurements:
-                if i > 0: kwargs_opts['reset']=False
+                if i > 0: 
+                    kwargs_opts['reset']=False
                 val = self._tool.modelset.get_model(m.id)
                 _models.append(val)
                 kwargs_opts['measurements'] = [utils.convert_if_necessary(m)]
@@ -424,7 +425,8 @@ class LineRatioPlot(PlotBase):
             #kwargs_opts['measurements'] = [self._tool._observedratios[key]]
             #print(" K ",type(self._tool._observedratios[key]))
             #_measurements.append(self._tool._observedratios[key])
-            if i > 0: kwargs_opts['reset']=False
+            if i > 0: 
+                kwargs_opts['reset']=False
             # pass the index of the contour color to use via the "secret" colorcounter keyword.
             self._modelplot._plot_no_wcs(val,header=None,colorcounter=i,**kwargs_opts,measurements=[self._tool._observedratios[key]])
             i = i+1
@@ -489,7 +491,8 @@ class LineRatioPlot(PlotBase):
 
         for key,val in self._tool._modelratios.items():
             axidx = kwargs_opts['index']-1
-            if kwargs_opts['index'] > 1: kwargs_opts['reset'] = False
+            if kwargs_opts['index'] > 1: 
+                kwargs_opts['reset'] = False
             m = self._tool._model_files_used[key]
             kwargs_opts['measurements'] = [self._tool._observedratios[key]]
             self._modelplot._plot_no_wcs(val,header=None,**kwargs_opts)

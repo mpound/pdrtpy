@@ -516,7 +516,8 @@ def has_single_axis(w):
     :rtype: bool
     """
     for i in range(len(w._naxis)):
-        if w._naxis[i] == 1: return True
+        if w._naxis[i] == 1: 
+            return True
     return False
 
 def squeeze(image):

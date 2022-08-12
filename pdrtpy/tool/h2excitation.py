@@ -429,7 +429,8 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                     denom = self._ac.loc[cd]["gu"]
                 else:
                     denom = self._ac.loc['Ju',cd]["gu"]
-                    if(len(denom)>0): denom=denom[0] #ARGH kluge.  Need to get rid of line=False option as Ju is no longer unique
+                    if(len(denom)>0): 
+                        denom=denom[0] #ARGH kluge.  Need to get rid of line=False option as Ju is no longer unique
                 #print("CD ",cd,"DENOM ",denom)
                 # This fails with complaints about units:
                 #self._column_density[cd] /= self._ac.loc[cd]["gu"]

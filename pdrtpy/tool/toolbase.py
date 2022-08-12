@@ -16,7 +16,8 @@ class ToolBase(object):
         pass
 
     def _set_measurementnaxis(self):
-        if self._measurements is None: return
+        if self._measurements is None: 
+            return
         fk = utils.firstkey(self._measurements)
         self._measurementnaxis = len(self._measurements[fk].shape)
 

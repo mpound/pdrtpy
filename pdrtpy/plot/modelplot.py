@@ -174,13 +174,16 @@ class ModelPlot(PlotBase):
         for val in models:
             if np.size(meas[val.id].data) != 1:
                 raise ValueError(f"Can't plot {val.id}. This method only works with single pixel Measurements [len(measurement.data) must be 1]")
-            if i > 0: kwargs_opts['reset']=False
+            if i > 0: 
+                kwargs_opts['reset']=False
             # pass the index of the contour color to use via the "secret" colorcounter keyword.
             self._plot_no_wcs(val,header=None,
                               measurements=[utils.convert_if_necessary(meas[val.id])],
                               colorcounter=i,**kwargs_opts)
-            if val.modeltype == "ratio": nratio=nratio+1
-            if val.modeltype == "intensity": nintensity=nintensity+1
+            if val.modeltype == "ratio": 
+                nratio=nratio+1
+            if val.modeltype == "intensity": 
+                nintensity=nintensity+1
             i = i+1
         if kwargs_opts['legend']:
             if nratio == 0 and nintensity >0:
@@ -273,8 +276,10 @@ class ModelPlot(PlotBase):
 
         x_is_log = False
         y_is_log = False
-        if 'log' in models[0].wcs.wcs.ctype[0]: x_is_log = True
-        if 'log' in models[0].wcs.wcs.ctype[1]: y_is_log = True
+        if 'log' in models[0].wcs.wcs.ctype[0]: 
+            x_is_log = True
+        if 'log' in models[0].wcs.wcs.ctype[1]: 
+            y_is_log = True
 
         # linear and log units are same so doesn't matter which is used for conversion
         dcc=nax1_clip.to(xlog.unit)

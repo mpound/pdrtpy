@@ -233,7 +233,8 @@ class Measurement(CCDData):
         _out.writeto(outfile,overwrite=overwrite)
         _data.close()
         _out.close()
-        if needsclose: _error.close()
+        if needsclose: 
+            _error.close()
 
     @property
     def value(self):

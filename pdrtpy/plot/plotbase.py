@@ -52,7 +52,8 @@ class PlotBase:
         #print(type(data))
         max_ =data.max()
         min_ = data.min()
-        if min_ <= 0: min_ = 1E-10
+        if min_ <= 0: 
+            min_ = 1E-10
         #print("Auto contour levels: min %f max %f"%(min_,max_))
         if numlevels is None:
             try:
@@ -71,7 +72,8 @@ class PlotBase:
         elif steps[0:3] == 'log':
             # if data minimum is non-positive (shouldn't happen for models),
             #, min_cut=min_,max_cut=max_, stretch='log', clip=False) start log contours at lgo10(1) = 0
-            if min_ <= 0: min_=1
+            if min_ <= 0: 
+                min_=1
             slope = np.log10(max_/min_)/(numlevels - 1)
             levels = np.array([min_ * np.power(10,slope*j) for j in range(0,numlevels)])
         else:

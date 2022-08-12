@@ -99,7 +99,8 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         :rtype: :class:`dict_keys`
         '''
 
-        if self._measurements is None: return None
+        if self._measurements is None: 
+            return None
         return self._measurements.keys()
 
     @property
@@ -177,7 +178,8 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
 
     def _set_model_files_used(self):
         self._model_files_used = dict()
-        if self._measurements is None: return
+        if self._measurements is None: 
+            return
         for x in self._modelset.find_files(self.measurementIDs):
             self._model_files_used[x[0]]=x[1]
 
@@ -218,15 +220,18 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
            return False
 
     def _check_measurement_shapes(self):
-       if self._measurements is None: return False
+       if self._measurements is None: 
+            return False
        return self._check_shapes(self._measurements)
 
     def _check_ratio_shapes(self):
-       if self._observedratios is None: return False
+       if self._observedratios is None: 
+            return False
        return self._check_shapes(self._observedratios)
 
     def _check_model_shapes(self):
-        if self._modelratios is None: return False
+        if self._modelratios is None: 
+            return False
         return self._check_shapes(self._modelratios)
 
     def add_measurement(self,m):
@@ -745,7 +750,8 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
     def _coarse_density_radiation_field(self):
         '''Compute the best-fit density and radiation field spatial maps
            by searching for the minimum chi-squared at each spatial pixel.'''
-        if self._chisq is None or self._reduced_chisq is None: return
+        if self._chisq is None or self._reduced_chisq is None: 
+            return
 
         # get the chisq minima of each pixel along the g,n axes
         fk = utils.firstkey(self._modelratios)
