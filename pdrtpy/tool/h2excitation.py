@@ -618,11 +618,6 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                 w= Cutout2D(ca.uncertainty.array, position, size, ca.wcs, mode='trim', fill_value=np.nan)
                 cddata = np.ma.masked_array(cutout.data,mask=np.ma.mask_or(np.isnan(cutout.data),cutout.data<clip.value))
                 weights = np.ma.masked_array(w.data,np.isnan(w.data))
-                if False:
-                    # save cutout as a test that we have the x,y correct in size param
-                    t = Measurement(cddata,unit=ca.unit,uncertainty=StdDevUncertainty(weights),identifier=ca.id)
-                    #t.write("cutout.fits",overwrite=True)
-                    
             else: 
                 cddata = ca.data
                 # handle corner case of measurment.data is shape = (1,)
