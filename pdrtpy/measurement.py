@@ -198,7 +198,7 @@ class Measurement(CCDData):
                     raise Exception("rms not given as parameter and RMS keyword not present in data header")
                 else:
                     print("Found RMS in header: %.2E %s"%(rms,_error[0].data.shape))
-            tmp = np.full(_error[0].data.shape,rms)
+            #tmp = np.full(_error[0].data.shape,rms)
             _error[0].data[:] = rms
         elif "%" in error:
             percent = float(error.strip('%')) / 100.0
