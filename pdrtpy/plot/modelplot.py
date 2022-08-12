@@ -592,10 +592,11 @@ class ModelPlot(PlotBase):
         axidx = kwargs_subplot['index']-1
         if kwargs_subplot['reset']:
 # @todo can probably consolidate this
-            self._figure,self._axis = self._plt.subplots(kwargs_subplot['nrows'],kwargs_subplot['ncols'],
-                                        figsize=kwargs_subplot['figsize'],
-                                        subplot_kw={'aspect':kwargs_imshow['aspect']},
-                                        constrained_layout=kwargs_subplot['constrained_layout'])
+            self._figure,self._axis = self._plt.subplots(
+                kwargs_subplot['nrows'],kwargs_subplot['ncols'],
+                figsize=kwargs_subplot['figsize'],
+                subplot_kw={'aspect':kwargs_imshow['aspect']},
+                constrained_layout=kwargs_subplot['constrained_layout'])
 
 
         # Make sure self._axis is an array because we will index it below.
