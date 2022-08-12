@@ -27,7 +27,7 @@ PhotoDissociation Region Toolbox --- Python
  :alt: Documentation status
  
 .. image:: https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg?style=plastic
- :target: https://github.com/mpound/pdrtpy/blob/stable_release/CODE_OF_CONDUCT.md
+ :target: https://github.com/mpound/pdrtpy/blob/master/CODE_OF_CONDUCT.md
  :alt: Contributor Covenant Code of Conduct  
 
 .. image:: https://github.com/mpound/pdrtpy/actions/workflows/run-integration-tests.yml/badge.svg?branch=active-devel
@@ -127,7 +127,7 @@ Then go ahead and install the `Example Notebooks`_.
 Example Notebooks
 -----------------
 
-We have prepared jupyter iPython notebooks with examples of how to use ``pdrtpy``.  You can download these as follows.
+We have prepared Jupyter iPython notebooks with examples of how to use ``pdrtpy``.  You can download these as follows.
 
 .. code-block:: sh
 
@@ -161,8 +161,8 @@ create a Github account, you can post to the `PDR Toolbox forum
 
 Contribute Code or Documentation
 =================================
-We welcome contributions and ideas to improve the PDR Toolbox!  **All contributors agree to follow our** `Code of Conduct <https://github.com/mpound/pdrtpy/blob/stable_release/CODE_OF_CONDUCT.md>`_ .  Please look at our 
-`Roadmap of Functionality <https://github.com/mpound/pdrtpy/blob/stable_release/roadmap.md>`_ 
+We welcome contributions and ideas to improve the PDR Toolbox!  **All contributors agree to follow our** `Code of Conduct <https://github.com/mpound/pdrtpy/blob/master/CODE_OF_CONDUCT.md>`_ .  Please look at our 
+`Roadmap of Functionality <https://github.com/mpound/pdrtpy/blob/master/roadmap.md>`_ 
 to see the main new features we want to build.  You can help out with those or suggest new features. 
 
 For Developers
