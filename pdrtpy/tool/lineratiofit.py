@@ -221,18 +221,18 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
 
     def _check_measurement_shapes(self):
        if self._measurements is None: 
-            return False
+           return False
        return self._check_shapes(self._measurements)
 
     def _check_ratio_shapes(self):
        if self._observedratios is None: 
-            return False
+           return False
        return self._check_shapes(self._observedratios)
 
     def _check_model_shapes(self):
-        if self._modelratios is None: 
-            return False
-        return self._check_shapes(self._modelratios)
+       if self._modelratios is None: 
+           return False
+       return self._check_shapes(self._modelratios)
 
     def add_measurement(self,m):
         r'''Add a Measurement to internal dictionary used to compute ratios. This measurement may be intensity units (erg :math:`{\rm s}^{-1}` :math:`{\rm cm}^{-2}`) or integrated intensity (K km/s).
