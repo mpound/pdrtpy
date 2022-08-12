@@ -525,7 +525,7 @@ class ModelPlot(PlotBase):
                        'test':False
                        }
 
-        kwargs_contour = {'levels': None, 
+        kwargs_contour = {'levels': None,
                           'colors': ['white'],
                           'linewidths': 1.0}
 
