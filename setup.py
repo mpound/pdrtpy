@@ -35,11 +35,15 @@ setup(
     include_package_data = True,
     install_requires = [
         'astropy>=4.1',
-        'numpy>=1.1.8',
+        'numpy>=1.18',
         'scipy>=1.4',
         'matplotlib>=3.3.1',
         'lmfit>=1.0.2',
         'numdifftools>=0.9.40'
+        'emcee>=3.0.0',
+        'corner>=2.0.0',
+        'mpl-interactions',
+        'mpl-interactions[jupyter]',
     ],
     url = "http://dustem.astro.umd.edu",
     project_urls = {
