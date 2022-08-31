@@ -12,18 +12,6 @@ from copy import deepcopy
 import corner
 import numpy as np
 
-# check for EMCEE
-try:
-    import emcee
-    from emcee.autocorr import AutocorrError
-    HAS_EMCEE = int(emcee.__version__[0]) >= 3
-    print("FOUND EMCEE VERSION: ",emcee.__version__, "HAS EMCEE=",HAS_EMCEE)
-except ImportError:
-    HAS_EMCEE = False
-
-
-
-
 myunit = "erg s-1 cm-2 sr-1" # default unit for value and error
 m1 = Measurement(data=3.6E-4,uncertainty = StdDevUncertainty(1.2E-4),
                  identifier="OI_63",unit=myunit)
