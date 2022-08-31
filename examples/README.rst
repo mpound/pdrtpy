@@ -33,19 +33,24 @@ pdrtpy (pip install pdrtpy).
 List of Files
 -------------
 modelset.py - Demonstrating use of models, ModelSet, and ModelPlot  
+
 singlepixelfitting.py - Fitting intensity ratios for single-pixel 
                         observations
 mapfitting.py - Fitting intensity ratios for map observations
+
 emcee.py - Fitting intensity ratios for single-pixel observations 
            using a Markov Chain Monte Carlo method
+
 h2opr.py - Creating and fitting H2 excitation diagrams, 
            including ortho-to-para ratio (OPR)   
 
 Funding Sources
 ---------------
 1. NASA Astrophysics Data Analysis Program award #80NSSC19K0573
+
 2. SOFIA Legacy Program, FEEDBACK, provided by NASA
 through award SOF070077 issued by USRA to the University of Maryland
+
 3. JWST-ERS program ID 1288 through a grant from the Space Telescope Science
 Institute under NASA contract NAS5-03127 to the University of Maryland.
 
