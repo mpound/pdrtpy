@@ -271,7 +271,7 @@ class ModelSet(object):
         d = model_dir()
         _thefile = d+self._tabrow["path"]+self.table.loc[identifier]["filename"]+"."+ext
         _title = self._table.loc[identifier]['title']
-        if unit is None:
+        if unit is None or unit == "":
             # make a guess at the unit
             if '/' in identifier:
                 unit = self._default_unit["ratio"]
@@ -285,6 +285,8 @@ class ModelSet(object):
             else:
                 modeltype = "intensity"
         _model = Measurement.read(_thefile,title=_title,unit=unit,identifier=identifier)
+        #if _model.unit=="":
+        #    _model.unit = u.Unit("adu")#self._default_unit["ratio"]
         _wcs = _model.wcs
         _model.header["MODELTYP"] = modeltype
         _model.modeltype = modeltype
