@@ -1,6 +1,6 @@
-Title 
+Title
 -----
-Example code listings for the PhotoDissociation Region Toolbox
+Example Code Listings for the PhotoDissociation Region Toolbox
 
 Author Information
 -------------------
@@ -14,7 +14,7 @@ Department of Astronomy
 University of Maryland, College Park
 mwolfire@umd.edu
 
-Date 
+Date
 ----
 Wed 31 Aug 2022 02:19:31 PM EDT
 
@@ -32,34 +32,30 @@ pdrtpy (pip install pdrtpy).
 
 List of Files
 -------------
-modelset.py - Demonstrating use of models, ModelSet, and ModelPlot  
+modelset.py - Demonstrating use of models, ModelSet, and ModelPlot
 
-singlepixelfitting.py - Fitting intensity ratios for single-pixel 
-                        observations
+singlepixelfitting.py - Fitting intensity ratios for single-pixel observations
+
 mapfitting.py - Fitting intensity ratios for map observations
 
-emcee.py - Fitting intensity ratios for single-pixel observations 
-           using a Markov Chain Monte Carlo method
+emcee.py - Fitting intensity ratios for single-pixel observations using a Markov Chain Monte Carlo method
 
-h2opr.py - Creating and fitting H2 excitation diagrams, 
-           including ortho-to-para ratio (OPR)   
+h2opr.py - Creating and fitting H2 excitation diagrams,including ortho-to-para ratio (OPR)
 
 Funding Sources
 ---------------
-1. NASA Astrophysics Data Analysis Program award #80NSSC19K0573
+ #. NASA Astrophysics Data Analysis Program award #80NSSC19K0573
 
-2. SOFIA Legacy Program, FEEDBACK, provided by NASA
-through award SOF070077 issued by USRA to the University of Maryland
+ #. SOFIA Legacy Program, FEEDBACK, provided by NASA through award SOF070077 issued by USRA to the University of Maryland
 
-3. JWST-ERS program ID 1288 through a grant from the Space Telescope Science
-Institute under NASA contract NAS5-03127 to the University of Maryland.
+ #. JWST-ERS program ID 1288 through a grant from the Space Telescope Science Institute under NASA contract NAS5-03127 to the University of Maryland.
 
 Recommended Citations
 ---------------------
-Pound, M.W. & Wolfire, M.G., 2022, The Astronomical Journal, vol/page TBD
+#. Pound, M.W. & Wolfire, M.G., 2022, The Astronomical Journal, vol/page TBD
 
-Pound, M.W. & Wolfire, M.G., 2008, in Astronomical Society of 
-            the Pacific Conference Series, Vol. 394, 
+#. Pound, M.W. & Wolfire, M.G., 2008, in Astronomical Society of
+            the Pacific Conference Series, Vol. 394,
             Astronomical Data Analysis Software and Systems XVII,
             ed. R. W. Argyle, P. S. Bunclark, & J. R. Lewis, 654
             (https://ui.adsabs.harvard.edu/abs/2008ASPC..394..654P/abstract)
