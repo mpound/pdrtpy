@@ -250,7 +250,8 @@ class ModelPlot(PlotBase):
                        'figsize':(8,5),
                        'linewidth': 2.0,
                        'capsize': 5.0,
-                       'markersize': 8.0
+                       'markersize': 8.0,
+                       'aspect': 'auto'
                        }
 
         kwargs_opts.update(kwargs)
@@ -396,6 +397,7 @@ class ModelPlot(PlotBase):
                 i=i+1
             # the data points
             dataline = self._axis.loglog(*args,zorder=5,markersize=kwargs_opts['markersize'])
+            self._axis.set_aspect(kwargs_opts['aspect'])
             self._axis.set_xscale('log')
             self._axis.set_yscale('log')
             self._axis.tick_params(axis='both',direction='in',which='both')
