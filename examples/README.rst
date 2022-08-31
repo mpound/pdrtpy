@@ -52,7 +52,7 @@ Funding Sources
 
 Recommended Citations
 ---------------------
-#. Pound, M.W. & Wolfire, M.G., 2022, The Astronomical Journal, vol/page TBD
+#. Pound, M.W. & Wolfire, M.G., 2022, The Astronomical Journal, vol/page TBD.
 
 #. Pound, M.W. & Wolfire, M.G., 2008, in Astronomical Society of
             the Pacific Conference Series, Vol. 394,
@@ -65,5 +65,7 @@ Restrictions
 The files listed here contain code that free and in the public domain
 with no restrictions on use.
 
+Contact
+-------
 For further information, contact Marc Pound (mpound@umd.edu)
 
