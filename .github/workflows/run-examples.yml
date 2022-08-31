@@ -19,7 +19,8 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Run examples
         run: |
-          for: file in [examples/*.py]
-          do:
-            python ${{ file }}
-      
+          python examples/emcee.py
+          python examples/h2opr.py
+          python examples/mapfitting.py
+          python examples/modelset.py
+          python examples/singlepixelfitting.py
