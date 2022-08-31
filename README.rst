@@ -106,6 +106,8 @@ should show e.g., *3.7.6*.
 Install the package
 ^^^^^^^^^^^^^^^^^^^
 
+With pip
+--------
 Python has numerous ways to install packages; the easiest is with *pip*. 
 The code is hosted at the `Python Packaging Index <https://pypi.org/project/pdrtpy/>`_, so you can type:
 
@@ -119,6 +121,7 @@ If you do not have permission to install into your Python system package area, y
 
    pip install --user pdrtpy
 
+* For installation from github, see `For Developers`_ below.
 
 Then go ahead and install the `Example Notebooks`_.
 
