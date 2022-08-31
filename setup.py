@@ -39,7 +39,7 @@ setup(
         'scipy>=1.4',
         'matplotlib>=3.3.1',
         'lmfit>=1.0.2',
-        'numdifftools>=0.9.40'
+        'numdifftools>=0.9.40',
         'emcee>=3.0.0',
         'corner>=2.0.0',
         'mpl-interactions',
