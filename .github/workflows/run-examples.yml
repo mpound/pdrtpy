@@ -1,7 +1,7 @@
 name: verify-examples
 on: [push]
 jobs:
-  run-all-tests:
+  run-examples:
     runs-on: ubuntu-latest
     strategy:
       matrix:
