@@ -6,7 +6,7 @@ from pdrtpy.measurement import Measurement
 from pdrtpy.tool.h2excitation import H2ExcitationFit
 from pdrtpy.plot.excitationplot import ExcitationPlot
 from astropy.nddata import StdDevUncertainty
-ntensity = dict()
+intensity = dict()
 intensity['H200S0'] = 3.003e-05
 intensity['H200S1'] = 3.143e-04
 intensity['H200S2'] = 3.706e-04
