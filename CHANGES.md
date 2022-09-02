@@ -1,5 +1,37 @@
 ## Change Log
 
+### Release 2.2.8
+
+#### _Models_
+
+- allow user added models
+
+#### _Plotting_
+
+- consistent handling of aspect ratios and colorbars
+
+#### _Documentation_
+
+- updated
+
+#### _Issues_
+
+- issues 58, 59 closed
+
+- various other bugs discovered and fixed
+
+#### _Notebooks_ ###
+
+- existing example notebooks updated 
+
+### _Testing_
+
+- expanded test suite using GitHub workflow
+
+- PEP8 compliance with flake
+
+- added examples directory with test code from AJ paper, which are now auto-run as part of test suite
+
 ### Release 2.2.6
 #### _Models_
 
