@@ -1,0 +1,6 @@
+  /bin/rm -rf *.tgz 
+  tar cvfz kt2013_models.tgz kosmatau
+  tar cvfz wk2020_models.tgz wolfirekaufman/version2020
+  tar cvfz wk2006_models.tgz wolfirekaufman/version2006
+  tar cvfz lmc_models.tgz ./wolfirekaufman/version2020/constant_density/lmc
+  tar cvfz smc_models.tgz ./wolfirekaufman/version2006/constant_density/smc/
