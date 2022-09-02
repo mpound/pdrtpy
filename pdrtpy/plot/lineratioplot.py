@@ -152,12 +152,6 @@ class LineRatioPlot(PlotBase):
 
         self._plot(self._tool.radiation_field,**kwargs_opts)
 
-    #def chisq(self,xaxis,xpix,ypix):
-    #    """Make a line plot of chisq as a function of G0 or n for a given pixel"""
-    #    axes = {"G0":0,"n":1}
-    #    axis = axes[xaxis] #yep key error if you do it wrong
-    #
-
     #@TODO refactor this method with reduced_chisq()
     def chisq(self, **kwargs):
         '''Plot the :math:`\chi^2` map that was computed by the
@@ -166,7 +160,7 @@ class LineRatioPlot(PlotBase):
         '''
 
         kwargs_opts = {'units': None,
-                       'aspect': 'auto',
+                       'aspect': 'equal',
                        'image':True,
                        'contours': True,
                        'label': False,
@@ -235,7 +229,7 @@ class LineRatioPlot(PlotBase):
         '''
 
         kwargs_opts = {'units': None,
-                       'aspect': 'auto',
+                       'aspect': 'equal',
                        'image':True,
                        'contours': True,
                        'label': False,
@@ -313,7 +307,7 @@ class LineRatioPlot(PlotBase):
         _reset = [True,False]
 
         kwargs_opts = {'image':True,
-                       'aspect': 'auto',
+                       'aspect': 'equal',
                        'contours': False,
                        'label': False,
                        'levels': None,
