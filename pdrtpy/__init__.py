@@ -1,6 +1,6 @@
 __all__ = [ "pdrutils", "measurement", "modelset"]
 
-VERSION = "2.2.6"
+VERSION = "2.2.7c"
 AUTHORS =  'Marc W. Pound, Mark G. Wolfire'
 DESCRIPTION="PhotoDissociation Region Toolbox (PDRT), astrophysics analysis tools"
 KEYWORDS = "PDR photodissociation astronomy astrophysics"
@@ -14,5 +14,3 @@ def version():
     :rtype: str
     """
     return VERSION
-
-

@@ -1,1 +1,1 @@
-__all__ = [ "toolbase", "lineratiofit", "h2excitation"]
+__all__ = [ "toolbase", "lineratiofit", "h2excitation", "fitmap"]

@@ -8,9 +8,9 @@ Module Descriptions and APIs
 
    pdrtpy.measurement
    pdrtpy.modelset
-   pdrtpy.pdrutils
    pdrtpy.plot  
    pdrtpy.tool
+   pdrtpy.pdrutils
 
 Indices
 =======

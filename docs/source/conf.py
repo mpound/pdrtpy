@@ -48,7 +48,7 @@ extensions = [
     'numpydoc',
 ]
 numpydoc_show_class_members = True
-#autosummary_generate = True
+autosummary_generate = True
 
 intersphinx_mapping = { 
     'python': ('https://docs.python.org/3', None),

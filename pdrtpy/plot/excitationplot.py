@@ -1,10 +1,9 @@
 import numpy as np
 import numpy.ma as ma
-import scipy.stats as stats
 from copy import deepcopy,copy
 
 import matplotlib.cm as mcm
-from matplotlib import ticker
+#from matplotlib import ticker
 from matplotlib.ticker import MultipleLocator
 
 import astropy.units as u
@@ -12,11 +11,11 @@ from astropy.nddata import StdDevUncertainty
 
 from ..measurement import Measurement
 from .plotbase import PlotBase
-from ..pdrutils import float_formatter,LOGE,is_odd
+from ..pdrutils import float_formatter,LOGE,is_odd,to
 
 class ExcitationPlot(PlotBase):
     """
-ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy.tool.h2excitationfit.H2ExcitationFit`. It can plot the observed excitation diagram with or without fit results, and allows averaging over user-given spatial areas.  
+ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.tool.h2excitationfit.H2ExcitationFit`. It can plot the observed excitation diagram with or without fit results, and allows averaging over user-given spatial areas.
     """
     def __init__(self,tool,label):
         super().__init__(tool)
@@ -28,16 +27,16 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
         #@todo position and size might not necessarily match how the fit was done.
         #:type position: tuple or :class:`astropy.coordinates.SkyCoord`
         #or a :class:`~astropy.coordinates.SkyCoord`, which will use the :class:`~astropy.wcs.WCS` of the ::class:`~pdrtpy.measurement.Measurement`s added to this tool.
-        r"""Plot the excitation diagram
-        
-        :param position: The position of the cutout array's center with respect to the data array. The position is specified as a `(x, y)` tuple of pixel coordinates. 
+        r"""Plot the excitation diagram.  For maps of excitation parameters, a position and optional size are required.  To examine the entire map, use :meth:`explore`.
+
+        :param position: The spatial position of excitation diagram.  For spatial averaging this is the cutout array's center with respect to the data array. The position is specified as a `(x, y)` tuple of pixel coordinates.
         :type position: tuple
         :param size: The size of the cutout array along each axis. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(ny, nx)` order. Scalar numbers in size are assumed to be in units of pixels. `size` can also be a :class:`~astropy.units.Quantity` object or contain :class:`~astropy.units.Quantity` objects. Such :class:`~astropy.units.Quantity` objects must be in pixel or angular units. For all cases, size will be converted to an integer number of pixels, rounding the the nearest integer.  See :class:`~astropy.nddata.utils.Cutout2D`
         :type size: int, array_like, or :class:`astropy.units.Quantity`
-        :param norm: if True, normalize the column densities by the 
-                       statistical weight of the upper state, :math:`g_u`.  
+        :param norm: if True, normalize the column densities by the
+                       statistical weight of the upper state, :math:`g_u`.
         :type norm: bool
-        :param show_fit: Show the most recent fit done the the associated H2ExcitationFit tool. 
+        :param show_fit: Show the most recent fit done the the associated H2ExcitationFit tool.
         :type show_fit: bool
         """
         kwargs_opts = {'xmin':0.0,
@@ -74,7 +73,7 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
                             ms=kwargs_opts['markersize'],color=kwargs_opts['color'])
         tt = self._tool
         if self._tool.opr_fitted and show_fit:
-            if position is not None and len(np.shape(tt.opr))>1: 
+            if position is not None and len(np.shape(tt.opr))>1:
                 opr_v = tt.opr[position]
                 opr_e = tt.opr.error[position]
                 # a Measurement.get_as_measurement() would be nice
@@ -85,10 +84,10 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
             # Plot only the odd-J ones scaled by fitted OPR
             odd_index = np.where([is_odd(c) for c in cdavg.keys()])
             #color = ec.lines[0].get_color() # want these to be same color as data
-            _axis.errorbar(x=energy[odd_index], 
+            _axis.errorbar(x=energy[odd_index],
                                 y=np.log10(cddn[odd_index]),marker="^",
                                 label=f"OPR = {opr_p:.2f}",
-                                yerr=sigma[odd_index], 
+                                yerr=sigma[odd_index],
                                 capsize=2*kwargs_opts['capsize'],
                                 linestyle='none',color='k',
                                 lw=kwargs_opts['linewidth'],
@@ -101,10 +100,10 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
         # label the points with e.g. J=2,3,4...
         first=True
         for lab in sorted(cdavg):
-            if first: 
+            if first:
                 ss="J="+str(lab)
                 first=False
-            else: 
+            else:
                 ss=str(lab)
             _axis.text(x=energies[lab]+100,y=np.log10(cdavg[lab]),s=ss)
         handles,labels=_axis.get_legend_handles_labels()
@@ -117,7 +116,7 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
                 raise ValueError("position must be provided for map fit results")
             if tt.fit_result[position] is None:
                 raise ValueError(f"The Excitation Tool was unable to fit pixel {position}. Try show_fit=False")
-            x_fit = np.linspace(0,max(energy), 30)  
+            x_fit = np.linspace(0,max(energy), 30)
             outpar = tt.fit_result[position].params.valuesdict()
             labcold = r"$T_{cold}=$" + f"{tt.tcold[position]:3.0f}" +r"$\pm$" + f"{tt.tcold.error[position]:.1f} {tt.tcold.unit}"
             #labcold = r"$T_{cold}=$" + f"{tt.tcold[position]:3.1f}"
@@ -125,13 +124,13 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
             #labhot= r"$T_{hot}=$" + f"{tt.thot[position]:3.1f}"
             labhot= r"$T_{hot}=$" + f"{tt.thot[position]:3.0f}"+ r"$\pm$" + f"{tt.thot.error[position]:.1f} {tt.thot.unit}"
             if position == 0:
-                labnh = r"$N("+self._label+")=" + float_formatter(tt.total_colden,2)+"$" 
+                labnh = r"$N("+self._label+")=" + float_formatter(tt.total_colden,2)+"$"
             else:
                 labnh = r"$N("+self._label+")=" + float_formatter(u.Quantity(tt.total_colden[position],tt.total_colden.unit),2)+"$"
-            _axis.plot(x_fit,tt._one_line(x_fit, outpar['m1'], 
+            _axis.plot(x_fit,tt._one_line(x_fit, outpar['m1'],
                             outpar['n1']), '.' ,label=labcold,
                             lw=kwargs_opts['linewidth'])
-            _axis.plot(x_fit,tt._one_line(x_fit, outpar['m2'], 
+            _axis.plot(x_fit,tt._one_line(x_fit, outpar['m2'],
                             outpar['n2']), '.', label=labhot,
                             lw=kwargs_opts['linewidth'])
 
@@ -155,39 +154,39 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
                             color='k',alpha=0.33)
             _axis.grid(b=True,which='minor',axis='both',lw=kwargs_opts['linewidth']/2,
                             color='k',alpha=0.22,linestyle='--')
-            
+
         _axis.legend(handles,labels)
-    
+
     def temperature(self,component,**kwargs):
         """Plot the temperature of hot or cold gas component.
-        
+
         :param component: 'hot' or 'cold'
         :type component: str
         """
         if component not in self._tool.temperature:
             raise KeyError(f"{component} not a valid component. Must be one of {list(self._tool.temperature.keys())}")
         self._plot(self._tool.temperature[component],**kwargs)
-        
+
     def column_density(self,component,log=True,**kwargs):
         """Plot the column density of hot or cold gas component, or total column density.
-        
+
         :param component: 'hot', 'cold', or 'total
         :type component: str
         :param log: take the log10 of the column density before plotting
         """
         self._plot(self._tool.colden(component),log=log,**kwargs)
-           
+
     def opr(self,**kwargs):
         """Plot the ortho-to-para ratio.  This will be a map if the input data are a map, otherwise a float value is returned."""
         if type(self._tool.opr) == float:
             return self._tool.opr
         self._plot(self._tool.opr,**kwargs)
-        
+
     def _plot(self,data,**kwargs):
         '''generic plotting method used by other plot methods'''
 
         kwargs_plot = {'show' : 'data' # or 'mask' or 'error'
-                      } 
+                      }
 
         kwargs_opts = {'units' : None,
                        'image':True,
@@ -200,7 +199,7 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
                        'axis': None
                        }
 
-        kwargs_contour = {'levels': None, 
+        kwargs_contour = {'levels': None,
                           'colors': ['white'],
                           'linewidths': 1.0}
 
@@ -226,12 +225,12 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
 
         if self._tool._modelnaxis == 2 or len(_data.shape)==2:
             if kwargs_opts['units'] is not None:
-                k = utils.to(kwargs_opts['units'], _data)
+                k = to(kwargs_opts['units'], _data)
             else:
                 k = _data
         elif self._tool._modelnaxis == 3:
             if kwargs_opts['units'] is not None:
-                k = utils.to(kwargs_opts['units'], _data[0,:,:])
+                k = to(kwargs_opts['units'], _data[0,:,:])
             else:
                 k = _data[0,:,:]
         else:
@@ -244,14 +243,14 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
         min_ = np.nanmin(km)
         max_ = np.nanmax(km)
 
-        kwargs_imshow = { 'origin': 'lower', 
+        kwargs_imshow = { 'origin': 'lower',
                           'norm': 'simple',
                           'stretch': 'linear',
-                          'vmin': min_, 
+                          'vmin': min_,
                           'vmax': max_,
                           'cmap': 'plasma',
                           'aspect': 'auto'}
- 
+
         kwargs_subplot = {'nrows': 1,
                           'ncols': 1,
                           'index': 1,
@@ -261,7 +260,7 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
 
         # delay merge until min_ and max_ are known
         kwargs_imshow.update(kwargs)
-        kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km, 
+        kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km,
                                              kwargs_imshow['vmin'],kwargs_imshow['vmax'],
                                              kwargs_imshow['stretch'])
 
@@ -285,7 +284,7 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
             _axis= np.array([_axis])
         for a in _axis:
             a.tick_params(axis='both',direction='in',which='both')
-            # astropy complains if you use axis=both and bottom, top etc. 
+            # astropy complains if you use axis=both and bottom, top etc.
             a.tick_params(axis='x',bottom=True,top=True,left=True,right=True, which='both')
             a.tick_params(axis='y',bottom=True,top=True,left=True,right=True, which='both')
             if hasattr(a,'coords'):
@@ -297,7 +296,7 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
             # suppress errors and warnings about unused keywords
             #@todo need a better solution for this, it is not scalable.
             #push onto a stack?
-            for kx in ['units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols', 
+            for kx in ['units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols',
                        'index', 'reset','colors','colorbar','show','yaxis_unit','xaxis_unit','axis',
                        'constrained_layout','figsize','stretch','legend','markersize','show_fit']:
                 kwargs_imshow.pop(kx,None)
@@ -311,7 +310,7 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
 
         if kwargs_opts['contours']:
             if kwargs_contour['levels'] is None:
-                # Figure out some autolevels 
+                # Figure out some autolevels
                 kwargs_contour['levels'] = self._autolevels(km,'log')
 
             # suppress errors and warnings about unused keywords
@@ -324,7 +323,7 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
             if kwargs_opts['label']:
                 _axis[axidx].clabel(contourset,contourset.levels,inline=True,fmt='%1.1e')
 
-        if kwargs_opts['title'] is not None: 
+        if kwargs_opts['title'] is not None:
             #self.figure.subplots_adjust(top=0.95)
             #self._axis[axidx].set_title(kwargs_opts['title'])
             # Using ax.set_title causes the title to be cut off.  No amount of
@@ -337,8 +336,8 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
             _axis[axidx].set_ylabel(k.wcs.wcs.lattyp)
 
 
-    def explore(self,data=None,interaction_type="click",**kwargs): 
-        """Explore the fitted parameters of a map. A user-requested map is displayed in the left panel and in the right panel is the fitted excitation diagram for a point selected by the user.  The user clicks on a point in the left panel and the right panel will update with the excitation diagram for that point. 
+    def explore(self,data=None,interaction_type="click",**kwargs):
+        """Explore the fitted parameters of a map. A user-requested map is displayed in the left panel and in the right panel is the fitted excitation diagram for a point selected by the user.  The user clicks on a point in the left panel and the right panel will update with the excitation diagram for that point.
 
         :param data: A reference image to use for the left panel, e.g. the total column density, the cold temperature, etc.  This should be a reference results in the :class:`~pdrtpy.tool.h2excitation.H2Excitation` tool used for this :class:`~pdrtpy.plot.excitationplot.ExcitationPlot` (e.g., *htool.temperature['cold']*)
         :type data: :class:`~pdrtpy.measurement.Measurement`
@@ -384,7 +383,7 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
 
         self._marker = self.axis[0].plot(position[0],position[1],fmt,markersize=kwargs_opts['markersize'])
 
-        
+
         def update_lines(event):
             try:
                 #self._logfile = open(f"/tmp/test.log","a")
@@ -396,7 +395,7 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
                     self._axis[1].clear()
                     self._axis[1].remove()
                     self._axis[1] = self._figure.add_subplot(122,projection=None,aspect='auto')
-                    self._axis[1].tick_params('y',labelright=True,labelleft=False) 
+                    self._axis[1].tick_params('y',labelright=True,labelleft=False)
                     self._axis[1].get_yaxis().set_label_position("right")
                     self.ex_diagram(axis=self._axis[1], reset=False,position=position,size=1,figsize=(5,3),
                                 norm=True,show_fit=show_fit)
@@ -404,18 +403,16 @@ ExcitationPlot creates excitation diagrams  using the results of :class:`~pdrtpy
             except Exception as err:
                 pass
                 #self._logfile.write("Exception {0}".format(err))
-                
+
             #self._logfile.close()
             self._figure.canvas.draw_idle()
-            
+
         if interaction_type == "move":
             self._figure.canvas.mpl_connect("motion_notify_event", update_lines)
         elif interaction_type == "click":
             self._figure.canvas.mpl_connect("button_press_event", update_lines)
         else:
-            close(self._figure)
+            self._plt.close(self._figure)
             raise ValueError(
                 f"{interaction_type} is not a valid option for interaction_type, valid options are 'click' or 'move'"
             )
-                
-        

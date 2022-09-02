@@ -32,7 +32,7 @@ To manage the plots, the methods in ``Plot`` classes take keywords (\*\*kwargs) 
 
      * *norm* (``str`` or :mod:`astropy.visualization` normalization object) The normalization to use in the image. The string 'simple' will normalize with :func:`~astropy.visualization.simple_norm` and 'zscale' will normalize with IRAF's zscale algorithm.  See :class:`~astropy.visualization.ZScaleInterval`.
 
-     * *stretch* (``str``)  {'linear', 'sqrt', 'power', log', 'asinh'}. The stretch function to apply to the image for simple_norm.  The Default is 'linear'.
+     * *stretch* (``str``)  {'linear', 'sqrt', 'power', 'log', 'asinh'}. The stretch function to apply to the image for simple_norm.  The Default is 'linear'.
 
      * *aspect* (``str``) aspect ratio, 'equal' or 'auto' are typical defaults.
 

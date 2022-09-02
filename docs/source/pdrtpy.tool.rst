@@ -22,7 +22,7 @@ For an example how to use `H2ExcitationFit` and `ExcitationPlot` see the noteboo
 ToolBase
 --------
 
-The base class of all tools.  Tools have a built-in plotter and a :meth:`run` method both of which subclasses must define.
+The base class of all tools.  Tools have a :meth:`run` method both of which subclasses must define.
 
 .. automodule:: pdrtpy.tool.toolbase
    :members:
@@ -43,10 +43,19 @@ Excitation Diagram Fitting
 LineRatioFit
 ------------
 
-Tool for determining photodissociation region external radiation field and particle density (commonly given as :math:`G_0` and :math:`n`) from measured spectral line intensity ratios.  
+:class:`~pdrtpy.tool.lineratiofit.LineRatioFit` is a tool for determining photodissociation region external radiation field and hydrogen nucleus density (commonly given as :math:`G_0` and :math:`n`) from measured spectral line intensity ratios.  
 
 .. automodule:: pdrtpy.tool.lineratiofit
    :members:
    :undoc-members:
    :show-inheritance:
 
+FitMap
+------
+When fitting either single pixels or spatial maps, the fit results are stored per pixel in an :class:`~astropy.nddata.NDData` object that contains :class:`~lmfit.model.ModelResult` 
+objects for :class:`~pdrtpy.tool.h2excitation.H2ExcitationFit` or :class:`~lmfit.minimizer.MinimizerResult` objects for :class:`~pdrtpy.tool.lineratiofit.LineRatioFit`.  The user can thus examine in detail the fit at any pixel.
+
+.. automodule:: pdrtpy.tool.fitmap
+   :members:
+   :undoc-members:
+   :show-inheritance:
