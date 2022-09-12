@@ -196,7 +196,54 @@ class ModelPlot(PlotBase):
             labels = [k.title for k in models]
             self._plt.legend(lines, labels,loc='upper center',title='Observed '+word)
 
+    def xxplot(self,identifier,plotaxis=2,**kwargs):
+        kwargs_opts = {'errorbar':False,
+               'fmt': None,
+               'label': None,
+               'legend': True,
+               'title': None,
+               'grid' :True,
+               'figsize':(8,5),
+               'linewidth': 2.0,
+               'aspect': 'auto',
+               'step': 1,
+               'logx': False,
+               'logy': False,
+               }
+        kwargs_opts.update(kwargs)
+        if plotaxis != 1 and plotaxis !=2:
+            raise ValueError("plotaxis must be 1 or 2")
+        if plotaxis == 1:
+            otheraxis = 2
+            otherindex = 1
+        if plotaxis == 2:
+            otheraxis = 1
+            otherindex = 2
+        xaxis = ["naxis2","naxis1"]
+        pindex = plotaxis - 1
+        model = self._modelset.get_model(identifier)
+        #naxislog = self._get_xy_from_wcs(model,quantity=True,linear=False)
+        naxis = self._get_xy_from_wcs(model,quantity=True,linear=True)
+        self._figure,self._axis = self._plt.subplots(nrows=1,ncols=1,figsize=kwargs_opts['figsize'])
+        for i in range(0,model.header[xaxis[pindex]],kwargs_opts['step']):
+            xx=model[0:len(naxis[otherindex]),i]
+            #print(xx,len(xx))
+            self._axis.plot(naxis[otherindex],xx,label=f'{naxis[pindex][i]}')
 
+        if kwargs_opts['legend']:
+            self._axis.legend()
+        self._axis.set_ylabel(model.title)
+        xlabel1 = model.wcs.wcs.ctype[otherindex]
+        xlabel2 = model.header[f"cunit{otheraxis}"]
+        xlabel = r"${0}$ [{1:latex_inline}]".format(xlabel1,u.Unit(xlabel2))
+        self._axis.set_xlabel(xlabel)
+        self._axis.set_aspect(kwargs_opts['aspect'])
+        if kwargs_opts['logx']:
+            self._axis.set_xscale('log')
+        if kwargs_opts['logy']:
+            self._axis.set_yscale('log')
+        self._axis.tick_params(axis='both',direction='in',which='both')
+        self._axis.tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both')    
     # note when plotting the units as axis labels, the order is not what we specify in _OBS_UNIT because astropy's Unit class
     # sorts by power .  They have a good reason for this (hashing), but it does mean we get sub-optimal unit ordering.
     # There is a possible workaround, but it must be custom for each CompositeUnit.https://github.com/astropy/astropy/issues/1578
