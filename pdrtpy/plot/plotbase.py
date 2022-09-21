@@ -93,6 +93,23 @@ class PlotBase:
            :rtype: :class:`matplotlib.axes._subplots.AxesSubplot`
         """
         return self._axis
+    
+    def text(self,x,y,s,fontdict=None,**kwargs):
+        """ 
+        Add text to the Axes.  Add the text `s` to the Axes at location `x, y` in data coordinates.
+        This calls through to :meth:`matplotlib.pyplot.text`. 
+        
+        :param x: the horizontal coordinate for the text
+        :type x: float
+        :param y: the vertical coordinate for the text
+        :type y: float
+        :param s: the text
+        :type s: str
+        :param fontdict: A dictionary to override the default text properties. If fontdict is None, the defaults are determined by rcParams.
+        :type fontdict: dict    
+        :param \*\*kwargs: Other miscellaneous :class:`~matplotlib.text.Text` parameters.       
+        """
+        n = self._plt.text(x,y,s,fontdict,**kwargs)
 
     def _zscale(self,image,vmin,vmax,stretch,contrast=0.25):
         """Normalization object using Zscale algorithm
@@ -113,8 +130,8 @@ class PlotBase:
             s = PowerStretch(1)
         elif stretch == 'log':
             s = LogStretch(1000)
-        elif s == 'asinh':
-            stretch = AsinhStretch(0.1)
+        elif stretch == 'asinh':
+            s = AsinhStretch(0.1)
         else:
             raise ValueError(f'Unknown stretch: {stretch}.')
 
@@ -122,6 +139,20 @@ class PlotBase:
         return norm
 
     def _get_norm(self,norm,km,vmin,vmax,stretch):
+        """Get a Normalization object 
+ 
+        :param norm: The normalization time ( 'simple', 'zscale', 'log' )
+        :type norm: str
+        :param km: the image object
+        :type km: :mod:`astropy.io.fits` HDU or CCDData
+        :param vmin: the image minimum to use
+        :type vmin: float
+        :param vmax: the image maximum to use
+        :type vmax: float
+        :param stretch: the stretch to use (linear,log,power, asinh)
+        :type stretch: str
+        :returns: :mod:`astropy.visualization.normalization` object
+        """
         if type(norm) == str: 
             norm = norm.lower()
             if norm not in self._valid_norms:

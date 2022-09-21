@@ -2,29 +2,7 @@
 |char          |char       |char              |char            |float|char                                          |
 |              |           |                  |                |     |null                                          |
 |null          |null       |null              |null            |null |null                                          |
- CI_609         1           CI_609             CI609            1     [C I] 609 $\mu$m
- CI_370         1           CI_370             CI370            1     [C I] 370 $\mu$m
- OI_63          1           OI_63              OI63             1     [O I] 63 $\mu$m
- OI_145         1           OI_145             OI145            1     [O I] 145 $\mu$m
- CII_158        1           CII_158            CII158           1     [C II] 158 $\mu$m
- CO_10          1           CO_10              CO10             1     CO(J=1-0)
- CO_21          1           CO_21              CO21             1     CO(J=2-1)
- CO_32          1           CO_32              CP32             1     CO(J=3-2)
- CO_43          1           CO_43              CO43             1     CO(J=4-3)
- CO_54          1           CO_54              CO54             1     CO(J=5-4)
- CO_65          1           CO_65              CO65             1     CO(J=6-5)
- CO_76          1           CO_76              CO76             1     CO(J=7-6)
- CO_87          1           CO_87              CO87             1     CO(J=8-7)
- CO_98          1           CO_98              CO98             1     CO(J=9-8)
- CO_109         1           CO_109             CO109            1     CO(J=10-9)
- CO_1110        1           CO_1110            CO1110           1     CO(J=11-10)
- CO_1211        1           CO_1211            CO1211           1     CO(J=12-11)
- CO_1312        1           CO_1312            CO1312           1     CO(J=13-12)
- CO_1413        1           CO_1413            CO1413           1     CO(J=14-13)
  FIR            1           FIR                FIR              1     I$_{FIR}$
- OI_63+CII_158  1           OI_63+CII_158      OI63+CII158      1     [O I] 63 $\mu$m + [C II] 158 $\mu$m
- OI_145+CII_158 1           OI_145+CII_158     OI145+CII158     1     [O I] 145 $\mu$m + [C II] 158 $\mu$m
- TS             1           TS                 Ts               1     Surface Temperature
  OI_145         OI_63       OI_145/OI_63       OI145_OI63       1     [O I] 145 $\mu$m/[O I] 63 $\mu$m
  OI_145         CII_158     OI_145/CII_158     OI145_CII158     1     [O I] 145 $\mu$m/[C II] 158 $\mu$m
  OI_63          CII_158     OI_63/CII_158      OI63_CII158      1     [O I] 63 $\mu$m/[C II] 158 $\mu$m

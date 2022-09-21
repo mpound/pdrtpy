@@ -63,6 +63,7 @@
           OI_63           1               OI_63           oi63web    1   [O I] 63 $\mu$m
           CO_10           1               CO_10             coweb    1   CO(J=1-0)
           CO_21           1               CO_21           co21web    1   CO(J=2-1)
+          CO_32           1               CO_32              CO32    1   CO(J=3-2)
           CO_43           1               CO_43           co43web    1   CO(J=4-3)
           CO_54           1               CO_54           co54web    1   CO(J=5-4)
           CO_65           1               CO_65           co65web    1   CO(J=6-5)
@@ -77,3 +78,4 @@
              TS           1                  TS             tsweb    1   Surface Temperature
       FEII_1.60   FEII_1.64 FEII_1.60/FEII_1.64 FEII1p60_FEII1p64    1   [Fe II] 1.60 $\mu$m/[Fe II] 1.64 $\mu$m
       FEII_1.64   FEII_5.34 FEII_1.64/FEII_5.34 FEII1p64_FEII5p34    1   [Fe II] 1.64 $\mu$m/[Fe II] 5.34 $\mu$m
+            FIR           1                 FIR              FIR     1   I$_{FIR}$

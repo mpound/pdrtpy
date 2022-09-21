@@ -6,7 +6,12 @@ import math
 import numpy as np
 from lmfit import Parameters, fit_report
 from lmfit.model import Model, ModelResult
+from emcee.pbar import get_progress_bar
+import cProfile, pstats, io
+from pstats import SortKey
+
 from .toolbase import ToolBase
+from .fitmap import FitMap
 from .. import pdrutils as utils
 from ..measurement import Measurement
 import warnings
@@ -23,6 +28,7 @@ class ExcitationFit(ToolBase):
         self._intensity_units = "erg cm^-2 s^-1 sr^-1"
         self._cd_units = 'cm^-2'
         self._t_units = "K"
+        self._valid_components = ['hot','cold','total']
         if type(measurements) == dict or measurements is None:
             self._measurements = measurements
         else:
@@ -45,9 +51,8 @@ class ExcitationFit(ToolBase):
         self._measurements = dict()
         for mm in m:
             if not utils.check_units(mm.unit,self._intensity_units):
-                raise TypeError("Measurement " +mm.id + " units "+mm.unit.to_string()+" are not in intensity units equivalent to "+self._intensity_units)
+                raise TypeError(f"Measurement {mm.id} units {mm.unit.to_string()} are not in intensity units equivalent to {self._intensity_units}")
             self._measurements[mm.id] = mm
-        # re-initialize column densities
         
     def add_measurement(self,m):
         '''Add an intensity Measurement to internal dictionary used to 
@@ -78,7 +83,7 @@ class ExcitationFit(ToolBase):
 
     def replace_measurement(self,m):
         '''Safely replace an existing intensity Measurement.  Do not 
-           change a Measurement in place, use this method. 
+           change a Measurement inisnan place, use this method. 
            Otherwise, the column densities will be inconsistent.
 
            :param m: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
@@ -99,6 +104,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                  constantsfile="atomic_constants.tab"):
         super().__init__(measurements,constantsfile)
         self._canonical_opr = 3.0
+        self._opr = Measurement(data=[self._canonical_opr],uncertainty=None)
         self._init_params()
         self._init_model()
         self._fitresult = None
@@ -115,10 +121,10 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         # the fit algorithm does not like when the initial value is pinned at one
         # of the limits
         self._params.add('opr',value=3.0,min=1.0,max=3.5,vary=False)
-        self._params.add('m1',value=0,min=-1,max=1)
-        self._params.add('n1',value=15,min=0,max=30)
-        self._params.add('m2',value=0,min=-1,max=1)
-        self._params.add('n2',value=15,min=0,max=30)
+        self._params.add('m1',value=0,min=-1,max=0)
+        self._params.add('n1',value=15,min=10,max=30)
+        self._params.add('m2',value=0,min=-1,max=0)
+        self._params.add('n2',value=15,min=10,max=30)
         
     def _residual(self,params,x,data,error,idx):
         # We assume that the column densities passed in have been normalized 
@@ -162,6 +168,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         '''
         y1 = 10**(x*m1+n1)            
         y2 = 10**(x*m2+n2)
+
         model = np.log10(y1+y2)
         # We assume that the column densities passed in have been normalized 
         # using the canonical OPR=3. Therefore what we are actually fitting is 
@@ -187,55 +194,107 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                                        vary=q.vary)
             self._model.make_params()
     
-    def _compute_quantities(self,params):
+    def _compute_quantities(self,fitmap):
         """Compute the temperatures and column densities for the hot and cold gas components.  This method will set class variables `_temperature` and `_colden`.
         
         :param params: The fit parameters returned from fit_excitation.
         :type params: :class:`lmfit.Parameters`
         """
-        for p in params:
-            if params[p].stderr is None:
-                raise Exception("Something went wrong with the fit and it was unable to calculate errors on the fitted parameters. It's likely that a two-temperature model is not appropriate for your data. Check the fit_result report and plot.")
         self._temperature = dict()
         # N(J=0) column density = intercept on y axis               
         self._j0_colden = dict()
         # total column density = N(J=0)*Z(T) where Z(T) is partition function
         self._total_colden = dict()
+        size = fitmap.data.size
+        # create default arrays in which calculated values will be stored.
+        # Use nan as fill value because there may be nans in fitmapdata, in which 
+        # case nothing need be done to arrays.
+        # tc, th = cold and hot temperatures
+        # utc, utc = uncertainties in cold and hot temperatures
+        # nc, nh = cold and hot column densities
+        # unc, unh = uncertainties in cold and hot temperatures
+        # opr = ortho to para ratio
+        # uopr = uncertainty in OPR
+        tc = np.full(shape=size,fill_value=np.nan,dtype=float)
+        th = np.full(shape=size,fill_value=np.nan,dtype=float)
+        utc = np.full(shape=size,fill_value=np.nan,dtype=float)
+        uth = np.full(shape=size,fill_value=np.nan,dtype=float)
+        nc = np.full(shape=size,fill_value=np.nan,dtype=float)
+        nh = np.full(shape=size,fill_value=np.nan,dtype=float)
+        unh = np.full(shape=size,fill_value=np.nan,dtype=float)
+        unc = np.full(shape=size,fill_value=np.nan,dtype=float)
+        opr = np.full(shape=size,fill_value=np.nan,dtype=float)
+        uopr = np.full(shape=size,fill_value=np.nan,dtype=float)
+        ff = fitmap.data.flatten()
+        ffmask = fitmap.mask.flatten()
+        for i in range(size):
+            if ffmask[i]:
+                continue
+            params = ff[i].params
+            for p in params:
+                if params[p].stderr is None:
+                    print("AT pixel i [mask]",i,ffmask[i])
+                    params.pretty_print()
+                    raise Exception("Something went wrong with the fit and it was unable to calculate errors on the fitted parameters. It's likely that a two-temperature model is not appropriate for your data. Check the fit_result report and plot.")
 
-        if params['m2'] <  params['m1']:
-            cold = '2'
-            hot = '1'
-        else:
-            cold = '1'
-            hot = '2'
-        mcold = 'm'+cold
-        mhot= 'm'+hot
-        ncold = 'n'+cold
-        nhot = 'n'+hot
-        # cold and hot temperatures
-        uc = params[mcold].stderr/params[mcold]
-        tc = -utils.LOGE/params[mcold]
-        ucc = StdDevUncertainty(np.abs(tc*uc))
-        self._temperature["cold"]=Measurement(data=tc,unit=self._t_units,uncertainty=ucc)
-        uh = params[mhot].stderr/params[mhot]
-        th = -utils.LOGE/params[mhot]
-        uch = StdDevUncertainty(np.abs(th*uh))
-        self._temperature["hot"]=Measurement(data=th,unit=self._t_units,uncertainty=uch)
-        # cold and hot total column density
-        nc = 10**params[ncold]
-        uc = utils.LN10*params[ncold].stderr*nc
-        ucn = StdDevUncertainty(np.abs(uc))
-        self._j0_colden["cold"] = Measurement(nc,unit=self._cd_units,uncertainty=ucn)
-        nh = 10**params[nhot]
-        uh = utils.LN10*params[nhot].stderr*nh
-        uhn = StdDevUncertainty(np.abs(uh))
-        self._j0_colden["hot"] = Measurement(nh,unit=self._cd_units,uncertainty=uhn)
-        self._total_colden["cold"] = self._j0_colden["cold"] * self._partition_function(self.tcold)
-        self._total_colden["hot"] = self._j0_colden["hot"] * self._partition_function(self.thot)      
-        self._opr = Measurement(self._fitresult.params['opr'].value,
-                                unit=u.dimensionless_unscaled, 
-                        uncertainty=StdDevUncertainty(self._fitresult.params['opr'].stderr))
+
+            if params['m2'] <  params['m1']:
+                cold = '2'
+                hot = '1'
+            else:
+                cold = '1'
+                hot = '2'
+            mcold = 'm'+cold
+            mhot= 'm'+hot
+            ncold = 'n'+cold
+            nhot = 'n'+hot
+            # cold and hot temperatures
+            utc[i] = params[mcold].stderr/params[mcold]
+            tc[i] = -utils.LOGE/params[mcold]
+            uth[i] = params[mhot].stderr/params[mhot]
+            th[i] = -utils.LOGE/params[mhot]  
+            nc[i] = 10**params[ncold]
+            unc[i] = utils.LN10*params[ncold].stderr*nc[i]
+            nh[i] = 10**params[nhot]
+            unh[i] = utils.LN10*params[nhot].stderr*nh[i]
+            opr[i] = params['opr'].value
+            uopr[i] = params['opr'].stderr
+            
+        # now reshape them all back to map shape
+        tc = tc.reshape(fitmap.data.shape)
+        th = th.reshape(fitmap.data.shape)
+        utc = utc.reshape(fitmap.data.shape)
+        uth = uth.reshape(fitmap.data.shape)
+        nc = nc.reshape(fitmap.data.shape)
+        nh = nh.reshape(fitmap.data.shape)
+        unh = unh.reshape(fitmap.data.shape)
+        unc = unc.reshape(fitmap.data.shape)
+        opr = opr.reshape(fitmap.data.shape)
+        uopr = uopr.reshape(fitmap.data.shape)
         
+        mask = fitmap.mask | np.logical_not(np.isfinite(tc)) 
+        ucc= StdDevUncertainty(np.abs(tc*utc))
+        self._temperature["cold"]=Measurement(data=tc,unit=self._t_units,
+                                              uncertainty=ucc,wcs=fitmap.wcs, mask = mask)
+        mask = fitmap.mask | np.logical_not(np.isfinite(th)) 
+        uch = StdDevUncertainty(np.abs(th*uth))
+        self._temperature["hot"]=Measurement(data=th,unit=self._t_units,
+                                             uncertainty=uch,wcs=fitmap.wcs, mask = mask)
+        # cold and hot total column density
+        ucn = StdDevUncertainty(np.abs(unc))
+        mask = fitmap.mask | np.logical_not(np.isfinite(nc))
+        self._j0_colden["cold"] = Measurement(nc,unit=self._cd_units,
+                                              uncertainty=ucn,wcs=fitmap.wcs, mask=mask)
+        mask = fitmap.mask | np.logical_not(np.isfinite(nh)) 
+        uhn = StdDevUncertainty(np.abs(unh))
+        self._j0_colden["hot"] = Measurement(nh,unit=self._cd_units,
+                                             uncertainty=uhn,wcs=fitmap.wcs, mask = mask)    
+        #
+        self._total_colden["cold"] = self._j0_colden["cold"] * self._partition_function(self.tcold)
+        self._total_colden["hot"] = self._j0_colden["hot"] * self._partition_function(self.thot) 
+        mask = fitmap.mask | np.logical_not(np.isfinite(opr)) 
+        self._opr = Measurement(opr, unit=u.dimensionless_unscaled, 
+                                uncertainty=StdDevUncertainty(uopr),wcs=fitmap.wcs, mask=mask)
         
     @property
     def fit_result(self):
@@ -254,19 +313,16 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         '''
         if self._fitresult is None: 
             return False
-        return self._fitresult.params['opr'].vary
+        return self._params['opr'].vary
     
     @property
     def opr(self):
         '''The ortho-to-para ratio (OPR)
         
         :returns: The fitted OPR is it was determined in the fit, otherwise the canonical LTE OPR
-        :rtype: float
+        :rtype: :class:`~pdrtpy.measurement.Measurement`
         '''
-        if self.opr_fitted:
-            return self._opr
-        else:
-            return self._canonical_opr
+        return self._opr
         
     @property 
     def intensities(self):
@@ -276,6 +332,24 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         '''
         return self._measurements  
     
+    def colden(self,component):#,log=False):
+        '''The column density of hot or cold gas component, or total column density.
+        
+        :param component: 'hot', 'cold', or 'total
+        :type component: str
+        
+        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        '''
+        #:param log: take the log10 of the column density
+        cl = component.lower()
+        if cl not in self._valid_components:
+            raise KeyError(f"{cl} not a valid component. Must be one of {self._valid_components}")
+        #print(f'returning {cl}')
+        if cl == 'total':
+            return self.total_colden
+        else:
+            return self._total_colden[cl]
+        
     @property
     def total_colden(self):
         '''The fitted total column density
@@ -316,6 +390,13 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         '''   
         return self._temperature['hot']#self._fitparams.thot
     
+    @property
+    def temperature(self):
+        '''The fitted gas temperatures, returned in a dictionary with keys 'hot' and 'cold'.
+        :rtype: dict
+        '''
+        return self._temperature
+
     def column_densities(self,norm=False,unit=utils._CM2, line=False):
         r'''The computed upper state column densities of stored intensities
 
@@ -387,7 +468,14 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         :param fit_opr: Whether to fit the ortho-to-para ratio or not. If True, the OPR will be varied to determine the best value. If False, the OPR is fixed at the canonical LTE value of 3.
         :type fit_opr: bool
         '''
-        return self._fit_excitation(position,size,fit_opr,**kwargs)
+        kwargs_opts = { 'mask': None,
+                        'method': 'leastsq',
+                        'nan_policy': 'raise',
+                        'test':False,
+                        'profile':False,
+                      }
+        kwargs_opts.update(kwargs)
+        return self._fit_excitation(position,size,fit_opr,**kwargs_opts)
 
     def intensity(self,colden):
         '''Given an upper state column density :math:`N_u`, compute the intensity :math:`I`.  
@@ -412,7 +500,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         i._identifier = val.id
         return i
 
-    def colden(self,intensity,unit):
+    def upper_colden(self,intensity,unit):
         '''Compute the column density in upper state :math:`N_u`, given an 
            intensity :math:`I` and assuming optically thin emission.  
            Units of :math:`I` need to be equivalent to 
@@ -459,7 +547,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                 index = m
             else:
                 index = self._ac.loc[m]["J_u"]             
-            self._column_density[index] = self.colden(self._measurements[m],unit)
+            self._column_density[index] = self.upper_colden(self._measurements[m],unit)
 
     def gu(self,id,opr):
         r'''Get the upper state statistical weight $g_u$ for the given transition identifer, and, if the transition is odd-$J$, scale the result by the given ortho-to-para ratio.  If the transition is even-$J$, the LTE value is returned.
@@ -471,7 +559,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
            :raises KeyError: if id not in existing Measurements 
            :rtype: float
         '''
-        if utils.isEven(self._ac.loc[id]["J_u"]):
+        if utils.is_even(self._ac.loc[id]["J_u"]):
             return self._ac.loc[id]["g_u"]
         else:
             #print("Ju=%d scaling by [%.2f/%.2f]=%.2f"%(self._ac.loc[id]["J_u"],opr,self._canonical_opr,opr/self._canonical_opr))
@@ -531,7 +619,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                 if False:
                     # save cutout as a test that we have the x,y correct in size param
                     t = Measurement(cddata,unit=ca.unit,uncertainty=StdDevUncertainty(weights),identifier=ca.id)
-                    t.write("cutout.fits",overwrite=True)
+                    #t.write("cutout.fits",overwrite=True)
                     
             else: 
                 cddata = ca.data
@@ -599,7 +687,8 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         slopehot = (y[-1]-y[-2])/(x[-1]-x[-2])
         intcold = y[1] - slopecold*x[1]
         inthot  = y[-1] - slopehot*x[-1]
-        return [slopecold, intcold, slopehot, inthot]
+        #print("FG ",type(slopecold),type(slopehot),type(intcold),type(inthot))
+        return np.array([slopecold, intcold, slopehot, inthot])
 
     def _fit_excitation(self,position,size,fit_opr=False,**kwargs):
         """Fit the :math:`log N_u-E` diagram with two excitation temperatures,
@@ -615,15 +704,21 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         :type size: int, array_like, or :class:`astropy.units.Quantity`
         :param fit_opr: Whether to fit the ortho-to-para ratio or not. If True, the OPR will be varied to determine the best value. If False, the OPR is fixed at the canonical LTE value of 3.
         :type fit_opr: bool
-        :returns: The fit result which contains slopes, intercepts, the ortho to para ratio (OPR), and fit statistics
+     ,dtype=object   :returns: The fit result which contains slopes, intercepts, the ortho to para ratio (OPR), and fit statistics
         :rtype:  :class:`lmfit.model.ModelResult`  
         """
-
+        profile = kwargs.pop('profile')
+        self._stats = None
+        if profile:
+            pr = cProfile.Profile()
+            pr.enable()
         if fit_opr:
             min_points = 5
         else:
             min_points = 4
+            self._opr = Measurement(data=[self._canonical_opr],uncertainty=None)
             
+        self._params['opr'].vary = fit_opr    
         energy = self.energies(line=True)
         _ee = np.array([c for c in energy.values()])
         #@ todo: allow fitting of one-temperature model
@@ -633,52 +728,118 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
             warnings.warn(f"Number of data points is equal to number of free parameters ({min_points:d}). Fit will be over-constrained")
         _energy = Measurement(_ee,unit="K")
         _ids = list(energy.keys())
+        idx=self._get_ortho_indices(_ids)
         # Get Nu/gu.  Canonical opr will be used. 
-        colden = self.average_column_density(norm=True, position=position,
+        if position is None or size is None:
+            colden = self.column_densities(norm=True,line=True)
+        else:
+
+            colden = self.average_column_density(norm=True, position=position,
                                              size=size, line=True)
 
         # Need to stuff the data into a single vector
-        _cd = np.array([c.data for c in colden.values()])
-        _er  = np.array([c.error for c in colden.values()])
+        _cd = np.squeeze(np.array([c.data for c in colden.values()]))
+        _er = np.squeeze(np.array([c.error for c in colden.values()]))
         _colden = Measurement(_cd,uncertainty=StdDevUncertainty(_er),unit="cm-2")
-
+        fk = utils.firstkey(colden)
         x = _energy.data
         y = np.log10(_colden.data)
+        #print("SHAPE Y LEN(SHAPE(Y) ",y.shape,len(y.shape))
         #kwargs_opts = {"guess": self._first_guess(x,y)}
         #kwargs_opts.update(kwargs)
         sigma = utils.LOGE*_colden.error/_colden.data
         slopecold, intcold, slopehot, inthot = self._first_guess(x,y)
+        #print(slopecold,slopehot,intcold,inthot)
         tcold=(-utils.LOGE/slopecold)
         thot=(-utils.LOGE/slopehot)
-        print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K"%(tcold,thot))
-        
-        # update Parameter hints based on first guess.
-        self._model.set_param_hint('m1',value=slopecold,vary=True)
-        self._model.set_param_hint('n1',value=intcold,vary=True)
-        self._model.set_param_hint('m2',value=slopehot,vary=True)
-        self._model.set_param_hint('n2',value=inthot,vary=True)
-        # update whether opr is allowed to vary or not.
-        self._model.set_param_hint('opr',vary = fit_opr)
-        p=self._model.make_params()
-        #p.pretty_print()
-        
-        wts = 1/(sigma*sigma)
-        idx=self._get_ortho_indices(_ids)
+        if np.shape(tcold) == ():
+            tcold = np.array([tcold])
+            thot = np.array([thot])
+        saveshape = tcold.shape
+        #print("TYPE COLD SIT",type(slopecold),type(intcold),type(tcold))
+        #print("SHAPES: colden/sigma/slope/int/temp/cd: ",np.shape(_colden),np.shape(sigma),np.shape(slopecold),np.shape(intcold),np.shape(tcold),np.shape(_cd))
+        #print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K"%(tcold,thot))
+        fmdata = np.empty(tcold.shape,dtype=object).flatten()
+        #fm = FitMap(data=fmdata,wcs=colden[fk].wcs,uncertainty=None,unit=None)
+        tcold = tcold.flatten()
+        thot = thot.flatten()
+        slopecold = slopecold.flatten()
+        slopehot = slopehot.flatten()   
+        inthot = inthot.flatten()
+        intcold = intcold.flatten()
+        #sigma = sigma.flatten()
+        # flatten any dimensions past 0
+        shp = y.shape
+        #print("NS ",shp[0],shp[1:])
+        if len(shp) == 1:
+            #print("adding new axis")
+            y = y[:,np.newaxis]
+            shp = y.shape
+        yr = y.reshape((shp[0],np.prod(shp[1:])))
+        sig = sigma.reshape((shp[0],np.prod(shp[1:])))
+        #print("YR, SIG SHAPE",yr.shape,sig.shape)
+        count = 0
+        #print("LEN(TCOLD)",len(tcold))
+        total = len(tcold)
+        fm_mask = np.full(shape=tcold.shape,fill_value=False)
         # Suppress the incorrect warning about model parameters
         warnings.simplefilter('ignore',category=UserWarning)
-        self._fitresult = self._model.fit(data=y, weights=wts, x=x, idx=idx,fit_opr=fit_opr)
+        excount = 0
+        badfit = 0
+        # update whether opr is allowed to vary or not.
+        self._model.set_param_hint('opr',vary = fit_opr)
+        # use progress bar if more than one pixel
+        if total > 1:
+            progress = kwargs.pop("progress",True) 
+        else:
+            progress = False
+        with get_progress_bar(progress,total,leave=True,position=0) as pbar:
+            for i in range(total):
+                if np.isfinite(yr[:,i]).all() and np.isfinite(sig[:,i]).all():
+                    # update Parameter hints based on first guess.
+                    self._model.set_param_hint('m1',value=slopecold[i],vary=True)
+                    self._model.set_param_hint('n1',value=intcold[i],vary=True)
+                    self._model.set_param_hint('m2',value=slopehot[i],vary=True)
+                    self._model.set_param_hint('n2',value=inthot[i],vary=True)
+                    p=self._model.make_params()
+                    wts = 1.0/(sig[:,i]*sig[:,i])
+                    try: 
+                        fmdata[i] = self._model.fit(data=yr[:,i], weights=wts, x=x, 
+                                                      idx=idx,fit_opr=fit_opr,method=kwargs['method'],
+                                                      nan_policy = kwargs['nan_policy'])
+                        if fmdata[i].success and fmdata[i].errorbars:
+                            count = count+1
+                        else:
+                            fmdata[i] = None
+                            fm_mask[i] = True
+                            badfit = badfit + 1
+                    except ValueError:
+                        fmdata[i] = None
+                        fm_mask[i] = True
+                        excount = excount+1
+                else:
+                    fmdata[i] = None
+                    fm_mask[i] = True
+                pbar.update(1)
         warnings.resetwarnings()
+        fmdata = fmdata.reshape(saveshape)
+        fm_mask = fm_mask.reshape(saveshape)
+        self._fitresult = FitMap(fmdata,wcs=colden[fk].wcs,mask=fm_mask,name="result")
         # this will raise an exception if the fit was bad (fit errors == None)
-        self._compute_quantities(self._fitresult.params)
-        print("Fitted excitation temperatures and column densities:")
-        print(f" T_cold = {self.tcold.value:3.0f}+/-{self.tcold.error:.1f} {self.tcold.unit}\n T_hot = {self.thot.value:3.0f}+/-{self.thot.error:.1f} {self.thot.unit}")
-        print(f" N_cold = {self.cold_colden.value:.2e}+/-{self.cold_colden.error:.1e} {self.cold_colden.unit}\n N_hot = {self.hot_colden.value:.2e}+/-{self.hot_colden.error:.1e} {self.hot_colden.unit}")
-        print(f" N_total = {self.total_colden.value:.2e}+/-{self.total_colden.error:.1e} {self.total_colden.unit}")
-        
+        self._compute_quantities(self._fitresult)
+        print(f"fitted {count} of {slopecold.size} pixels")
+        print(f'got {excount} exceptions and {badfit} bad fits')
         #if successful, set the used position and size
         self._position = position
         self._size = size
-
+        if profile:
+            pr.disable()
+            s = io.StringIO()
+            sortby = SortKey.CUMULATIVE
+            ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
+            ps.print_stats()
+            self._stats = s
+            
     def _two_lines(self,x, m1, n1, m2, n2):
         '''This function is used to partition a fit to data using two lines and 
            an inflection point.  Second slope is steeper because slopes are 
@@ -718,14 +879,15 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         :param tex: the excitation temperature
         :type tex: :class:`~pdrtpy.measurement.Measurement` or :class:`astropy.units.quantity.Quantity`
         :returns: the partition function value
-        :rtype: numpy.float
+        :rtype: numpy.ndarray
         '''
         # See Herbst et al 1996
         # http://articles.adsabs.harvard.edu/pdf/1996AJ....111.2403H
         # Z(T) =  = 0.0247T * [1—exp(—6000/T)]^-1
         
         # This is just being defensive.  I know the temperatures used internally are in K.
-        t = (tex.value*u.Unit(tex.unit)).to("K",equivalencies=u.temperature()).value
+        t = np.ma.masked_invalid((tex.value*u.Unit(tex.unit)).to("K",equivalencies=u.temperature()).value)
+        t.mask = np.logical_or(t.mask,np.logical_not(np.isfinite(t)))
         z = 0.0247*t/(1.0 - np.exp(-6000.0/t))
         return z
 
