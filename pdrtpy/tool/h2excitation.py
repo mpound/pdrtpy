@@ -297,6 +297,13 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         self._opr = Measurement(opr, unit=u.dimensionless_unscaled,
                                 uncertainty=StdDevUncertainty(uopr),wcs=fitmap.wcs, mask=mask)
 
+    def _is_ortho(self,identifier):
+        #identifier is J level
+        if type(identifier) == int:
+            return utils.is_odd(identifier)
+        else: #identifier is e.g., H210S7
+            return self._ac.loc[identifier]["Ju"]%2!=0
+
     @property
     def fit_result(self):
         '''The result of the fitting procedure which includes fit statistics, variable values and uncertainties, and correlations between variables.
@@ -398,7 +405,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         '''
         return self._temperature
 
-    def column_densities(self,norm=False,unit=utils._CM2, line=False):
+    def column_densities(self,norm=False,unit=utils._CM2, line=True):
         r'''The computed upper state column densities of stored intensities
 
            :param norm: if True, normalize the column densities by the
@@ -430,7 +437,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                 else:
                     denom = self._ac.loc['Ju',cd]["gu"]
                     if(len(denom)>0): 
-                        denom=denom[0] #ARGH kluge.  Need to get rid of line=False option as Ju is no longer unique
+                        denom=denom[0] #ARGH kluge.  Need to get rid of f option as Ju is no longer unique
                 #print("CD ",cd,"DENOM ",denom)
                 # This fails with complaints about units:
                 #self._column_density[cd] /= self._ac.loc[cd]["gu"]
@@ -441,7 +448,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         else:
             return self._column_density
 
-    def energies(self,line=False):
+    def energies(self,line=True):
         '''Upper state energies of stored intensities, in K.
 
            :param line: if True, the dictionary index is the Line name,
@@ -532,7 +539,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         N_upper = intensity * val # error will get propagated
         return N_upper.convert_unit_to(unit)
 
-    def _compute_column_densities(self,unit=utils._CM2,line=False):
+    def _compute_column_densities(self,unit=utils._CM2,line=True):
         r'''Compute all upper level column densities for stored intensity measurements and puts them in a dictionary
            :param unit: The units in which to return the column density. Default: :math:`{\\rm }cm^{-2}`
            :type unit: str or :class:`astropy.units.Unit`
@@ -570,7 +577,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
             return self._ac.loc[id]["gu"]*opr/self._canonical_opr
 
     def average_column_density(self,position=None,size=None,norm=True,
-                               unit=utils._CM2,line=False, clip=-1E40*u.Unit("cm-2")):
+                               unit=utils._CM2,line=True, clip=-1E40*u.Unit("cm-2")):
         r'''Compute the average column density over a spatial box.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.
 
         :param position: The position of the cutout array's center with respect to the data array. The position can be specified either as a `(x, y)` tuple of pixel coordinates.
