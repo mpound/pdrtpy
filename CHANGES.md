@@ -1,6 +1,6 @@
 ## Change Log
 
-### Release 2.2.8
+### Release 2.2.9
 
 #### _Models_
 
@@ -16,7 +16,7 @@
 
 #### _Issues_
 
-- issues 58, 59 closed
+- issues 55, 58, 59 closed
 
 - various other bugs discovered and fixed
 
