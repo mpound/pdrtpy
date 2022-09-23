@@ -196,47 +196,127 @@ class ModelPlot(PlotBase):
             labels = [k.title for k in models]
             self._plt.legend(lines, labels,loc='upper center',title='Observed '+word)
 
-    def xxplot(self,identifier,plotaxis=2,**kwargs):
-        kwargs_opts = {'errorbar':False,
-               'fmt': None,
-               'label': None,
-               'legend': True,
-               'title': None,
-               'grid' :True,
-               'figsize':(8,5),
-               'linewidth': 2.0,
-               'aspect': 'auto',
-               'step': 1,
-               'logx': False,
-               'logy': False,
-               }
+    def xxplot(self,identifier,plotaxis=2,nax_clip=[1000,1E5]*u.Unit("K"),**kwargs):
+        kwargs_opts = {
+            'errorbar':False,
+            'fmt': None,
+            'label': None,
+            'legend': True,
+            'title': None,
+            'grid' :True,
+            'figsize':(8,5),
+            'linewidth': 2.0,
+            'aspect': 'auto',
+            'step': 1,
+             'logx': False,
+            'logy': False,                       
+            'title': None,
+            'grid' :True,  
+        }
         kwargs_opts.update(kwargs)
-        if plotaxis != 1 and plotaxis !=2:
-            raise ValueError("plotaxis must be 1 or 2")
-        if plotaxis == 1:
-            otheraxis = 2
-            otherindex = 1
-        if plotaxis == 2:
-            otheraxis = 1
-            otherindex = 2
-        xaxis = ["naxis2","naxis1"]
-        pindex = plotaxis - 1
         model = self._modelset.get_model(identifier)
-        #naxislog = self._get_xy_from_wcs(model,quantity=True,linear=False)
-        naxis = self._get_xy_from_wcs(model,quantity=True,linear=True)
-        self._figure,self._axis = self._plt.subplots(nrows=1,ncols=1,figsize=kwargs_opts['figsize'])
-        for i in range(0,model.header[xaxis[pindex]],kwargs_opts['step']):
-            xx=model[0:len(naxis[otherindex]),i]
-            #print(xx,len(xx))
-            self._axis.plot(naxis[otherindex],xx,label=f'{naxis[pindex][i]}')
+        self._figure,self._axis = self._plt.subplots(nrows=1, ncols=1, 
+                                                     figsize=kwargs_opts['figsize'])
+        if True:
+            if plotaxis != 1 and plotaxis !=2:
+                raise ValueError("plotaxis must be 1 or 2")
+            if plotaxis == 1:
+                otheraxis = 2
+                otherindex = 1
+            if plotaxis == 2:
+                otheraxis = 1
+                otherindex = 0
+            xaxis = ["naxis2","naxis1"]
+            pindex = plotaxis - 1
+            naxis_is_log = ['log' in c for c in  model.wcs.wcs.ctype]
+            naxis = self._get_xy_from_wcs(model,quantity=True,linear=True)
+            naxislog=self._get_xy_from_wcs(model,quantity=True,linear=False)
+            dcc=nax_clip.to(naxis[pindex].unit)
+            #Select the model naxis *indices* within the NAX limits
+            xi=np.where((naxis[pindex]>=dcc[0]) & (naxis[pindex]<=dcc[1]))[0]
+            print("xi ",xi, "dcc ",dcc)
+            if naxis_is_log[pindex]:
+                # Create an array containing *indices* of the range of naxis[pindex] alues.
+                # -5,12 is a large enough logarithmic range to contain any model we have
+                # this picks out integer values of log(naxis).
+                print("LOG")
+                x2= np.hstack([np.where((np.round(naxislog[pindex].value,1))==i)[0] for i in np.arange(-5,12)])
+            else:
+                x2 = np.arange(model.wcs._naxis[pindex])
 
+            print("naxis is log:",naxis_is_log[pindex])
+            print("naxislog",naxislog[pindex])
+            print("roundex naxislog ", np.round(naxislog[pindex].value,1))
+            print("where ",[np.where((np.round(naxislog[pindex].value,1))==i)[0] for i in np.arange(-5,12)])
+            print("hstack ",np.hstack([np.where((np.round(naxislog[pindex].value,1))==i)[0] for i in np.arange(-5,12)]))
+            print("x2 ",x2)
+            xi2=np.intersect1d(xi,x2)
+
+            #print("XI2 type",type(xi2))
+            print("XI2",xi2,len(xi2))
+            print("THE VALUES ",naxislog[pindex][xi2])
+            lines = []
+        
+            for j in xi2:
+                #in range(0,len(xi2),kwargs_opts['step']):
+                print("len(naxis[pindex]) ",len(naxis[pindex]), " j=",j)
+                if plotaxis == 1:
+                    xx=model[0:len(naxis[pindex]),j]
+                else:
+                    xx=model[j,0:len(naxis[pindex])]
+                print(xx)
+                print("XX LEN:",len(xx)," model.shape ",model.shape)
+                if naxis_is_log[pindex]:
+                    label=np.round(np.log10(naxis[pindex][j].to(nax_clip.unit).value),1)
+                else:
+                    label='{0:.0f}'.format(np.round(naxis[pindex][j].to(nax_clip.unit).value,0))
+                lines.extend(self._axis.plot(naxis[pindex],xx,label=label))
+        else:
+                    # Now we need to find the model points that fall within the user-specified NAXIS limits.
+        # First get the x,y of the models
+            xlog,ylog=self._get_xy_from_wcs(model,quantity=True,linear=False)
+            xlin,ylin=self._get_xy_from_wcs(model,quantity=True,linear=True)
+            x_is_log = 'log' in model.wcs.wcs.ctype[0]
+            y_is_log = 'log' in model.wcs.wcs.ctype[1]
+            # linear and log units are same so doesn't matter which is used for conversion
+            if plotaxis == 1:
+                naxislin = xlin
+                naxislog = xlog
+                nax_is_log = x_is_log
+            else:
+                naxislin = ylin
+                naxislog = ylog
+                nax_is_log = y_is_log
+            dcc=nax_clip.to(naxislog.unit)
+            # Select the model *indices* within the NAX limits
+            xi=np.where((naxislin>=dcc[0]) & (naxislin<=dcc[1]))[0]
+            # Create an array containing *indices* of the range of x,y values.
+            # -5,12 is a large enough logarithmic range to contain any model we have
+            if nax_is_log:
+                x2= np.hstack([np.where((np.round(naxislog.value,1))==i)[0] for i in np.arange(-5,12)])
+            else:
+                x2 = np.arange(len(naxislin))
+            xi2=np.intersect1d(xi,x2)
+            print("where ",[np.where((np.round(naxislog.value,1))==i)[0] for i in np.arange(-5,12)])
+            print("hstack ",np.hstack([np.where((np.round(naxislog.value,1))==i)[0] for i in np.arange(-5,12)]))
+            print("xi [clip] ",xi)
+            print("x2 ",x2)
+            print("XI2",xi2,len(xi2))
+            linesN=[]
+            # Sort out the axes labels depending on whether reciprocal=True or not.
+            for j in xi2:
+                print("j=",j)
+                if nax_is_log:
+                    label=np.round(np.log10(naxislin[j].to(nax_clip.unit).value),1)
+                else:
+                    label='{0:.0f}'.format(np.round(naxislin[j].to(nax_clip.unit).value,0))
+                xx=model[np.arange(len(ylin)),j]
+                linesN.extend(self._axis.plot(naxislin,xx,label=label,lw=2))
+        xlabel = r"${0}$ [{1:latex_inline}]".format(model.wcs.wcs.ctype[otherindex],naxis[otherindex].unit)
+        self._axis.set_ylabel(model.title)
+        self._axis.set_xlabel(xlabel)
         if kwargs_opts['legend']:
             self._axis.legend()
-        self._axis.set_ylabel(model.title)
-        xlabel1 = model.wcs.wcs.ctype[otherindex]
-        xlabel2 = model.header[f"cunit{otheraxis}"]
-        xlabel = r"${0}$ [{1:latex_inline}]".format(xlabel1,u.Unit(xlabel2))
-        self._axis.set_xlabel(xlabel)
         self._axis.set_aspect(kwargs_opts['aspect'])
         if kwargs_opts['logx']:
             self._axis.set_xscale('log')
@@ -244,6 +324,7 @@ class ModelPlot(PlotBase):
             self._axis.set_yscale('log')
         self._axis.tick_params(axis='both',direction='in',which='both')
         self._axis.tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both')    
+
     # note when plotting the units as axis labels, the order is not what we specify in _OBS_UNIT because astropy's Unit class
     # sorts by power .  They have a good reason for this (hashing), but it does mean we get sub-optimal unit ordering.
     # There is a possible workaround, but it must be custom for each CompositeUnit.https://github.com/astropy/astropy/issues/1578
@@ -321,14 +402,8 @@ class ModelPlot(PlotBase):
         # First get the x,y of the models
         xlog,ylog=self._get_xy_from_wcs(models[0],quantity=True,linear=False)
         xlin,ylin=self._get_xy_from_wcs(models[0],quantity=True,linear=True)
-
-        x_is_log = False
-        y_is_log = False
-        if 'log' in models[0].wcs.wcs.ctype[0]: 
-            x_is_log = True
-        if 'log' in models[0].wcs.wcs.ctype[1]: 
-            y_is_log = True
-
+        x_is_log = 'log' in models[0].wcs.wcs.ctype[0]
+        y_is_log = 'log' in models[0].wcs.wcs.ctype[1]
         # linear and log units are same so doesn't matter which is used for conversion
         dcc=nax1_clip.to(xlog.unit)
         rcc=nax2_clip.to(ylog.unit)
@@ -336,11 +411,12 @@ class ModelPlot(PlotBase):
         xi=np.where((xlin>=dcc[0]) & (xlin<=dcc[1]))[0]
         yi=np.where((ylin>=rcc[0]) & (ylin<=rcc[1]))[0]
         # Create an array containing *indices* of the range of x,y values.
+        # -5,12 is a large enough logarithmic range to contain any model we have
         if x_is_log:
             x2= np.hstack([np.where((np.round(xlog.value,1))==i)[0] for i in np.arange(-5,12)])
         else:
             x2 = np.arange(len(xlin))
-        # for 2020 models Y is not an integral value in erg s-1 cm-2
+        # for 2020 models FUV is not an integral value in erg s-1 cm-2
         # so rounding is necessary.
         if y_is_log:
             y2 = np.hstack([np.where((np.round(ylog.value,1))==i)[0] for i in np.arange(-5,12)])
@@ -349,7 +425,13 @@ class ModelPlot(PlotBase):
         # Intersection of these two arrays contain the indices of desired model plot points.
         xi2=np.intersect1d(xi,x2)
         yi2=np.intersect1d(yi,y2)
-
+        print("where ",[np.where((np.round(ylog.value,1))==i)[0] for i in np.arange(-5,12)])
+        print("hstack ",np.hstack([np.where((np.round(ylog.value,1))==i)[0] for i in np.arange(-5,12)]))
+        print("xi [clip] ",xi)
+        print("XI2 type",type(xi2))
+        print("XI2",xi2,len(xi2))
+        print("yi [clip] ",yi)
+        print("YI2",yi2,len(yi2))
         self._figure,self._axis = self._plt.subplots(nrows=1,ncols=1,figsize=kwargs_opts['figsize'])
         linesN=[]
         linesG=[]
