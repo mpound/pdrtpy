@@ -713,4 +713,3 @@ def get_xy_from_wcs(data,quantity=False,linear=False):
             if 'log' in w.wcs.ctype[1].lower():
                 y = np.power(k,y)
     return (x,y)
-
