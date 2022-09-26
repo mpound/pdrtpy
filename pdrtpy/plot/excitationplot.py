@@ -67,7 +67,7 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
 
         cdavg = self._tool.average_column_density(norm=norm, position=position, size=size, line=True)
         energies = self._tool.energies(line=True)
-        energy = np.array([c for c in energies.values()])
+        energy = np.array(list(energies.values()))
         colden = np.squeeze(np.array([c.data for c in cdavg.values()]))
         error = np.squeeze(np.array([c.error for c in cdavg.values()]))
         sigma = LOGE*error/colden
@@ -89,23 +89,26 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         else:
             # return dict of arrays of measuremtents with keys v=0,v=1,v=2 etc
             cdsort = self._sorted_by_vibrational_level(cdavg)
+            ensort = self._sorted_by_vibrational_level(energies)
+            #print("ENSORT" ,ensort.values())
             cyc = cycler('color',  self._CB_color_cycle)
             cyfill = cycler('fillstyle',['full', 'none', 'full', 'none', 'full', 'none', 'full', 'none', 'full'])
-            self._plt.rc('axes', prop_cycle=(cyc+cyfill))
+            #self._plt.rc('axes', prop_cycle=(cyc+cyfill))
 
             fmtd = {False: 'o',True:'^'} #there is no cycler for fmt, do it manually
             fmtb=False
             for key in cdsort:
                 cs = np.squeeze(np.array([m.value[0] for m in cdsort[key]]))
                 es = np.squeeze(np.array([m.error[0] for m in cdsort[key]]))
-                print(f"LOG10(CD({key}))={np.log10(cs)}")
-                print(f"E{key}={es}")
+                ens =  np.array([c for c in ensort[key]])
+                #print(f"LOG10(CD({key}))={np.log10(cs)}")
+                #print(f"E{key} = {ens}")
                 sigma = LOGE*es/cs
-                ec = _axis.errorbar(es,np.log10(cs),yerr=sigma,
+                ec = _axis.errorbar(ens,np.log10(cs),yerr=sigma,
                     fmt=fmtd[fmtb], capsize=kwargs_opts['capsize'],
                     label=key, lw=kwargs_opts['linewidth'],
                     ms=kwargs_opts['markersize'])
-                fmtb = not fmtb
+                #fmtb = not fmtb
         tt = self._tool
         if self._tool.opr_fitted and show_fit:
             if position is not None and len(np.shape(tt.opr))>1:
