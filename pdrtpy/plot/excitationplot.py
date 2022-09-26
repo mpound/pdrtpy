@@ -23,7 +23,7 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         self._xlim = []
         self._ylim = []
         self._label = label
-        
+
     def _sorted_by_vibrational_level(self,measurements):
         # d is a dict of measurements
         ret = dict()
@@ -33,7 +33,7 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
                 ret[_key] = []
             ret[_key].append(measurements[m])
         return ret
-    
+
     def ex_diagram(self,position=None,size=None,norm=True,show_fit=False,**kwargs):
         #@todo position and size might not necessarily match how the fit was done.
         #:type position: tuple or :class:`astropy.coordinates.SkyCoord`
