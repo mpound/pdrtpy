@@ -272,8 +272,12 @@ class ModelSet(object):
         _thefile = d+self._tabrow["path"]+self.table.loc[identifier]["filename"]+"."+ext
         _title = self._table.loc[identifier]['title']
         if unit is None or unit == "":
+            if identifier == "TS":
+                #print("Setting unit to K")
+                unit = "K"
+                modeltype = "intensity" #??'temperature'
             # make a guess at the unit
-            if '/' in identifier:
+            elif '/' in identifier:
                 unit = self._default_unit["ratio"]
                 modeltype = "ratio"
             else:
@@ -284,6 +288,7 @@ class ModelSet(object):
                 modeltype = "ratio"
             else:
                 modeltype = "intensity"
+        #print("Unit = ",unit)
         _model = Measurement.read(_thefile,title=_title,unit=unit,identifier=identifier)
         #if _model.unit=="":
         #    _model.unit = u.Unit("adu")#self._default_unit["ratio"]
@@ -352,7 +357,11 @@ class ModelSet(object):
         else:
             _unit = None
         for k in a:
-            models[k] = self.get_model(k,unit=_unit,ext=ext)
+            if k == "TS": 
+                #kluge. we need to support model_type = "temperature"
+                models[k] = self.get_model(k,unit="K",ext=ext)
+            else:
+                models[k] = self.get_model(k,unit=_unit,ext=ext)
 
         return models
 
