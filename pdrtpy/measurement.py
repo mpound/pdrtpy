@@ -1,3 +1,4 @@
+
 """Manage spectral line or continuum observations"""
 #@Todo it would be nice to be able to get Measurment[index] as a Measurement instead of
 # a float. This is the behavior for CCDData, somehow lost in Measurement  See NDUncertainty __getitem__

@@ -271,6 +271,7 @@ class ModelSet(object):
         d = model_dir()
         _thefile = d+self._tabrow["path"]+self.table.loc[identifier]["filename"]+"."+ext
         _title = self._table.loc[identifier]['title']
+        # @TODO Fix this: see issues 66 & 67
         if unit is None or unit == "":
             if identifier == "TS":
                 #print("Setting unit to K")
