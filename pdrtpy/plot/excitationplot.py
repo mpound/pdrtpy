@@ -159,12 +159,16 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
             if tt.fit_result[position] is None:
                 raise ValueError(f"The Excitation Tool was unable to fit pixel {position}. Try show_fit=False")
             x_fit = np.linspace(0,max(energy), 30)
+            #@TODO This now depends on tool._numcomponents
             outpar = tt.fit_result[position].params.valuesdict()
-            labcold = r"$T_{cold}=$" + f"{tt.tcold[position]:3.0f}" +r"$\pm$" + f"{tt.tcold.error[position]:.1f} {tt.tcold.unit}"
-            #labcold = r"$T_{cold}=$" + f"{tt.tcold[position]:3.1f}"
-            #labhot= r"$T_{hot}=$" + f"{tt.thot.value:3.0f}"+ r"$\pm$" + f"{tt.thot.error:.1f} {tt.thot.unit}"
-            #labhot= r"$T_{hot}=$" + f"{tt.thot[position]:3.1f}"
-            labhot= r"$T_{hot}=$" + f"{tt.thot[position]:3.0f}"+ r"$\pm$" + f"{tt.thot.error[position]:.1f} {tt.thot.unit}"
+            if tt.numcomponents == 2:
+                labcold = r"$T_{cold}=$" + f"{tt.tcold[position]:3.0f}" +r"$\pm$" + f"{tt.tcold.error[position]:.1f} {tt.tcold.unit}"
+                #labcold = r"$T_{cold}=$" + f"{tt.tcold[position]:3.1f}"
+                #labhot= r"$T_{hot}=$" + f"{tt.thot.value:3.0f}"+ r"$\pm$" + f"{tt.thot.error:.1f} {tt.thot.unit}"
+                #labhot= r"$T_{hot}=$" + f"{tt.thot[position]:3.1f}"
+                labhot= r"$T_{hot}=$" + f"{tt.thot[position]:3.0f}"+ r"$\pm$" + f"{tt.thot.error[position]:.1f} {tt.thot.unit}"
+            elif tt.numcomponents == 1:
+                labcold = r"$T=$" + f"{tt.tcold[position]:3.0f}" +r"$\pm$" + f"{tt.tcold.error[position]:.1f} {tt.tcold.unit}"
             if position == 0:
                 labnh = r"$N("+self._label+")=" + float_formatter(tt.total_colden,2)+"$"
             else:
@@ -172,10 +176,10 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
             _axis.plot(x_fit,tt._one_line(x_fit, outpar['m1'],
                             outpar['n1']), '.' ,label=labcold,
                             lw=kwargs_opts['linewidth'])
-            _axis.plot(x_fit,tt._one_line(x_fit, outpar['m2'],
-                            outpar['n2']), '.', label=labhot,
-                            lw=kwargs_opts['linewidth'])
-
+            if tt.numcomponents == 2:
+                _axis.plot(x_fit,tt._one_line(x_fit, outpar['m2'],
+                                outpar['n2']), '.', label=labhot,
+                                lw=kwargs_opts['linewidth'])
             _axis.plot(x_fit, tt.fit_result[position].eval(x=x_fit,fit_opr=False), label="fit")
             handles,labels=_axis.get_legend_handles_labels()
             #kluge to ensure N(H2) label is last
