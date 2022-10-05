@@ -29,6 +29,7 @@ class ExcitationFit(ToolBase):
         self._intensity_units = "erg cm^-2 s^-1 sr^-1"
         self._cd_units = 'cm^-2'
         self._t_units = "K"
+        self._numcomponents = 0 # number of components to fit. user-settable
         self._valid_components = ['hot','cold','total']
         if type(measurements) == dict or measurements is None:
             self._measurements = measurements
@@ -42,6 +43,7 @@ class ExcitationFit(ToolBase):
             self._ac.add_index("Ju")
         #@todo we don't really even use this.  CD's are computed on the fly in average_column_density()
         self._column_density = dict()
+
 
     def _init_measurements(self,m):
         '''Initialize measurements dictionary given a list.
@@ -106,14 +108,19 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         super().__init__(measurements,constantsfile)
         self._canonical_opr = 3.0
         self._opr = Measurement(data=[self._canonical_opr],uncertainty=None)
-        self._init_params()
-        self._init_model()
+        self._residual_functions = { 1 : self._one_component_residual,
+                                     2 : self._two_component_residual
+                                   }
+        self._model_functions = { 1 : self._one_component_model,
+                                  2 : self._two_component_model
+                                }
         self._fitresult = None
         self._temperature = None
         self._total_colden = None
         # position and size that was used for averaging/fit
         self._position = None
         self._size = None
+        self._numcomponents = 2
 
     def _init_params(self):
         #fit input parameters
@@ -121,13 +128,16 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         # we have to have opr max be greater than 3 so that fitting will work.
         # the fit algorithm does not like when the initial value is pinned at one
         # of the limits
+        print(f'initializing parameters with nc = {self._numcomponents}')
         self._params.add('opr',value=3.0,min=1.0,max=3.5,vary=False)
         self._params.add('m1',value=0,min=-1,max=0)
         self._params.add('n1',value=15,min=10,max=30)
-        self._params.add('m2',value=0,min=-1,max=0)
-        self._params.add('n2',value=15,min=10,max=30)
+        if self._numcomponents == 2:
+            self._params.add('m2',value=0,min=-1,max=0)
+            self._params.add('n2',value=15,min=10,max=30)
+        self._params.pretty_print()
 
-    def _residual(self,params,x,data,error,idx):
+    def _two_component_residual(self,params,x,data,error,idx):
         # We assume that the column densities passed in have been normalized
         # using the canonical OPR=3. Therefore what we are actually fitting is
         # the ratio of the actual OPR to the canonical OPR.
@@ -141,12 +151,19 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         p = params.valuesdict()
         y1 = 10**(x*p['m1']+p['n1'])
         y2 = 10**(x*p['m2']+p['n2'])
-        model = np.log10(y1+y2)
+        model = np.log10(y1+y2)         
         if params['opr'].vary:
             model += np.log10(p['opr']/self._canonical_opr)
         return (model - data)/error
+    
+    def _one_component_residual(self,params,x,data,error,idx):
+        p = params.valuesdict()
+        model = x*p['m1']+p['n1']
+        if params['opr'].vary:
+            model *= p['opr']/self._canonical_opr
+        return (model - data)/error
 
-    def _modelfunc(self,x,m1,n1,m2,n2,opr,idx=[],fit_opr=False):
+    def _two_component_model(self,x,m1,n1,m2,n2,opr,idx=[],fit_opr=False):
         '''Function for fitting the excitation curve as sum of two linear functions
            and allowing ortho-to-para ratio to vary.  Para is even J, ortho is odd J.
            :param x: independent axis array
@@ -184,16 +201,25 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         if fit_opr:
             model[idx] += np.log10(opr/self._canonical_opr)
         return model
+    
+    def _one_component_model(self,x,m1,n1,opr,idx=[],fit_opr=False):
+        model = x*m1+n1
+        if fit_opr:
+            model[idx] *= opr/self._canonical_opr
+        return model
 
     def _init_model(self):
         #@todo make a separate class that subclasses Model.
         # potentially allow users to change it.
-        self._model=Model(self._modelfunc)
+        print(f'initializing model with nc = {self._numcomponents}')
+        self._model=Model(self._model_functions[self._numcomponents],oaram_names=list(self._params.keys()))
         for p,q in self._params.items():
             self._model.set_param_hint(p, value=q.value,
                                        min=q.min, max=q.max,
                                        vary=q.vary)
-            self._model.make_params()
+        pp = self._model.make_params()
+        pp.pretty_print()
+        print("IVARS ",self._model.independent_vars)
 
     def _compute_quantities(self,fitmap):
         """Compute the temperatures and column densities for the hot and cold gas components.  This method will set class variables `_temperature` and `_colden`.
@@ -207,6 +233,9 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         # total column density = N(J=0)*Z(T) where Z(T) is partition function
         self._total_colden = dict()
         size = fitmap.data.size
+        # ==========================================
+        # @TODO this should depend on self._component
+        #=================================================
         # create default arrays in which calculated values will be stored.
         # Use nan as fill value because there may be nans in fitmapdata, in which
         # case nothing need be done to arrays.
@@ -311,7 +340,15 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         :rtype:  :class:`lmfit.model.ModelResult`
         '''
         return self._fitresult
-
+    
+    @property
+    def numcomponents(self):
+        '''Number of temperature components in the fit
+        
+        :rtype: int
+        '''
+        return self._numcomponents
+    
     @property
     def opr_fitted(self):
         '''Was the ortho-to-para ratio fitted?
@@ -443,6 +480,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                 #self._column_density[cd] /= self._ac.loc[cd]["gu"]
                 #gu = Measurement(self._ac.loc[cd]["gu"],unit=u.dimensionless_unscaled)
                 cdnorm[cd] = self._column_density[cd]/denom
+                cdnorm[cd]._identifier = cd
             #return #self._column_density
             return cdnorm
         else:
@@ -484,8 +522,12 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                         'nan_policy': 'raise',
                         'test':False,
                         'profile':False,
+                        'components': 2
                       }
         kwargs_opts.update(kwargs)
+        self._numcomponents = kwargs_opts.pop('components')
+        self._init_params()
+        self._init_model()
         return self._fit_excitation(position,size,fit_opr,**kwargs_opts)
 
     def intensity(self,colden):
@@ -535,9 +577,11 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         dE = self._ac.loc[intensity.id]["dE"] * constants.k_B.cgs * self._ac["dE"].unit
         A = self._ac.loc[intensity.id]["A"]*self._ac["A"].unit
         v = 4.0*math.pi*u.sr/(A*dE)
-        val = Measurement(data=v.value,unit=v.unit)
+        val = Measurement(data=v.value,unit=v.unit,identifier=intensity.id)
         N_upper = intensity * val # error will get propagated
-        return N_upper.convert_unit_to(unit)
+        N_upper = N_upper.convert_unit_to(unit)
+        N_upper._identifier = intensity.id
+        return N_upper
 
     def _compute_column_densities(self,unit=utils._CM2,line=True):
         r'''Compute all upper level column densities for stored intensity measurements and puts them in a dictionary
@@ -657,7 +701,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         return np.where(self._ac.loc[ids]["Ju"]%2!=0)[0]
 
     def _get_para_indices(self,ids):
-        """Given a list of J values, return the indices of those that are para
+        """Given a list of J values, return the indices ofcomb those that are para
         transitions (even J)
 
         :param ids:
@@ -690,9 +734,13 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         :type y: numpy array
         """
         slopecold = (y[1]-y[0])/(x[1]-x[0])
-        slopehot = (y[-1]-y[-2])/(x[-1]-x[-2])
         intcold = y[1] - slopecold*x[1]
-        inthot  = y[-1] - slopehot*x[-1]
+        if self._numcomponents == 2:
+            slopehot = (y[-1]-y[-2])/(x[-1]-x[-2])
+            inthot  = y[-1] - slopehot*x[-1]
+        else:
+            slopehot = slopecold
+            inthot = intcold
         #print("FG ",type(slopecold),type(slopehot),type(intcold),type(inthot))
         return np.array([slopecold, intcold, slopehot, inthot])
 
@@ -719,9 +767,9 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
             pr = cProfile.Profile()
             pr.enable()
         if fit_opr:
-            min_points = 5
+            min_points = self._numcomponents*2 + 1
         else:
-            min_points = 4
+            min_points = self._numcomponents*2 
             self._opr = Measurement(data=[self._canonical_opr],uncertainty=None)
 
         self._params['opr'].vary = fit_opr
@@ -729,7 +777,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         _ee = np.array([c for c in energy.values()])
         #@ todo: allow fitting of one-temperature model
         if len(_ee) < min_points:
-            raise Exception(f"You need at least {min_points:d} data points to determine two-temperature model")
+            raise Exception(f"You need at least {min_points:d} data points to determine {self._numcomponents}-temperature model")
         if len(_ee) == min_points:
             warnings.warn(f"Number of data points is equal to number of free parameters ({min_points:d}). Fit will be over-constrained")
         _energy = Measurement(_ee,unit="K")
@@ -799,18 +847,23 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
             progress = kwargs.pop("progress",True)
         else:
             progress = False
+        print("PARAMS")
+        self._params.pretty_print()
         with get_progress_bar(progress,total,leave=True,position=0) as pbar:
             for i in range(total):
                 if np.isfinite(yr[:,i]).all() and np.isfinite(sig[:,i]).all():
                     # update Parameter hints based on first guess.
                     self._model.set_param_hint('m1',value=slopecold[i],vary=True)
                     self._model.set_param_hint('n1',value=intcold[i],vary=True)
-                    self._model.set_param_hint('m2',value=slopehot[i],vary=True)
-                    self._model.set_param_hint('n2',value=inthot[i],vary=True)
+                    if self._numcomponents == 2:
+                        self._model.set_param_hint('m2',value=slopehot[i],vary=True)
+                        self._model.set_param_hint('n2',value=inthot[i],vary=True)
                     p=self._model.make_params()
                     wts = 1.0/(sig[:,i]*sig[:,i])
                     try:
-                        fmdata[i] = self._model.fit(data=yr[:,i], weights=wts, x=x,
+                        print("X=",x)
+                        print("Y=",yr[:i])
+                        fmdata[i] = self._model.fit(data=yr[:,i], weights=wts, x=x,params=p,
                                                       idx=idx,fit_opr=fit_opr,method=kwargs['method'],
                                                       nan_policy = kwargs['nan_policy'])
                         if fmdata[i].success and fmdata[i].errorbars:
@@ -877,7 +930,6 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
            :type n1: float
         '''
         return m1*x+n1
-
 
     def _partition_function(self,tex):
         '''Calculate the H2 partition function given an excitation temperature
