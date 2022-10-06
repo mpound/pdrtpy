@@ -233,98 +233,153 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         # total column density = N(J=0)*Z(T) where Z(T) is partition function
         self._total_colden = dict()
         size = fitmap.data.size
-        # ==========================================
-        # @TODO this should depend on self._component
-        #=================================================
-        # create default arrays in which calculated values will be stored.
-        # Use nan as fill value because there may be nans in fitmapdata, in which
-        # case nothing need be done to arrays.
-        # tc, th = cold and hot temperatures
-        # utc, utc = uncertainties in cold and hot temperatures
-        # nc, nh = cold and hot column densities
-        # unc, unh = uncertainties in cold and hot temperatures
-        # opr = ortho to para ratio
-        # uopr = uncertainty in OPR
-        tc = np.full(shape=size,fill_value=np.nan,dtype=float)
-        th = np.full(shape=size,fill_value=np.nan,dtype=float)
-        utc = np.full(shape=size,fill_value=np.nan,dtype=float)
-        uth = np.full(shape=size,fill_value=np.nan,dtype=float)
-        nc = np.full(shape=size,fill_value=np.nan,dtype=float)
-        nh = np.full(shape=size,fill_value=np.nan,dtype=float)
-        unh = np.full(shape=size,fill_value=np.nan,dtype=float)
-        unc = np.full(shape=size,fill_value=np.nan,dtype=float)
-        opr = np.full(shape=size,fill_value=np.nan,dtype=float)
-        uopr = np.full(shape=size,fill_value=np.nan,dtype=float)
-        ff = fitmap.data.flatten()
-        ffmask = fitmap.mask.flatten()
-        for i in range(size):
-            if ffmask[i]:
-                continue
-            params = ff[i].params
-            for p in params:
-                if params[p].stderr is None:
-                    print("AT pixel i [mask]",i,ffmask[i])
-                    params.pretty_print()
-                    raise Exception("Something went wrong with the fit and it was unable to calculate errors on the fitted parameters. It's likely that a two-temperature model is not appropriate for your data. Check the fit_result report and plot.")
+        if self._numcomponents == 2:
+            # create default arrays in which calculated values will be stored.
+            # Use nan as fill value because there may be nans in fitmapdata, in which
+            # case nothing need be done to arrays.
+            # tc, th = cold and hot temperatures
+            # utc, utc = uncertainties in cold and hot temperatures
+            # nc, nh = cold and hot column densities
+            # unc, unh = uncertainties in cold and hot temperatures
+            # opr = ortho to para ratio
+            # uopr = uncertainty in OPR
+            tc = np.full(shape=size,fill_value=np.nan,dtype=float)
+            utc = np.full(shape=size,fill_value=np.nan,dtype=float)
+            nc = np.full(shape=size,fill_value=np.nan,dtype=float)
+            unc = np.full(shape=size,fill_value=np.nan,dtype=float)
+            opr = np.full(shape=size,fill_value=np.nan,dtype=float)
+            uopr = np.full(shape=size,fill_value=np.nan,dtype=float)
+
+            th = np.full(shape=size,fill_value=np.nan,dtype=float)
+            uth = np.full(shape=size,fill_value=np.nan,dtype=float)
+            unh = np.full(shape=size,fill_value=np.nan,dtype=float)
+            nh = np.full(shape=size,fill_value=np.nan,dtype=float)
+            ff = fitmap.data.flatten()
+            ffmask = fitmap.mask.flatten()
+            for i in range(size):
+                if ffmask[i]:
+                    continue
+                params = ff[i].params
+                for p in params:
+                    if params[p].stderr is None:
+                        print("AT pixel i [mask]",i,ffmask[i])
+                        params.pretty_print()
+                        raise Exception("Something went wrong with the fit and it was unable to calculate errors on the fitted parameters. It's likely that a two-temperature model is not appropriate for your data. Check the fit_result report and plot.")
 
 
-            if params['m2'] <  params['m1']:
-                cold = '2'
-                hot = '1'
-            else:
-                cold = '1'
-                hot = '2'
-            mcold = 'm'+cold
-            mhot= 'm'+hot
-            ncold = 'n'+cold
-            nhot = 'n'+hot
-            # cold and hot temperatures
-            utc[i] = params[mcold].stderr/params[mcold]
-            tc[i] = -utils.LOGE/params[mcold]
-            uth[i] = params[mhot].stderr/params[mhot]
-            th[i] = -utils.LOGE/params[mhot]
-            nc[i] = 10**params[ncold]
-            unc[i] = utils.LN10*params[ncold].stderr*nc[i]
-            nh[i] = 10**params[nhot]
-            unh[i] = utils.LN10*params[nhot].stderr*nh[i]
-            opr[i] = params['opr'].value
-            uopr[i] = params['opr'].stderr
+                if params['m2'] <  params['m1']:
+                    cold = '2'
+                    hot = '1'
+                else:
+                    cold = '1'
+                    hot = '2'
+                mcold = 'm'+cold
+                mhot= 'm'+hot
+                ncold = 'n'+cold
+                nhot = 'n'+hot
+                # cold and hot temperatures
+                utc[i] = params[mcold].stderr/params[mcold]
+                tc[i] = -utils.LOGE/params[mcold]
+                uth[i] = params[mhot].stderr/params[mhot]
+                th[i] = -utils.LOGE/params[mhot]
+                nc[i] = 10**params[ncold]       
+                unc[i] = utils.LN10*params[ncold].stderr*nc[i]
+                nh[i] = 10**params[nhot]
+                unh[i] = utils.LN10*params[nhot].stderr*nh[i]
+                opr[i] = params['opr'].value
+                uopr[i] = params['opr'].stderr
 
-        # now reshape them all back to map shape
-        tc = tc.reshape(fitmap.data.shape)
-        th = th.reshape(fitmap.data.shape)
-        utc = utc.reshape(fitmap.data.shape)
-        uth = uth.reshape(fitmap.data.shape)
-        nc = nc.reshape(fitmap.data.shape)
-        nh = nh.reshape(fitmap.data.shape)
-        unh = unh.reshape(fitmap.data.shape)
-        unc = unc.reshape(fitmap.data.shape)
-        opr = opr.reshape(fitmap.data.shape)
-        uopr = uopr.reshape(fitmap.data.shape)
+            # now reshape them all back to map shape
+            tc = tc.reshape(fitmap.data.shape)
+            th = th.reshape(fitmap.data.shape)
+            utc = utc.reshape(fitmap.data.shape)
+            uth = uth.reshape(fitmap.data.shape)
+            nc = nc.reshape(fitmap.data.shape)
+            nh = nh.reshape(fitmap.data.shape)
+            unh = unh.reshape(fitmap.data.shape)
+            unc = unc.reshape(fitmap.data.shape)
+            opr = opr.reshape(fitmap.data.shape)
+            uopr = uopr.reshape(fitmap.data.shape)
 
-        mask = fitmap.mask | np.logical_not(np.isfinite(tc))
-        ucc= StdDevUncertainty(np.abs(tc*utc))
-        self._temperature["cold"]=Measurement(data=tc,unit=self._t_units,
-                                              uncertainty=ucc,wcs=fitmap.wcs, mask = mask)
-        mask = fitmap.mask | np.logical_not(np.isfinite(th))
-        uch = StdDevUncertainty(np.abs(th*uth))
-        self._temperature["hot"]=Measurement(data=th,unit=self._t_units,
-                                             uncertainty=uch,wcs=fitmap.wcs, mask = mask)
-        # cold and hot total column density
-        ucn = StdDevUncertainty(np.abs(unc))
-        mask = fitmap.mask | np.logical_not(np.isfinite(nc))
-        self._j0_colden["cold"] = Measurement(nc,unit=self._cd_units,
-                                              uncertainty=ucn,wcs=fitmap.wcs, mask=mask)
-        mask = fitmap.mask | np.logical_not(np.isfinite(nh))
-        uhn = StdDevUncertainty(np.abs(unh))
-        self._j0_colden["hot"] = Measurement(nh,unit=self._cd_units,
-                                             uncertainty=uhn,wcs=fitmap.wcs, mask = mask)
-        #
-        self._total_colden["cold"] = self._j0_colden["cold"] * self._partition_function(self.tcold)
-        self._total_colden["hot"] = self._j0_colden["hot"] * self._partition_function(self.thot)
-        mask = fitmap.mask | np.logical_not(np.isfinite(opr))
-        self._opr = Measurement(opr, unit=u.dimensionless_unscaled,
-                                uncertainty=StdDevUncertainty(uopr),wcs=fitmap.wcs, mask=mask)
+            mask = fitmap.mask | np.logical_not(np.isfinite(tc))
+            ucc= StdDevUncertainty(np.abs(tc*utc))
+            self._temperature["cold"]=Measurement(data=tc,unit=self._t_units,
+                                                  uncertainty=ucc,wcs=fitmap.wcs, mask = mask)
+            mask = fitmap.mask | np.logical_not(np.isfinite(th))
+            uch = StdDevUncertainty(np.abs(th*uth))
+            self._temperature["hot"]=Measurement(data=th,unit=self._t_units,
+                                                 uncertainty=uch,wcs=fitmap.wcs, mask = mask)
+            # cold and hot total column density
+            ucn = StdDevUncertainty(np.abs(unc))
+            mask = fitmap.mask | np.logical_not(np.isfinite(nc))
+            self._j0_colden["cold"] = Measurement(nc,unit=self._cd_units,
+                                                  uncertainty=ucn,wcs=fitmap.wcs, mask=mask)
+            mask = fitmap.mask | np.logical_not(np.isfinite(nh))
+            uhn = StdDevUncertainty(np.abs(unh))
+            self._j0_colden["hot"] = Measurement(nh,unit=self._cd_units,
+                                                 uncertainty=uhn,wcs=fitmap.wcs, mask = mask)
+            #
+            self._total_colden["cold"] = self._j0_colden["cold"] * self._partition_function(self.tcold)
+            self._total_colden["hot"] = self._j0_colden["hot"] * self._partition_function(self.thot)
+            mask = fitmap.mask | np.logical_not(np.isfinite(opr))
+            self._opr = Measurement(opr, unit=u.dimensionless_unscaled,
+                                    uncertainty=StdDevUncertainty(uopr),wcs=fitmap.wcs, mask=mask)
+        elif self._numcomponents == 1:
+            tc = np.full(shape=size,fill_value=np.nan,dtype=float)
+            utc = np.full(shape=size,fill_value=np.nan,dtype=float)
+            nc = np.full(shape=size,fill_value=np.nan,dtype=float)
+            unc = np.full(shape=size,fill_value=np.nan,dtype=float)
+            opr = np.full(shape=size,fill_value=np.nan,dtype=float)
+            uopr = np.full(shape=size,fill_value=np.nan,dtype=float)
+            ff = fitmap.data.flatten()
+            ffmask = fitmap.mask.flatten()
+            for i in range(size):
+                if ffmask[i]:
+                    continue
+                params = ff[i].params
+                for p in params:
+                    if params[p].stderr is None:
+                        print("AT pixel i [mask]",i,ffmask[i])
+                        params.pretty_print()
+                        raise Exception("Something went wrong with the fit and it was unable to calculate errors on the fitted parameters. It's likely that a two-temperature model is not appropriate for your data. Check the fit_result report and plot.")
+                mcold = 'm1'
+                ncold = 'n1'
+                # cold and hot temperatures
+                utc[i] = params[mcold].stderr/params[mcold]
+                tc[i] = -utils.LOGE/params[mcold]
+
+                nc[i] = 10**params[ncold]       
+                unc[i] = utils.LN10*params[ncold].stderr*nc[i]
+                opr[i] = params['opr'].value
+                uopr[i] = params['opr'].stderr
+
+            # now reshape them all back to map shape
+            tc = tc.reshape(fitmap.data.shape)
+            utc = utc.reshape(fitmap.data.shape)
+            nc = nc.reshape(fitmap.data.shape)
+            unc = unc.reshape(fitmap.data.shape)
+            opr = opr.reshape(fitmap.data.shape)
+            uopr = uopr.reshape(fitmap.data.shape)
+
+            mask = fitmap.mask | np.logical_not(np.isfinite(tc))
+            ucc= StdDevUncertainty(np.abs(tc*utc))
+            self._temperature["cold"]=Measurement(data=tc,unit=self._t_units,
+                                                  uncertainty=ucc,wcs=fitmap.wcs, mask = mask)
+            self._temperature["hot"]=self._temperature["cold"]
+            
+            # cold = hot total column density
+            ucn = StdDevUncertainty(np.abs(unc))
+            mask = fitmap.mask | np.logical_not(np.isfinite(nc))
+            self._j0_colden["cold"] = Measurement(nc,unit=self._cd_units,
+                                                  uncertainty=ucn,wcs=fitmap.wcs, mask=mask)
+            self._j0_colden["hot"] = self._j0_colden["cold"] 
+            self._total_colden["cold"] = self._j0_colden["cold"] * self._partition_function(self.tcold)
+            self._total_colden["hot"] = self._total_colden["cold"]
+            mask = fitmap.mask | np.logical_not(np.isfinite(opr))
+            self._opr = Measurement(opr, unit=u.dimensionless_unscaled,
+                                    uncertainty=StdDevUncertainty(uopr),wcs=fitmap.wcs, mask=mask)
+        else:
+            raise Exception(f"Bad numcomponents: {self._numcomponents}")
 
     def _is_ortho(self,identifier):
         #identifier is J level
