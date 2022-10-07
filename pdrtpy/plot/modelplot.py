@@ -2,7 +2,6 @@ import warnings
 from copy import deepcopy
 import numpy as np
 import numpy.ma as ma
-
 from matplotlib import ticker
 from matplotlib.lines import Line2D
 
@@ -12,7 +11,6 @@ import astropy.units as u
 from .plotbase import PlotBase
 from ..measurement import Measurement
 from .. import pdrutils as utils
-
 
 class ModelPlot(PlotBase):
     """ModelPlot is a tool for exploring sets of models.  It can plot individual intensity or ratio models, phase-space diagrams, and optionally overlay observations.   Units are seamlessly transformed, so you can plot in Habing units, Draine units, or any conformable quantity.  ModelPlot does not require model fitting with :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` first.
@@ -196,7 +194,17 @@ class ModelPlot(PlotBase):
             labels = [k.title for k in models]
             self._plt.legend(lines, labels,loc='upper center',title='Observed '+word)
 
-    def xxplot(self,identifier,plotaxis=2,nax_clip=[1000,1E5]*u.Unit("K"),**kwargs):
+    def isoplot(self,identifier,plotnaxis,nax_clip=[1000,1E5]*u.Unit("K"),**kwargs):
+        '''Plot lines of constant model parameter as a function of the other model parameter and a model intensity or ratio
+        :param identifier: identifier tag for the model to plot, e.g., "OI_63/CO_21" or "CII_158"
+        :type identifier:  str 
+        :param plotnaxis: Which NAXIS to use to compute lines of constant value. Since models have two axes, this must be either 1 or 2
+        :type plotnaxis: int
+        :param nax_clip: The range of model parameters on NAXIS{plotnaxis} to show in the plot.  Must be given as a range of astropy quanitities, e.g. [10,1E7]*Unit("cm-3"). Default is None which means plot full range of the parameter.
+        :type nax_clip: array-like, must contain Quantity
+        :param step: Allows skipping of lines of constant value, e.g. plot every `step-th` value. Useful when parameter space is crowded, and a cleaner looking plot is desired.  Defailt: 1 -- plot every value
+        :type step: int
+        '''
         kwargs_opts = {
             'errorbar':False,
             'fmt': None,
@@ -208,28 +216,30 @@ class ModelPlot(PlotBase):
             'linewidth': 2.0,
             'aspect': 'auto',
             'step': 1,
-             'logx': False,
+            'logx': False,
             'logy': False,                       
             'title': None,
-            'grid' :True,  
-            'test':True,                       
+            'grid' :True,                        
             'measurements':None,
+            'bbox_to_anchor':(1.024,1),
+            'loc':"upper left",
+            'test':True, 
         }
         kwargs_opts.update(kwargs)
         model = self._modelset.get_model(identifier)
         self._figure,self._axis = self._plt.subplots(nrows=1, ncols=1, 
                                                      figsize=kwargs_opts['figsize'])
         if kwargs_opts['test']:
-            if plotaxis != 1 and plotaxis !=2:
-                raise ValueError("plotaxis must be 1 or 2")
-            if plotaxis == 1:
+            if plotnaxis != 1 and plotnaxis !=2:
+                raise ValueError("plotnaxis must be 1 or 2")
+            if plotnaxis == 1:
                 otheraxis = 2
                 otherindex = 1
-            if plotaxis == 2:
+            if plotnaxis == 2:
                 otheraxis = 1
                 otherindex = 0
             xaxis = ["naxis2","naxis1"]
-            pindex = plotaxis - 1
+            pindex = plotnaxis - 1
             naxis_is_log = ['log' in c for c in  model.wcs.wcs.ctype]
             naxis = self._get_xy_from_wcs(model,quantity=True,linear=True)
             naxislog=self._get_xy_from_wcs(model,quantity=True,linear=False)
@@ -263,7 +273,7 @@ class ModelPlot(PlotBase):
             for j in xi2[::kwargs_opts['step']]:
                 #print("len(naxis[pindex]) ",len(naxis[pindex]), " j=",j)
                # print("Naxis[pindex] ",naxis[pindex])
-                if plotaxis == 1:
+                if plotnaxis == 1:
                     xx=model[0:len(naxis[otherindex]),j]
                 else:
                     xx=model[j,0:len(naxis[otherindex])]
@@ -282,7 +292,7 @@ class ModelPlot(PlotBase):
             x_is_log = 'log' in model.wcs.wcs.ctype[0]
             y_is_log = 'log' in model.wcs.wcs.ctype[1]
             # linear and log units are same so doesn't matter which is used for conversion
-            if plotaxis == 1:
+            if plotnaxis == 1:
                 naxislin = xlin
                 naxislog = xlog
                 nax_is_log = x_is_log
@@ -340,11 +350,14 @@ class ModelPlot(PlotBase):
             labels = [title1,unit1]+labels
             handles = phantom + lines                          
             leg=self._axis.legend(handles,labels,ncol=1,markerfirst=True,
-                                  bbox_to_anchor=(1.024,1),loc="upper left")
+                                  bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
+                                  loc=kwargs_opts['loc'])
             for vpack in leg._legend_handle_box.get_children():
                 for hpack in vpack.get_children()[:2]:
                     hpack.get_children()[0].set_width(0)
-                          
+        if kwargs_opts['title'] is not None:
+            self._axis.set_title(kwargs_opts['title'])
+            
     # note when plotting the units as axis labels, the order is not what we specify in _OBS_UNIT because astropy's Unit class
     # sorts by power .  They have a good reason for this (hashing), but it does mean we get sub-optimal unit ordering.
     # There is a possible workaround, but it must be custom for each CompositeUnit.https://github.com/astropy/astropy/issues/1578
@@ -378,7 +391,7 @@ class ModelPlot(PlotBase):
         :param title: Title to draw on the plot.  Default: None
         :type title: str
         :param linewidth: line width
-        :type linewidth: float            leg=self._axis.legend(handles,labels,ncol=2,markerfirst=True,bbox_to_anchor=(1.024,1),loc="upper left")
+        :type linewidth: float           
         :param grid: show grid or not, Default: True
         :type grid: bool
         :param figsize: Figure dimensions (width, height) in inches. Default: (8,5)
@@ -399,7 +412,9 @@ class ModelPlot(PlotBase):
                        'linewidth': 2.0,
                        'capsize': 5.0,
                        'markersize': 8.0,
-                       'aspect': 'auto'
+                       'aspect': 'auto',
+                       'bbox_to_anchor':(1.024,1),
+                       'loc':"upper left"
                        }
 
         kwargs_opts.update(kwargs)
@@ -502,7 +517,7 @@ class ModelPlot(PlotBase):
                 msg = f"Number of Measurements must be even. You provided {l_meas}"
                 raise ValueError(msg)
             n_meas = int(l_meas/2)
-            fmt = kwargs_opts['fmt']
+            fmt = kwargs_opts['fConcordiamt']
             # Set the default format to black squares.
             if fmt is None:
                 fmt = np.full([n_meas],"sk")
@@ -523,7 +538,7 @@ class ModelPlot(PlotBase):
                 kk=k+1
                 if kwargs_opts['measurements'][k].id == identifiers[0]:
                     _x = kwargs_opts['measurements'][k]
-                    _y = kwargs_opts['measurements'][kk]
+                    _y = kwargs_Concordiaopts['measurements'][kk]
                 else:
                     _x = kwargs_opts['measurements'][kk]
                     _y = kwargs_opts['measurements'][k]
@@ -603,7 +618,8 @@ class ModelPlot(PlotBase):
                 dl = self._axis.legend(dataline,label,loc='best')
                 self._axis.add_artist(dl)
 
-            leg=self._axis.legend(handles,labels,ncol=2,markerfirst=True,bbox_to_anchor=(1.024,1),loc="upper left")
+            leg=self._axis.legend(handles,labels,ncol=2, markerfirst=True,                                       bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
+                                  loc=kwargs_opts['loc'])
             # trick to remove extra left side space in legend column headers.
             # doesn't completely center the headers, but gets as close as possible
             # See https://stackoverflow.com/questions/44071525/matplotlib-add-titles-to-the-legend-rows/44072076
