@@ -325,6 +325,8 @@ def check_units(input_unit,compare_to):
 
     return test_unit.is_equivalent(compare_unit)
 
+def is_rad(input_unit):
+    return check_units(input_unit,_RFS_UNIT_)
 
 def to(unit,image):
     r"""Convert the image values to another unit.
