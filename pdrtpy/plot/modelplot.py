@@ -517,7 +517,7 @@ class ModelPlot(PlotBase):
                 msg = f"Number of Measurements must be even. You provided {l_meas}"
                 raise ValueError(msg)
             n_meas = int(l_meas/2)
-            fmt = kwargs_opts['fConcordiamt']
+            fmt = kwargs_opts['fmt']
             # Set the default format to black squares.
             if fmt is None:
                 fmt = np.full([n_meas],"sk")
@@ -538,7 +538,7 @@ class ModelPlot(PlotBase):
                 kk=k+1
                 if kwargs_opts['measurements'][k].id == identifiers[0]:
                     _x = kwargs_opts['measurements'][k]
-                    _y = kwargs_Concordiaopts['measurements'][kk]
+                    _y = kwargs_opts['measurements'][kk]
                 else:
                     _x = kwargs_opts['measurements'][kk]
                     _y = kwargs_opts['measurements'][k]
