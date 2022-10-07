@@ -357,7 +357,7 @@ class ModelPlot(PlotBase):
                     hpack.get_children()[0].set_width(0)
         if kwargs_opts['title'] is not None:
             self._axis.set_title(kwargs_opts['title'])
-            
+
     # note when plotting the units as axis labels, the order is not what we specify in _OBS_UNIT because astropy's Unit class
     # sorts by power .  They have a good reason for this (hashing), but it does mean we get sub-optimal unit ordering.
     # There is a possible workaround, but it must be custom for each CompositeUnit.https://github.com/astropy/astropy/issues/1578
