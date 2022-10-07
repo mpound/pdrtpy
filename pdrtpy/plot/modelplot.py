@@ -212,12 +212,14 @@ class ModelPlot(PlotBase):
             'logy': False,                       
             'title': None,
             'grid' :True,  
+            'test':True,                       
+            'measurements':None,
         }
         kwargs_opts.update(kwargs)
         model = self._modelset.get_model(identifier)
         self._figure,self._axis = self._plt.subplots(nrows=1, ncols=1, 
                                                      figsize=kwargs_opts['figsize'])
-        if True:
+        if kwargs_opts['test']:
             if plotaxis != 1 and plotaxis !=2:
                 raise ValueError("plotaxis must be 1 or 2")
             if plotaxis == 1:
@@ -231,48 +233,49 @@ class ModelPlot(PlotBase):
             naxis_is_log = ['log' in c for c in  model.wcs.wcs.ctype]
             naxis = self._get_xy_from_wcs(model,quantity=True,linear=True)
             naxislog=self._get_xy_from_wcs(model,quantity=True,linear=False)
+            if nax_clip is None:
+                nax_clip = [naxis[pindex][0].value,naxis[pindex][-1].value]*naxis[pindex].unit
             dcc=nax_clip.to(naxis[pindex].unit)
             #Select the model naxis *indices* within the NAX limits
             xi=np.where((naxis[pindex]>=dcc[0]) & (naxis[pindex]<=dcc[1]))[0]
-            print("xi ",xi, "dcc ",dcc)
+            #print("xi ",xi, "dcc ",dcc)
             if naxis_is_log[pindex]:
                 # Create an array containing *indices* of the range of naxis[pindex] alues.
                 # -5,12 is a large enough logarithmic range to contain any model we have
                 # this picks out integer values of log(naxis).
-                print("LOG")
                 x2= np.hstack([np.where((np.round(naxislog[pindex].value,1))==i)[0] for i in np.arange(-5,12)])
             else:
                 x2 = np.arange(model.wcs._naxis[pindex])
 
-            print("naxis is log:",naxis_is_log[pindex])
-            print("naxislog",naxislog[pindex])
-            print("roundex naxislog ", np.round(naxislog[pindex].value,1))
-            print("where ",[np.where((np.round(naxislog[pindex].value,1))==i)[0] for i in np.arange(-5,12)])
-            print("hstack ",np.hstack([np.where((np.round(naxislog[pindex].value,1))==i)[0] for i in np.arange(-5,12)]))
-            print("x2 ",x2)
+            #print("naxis is log:",naxis_is_log[pindex])
+            #print("naxislog",naxislog[pindex])
+            #print("roundex naxislog ", np.round(naxislog[pindex].value,1))
+            #print("where ",[np.where((np.round(naxislog[pindex].value,1))==i)[0] for i in np.arange(-5,12)])
+            #print("hstack ",np.hstack([np.where((np.round(naxislog[pindex].value,1))==i)[0] for i in np.arange(-5,12)]))
+            #print("x2 ",x2)
             xi2=np.intersect1d(xi,x2)
 
             #print("XI2 type",type(xi2))
-            print("XI2",xi2,len(xi2))
-            print("THE VALUES ",naxislog[pindex][xi2])
+            #print("XI2",xi2,len(xi2))
+            #print("THE VALUES ",naxislog[pindex][xi2])
             lines = []
-        
-            for j in xi2:
-                #in range(0,len(xi2),kwargs_opts['step']):
-                print("len(naxis[pindex]) ",len(naxis[pindex]), " j=",j)
+            quant = f'{model.wcs.wcs.ctype[pindex]}='
+            for j in xi2[::kwargs_opts['step']]:
+                #print("len(naxis[pindex]) ",len(naxis[pindex]), " j=",j)
+               # print("Naxis[pindex] ",naxis[pindex])
                 if plotaxis == 1:
-                    xx=model[0:len(naxis[pindex]),j]
+                    xx=model[0:len(naxis[otherindex]),j]
                 else:
-                    xx=model[j,0:len(naxis[pindex])]
-                print(xx)
-                print("XX LEN:",len(xx)," model.shape ",model.shape)
+                    xx=model[j,0:len(naxis[otherindex])]
                 if naxis_is_log[pindex]:
-                    label=np.round(np.log10(naxis[pindex][j].to(nax_clip.unit).value),1)
+                    #label=r'${0}{1:.1f}$'.format(quant,np.round(np.log10(naxis[pindex][j].to(nax_clip.unit).value),1))
+                    label='{0:.1f}'.format(np.round(np.log10(naxis[pindex][j].to(nax_clip.unit).value),1))
                 else:
+                    #label=r'${0}{1:.0f}$'.format(quant, np.round(naxis[pindex][j].to(nax_clip.unit).value,0))
                     label='{0:.0f}'.format(np.round(naxis[pindex][j].to(nax_clip.unit).value,0))
-                lines.extend(self._axis.plot(naxis[pindex],xx,label=label))
-        else:
-                    # Now we need to find the model points that fall within the user-specified NAXIS limits.
+                lines.extend(self._axis.plot(naxis[otherindex],xx,label=label))
+        else: # trying a cleaner method....not working
+        # Now we need to find the model points that fall within the user-specified NAXIS limits.
         # First get the x,y of the models
             xlog,ylog=self._get_xy_from_wcs(model,quantity=True,linear=False)
             xlin,ylin=self._get_xy_from_wcs(model,quantity=True,linear=True)
@@ -305,7 +308,6 @@ class ModelPlot(PlotBase):
             linesN=[]
             # Sort out the axes labels depending on whether reciprocal=True or not.
             for j in xi2:
-                print("j=",j)
                 if nax_is_log:
                     label=np.round(np.log10(naxislin[j].to(nax_clip.unit).value),1)
                 else:
@@ -315,16 +317,34 @@ class ModelPlot(PlotBase):
         xlabel = r"${0}$ [{1:latex_inline}]".format(model.wcs.wcs.ctype[otherindex],naxis[otherindex].unit)
         self._axis.set_ylabel(model.title)
         self._axis.set_xlabel(xlabel)
-        if kwargs_opts['legend']:
-            self._axis.legend()
         self._axis.set_aspect(kwargs_opts['aspect'])
         if kwargs_opts['logx']:
             self._axis.set_xscale('log')
         if kwargs_opts['logy']:
             self._axis.set_yscale('log')
         self._axis.tick_params(axis='both',direction='in',which='both')
-        self._axis.tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both')    
-
+        self._axis.tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both') 
+        if kwargs_opts['grid']:
+            self._axis.grid(b=True,which='major',axis='both',lw=kwargs_opts['linewidth']/2,
+                            color='k',alpha=0.33)
+            self._axis.grid(b=True,which='minor',axis='both',lw=kwargs_opts['linewidth']/2,
+                            color='k',alpha=0.22,linestyle='--')
+        if kwargs_opts['legend']:
+            # Manually build the legend. 
+            title1 = model.wcs.wcs.ctype[pindex]
+            if "_" in title1:
+                title1 = r"${\rm "+title1+"}$"
+            unit1="["+nax_clip.unit.to_string("latex_inline")+"]"
+            handles,labels=self._axis.get_legend_handles_labels()
+            phantom = [self._axis.plot([],marker="", markersize=0,ls="",lw=0)[0]]*2
+            labels = [title1,unit1]+labels
+            handles = phantom + lines                          
+            leg=self._axis.legend(handles,labels,ncol=1,markerfirst=True,
+                                  bbox_to_anchor=(1.024,1),loc="upper left")
+            for vpack in leg._legend_handle_box.get_children():
+                for hpack in vpack.get_children()[:2]:
+                    hpack.get_children()[0].set_width(0)
+                          
     # note when plotting the units as axis labels, the order is not what we specify in _OBS_UNIT because astropy's Unit class
     # sorts by power .  They have a good reason for this (hashing), but it does mean we get sub-optimal unit ordering.
     # There is a possible workaround, but it must be custom for each CompositeUnit.https://github.com/astropy/astropy/issues/1578
@@ -358,7 +378,7 @@ class ModelPlot(PlotBase):
         :param title: Title to draw on the plot.  Default: None
         :type title: str
         :param linewidth: line width
-        :type linewidth: float
+        :type linewidth: float            leg=self._axis.legend(handles,labels,ncol=2,markerfirst=True,bbox_to_anchor=(1.024,1),loc="upper left")
         :param grid: show grid or not, Default: True
         :type grid: bool
         :param figsize: Figure dimensions (width, height) in inches. Default: (8,5)
@@ -425,13 +445,6 @@ class ModelPlot(PlotBase):
         # Intersection of these two arrays contain the indices of desired model plot points.
         xi2=np.intersect1d(xi,x2)
         yi2=np.intersect1d(yi,y2)
-        print("where ",[np.where((np.round(ylog.value,1))==i)[0] for i in np.arange(-5,12)])
-        print("hstack ",np.hstack([np.where((np.round(ylog.value,1))==i)[0] for i in np.arange(-5,12)]))
-        print("xi [clip] ",xi)
-        print("XI2 type",type(xi2))
-        print("XI2",xi2,len(xi2))
-        print("yi [clip] ",yi)
-        print("YI2",yi2,len(yi2))
         self._figure,self._axis = self._plt.subplots(nrows=1,ncols=1,figsize=kwargs_opts['figsize'])
         linesN=[]
         linesG=[]
@@ -521,8 +534,8 @@ class ModelPlot(PlotBase):
                 # Note use of zorder to ensure points are on top of lines.
                 if kwargs_opts['errorbar']:
                     self._axis.errorbar(x=_x.data,y=_y.data,xerr=_x.error,yerr=_y.error,
-                                        capsize=kwargs_opts['capsize'],fmt=fmt[i],capthick=2,ls=None,zorder=6,
-                                        markersize=kwargs_opts['markersize'])
+                                capsize=kwargs_opts['capsize'],fmt=fmt[i],capthick=2,ls=None,zorder=6,
+                                markersize=kwargs_opts['markersize'])
                 i=i+1
             # the data points
             dataline = self._axis.loglog(*args,zorder=5,markersize=kwargs_opts['markersize'])
@@ -536,12 +549,10 @@ class ModelPlot(PlotBase):
                             color='k',alpha=0.33)
             self._axis.grid(b=True,which='minor',axis='both',lw=kwargs_opts['linewidth']/2,
                             color='k',alpha=0.22,linestyle='--')
-
-
         if kwargs_opts['legend']:
             # Manually build the legend. Create the column headers for the legend
             # and blank handles and labels to take up space for the headers and
-            # when the number of density traces and radiation field traces
+            # when the number of naxis1 and naxis2 traces
             # are not equal.
             title1 = models[0].wcs.wcs.ctype[0]
             if "_" in title1:
@@ -770,12 +781,15 @@ class ModelPlot(PlotBase):
             x = x.to(xax_unit)
 
         # Set the x label appropriately, use LaTeX inline formatting
-        xlab = r"{0} [{1:latex_inline}]".format(_header['CTYPE'+ax1],xax_unit)
+        xlab = r"${0}$ [{1:latex_inline}]".format(_header['CTYPE'+ax1],xax_unit)
 
         yax_unit = u.Unit(_header['CUNIT'+ax2])
         if y._unit is None or y._unit is u.dimensionless_unscaled:
             y._unit = yax_unit
-        ytype = "log({0})".format(utils.get_rad(yax_unit))
+        if utils.is_rad(yax_unit):
+            ytype = "log({0})".format(utils.get_rad(yax_unit))
+        else:
+            ytype = _header['CTYPE'+ax2]
         #allow unit conversion to cgs or Draine, for Y axis (FUV field):
         if kwargs_opts['yaxis_unit'] is not None:
             # Make FUV axis of the grid into a Quantity using the cunits from the grid header
@@ -784,7 +798,10 @@ class ModelPlot(PlotBase):
             # Get desired unit from arguments; for special cases, use
             # the conventional symbol for the label (e.g. G_0 for Habing units)
             yunit = kwargs_opts['yaxis_unit']
-            ytype = "log({0})".format(utils.get_rad(yunit))
+            if utils.is_rad(yunit):
+                ytype = "log({0})".format(utils.get_rad(yunit))
+            else:
+                ytype = _header['CTYPE'+ax2]
             yax_unit = u.Unit(yunit)
 
             # Convert the unit-aware grid to the desired units and set Y to the value (so it's no longer a Quantity)
@@ -792,7 +809,7 @@ class ModelPlot(PlotBase):
             y = y.to(yunit)
 
         # Set the y label appropriately, use LaTeX inline formatting
-        ylab = r"{0} [{1:latex_inline}]".format(ytype,yax_unit)
+        ylab = r"${0}$ [{1:latex_inline}]".format(ytype,yax_unit)
 
         # Finish up axes details.
         self._axis[axidx].set_ylabel(ylab)
