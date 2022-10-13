@@ -18,6 +18,7 @@ jobs:
           pip install flake8 pytest
           pip install -e .
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          if [ -f requirements-dev.txt ]; then pip install -r requirements-dev.txt; fi
       - name: Lint with flake8
         run: |
           flake8 ./pdrtpy --exclude ".ipynb*" --count --ignore=E2,E3,E5,E111,E114,E115,E124,E127,E128,F841,W291,W503,W504,W605 --statistics
@@ -25,5 +26,32 @@ jobs:
           #flake8 ./pdrtpy --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       - name: Test with pytest
         run: |
-          pytest
-      
+          coverage -m pytest
+
+      - if: ${{ matrix.python-version == '3.9' }}
+        name: Coverage Badge
+        uses: tj-actions/coverage-badge-py@v1.8
+
+      - if: ${{ matrix.python-version == '3.9' }}
+        name: Verify Changed files
+        uses: tj-actions/verify-changed-files@v9
+        id: changed_files
+        with:
+          files: coverage.svg
+
+      - if: ${{ matrix.python-version == '3.9' }}
+        name: Commit files
+        if: steps.changed_files.outputs.files_changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add coverage.svg
+          git commit -m "Updated coverage.svg"
+
+      - if: ${{ matrix.python-version == '3.9' }}
+        name: Push changes
+        if: steps.changed_files.outputs.files_changed == 'true'
+        uses: ad-m/github-push-action@master
+        with:
+          github_token: ${{ secrets.github_token }}
+          branch: ${{ github.ref }}
