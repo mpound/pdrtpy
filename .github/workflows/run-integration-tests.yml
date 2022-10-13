@@ -38,7 +38,7 @@ jobs:
         with:
           files: coverage.svg
 
-      - if: ${{ matrix.python-version == '3.9' }} && steps.changed_files.outputs.files_changed == 'true'
+      - if: ${{ matrix.python-version == '3.9' && steps.changed_files.outputs.files_changed == 'true'}}
         name: Commit files
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
@@ -46,7 +46,7 @@ jobs:
           git add coverage.svg
           git commit -m "Updated coverage.svg"
 
-      - if: ${{ matrix.python-version == '3.9' }} && steps.changed_files.outputs.files_changed == 'true'
+      - if: ${{ matrix.python-version == '3.9' && steps.changed_files.outputs.files_changed == 'true'}}
         name: Push changes
         uses: ad-m/github-push-action@master
         with:
