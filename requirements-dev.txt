@@ -13,4 +13,4 @@ scipy>=1.4
 tqdm>=4.62.0
 flake8
 pytest
-coverage
+coverage>=6.4.0
