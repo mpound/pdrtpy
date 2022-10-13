@@ -11,6 +11,6 @@ numdifftools>=0.9.40
 numpy>=1.18
 scipy>=1.4
 tqdm>=4.62.0
-flake
+flake8
 pytest
 coverage
