@@ -64,6 +64,8 @@ emitted line intensities for  |13CII| and |13CO|.
 
 We also support fitting of temperatures and column densities to |H2| excitation diagrams.
 
+Up to date documentation can be found at `pdrtpy.readthedocs.io <http://pdrtpy.readthedocs.io/>`_.
+
 What is a PDR? 
 ==============
 Photodissociation regions (PDRs) include all of the neutral gas in the
