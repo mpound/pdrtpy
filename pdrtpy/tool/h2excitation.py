@@ -128,14 +128,14 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         # we have to have opr max be greater than 3 so that fitting will work.
         # the fit algorithm does not like when the initial value is pinned at one
         # of the limits
-        print(f'initializing parameters with nc = {self._numcomponents}')
+        #print(f'initializing parameters with nc = {self._numcomponents}')
         self._params.add('opr',value=3.0,min=1.0,max=3.5,vary=False)
         self._params.add('m1',value=0,min=-1,max=0)
         self._params.add('n1',value=15,min=10,max=30)
         if self._numcomponents == 2:
             self._params.add('m2',value=0,min=-1,max=0)
             self._params.add('n2',value=15,min=10,max=30)
-        self._params.pretty_print()
+        #self._params.pretty_print()
 
     def _two_component_residual(self,params,x,data,error,idx):
         # We assume that the column densities passed in have been normalized
@@ -211,15 +211,14 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
     def _init_model(self):
         #@todo make a separate class that subclasses Model.
         # potentially allow users to change it.
-        print(f'initializing model with nc = {self._numcomponents}')
+        #print(f'initializing model with nc = {self._numcomponents}')
         self._model=Model(self._model_functions[self._numcomponents],oaram_names=list(self._params.keys()))
         for p,q in self._params.items():
             self._model.set_param_hint(p, value=q.value,
                                        min=q.min, max=q.max,
                                        vary=q.vary)
         pp = self._model.make_params()
-        pp.pretty_print()
-        print("IVARS ",self._model.independent_vars)
+        #pp.pretty_print()
 
     def _compute_quantities(self,fitmap):
         """Compute the temperatures and column densities for the hot and cold gas components.  This method will set class variables `_temperature` and `_colden`.
@@ -902,8 +901,8 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
             progress = kwargs.pop("progress",True)
         else:
             progress = False
-        print("PARAMS")
-        self._params.pretty_print()
+        #print("PARAMS")
+        #self._params.pretty_print()
         with get_progress_bar(progress,total,leave=True,position=0) as pbar:
             for i in range(total):
                 if np.isfinite(yr[:,i]).all() and np.isfinite(sig[:,i]).all():
@@ -916,8 +915,8 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                     p=self._model.make_params()
                     wts = 1.0/(sig[:,i]*sig[:,i])
                     try:
-                        print("X=",x)
-                        print("Y=",yr[:i])
+                        #print("X=",x)
+                        #print("Y=",yr[:i])
                         fmdata[i] = self._model.fit(data=yr[:,i], weights=wts, x=x,params=p,
                                                       idx=idx,fit_opr=fit_opr,method=kwargs['method'],
                                                       nan_policy = kwargs['nan_policy'])
