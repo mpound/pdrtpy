@@ -861,6 +861,7 @@ class ModelPlot(PlotBase):
                     cbar.update_ticks()
                 if "BUNIT" in _header:
                     lstr = u.Unit(_header["BUNIT"]).to_string('latex_inline')
+                    #print("colorbar string is %s"%lstr)
 
                     cbar.ax.set_ylabel(lstr,rotation=90)
 

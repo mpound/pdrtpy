@@ -5,13 +5,14 @@ from copy import deepcopy,copy
 import matplotlib.cm as mcm
 #from matplotlib import ticker
 from matplotlib.ticker import MultipleLocator
+from cycler import cycler
 
 import astropy.units as u
 from astropy.nddata import StdDevUncertainty
 
 from ..measurement import Measurement
 from .plotbase import PlotBase
-from ..pdrutils import float_formatter,LOGE,is_odd,to
+from ..pdrutils import float_formatter,LOGE,to
 
 class ExcitationPlot(PlotBase):
     """
@@ -22,6 +23,16 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         self._xlim = []
         self._ylim = []
         self._label = label
+
+    def _sorted_by_vibrational_level(self,measurements):
+        # d is a dict of measurements
+        ret = dict()
+        for m in measurements:
+            _key=f'v={self._tool._ac.loc[m]["vu"]}'
+            if _key not in ret: 
+                ret[_key] = []
+            ret[_key].append(measurements[m])
+        return ret
 
     def ex_diagram(self,position=None,size=None,norm=True,show_fit=False,**kwargs):
         #@todo position and size might not necessarily match how the fit was done.
@@ -40,7 +51,7 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         :type show_fit: bool
         """
         kwargs_opts = {'xmin':0.0,
-                      'xmax':5000.0, #@TODO this should scale with max(energy)
+                      'xmax':None, #  we use np.max() later if user does not specify
                       'ymax':22,
                       'ymin': 15,
                       'grid' :False,
@@ -49,12 +60,14 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
                       'linewidth': 2.0,
                       'markersize': 8,
                       'color':None,
-                      'axis':None}
+                      'axis':None,
+                      'label':None,
+                      'aspect': 'auto'}
         kwargs_opts.update(kwargs)
 
-        cdavg = self._tool.average_column_density(norm=norm, position=position, size=size, line=False)
-        energies = self._tool.energies(line=False)
-        energy = np.array([c for c in energies.values()])
+        cdavg = self._tool.average_column_density(norm=norm, position=position, size=size, line=True)
+        energies = self._tool.energies(line=True)
+        energy = np.array(list(energies.values()))
         colden = np.squeeze(np.array([c.data for c in cdavg.values()]))
         error = np.squeeze(np.array([c.error for c in cdavg.values()]))
         sigma = LOGE*error/colden
@@ -63,14 +76,39 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
             _axis = self._axis
         else:
             _axis = kwargs_opts['axis']
-        if self._tool.opr_fitted and show_fit:
-            _label = "LTE"
+        if kwargs_opts['label'] != 'v':
+            if self._tool.opr_fitted and show_fit:
+                _label = "LTE"
+            else:
+                _label = '$'+self._label+'$ data'
+            ec = _axis.errorbar(energy,np.log10(colden),yerr=sigma,
+                                fmt="o", capsize=kwargs_opts['capsize'],
+                                label=_label, lw=kwargs_opts['linewidth'],
+                                ms=kwargs_opts['markersize'], 
+                                color=kwargs_opts['color'])
         else:
-            _label = '$'+self._label+'$ data'
-        ec = _axis.errorbar(energy,np.log10(colden),yerr=sigma,
-                            fmt="o", capsize=kwargs_opts['capsize'],
-                            label=_label, lw=kwargs_opts['linewidth'],
-                            ms=kwargs_opts['markersize'],color=kwargs_opts['color'])
+            # return dict of arrays of measuremtents with keys v=0,v=1,v=2 etc
+            cdsort = self._sorted_by_vibrational_level(cdavg)
+            ensort = self._sorted_by_vibrational_level(energies)
+            #print("ENSORT" ,ensort.values())
+            cyc = cycler('color',  self._CB_color_cycle)
+            cyfill = cycler('fillstyle',['full', 'none', 'full', 'none', 'full', 'none', 'full', 'none', 'full'])
+            #self._plt.rc('axes', prop_cycle=(cyc+cyfill))
+
+            fmtd = {False: 'o',True:'^'} #there is no cycler for fmt, do it manually
+            fmtb=False
+            for key in cdsort:
+                cs = np.squeeze(np.array([m.value[0] for m in cdsort[key]]))
+                es = np.squeeze(np.array([m.error[0] for m in cdsort[key]]))
+                ens =  np.array([c for c in ensort[key]])
+                #print(f"LOG10(CD({key}))={np.log10(cs)}")
+                #print(f"E{key} = {ens}")
+                sigma = LOGE*es/cs
+                ec = _axis.errorbar(ens,np.log10(cs),yerr=sigma,
+                    fmt=fmtd[fmtb], capsize=kwargs_opts['capsize'],
+                    label=key, lw=kwargs_opts['linewidth'],
+                    ms=kwargs_opts['markersize'])
+                #fmtb = not fmtb
         tt = self._tool
         if self._tool.opr_fitted and show_fit:
             if position is not None and len(np.shape(tt.opr))>1:
@@ -82,7 +120,7 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
                 opr_p = tt.opr
             cddn = colden*self._tool._canonical_opr/opr_p
             # Plot only the odd-J ones scaled by fitted OPR
-            odd_index = np.where([is_odd(c) for c in cdavg.keys()])
+            odd_index = np.where([self._tool._is_ortho(c) for c in cdavg.keys()])
             #color = ec.lines[0].get_color() # want these to be same color as data
             _axis.errorbar(x=energy[odd_index],
                                 y=np.log10(cddn[odd_index]),marker="^",
@@ -97,15 +135,19 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
             _axis.set_ylabel("log $(N_u/g_u) ~({\\rm cm}^{-2})$")
         else:
             _axis.set_ylabel("log $(N_u) ~({\\rm cm}^{-2})$")
-        # label the points with e.g. J=2,3,4...
-        first=True
-        for lab in sorted(cdavg):
-            if first:
-                ss="J="+str(lab)
-                first=False
+        if kwargs_opts['label'] == 'j' or kwargs_opts['label']=='id':
+            # label the points with e.g. J=2,3,4...
+            if kwargs_opts['label'] == 'j':  # STILL WRONG
+                first=True
             else:
-                ss=str(lab)
-            _axis.text(x=energies[lab]+100,y=np.log10(cdavg[lab]),s=ss)
+                first=False
+            for lab in sorted(cdavg):
+                if first:
+                    ss="J="+self._tool._ac.loc[lab]["Ju"]
+                    first=False
+                else:
+                    ss=str(lab)
+                _axis.text(x=energies[lab]+100,y=np.log10(cdavg[lab]),s=ss)
         handles,labels=_axis.get_legend_handles_labels()
         if show_fit:
             if tt.fit_result is None:
@@ -117,12 +159,16 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
             if tt.fit_result[position] is None:
                 raise ValueError(f"The Excitation Tool was unable to fit pixel {position}. Try show_fit=False")
             x_fit = np.linspace(0,max(energy), 30)
+            #@TODO This now depends on tool._numcomponents
             outpar = tt.fit_result[position].params.valuesdict()
-            labcold = r"$T_{cold}=$" + f"{tt.tcold[position]:3.0f}" +r"$\pm$" + f"{tt.tcold.error[position]:.1f} {tt.tcold.unit}"
-            #labcold = r"$T_{cold}=$" + f"{tt.tcold[position]:3.1f}"
-            #labhot= r"$T_{hot}=$" + f"{tt.thot.value:3.0f}"+ r"$\pm$" + f"{tt.thot.error:.1f} {tt.thot.unit}"
-            #labhot= r"$T_{hot}=$" + f"{tt.thot[position]:3.1f}"
-            labhot= r"$T_{hot}=$" + f"{tt.thot[position]:3.0f}"+ r"$\pm$" + f"{tt.thot.error[position]:.1f} {tt.thot.unit}"
+            if tt.numcomponents == 2:
+                labcold = r"$T_{cold}=$" + f"{tt.tcold[position]:3.0f}" +r"$\pm$" + f"{tt.tcold.error[position]:.1f} {tt.tcold.unit}"
+                #labcold = r"$T_{cold}=$" + f"{tt.tcold[position]:3.1f}"
+                #labhot= r"$T_{hot}=$" + f"{tt.thot.value:3.0f}"+ r"$\pm$" + f"{tt.thot.error:.1f} {tt.thot.unit}"
+                #labhot= r"$T_{hot}=$" + f"{tt.thot[position]:3.1f}"
+                labhot= r"$T_{hot}=$" + f"{tt.thot[position]:3.0f}"+ r"$\pm$" + f"{tt.thot.error[position]:.1f} {tt.thot.unit}"
+            elif tt.numcomponents == 1:
+                labcold = r"$T=$" + f"{tt.tcold[position]:3.0f}" +r"$\pm$" + f"{tt.tcold.error[position]:.1f} {tt.tcold.unit}"
             if position == 0:
                 labnh = r"$N("+self._label+")=" + float_formatter(tt.total_colden,2)+"$"
             else:
@@ -130,22 +176,25 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
             _axis.plot(x_fit,tt._one_line(x_fit, outpar['m1'],
                             outpar['n1']), '.' ,label=labcold,
                             lw=kwargs_opts['linewidth'])
-            _axis.plot(x_fit,tt._one_line(x_fit, outpar['m2'],
-                            outpar['n2']), '.', label=labhot,
-                            lw=kwargs_opts['linewidth'])
-
+            if tt.numcomponents == 2:
+                _axis.plot(x_fit,tt._one_line(x_fit, outpar['m2'],
+                                outpar['n2']), '.', label=labhot,
+                                lw=kwargs_opts['linewidth'])
             _axis.plot(x_fit, tt.fit_result[position].eval(x=x_fit,fit_opr=False), label="fit")
             handles,labels=_axis.get_legend_handles_labels()
             #kluge to ensure N(H2) label is last
             phantom = _axis.plot([],marker="", markersize=0,ls="",lw=0)
             handles.append(phantom[0])
             labels.append(labnh)
-
+        # Scale xaxis with max(energy). Round up to nearest 1000
+        if kwargs_opts['xmax'] is None:
+            kwargs_opts['xmax'] = np.round(1000.+energy.max(),-3)
         _axis.set_xlim(kwargs_opts['xmin'],kwargs_opts['xmax'])
         _axis.set_ylim(kwargs_opts['ymin'],kwargs_opts['ymax'])
-        _axis.xaxis.set_major_locator(MultipleLocator(1000))
+        if (kwargs_opts['xmax']-kwargs_opts['xmin']) <=10000:
+            _axis.xaxis.set_major_locator(MultipleLocator(1000))
+            _axis.xaxis.set_minor_locator(MultipleLocator(200))
         _axis.yaxis.set_major_locator(MultipleLocator(1))
-        _axis.xaxis.set_minor_locator(MultipleLocator(200))
         _axis.yaxis.set_minor_locator(MultipleLocator(0.2))
         _axis.tick_params(axis='both',direction='in',which='both')
         _axis.tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both')

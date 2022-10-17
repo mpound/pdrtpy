@@ -27,9 +27,11 @@ class PlotBase:
         self._valid_norms = [ 'simple', 'zscale', 'log' ]
         self._valid_stretch = [ 'linear', 'sqrt', 'power', 'log', 'asinh']
         # color blind/friendly color cyle courtesy https://gist.github.com/thriveth/8560036
+        # also added some from matplotlib 'tableau-colorblind10'
         self._CB_color_cycle = ['#377eb8', '#ff7f00','#4daf4a',
                   '#f781bf', '#a65628', '#984ea3',
-                  '#999999', '#e41a1c', '#dede00']
+                  '#999999', '#e41a1c', '#dede00', '#595959',
+                  '#5F9ED1', '#C85200', '#898989', '#A2C8EC', '#FFBC79', '#CFCFCF']
         self.colorcycle(self._CB_color_cycle)
 
     def _autolevels(self,data,steps='log',numlevels=None,verbose=False):
