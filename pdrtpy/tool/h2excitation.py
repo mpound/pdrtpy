@@ -155,7 +155,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         if params['opr'].vary:
             model += np.log10(p['opr']/self._canonical_opr)
         return (model - data)/error
-    
+
     def _one_component_residual(self,params,x,data,error,idx):
         p = params.valuesdict()
         model = x*p['m1']+p['n1']
@@ -201,7 +201,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         if fit_opr:
             model[idx] += np.log10(opr/self._canonical_opr)
         return model
-    
+
     def _one_component_model(self,x,m1,n1,opr,idx=[],fit_opr=False):
         model = x*m1+n1
         if fit_opr:
@@ -365,7 +365,6 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
             self._temperature["cold"]=Measurement(data=tc,unit=self._t_units,
                                                   uncertainty=ucc,wcs=fitmap.wcs, mask = mask)
             self._temperature["hot"]=self._temperature["cold"]
-            
             # cold = hot total column density
             ucn = StdDevUncertainty(np.abs(unc))
             mask = fitmap.mask | np.logical_not(np.isfinite(nc))
@@ -394,15 +393,15 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         :rtype:  :class:`lmfit.model.ModelResult`
         '''
         return self._fitresult
-    
+
     @property
     def numcomponents(self):
         '''Number of temperature components in the fit
-        
+
         :rtype: int
         '''
         return self._numcomponents
-    
+
     @property
     def opr_fitted(self):
         '''Was the ortho-to-para ratio fitted?
