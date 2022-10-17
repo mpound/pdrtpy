@@ -135,18 +135,20 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
             _axis.set_ylabel("log $(N_u/g_u) ~({\\rm cm}^{-2})$")
         else:
             _axis.set_ylabel("log $(N_u) ~({\\rm cm}^{-2})$")
-        if kwargs_opts['label'] == 'j' or kwargs_opts['label']=='id':
-            # label the points with e.g. J=2,3,4...
-            if kwargs_opts['label'] == 'j':  # STILL WRONG
-                first=True
-            else:
-                first=False
+        first = True
+        if kwargs_opts['label']=='id':
             for lab in sorted(cdavg):
-                if first:
-                    ss="J="+self._tool._ac.loc[lab]["Ju"]
-                    first=False
-                else:
-                    ss=str(lab)
+                _axis.text(x=energies[lab]+100,y=np.log10(cdavg[lab]),s=str(lab))
+        elif kwargs_opts['label'] == 'j':  # label the points with e.g. J=2,3,4...
+            for lab in sorted(cdavg):
+                # this fails because the lowest J may not be the first data point.
+                # we'd have to sort on Ju of the data. Which isn't even unique
+                # if there are multiple vibrational levels.
+                #if first:
+                #    ss="J="+str(self._tool._ac.loc[lab]["Ju"])
+                #    first=False
+                #else:
+                ss=str(self._tool._ac.loc[lab]["Ju"])
                 _axis.text(x=energies[lab]+100,y=np.log10(cdavg[lab]),s=ss)
         handles,labels=_axis.get_legend_handles_labels()
         if show_fit:
@@ -194,6 +196,9 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         if (kwargs_opts['xmax']-kwargs_opts['xmin']) <=10000:
             _axis.xaxis.set_major_locator(MultipleLocator(1000))
             _axis.xaxis.set_minor_locator(MultipleLocator(200))
+        else:
+            _axis.xaxis.set_major_locator(MultipleLocator(2000))
+            _axis.xaxis.set_minor_locator(MultipleLocator(500))
         _axis.yaxis.set_major_locator(MultipleLocator(1))
         _axis.yaxis.set_minor_locator(MultipleLocator(0.2))
         _axis.tick_params(axis='both',direction='in',which='both')
