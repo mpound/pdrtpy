@@ -93,6 +93,11 @@ class ExcitationFit(ToolBase):
         '''
         self.add_measurement(m)
 
+    def _partition_function(self):
+        '''The partition function for this molecule. Subclasses should implement this function.'''
+        pass
+
+
 class H2ExcitationFit(ExcitationFit):
     r"""Tool for fitting temperatures, column densities, and ortho-to-para ratio(`OPR`) from an :math:`H_2` excitation diagram. It takes as input a set of :math:`H_2` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
 
@@ -994,7 +999,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         '''
         # See Herbst et al 1996
         # http://articles.adsabs.harvard.edu/pdf/1996AJ....111.2403H
-        # Z(T) =  = 0.0247T * [1—exp(—6000/T)]^-1
+        # Z(T) =  = 0.0247T * [1 - exp(-6000/T)]^-1
 
         # This is just being defensive.  I know the temperatures used internally are in K.
         t = np.ma.masked_invalid((tex.value*u.Unit(tex.unit)).to("K",equivalencies=u.temperature()).value)
