@@ -171,6 +171,8 @@ class LineRatioPlot(PlotBase):
                        'xaxis_unit': None,
                        'yaxis_unit': None,
                        'legend': None,
+                       'bbox_to_anchor':None,
+                       'loc':'upper center',
                        'title': None}
 
         kwargs_opts.update(kwargs)
@@ -218,7 +220,9 @@ class LineRatioPlot(PlotBase):
             self._modelplot._axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
             # handle legend locally
             if kwargs_opts['legend']:
-                legend = self._modelplot._axis[0].legend(loc='upper center',title=kwargs_opts['title'])
+                legend = self._modelplot._axis[0].legend(title=kwargs_opts['title'],
+                     bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
+                     loc=kwargs_opts['loc'])
             self._figure = self._modelplot.figure
             self._axis = self._modelplot.axis
 
@@ -240,6 +244,8 @@ class LineRatioPlot(PlotBase):
                        'xaxis_unit': None,
                        'yaxis_unit': None,
                        'legend': None,
+                       'bbox_to_anchor':None,
+                       'loc':'upper center',
                        'title': None
                       }
         kwargs_opts.update(kwargs)
@@ -294,7 +300,9 @@ class LineRatioPlot(PlotBase):
             self._modelplot.axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
             # handle legend locally
             if kwargs_opts['legend']:
-                legend = self._modelplot.axis[0].legend(loc='upper center',title=kwargs_opts['title'])
+                legend = self._modelplot.axis[0].legend(title=kwargs_opts['title'],
+                     bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
+                     loc=kwargs_opts['loc'])
             self._figure = self._modelplot.figure
             self._axis = self._modelplot.axis
 
@@ -472,7 +480,9 @@ class LineRatioPlot(PlotBase):
                        'stretch': 'linear',
                        'index': 1,
                        'reset': True,
-                       'legend': True}
+                       'legend': True,
+                       'bbox_to_anchor':None,
+                       'loc':'upper center'}
 
         kwargs_opts.update(kwargs)
 
@@ -506,7 +516,10 @@ class LineRatioPlot(PlotBase):
                 lines.append(Line2D([0], [0], color=kwargs_opts['meas_color'][0], linewidth=3, linestyle='-'))
                 labels.append("observed")
                 #maybe loc should be 'best' but then it bounces around
-                self._axis[axidx].legend(lines, labels,loc='upper center',title=_title)
+                self._axis[axidx].legend(lines, labels,
+                     bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
+                     loc=kwargs_opts['loc'],
+                     title=_title)
 
             # Turn off subplots greater than the number of
             # available ratios

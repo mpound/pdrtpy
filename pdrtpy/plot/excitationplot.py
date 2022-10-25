@@ -62,7 +62,10 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
                       'color':None,
                       'axis':None,
                       'label':None,
-                      'aspect': 'auto'}
+                      'aspect': 'auto',
+                      'bbox_to_anchor':None,
+                      'loc':"best",
+                      'test': False}
         kwargs_opts.update(kwargs)
 
         cdavg = self._tool.average_column_density(norm=norm, position=position, size=size, line=True)
@@ -193,12 +196,18 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
             kwargs_opts['xmax'] = np.round(1000.+energy.max(),-3)
         _axis.set_xlim(kwargs_opts['xmin'],kwargs_opts['xmax'])
         _axis.set_ylim(kwargs_opts['ymin'],kwargs_opts['ymax'])
-        if (kwargs_opts['xmax']-kwargs_opts['xmin']) <=10000:
+        # try to make reasonably-spaced xaxis tickmarks.  
+        # if I were clever, I'd do this with a function
+        temperature_range = kwargs_opts['xmax']-kwargs_opts['xmin']
+        if temperature_range <= 10000:
             _axis.xaxis.set_major_locator(MultipleLocator(1000))
             _axis.xaxis.set_minor_locator(MultipleLocator(200))
-        else:
+        elif temperature_range <= 26000:
             _axis.xaxis.set_major_locator(MultipleLocator(2000))
             _axis.xaxis.set_minor_locator(MultipleLocator(500))
+        else:
+            _axis.xaxis.set_major_locator(MultipleLocator(4000))
+            _axis.xaxis.set_minor_locator(MultipleLocator(1000))
         _axis.yaxis.set_major_locator(MultipleLocator(1))
         _axis.yaxis.set_minor_locator(MultipleLocator(0.2))
         _axis.tick_params(axis='both',direction='in',which='both')
@@ -209,7 +218,9 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
             _axis.grid(b=True,which='minor',axis='both',lw=kwargs_opts['linewidth']/2,
                             color='k',alpha=0.22,linestyle='--')
 
-        _axis.legend(handles,labels)
+        _axis.legend(handles,labels,
+                     bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
+                     loc=kwargs_opts['loc'])
 
     def temperature(self,component,**kwargs):
         """Plot the temperature of hot or cold gas component.
