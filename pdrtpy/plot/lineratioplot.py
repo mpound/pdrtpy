@@ -220,9 +220,9 @@ class LineRatioPlot(PlotBase):
             self._modelplot._axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
             # handle legend locally
             if kwargs_opts['legend']:
-                legend = self._modelplot._axis[0].legend(title=kwargs_opts['title'],
-                     bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
-                     loc=kwargs_opts['loc'])
+                legend = self._modelplot._axis[0].legend(title=kwargs_opts['title'], 
+                    bbox_to_anchor=kwargs_opts['bbox_to_anchor'], 
+                    loc=kwargs_opts['loc'])
             self._figure = self._modelplot.figure
             self._axis = self._modelplot.axis
 
@@ -300,9 +300,9 @@ class LineRatioPlot(PlotBase):
             self._modelplot.axis[0].scatter(x,y,c='r',marker='+',s=200,linewidth=2,label=label)
             # handle legend locally
             if kwargs_opts['legend']:
-                legend = self._modelplot.axis[0].legend(title=kwargs_opts['title'],
-                     bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
-                     loc=kwargs_opts['loc'])
+                legend = self._modelplot.axis[0].legend(title=kwargs_opts['title'], 
+                    bbox_to_anchor=kwargs_opts['bbox_to_anchor'], 
+                    loc=kwargs_opts['loc'])
             self._figure = self._modelplot.figure
             self._axis = self._modelplot.axis
 
@@ -517,9 +517,9 @@ class LineRatioPlot(PlotBase):
                 labels.append("observed")
                 #maybe loc should be 'best' but then it bounces around
                 self._axis[axidx].legend(lines, labels,
-                     bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
-                     loc=kwargs_opts['loc'],
-                     title=_title)
+                    bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
+                    loc=kwargs_opts['loc'],
+                    title=_title)
 
             # Turn off subplots greater than the number of
             # available ratios
