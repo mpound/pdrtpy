@@ -137,7 +137,7 @@ class ModelPlot(PlotBase):
 
         :param measurements: a list of one or more :class:`~pdrtpy.measurement.Measurement` to overlay.
         :type measurements: list
-        :param shading: Controls how measurements and errors are drawn.  If ``shading`` is zero, Measurements will be drawn in solid contour for the value and dashed for the +/- errors. If ``shading`` is between 0 and 1, Measurements are drawn with as filled contours representing the size of the errors (see :meth:`matplotlib.pyplot.contourf`) with alpha set to the ``shading`` value.  Default value: 0.4
+        :param shading: Controls how measurements and errors are drawn.  If ``shading`` is zero, Measurements will be drawn in solid contour for the value and dashed for the +/- errors. If ``shading`` is between 0 and 1, Measurements are drawn with as filled contours representing the size of the errors (see :func:`matplotlib.pyplot.contourf`) with alpha set to the ``shading`` value.  Default value: 0.4
         :type shading: float
 
         '''
@@ -196,13 +196,14 @@ class ModelPlot(PlotBase):
 
     def isoplot(self,identifier,plotnaxis,nax_clip=[1000,1E5]*u.Unit("K"),**kwargs):
         '''Plot lines of constant model parameter as a function of the other model parameter and a model intensity or ratio
+
         :param identifier: identifier tag for the model to plot, e.g., "OI_63/CO_21" or "CII_158"
         :type identifier:  str 
         :param plotnaxis: Which NAXIS to use to compute lines of constant value. Since models have two axes, this must be either 1 or 2
         :type plotnaxis: int
         :param nax_clip: The range of model parameters on NAXIS{plotnaxis} to show in the plot.  Must be given as a range of astropy quanitities, e.g. [10,1E7]*Unit("cm-3"). Default is None which means plot full range of the parameter.
-        :type nax_clip: array-like, must contain Quantity
-        :param step: Allows skipping of lines of constant value, e.g. plot every `step-th` value. Useful when parameter space is crowded, and a cleaner looking plot is desired.  Defailt: 1 -- plot every value
+        :type nax_clip: array-like, must contain :class:`~astropy.units.Quantity`
+        :param step: Allows skipping of lines of constant value, e.g. plot every `step-th` value. Useful when parameter space is crowded, and a cleaner looking plot is desired.  Default: 1 -- plot every value
         :type step: int
         '''
         kwargs_opts = {
@@ -319,9 +320,9 @@ class ModelPlot(PlotBase):
         :param identifiers: list of two identifier tags for the model to plot, e.g., ["OI_63/CO_21", "CII_158"]
         :type identifiers: list of str
         :param nax1_clip: The range of model densities on NAXIS1 to show in the plot. For most model NAXIS1 is hydrogen number density $n_H$ in cm$^{-3}$.  For ionized gas models, it is electron temperature $T_e$ in K.  Must be given as a range of astropy quanitities.  Default: [10,1E7]*Unit("cm-3")
-        :type nax1_clip: array-like, must contain Quantity
+        :type nax1_clip: array-like, must contain :class:`~astropy.units.Quantity`
         :param nax2_clip: The range of model parameters on NAXIS2 to show in the plot.  For most models NAXIS2 is radiation field intensities in Habing or cgs units.  For ionized gas models, it is electron volume density $n_e$.  Must be given as a range of astropy quantities.  Default: nax1_clip=[10,1E6]*utils.habing_unit.
-        :type nax2_clip:  array-like, must contain Quantity
+        :type nax2_clip: array-like, must contain :class:`~astropy.units.Quantity`
         :param reciprocal: Whether or not the plot the reciprocal of the model on each axis.  Given as a pair of booleans.  e.g. [False,True] means don't flip the quantity X axis, but flip quantity the Y axis.  i.e. if the model is "CII/OI", and reciprocal=True then the axis will be "OI/CII".  Default: [False, False]
         :type reciprocal: array-like bool
 
