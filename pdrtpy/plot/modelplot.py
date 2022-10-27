@@ -71,7 +71,7 @@ class ModelPlot(PlotBase):
 
         # make a sensible choice about contours if image is not shown
         if not kwargs_opts['image'] and kwargs_opts['colors'][0] == 'white':
-           kwargs_opts['colors'][0] = 'black'
+            kwargs_opts['colors'][0] = 'black'
 
         self._plot_no_wcs(model,**kwargs_opts)
         if kwargs_opts['legend']:
@@ -83,7 +83,6 @@ class ModelPlot(PlotBase):
             if kwargs_opts['measurements'] is not None:
                 lines.append(Line2D([0], [0], color=kwargs_opts['meas_color'][0], linewidth=3, linestyle='-'))
                 labels.append("observed")
-            #maybe loc should be 'best' but then it bounces around
             self._axis[0].legend(lines, labels, loc=kwargs_opts['loc'],
                             bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
                             title=kwargs_opts['title'])
@@ -275,9 +274,7 @@ class ModelPlot(PlotBase):
         xi2=np.intersect1d(xi,x2)
         naxis[otherindex],xlabel = utils.rescale_axis_units(naxis[otherindex],naxis[otherindex].unit,
                                  model.wcs.wcs.ctype[otherindex],kwargs_opts['xaxis_unit'])
-        # @TODO check header[BUNIT] for units to a) plot them if present and b) allow changing them using yaxis_unit.   
-        # also, possibly support plotaxis_unit
-        
+        # @TODO possibly support plotaxis_unit
         lines = []
         # convert the yaxis if requested. The yaxis is the pixel values in the model,
         # which have units as specified in BUNIT header item.
@@ -300,19 +297,15 @@ class ModelPlot(PlotBase):
             else:
                 label='{0:.0f}'.format(np.round(naxis[pindex][j].to(nax_clip.unit).value,0))
             lines.extend(self._axis.plot(naxis[otherindex],yy,label=label))
-# Format the plot in a sensible way
+        # Format the plot in a sensible way
         self._axis.set_ylabel(ylabel)
         self._axis.set_xlabel(xlabel)
         self._axis.set_aspect(kwargs_opts['aspect'])
         self._axis.ticklabel_format(axis='both',useMathText=True)
         if kwargs_opts['logx']:
             self._axis.set_xscale('log')
-        #else:
-        #    self._axis.ticklabel_format(axis='x',style='sci',scilimits=(0,0))
         if kwargs_opts['logy']:
             self._axis.set_yscale('log')
-        #else:
-        #    self._axis.ticklabel_format(axis='y',style='sci',scilimits=(0,0))
         self._axis.tick_params(axis='both',direction='in',which='both')
         self._axis.tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both')
         if kwargs_opts['grid']:
@@ -493,7 +486,6 @@ class ModelPlot(PlotBase):
         # [m1x,m1y,m2x,m2y,...]
         # [fmt1,fmt2,...]
         # [label1,label2,...]
-
         if kwargs_opts['measurements'] is not None:
             l_meas = len(kwargs_opts['measurements'])
             if l_meas %2 != 0:
@@ -763,57 +755,8 @@ class ModelPlot(PlotBase):
         x,y = self._get_xy_from_wcs(data,quantity=True,linear=True)
         locmaj = ticker.LogLocator(base=10.0, subs=(1.0, ),numticks=10)
         locmin = ticker.LogLocator(base=10.0, subs=np.arange(2, 10)*.1,numticks=10)
-        if kwargs_opts['test']:
-            x,xlab = utils.rescale_axis_units(x,_header['CUNIT'+ax1],_header['CTYPE'+ax1],kwargs_opts['xaxis_unit'])
-            y,ylab = utils.rescale_axis_units(y,_header['CUNIT'+ax2],_header['CTYPE'+ax2],kwargs_opts['yaxis_unit'])
-        else:
-            #allow unit conversion of density axis
-            xax_unit = u.Unit(_header['CUNIT'+ax1])
-            # cover the base where we had to erase the wcs unit to avoid FITS error
-            if x._unit is None or x._unit is u.dimensionless_unscaled:
-                x._unit = xax_unit
-            if kwargs_opts['xaxis_unit'] is not None:
-                # Make density axis of the grid into a Quantity using the cunits from the grid header
-                #temp_x = x * xax_unit
-
-                # Get desired unit from arguments
-                xax_unit = u.Unit(kwargs_opts['xaxis_unit'])
-
-                # Convert the unit-aware grid to the desired units and set X to the value (so it's no longer a Quantity)
-                #x = temp_x.to(xax_unit).value
-                x = x.to(xax_unit)
-
-            # Set the x label appropriately, use LaTeX inline formatting
-            xlab = r"{0} [{1:latex_inline}]".format(_header['CTYPE'+ax1],xax_unit)
-
-            yax_unit = u.Unit(_header['CUNIT'+ax2])
-            if y._unit is None or y._unit is u.dimensionless_unscaled:
-                y._unit = yax_unit
-            if utils.is_rad(yax_unit):
-                ytype = "log({0})".format(utils.get_rad(yax_unit))
-            else:
-                ytype = _header['CTYPE'+ax2]
-            #allow unit conversion to cgs or Draine, for Y axis (FUV field):
-            if kwargs_opts['yaxis_unit'] is not None:
-                # Make FUV axis of the grid into a Quantity using the cunits from the grid header
-                #temp_y = y * yax_unit
-
-                # Get desired unit from arguments; for special cases, use
-                # the conventional symbol for the label (e.g. G_0 for Habing units)
-                yunit = kwargs_opts['yaxis_unit']
-                if utils.is_rad(yunit):
-                    # get_rad returns a latex string with $ signs
-                    ytype = "log({0})".format(utils.get_rad(yunit))
-                else:
-                    ytype = _header['CTYPE'+ax2]
-                yax_unit = u.Unit(yunit)
-
-                # Convert the unit-aware grid to the desired units and set Y to the value (so it's no longer a Quantity)
-                #y = temp_y.to(yax_unit).value
-                y = y.to(yunit)
-
-            # Set the y label appropriately, use LaTeX inline formatting
-            ylab = r"{0} [{1:latex_inline}]".format(ytype,yax_unit)
+        x,xlab = utils.rescale_axis_units(x,_header['CUNIT'+ax1],_header['CTYPE'+ax1],kwargs_opts['xaxis_unit'])
+        y,ylab = utils.rescale_axis_units(y,_header['CUNIT'+ax2],_header['CTYPE'+ax2],kwargs_opts['yaxis_unit'])
         # Finish up axes details.
         self._axis[axidx].set_ylabel(ylab)
         self._axis[axidx].set_xlabel(xlab)
@@ -835,11 +778,7 @@ class ModelPlot(PlotBase):
             im = self._axis[axidx].pcolormesh(x.value,y.value,km,cmap=kwargs_imshow['cmap'],
                                               norm=_norm,shading='auto')
             if kwargs_opts['colorbar']:
-                if kwargs_opts['test']:
-                    cbar = self._wcs_colorbar(im,self._axis[axidx],pad=0.1,width="5%") #looks like crap
-                else:
-                    cbar = self._figure.colorbar(im,ax=self._axis[axidx])#,format=ticker.ScalarFormatter(useMathText=True))
-
+                    cbar = self._figure.colorbar(im, ax=self._axis[axidx])
                 if kwargs_imshow['norm'].lower() != "log":
                     #avoid AttributeError: 'LogFormatterSciNotation' object has no attribute 'set_powerlimits'
                     cbar.formatter = ticker.ScalarFormatter(useMathText=True)
@@ -848,8 +787,6 @@ class ModelPlot(PlotBase):
                     cbar.update_ticks()
                 if "BUNIT" in _header:
                     lstr = u.Unit(_header["BUNIT"]).to_string('latex_inline')
-                    #print("colorbar string is %s"%lstr)
-
                     cbar.ax.set_ylabel(lstr,rotation=90)
 
         if kwargs_opts['contours']:
@@ -900,9 +837,13 @@ class ModelPlot(PlotBase):
                 colors = kwargs_opts['meas_color'][jj]*mlen
                 if kwargs_opts['shading'] != 0:
                     cset = self._axis[axidx].contourf(x.value,y.value,k.data,levels=m.levels, colors=colors,alpha=kwargs_opts['shading'])
-                # Add extra call to plot contour because savefig("file.pdf") gets zorder of shading vs. contour wrong and contour lines don't show up. Only a bug when output is pdf. Harumph.
+                # Add extra call to plot contour because savefig("file.pdf") 
+                # gets zorder of shading vs. contour wrong and contour lines 
+                # don't show up. Only a bug when output is pdf. Harumph.
                 # See https://github.com/mpound/pdrtpy/issues/23
-                    cset2 = self._axis[axidx].contour(x.value,y.value,k.data,levels=[m.levels[1]], colors=colors, alpha=kwargs_opts['shading'])
+                    cset2 = self._axis[axidx].contour(x.value, y.value, k.data, 
+                                                      levels=[m.levels[1]], colors=colors,
+                                                      alpha=kwargs_opts['shading'])
                 else:
                     cset = self._axis[axidx].contour(x.value,y.value,k.data,levels=m.levels,
                                                      linestyles=lstyles, colors=colors)
