@@ -62,6 +62,8 @@ class ModelPlot(PlotBase):
                        'colors':['white'],
                        'meas_color': [self._CB_color_cycle[0]],
                        'legend':True,
+                       'bbox_to_anchor':None,
+                       'loc':"upper center",
                        'image':True,
                        'measurements':None
                       }
@@ -82,7 +84,9 @@ class ModelPlot(PlotBase):
                 lines.append(Line2D([0], [0], color=kwargs_opts['meas_color'][0], linewidth=3, linestyle='-'))
                 labels.append("observed")
             #maybe loc should be 'best' but then it bounces around
-            self._axis[0].legend(lines, labels,loc='upper center',title=kwargs_opts['title'])
+            self._axis[0].legend(lines, labels, loc=kwargs_opts['loc'],
+                            bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
+                            title=kwargs_opts['title'])
 
     def intensity(self,identifier,**kwargs):
         """Plot a model ratio
@@ -112,12 +116,14 @@ class ModelPlot(PlotBase):
                        'colors':['white'],
                        'meas_color': [self._CB_color_cycle[0]],
                        'legend':True,
+                       'bbox_to_anchor':None,
+                       'loc':"upper center",
                        'image':True
                       }
 
         kwargs_opts.update(kwargs)
         if not kwargs_opts['image'] and kwargs_opts['colors'][0] == 'white':
-           kwargs_opts['colors'][0] = 'black'
+            kwargs_opts['colors'][0] = 'black'
         self._plot_no_wcs(model[identifier],**kwargs_opts)
         if kwargs_opts['legend']:
             lines = list()
@@ -129,7 +135,9 @@ class ModelPlot(PlotBase):
                 lines.append(Line2D([0], [0], color=kwargs_opts['meas_color'][0], linewidth=3, linestyle='-'))
                 labels.append("observed")
             #maybe loc should be 'best' but then it bounces around
-            self._axis[0].legend(lines, labels,loc='upper center',title=kwargs_opts['title'])
+            self._axis[0].legend(lines, labels, loc=kwargs_opts['loc'],
+                            bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
+                            title=kwargs_opts['title']) 
 
 
     def overlay(self,measurements,**kwargs):
@@ -154,6 +162,8 @@ class ModelPlot(PlotBase):
                        'title': None,
                        'reset': True,
                        'legend': True,
+                       'bbox_to_anchor':None,
+                       'loc':"upper center",
                        'shading': 0.4}
 
         kwargs_opts.update(kwargs)
@@ -192,7 +202,9 @@ class ModelPlot(PlotBase):
                 word = "Values"
             lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in kwargs_opts['meas_color'][0:i]]
             labels = [k.title for k in models]
-            self._plt.legend(lines, labels,loc='upper center',title='Observed '+word)
+            self._plt.legend(lines, labels,loc=kwargs_opts['loc'],
+                             bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
+                             title='Observed '+word)
 
     def isoplot(self,identifier,plotnaxis,nax_clip=[1000,1E5]*u.Unit("K"),**kwargs):
         '''Plot lines of constant model parameter as a function of the other model parameter and a model intensity or ratio
@@ -224,6 +236,8 @@ class ModelPlot(PlotBase):
             'measurements':None,
             'bbox_to_anchor':(1.024,1),
             'loc':"upper left",
+            'xaxis_unit':None,
+            'yaxis_unit':None,
             'test':True, 
         }
         kwargs_opts.update(kwargs)
@@ -243,7 +257,7 @@ class ModelPlot(PlotBase):
         xaxis = ["naxis2","naxis1"]
         pindex = plotnaxis - 1
         naxis_is_log = ['log' in c for c in  model.wcs.wcs.ctype]
-        naxis = self._get_xy_from_wcs(model,quantity=True,linear=True)
+        naxis = list(self._get_xy_from_wcs(model,quantity=True,linear=True))
         naxislog=self._get_xy_from_wcs(model,quantity=True,linear=False)
         if nax_clip is None:
             nax_clip = [naxis[pindex][0].value,naxis[pindex][-1].value]*naxis[pindex].unit
@@ -259,29 +273,48 @@ class ModelPlot(PlotBase):
             x2 = np.arange(model.wcs._naxis[pindex])
 
         xi2=np.intersect1d(xi,x2)
-
+        naxis[otherindex],xlabel = utils.rescale_axis_units(naxis[otherindex],naxis[otherindex].unit,
+                                 model.wcs.wcs.ctype[otherindex],kwargs_opts['xaxis_unit'])
+        # @TODO check header[BUNIT] for units to a) plot them if present and b) allow changing them using yaxis_unit.   
+        # also, possibly support plotaxis_unit
+        
         lines = []
-        quant = f'{model.wcs.wcs.ctype[pindex]}='
+        # convert the yaxis if requested. The yaxis is the pixel values in the model,
+        # which have units as specified in BUNIT header item.
+        bunit = 1.0*u.Unit(model.header.get("BUNIT",""))
+        bscale = 1.0 
+        if kwargs_opts['yaxis_unit'] is not None:
+            bunit = bunit.to(kwargs_opts['yaxis_unit'])
+            bscale = bunit.value
+        if bunit != u.dimensionless_unscaled:
+            ylabel = r"{0} [{1:latex_inline}]".format(model.title,bunit.unit)
+        else:
+            ylabel = model.title
         for j in xi2[::kwargs_opts['step']]:
             if plotnaxis == 1:
-                xx=model[0:len(naxis[otherindex]),j]
+                yy=bscale*model[0:len(naxis[otherindex]),j]
             else:
-                xx=model[j,0:len(naxis[otherindex])]
+                yy=bscale*model[j,0:len(naxis[otherindex])]
             if naxis_is_log[pindex]:
                 label='{0:.1f}'.format(np.round(np.log10(naxis[pindex][j].to(nax_clip.unit).value),1))
             else:
                 label='{0:.0f}'.format(np.round(naxis[pindex][j].to(nax_clip.unit).value,0))
-            lines.extend(self._axis.plot(naxis[otherindex],xx,label=label))
-        xlabel = r"${0}$ [{1:latex_inline}]".format(model.wcs.wcs.ctype[otherindex],naxis[otherindex].unit)
-        self._axis.set_ylabel(model.title)
+            lines.extend(self._axis.plot(naxis[otherindex],yy,label=label))
+# Format the plot in a sensible way
+        self._axis.set_ylabel(ylabel)
         self._axis.set_xlabel(xlabel)
         self._axis.set_aspect(kwargs_opts['aspect'])
+        self._axis.ticklabel_format(axis='both',useMathText=True)
         if kwargs_opts['logx']:
             self._axis.set_xscale('log')
+        #else:
+        #    self._axis.ticklabel_format(axis='x',style='sci',scilimits=(0,0))
         if kwargs_opts['logy']:
             self._axis.set_yscale('log')
+        #else:
+        #    self._axis.ticklabel_format(axis='y',style='sci',scilimits=(0,0))
         self._axis.tick_params(axis='both',direction='in',which='both')
-        self._axis.tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both') 
+        self._axis.tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both')
         if kwargs_opts['grid']:
             self._axis.grid(b=True,which='major',axis='both',
                 lw=kwargs_opts['linewidth']/2,
@@ -568,7 +601,8 @@ class ModelPlot(PlotBase):
                 dl = self._axis.legend(dataline,label,loc='best')
                 self._axis.add_artist(dl)
 
-            leg=self._axis.legend(handles,labels,ncol=2, markerfirst=True,                                       bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
+            leg=self._axis.legend(handles,labels,ncol=2, markerfirst=True, 
+                                  bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
                                   loc=kwargs_opts['loc'])
             # trick to remove extra left side space in legend column headers.
             # doesn't completely center the headers, but gets as close as possible
@@ -635,7 +669,7 @@ class ModelPlot(PlotBase):
                        'legend': False,
                        'meas_color': ['#4daf4a'],
                        'shading': 0.4,
-                       'test':False
+                       'test':True
                        }
 
         kwargs_contour = {'levels': None,
@@ -721,7 +755,7 @@ class ModelPlot(PlotBase):
         if len(self._axis.shape) > 1:
             self._axis = self._axis.flatten()
 
-        ax1='1'
+        ax1='1' #Why hardcoded? leftover from something methinks
         ax2='2'
 
         # make the x and y axes.  Since the models are computed on a log grid, we
@@ -729,54 +763,57 @@ class ModelPlot(PlotBase):
         x,y = self._get_xy_from_wcs(data,quantity=True,linear=True)
         locmaj = ticker.LogLocator(base=10.0, subs=(1.0, ),numticks=10)
         locmin = ticker.LogLocator(base=10.0, subs=np.arange(2, 10)*.1,numticks=10)
-
-        #allow unit conversion of density axis
-        xax_unit = u.Unit(_header['CUNIT'+ax1])
-        # cover the base where we had to erase the wcs unit to avoid FITS error
-        if x._unit is None or x._unit is u.dimensionless_unscaled:
-            x._unit = xax_unit
-        if kwargs_opts['xaxis_unit'] is not None:
-            # Make density axis of the grid into a Quantity using the cunits from the grid header
-            #temp_x = x * xax_unit
-
-            # Get desired unit from arguments
-            xax_unit = u.Unit(kwargs_opts['xaxis_unit'])
-
-            # Convert the unit-aware grid to the desired units and set X to the value (so it's no longer a Quantity)
-            #x = temp_x.to(xax_unit).value
-            x = x.to(xax_unit)
-
-        # Set the x label appropriately, use LaTeX inline formatting
-        xlab = r"${0}$ [{1:latex_inline}]".format(_header['CTYPE'+ax1],xax_unit)
-
-        yax_unit = u.Unit(_header['CUNIT'+ax2])
-        if y._unit is None or y._unit is u.dimensionless_unscaled:
-            y._unit = yax_unit
-        if utils.is_rad(yax_unit):
-            ytype = "log({0})".format(utils.get_rad(yax_unit))
+        if kwargs_opts['test']:
+            x,xlab = utils.rescale_axis_units(x,_header['CUNIT'+ax1],_header['CTYPE'+ax1],kwargs_opts['xaxis_unit'])
+            y,ylab = utils.rescale_axis_units(y,_header['CUNIT'+ax2],_header['CTYPE'+ax2],kwargs_opts['yaxis_unit'])
         else:
-            ytype = _header['CTYPE'+ax2]
-        #allow unit conversion to cgs or Draine, for Y axis (FUV field):
-        if kwargs_opts['yaxis_unit'] is not None:
-            # Make FUV axis of the grid into a Quantity using the cunits from the grid header
-            #temp_y = y * yax_unit
+            #allow unit conversion of density axis
+            xax_unit = u.Unit(_header['CUNIT'+ax1])
+            # cover the base where we had to erase the wcs unit to avoid FITS error
+            if x._unit is None or x._unit is u.dimensionless_unscaled:
+                x._unit = xax_unit
+            if kwargs_opts['xaxis_unit'] is not None:
+                # Make density axis of the grid into a Quantity using the cunits from the grid header
+                #temp_x = x * xax_unit
 
-            # Get desired unit from arguments; for special cases, use
-            # the conventional symbol for the label (e.g. G_0 for Habing units)
-            yunit = kwargs_opts['yaxis_unit']
-            if utils.is_rad(yunit):
-                ytype = "log({0})".format(utils.get_rad(yunit))
+                # Get desired unit from arguments
+                xax_unit = u.Unit(kwargs_opts['xaxis_unit'])
+
+                # Convert the unit-aware grid to the desired units and set X to the value (so it's no longer a Quantity)
+                #x = temp_x.to(xax_unit).value
+                x = x.to(xax_unit)
+
+            # Set the x label appropriately, use LaTeX inline formatting
+            xlab = r"{0} [{1:latex_inline}]".format(_header['CTYPE'+ax1],xax_unit)
+
+            yax_unit = u.Unit(_header['CUNIT'+ax2])
+            if y._unit is None or y._unit is u.dimensionless_unscaled:
+                y._unit = yax_unit
+            if utils.is_rad(yax_unit):
+                ytype = "log({0})".format(utils.get_rad(yax_unit))
             else:
                 ytype = _header['CTYPE'+ax2]
-            yax_unit = u.Unit(yunit)
+            #allow unit conversion to cgs or Draine, for Y axis (FUV field):
+            if kwargs_opts['yaxis_unit'] is not None:
+                # Make FUV axis of the grid into a Quantity using the cunits from the grid header
+                #temp_y = y * yax_unit
 
-            # Convert the unit-aware grid to the desired units and set Y to the value (so it's no longer a Quantity)
-            #y = temp_y.to(yax_unit).value
-            y = y.to(yunit)
+                # Get desired unit from arguments; for special cases, use
+                # the conventional symbol for the label (e.g. G_0 for Habing units)
+                yunit = kwargs_opts['yaxis_unit']
+                if utils.is_rad(yunit):
+                    # get_rad returns a latex string with $ signs
+                    ytype = "log({0})".format(utils.get_rad(yunit))
+                else:
+                    ytype = _header['CTYPE'+ax2]
+                yax_unit = u.Unit(yunit)
 
-        # Set the y label appropriately, use LaTeX inline formatting
-        ylab = r"${0}$ [{1:latex_inline}]".format(ytype,yax_unit)
+                # Convert the unit-aware grid to the desired units and set Y to the value (so it's no longer a Quantity)
+                #y = temp_y.to(yax_unit).value
+                y = y.to(yunit)
 
+            # Set the y label appropriately, use LaTeX inline formatting
+            ylab = r"{0} [{1:latex_inline}]".format(ytype,yax_unit)
         # Finish up axes details.
         self._axis[axidx].set_ylabel(ylab)
         self._axis[axidx].set_xlabel(xlab)
@@ -870,9 +907,3 @@ class ModelPlot(PlotBase):
                     cset = self._axis[axidx].contour(x.value,y.value,k.data,levels=m.levels,
                                                      linestyles=lstyles, colors=colors)
                 jj=jj+1
-
-#@todo Is a separate legend() method needed? Would be helpful for users to modify the legend.
-#def legend(self,labels,colors,loc='upper center',title=None,axindex=0):
-#    lw = 3
-#    ls = '-'
-#    self._axis[axindex].legend(lin
