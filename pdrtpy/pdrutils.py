@@ -715,3 +715,34 @@ def get_xy_from_wcs(data,quantity=False,linear=False):
             if 'log' in w.wcs.ctype[1].lower():
                 y = np.power(k,y)
     return (x,y)
+
+def rescale_axis_units(x,from_unit,from_ctype,to_unit):
+    #allow unit conversion of density axis
+    xax_unit = u.Unit(from_unit)
+    # cover the base where we had to erase the wcs unit to avoid FITS error
+    if x._unit is None or x._unit is u.dimensionless_unscaled:
+        x._unit = xax_unit
+    if is_rad(xax_unit):
+        xtype = "log({0})".format(get_rad(xax_unit))
+    else:
+        if "_" in from_ctype:
+            xtype = r"${\rm "+from_ctype+"}$"
+        else:
+            xtype = from_ctype
+    if to_unit is not None:
+        # Make  axis of the grid into a Quantity using the cunit from the grid header
+        # Get desired unit from arguments
+        xax_unit = u.Unit(to_unit)
+        # Now create the CTYPE string. For special cases, use
+        # the conventional symbol for the label (e.g. G_0 for Habing units)
+        if is_rad(to_unit):
+            xtype = "log({0})".format(get_rad(to_unit))
+        else:
+            xtype = from_ctype
+        # Convert the unit-aware grid to the desired units and set X to the value (so it's no longer a Quantity)
+        x = x.to(xax_unit)
+
+    # Set the axis label appropriately, use LaTeX inline formatting
+    xlabel = r"{0} [{1:latex_inline}]".format(xtype,xax_unit)
+
+    return (x,xlabel)
