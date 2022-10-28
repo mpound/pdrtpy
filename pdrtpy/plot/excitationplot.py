@@ -230,7 +230,7 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         """
         if component not in self._tool.temperature:
             raise KeyError(f"{component} not a valid component. Must be one of {list(self._tool.temperature.keys())}")
-        self._plot(self._tool.temperature[component],**kwargs)
+        self._superplot(self._tool.temperature[component],**kwargs)
 
     def column_density(self,component,log=True,**kwargs):
         """Plot the column density of hot or cold gas component, or total column density.
@@ -239,17 +239,21 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         :type component: str
         :param log: take the log10 of the column density before plotting
         """
-        self._plot(self._tool.colden(component),log=log,**kwargs)
+        self._superplot(self._tool.colden(component),log=log,**kwargs)
 
     def opr(self,**kwargs):
         """Plot the ortho-to-para ratio.  This will be a map if the input data are a map, otherwise a float value is returned."""
         if type(self._tool.opr) == float:
             return self._tool.opr
-        self._plot(self._tool.opr,**kwargs)
+        self._superplot(self._tool.opr,**kwargs)
 
     def _plot(self,data,**kwargs):
         '''generic plotting method used by other plot methods'''
 
+        test = kwargs.pop('test',None)
+        #if test:
+        #    self._superplot(data,**kwargs)
+        #    return
         kwargs_plot = {'show' : 'data' # or 'mask' or 'error'
                       }
 
@@ -442,7 +446,7 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         self._axis[1].get_yaxis().set_label_position("right")
         fmt      = kwargs_opts.pop('fmt','r+')
         show_fit = kwargs_opts.pop('show_fit')
-        self._plot(data,axis=self._axis,index=1,**kwargs_opts)
+        self._superplot(data,axis=self._axis,index=1,**kwargs_opts)
         self.ex_diagram(axis=self._axis[1], reset=False,position=position,size=1,
                         norm=True,show_fit=show_fit)
 

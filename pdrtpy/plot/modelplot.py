@@ -778,7 +778,7 @@ class ModelPlot(PlotBase):
             im = self._axis[axidx].pcolormesh(x.value,y.value,km,cmap=kwargs_imshow['cmap'],
                                               norm=_norm,shading='auto')
             if kwargs_opts['colorbar']:
-                    cbar = self._figure.colorbar(im, ax=self._axis[axidx])
+                cbar = self._figure.colorbar(im, ax=self._axis[axidx])
                 if kwargs_imshow['norm'].lower() != "log":
                     #avoid AttributeError: 'LogFormatterSciNotation' object has no attribute 'set_powerlimits'
                     cbar.formatter = ticker.ScalarFormatter(useMathText=True)

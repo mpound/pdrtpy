@@ -14,10 +14,7 @@ import numpy as np
 import numpy.ma as ma
 import scipy.stats as stats
 
-#import matplotlib.figure
-#import matplotlib.colors as mpcolors
 import matplotlib.cm as mcm
-#from matplotlib import ticker
 from matplotlib.lines import Line2D
 
 import astropy.wcs as wcs
@@ -101,7 +98,7 @@ class LineRatioPlot(PlotBase):
 
         kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'units': u.dimensionless_unscaled , 'colorbar':False}
         kwargs_opts.update(kwargs)
-        self._plot(data=self._tool._observedratios[id],**kwargs_opts)
+        self._superplot(data=self._tool._observedratios[id],**kwargs_opts)
 
     def density(self,**kwargs):
         '''Plot the hydrogen nucleus volume density map that was computed by :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool. Default units: cm :math:`^{-3}`
@@ -124,7 +121,7 @@ class LineRatioPlot(PlotBase):
 
         tunit=u.Unit(kwargs_opts['units'])
         kwargs_opts['title'] = r"n [{0:latex_inline}]".format(tunit)
-        self._plot(self._tool._density,**kwargs_opts)
+        self._superplot(self._tool._density,**kwargs_opts)
 
     def radiation_field(self,**kwargs):
         '''Plot the radiation field map that was computed by :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool. Default units: Habing.
@@ -150,7 +147,7 @@ class LineRatioPlot(PlotBase):
             tunit=u.Unit(kwargs_opts['units'])
             kwargs_opts['title'] = r"{0} [{1:latex_inline}]".format(rad_title,tunit)
 
-        self._plot(self._tool.radiation_field,**kwargs_opts)
+        self._superplot(self._tool.radiation_field,**kwargs_opts)
 
     #@TODO refactor this method with reduced_chisq()
     def chisq(self, **kwargs):
@@ -185,7 +182,7 @@ class LineRatioPlot(PlotBase):
             data = self._tool.chisq(min=True)
             if 'title' not in kwargs:
                 kwargs_opts['title'] = r'$\chi^2$ (dof=%d)'%self._tool._dof
-            self._plot(data,**kwargs_opts)
+            self._superplot(data,**kwargs_opts)
         else:
             data = self._tool.chisq(min=False)
             self._modelplot._plot_no_wcs(data,header=None,**kwargs_opts)
@@ -256,7 +253,7 @@ class LineRatioPlot(PlotBase):
             if 'title' not in kwargs:
                 kwargs_opts['title'] = r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof
             data = self._tool.reduced_chisq(min=True)
-            self._plot(data,**kwargs_opts)
+            self._superplot(data,**kwargs_opts)
             # doesn't make sense to point out minimum chisq on a spatial-spatial map,
             # so no legend
         else:
@@ -530,6 +527,11 @@ class LineRatioPlot(PlotBase):
     def _plot(self,data,**kwargs):
         '''generic plotting method used by other plot methods'''
 
+        test = kwargs.pop('test',None)
+        #if test:
+        #    self._superplot(data,**kwargs)
+        #    return
+
         kwargs_plot = {'show' : 'data' # or 'mask' or 'error'
                       }
 
@@ -667,4 +669,3 @@ class LineRatioPlot(PlotBase):
             self._axis[axidx].set_xlabel(k.wcs.wcs.lngtyp)
             self._axis[axidx].set_ylabel(k.wcs.wcs.lattyp)
 
-        #self._figure.tight_layout()
