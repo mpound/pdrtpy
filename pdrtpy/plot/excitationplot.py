@@ -370,7 +370,7 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
                        'constrained_layout','figsize','stretch','legend','markersize','show_fit']:
                 kwargs_imshow.pop(kx,None)
             # eliminate deprecation warning.  vmin,vmax are passed to Normalization object.
-            if kwargs_opts['norm'] is not None:
+            if kwargs_imshow['norm'] is not None:
                 kwargs_imshow.pop('vmin',None)
                 kwargs_imshow.pop('vmax',None)
             im=_axis[axidx].imshow(km,**kwargs_imshow)

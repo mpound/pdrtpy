@@ -364,7 +364,7 @@ class PlotBase:
                        'index', 'reset','colors','colorbar','show',
                        'axis','yaxis_unit','xaxis_unit','bbox_to_anchor','loc',
                        'constrained_layout','figsize','stretch','legend',
-                       'markers','show_fit']:
+                       'markersize','show_fit']:
                 kwargs_imshow.pop(kx,None)
             # eliminate deprecation warning.  vmin,vmax are passed to Normalization object.
             if kwargs_opts['norm'] is not None:
