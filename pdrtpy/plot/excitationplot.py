@@ -193,7 +193,8 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
             labels.append(labnh)
         # Scale xaxis with max(energy). Round up to nearest 1000
         if kwargs_opts['xmax'] is None:
-            kwargs_opts['xmax'] = np.round(1000.+energy.max(),-3)
+            kwargs_opts['xmax'] = np.round(500.+energy.max(),-3)
+        print("XMAX ",kwargs_opts['xmax'])
         _axis.set_xlim(kwargs_opts['xmin'],kwargs_opts['xmax'])
         _axis.set_ylim(kwargs_opts['ymin'],kwargs_opts['ymax'])
         # try to make reasonably-spaced xaxis tickmarks.  
@@ -263,7 +264,6 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
                        'contours': True,
                        'label': False,
                        'title': None,
-                       'norm': 'simple',
                        'log': False,
                        'axis': None
                        }
