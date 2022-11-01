@@ -1,11 +1,9 @@
 from copy import deepcopy,copy
-import warnings
 import numpy as np
 import numpy.ma as ma
 
 import matplotlib.axes as maxes
 import matplotlib.cm as mcm
-from matplotlib.lines import Line2D
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from astropy.visualization import simple_norm, ZScaleInterval , ImageNormalize
@@ -400,4 +398,3 @@ class PlotBase:
         if k.wcs is not None:
             self._axis[axidx].set_xlabel(k.wcs.wcs.lngtyp)
             self._axis[axidx].set_ylabel(k.wcs.wcs.lattyp)
-

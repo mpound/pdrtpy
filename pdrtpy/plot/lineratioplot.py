@@ -668,4 +668,3 @@ class LineRatioPlot(PlotBase):
         if k.wcs is not None:
             self._axis[axidx].set_xlabel(k.wcs.wcs.lngtyp)
             self._axis[axidx].set_ylabel(k.wcs.wcs.lattyp)
-
