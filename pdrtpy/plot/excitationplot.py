@@ -138,7 +138,7 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         if kwargs_opts['xlabel'] is None:
             _axis.set_xlabel("$E_u/k$ (K)")
         else:
-            axis.set_xlabel(kwargs_opts['xlabel'])
+            _axis.set_xlabel(kwargs_opts['xlabel'])
         if kwargs_opts['ylabel'] is None:
             if norm:
                 _axis.set_ylabel("log $(N_u/g_u) ~({\\rm cm}^{-2})$")
