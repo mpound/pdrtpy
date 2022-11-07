@@ -24,6 +24,7 @@ class ModelSet(object):
     """
     #@ToDo replace with kwargs?
     def __init__(self,name,z,medium="constant density",mass=None):
+        #@Todo table file to be promoted to parameter to enable user-added ModelSets.  Cou
         self._all_models = get_table("all_models.tab")
         self._all_models.add_index("name")
         possible = dict()
