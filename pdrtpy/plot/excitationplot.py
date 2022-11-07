@@ -54,6 +54,8 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
                       'xmax':None, #  we use np.max() later if user does not specify
                       'ymax':22,
                       'ymin': 15,
+                      'xlabel':None,
+                      'ylabel':None,
                       'grid' :False,
                       'figsize':(10,7),
                       'capsize':3,
@@ -133,11 +135,17 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
                                 linestyle='none',color='k',
                                 lw=kwargs_opts['linewidth'],
                                 ms=kwargs_opts['markersize'])
-        _axis.set_xlabel("$E_u/k$ (K)")
-        if norm:
-            _axis.set_ylabel("log $(N_u/g_u) ~({\\rm cm}^{-2})$")
+        if kwargs_opts['xlabel'] is None:
+            _axis.set_xlabel("$E_u/k$ (K)")
         else:
-            _axis.set_ylabel("log $(N_u) ~({\\rm cm}^{-2})$")
+            axis.set_xlabel(kwargs_opts['xlabel'])
+        if kwargs_opts['ylabel'] is None:
+            if norm:
+                _axis.set_ylabel("log $(N_u/g_u) ~({\\rm cm}^{-2})$")
+            else:
+                _axis.set_ylabel("log $(N_u) ~({\\rm cm}^{-2})$")
+        else:
+            _axis.set_ylabel(kwargs_opts['ylabel'])
         first = True
         if kwargs_opts['label']=='id':
             for lab in sorted(cdavg):
@@ -194,7 +202,6 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         # Scale xaxis with max(energy). Round up to nearest 1000
         if kwargs_opts['xmax'] is None:
             kwargs_opts['xmax'] = np.round(500.+energy.max(),-3)
-        print("XMAX ",kwargs_opts['xmax'])
         _axis.set_xlim(kwargs_opts['xmin'],kwargs_opts['xmax'])
         _axis.set_ylim(kwargs_opts['ymin'],kwargs_opts['ymax'])
         # try to make reasonably-spaced xaxis tickmarks.  
@@ -207,8 +214,8 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
             _axis.xaxis.set_major_locator(MultipleLocator(2000))
             _axis.xaxis.set_minor_locator(MultipleLocator(500))
         else:
-            _axis.xaxis.set_major_locator(MultipleLocator(4000))
-            _axis.xaxis.set_minor_locator(MultipleLocator(1000))
+            _axis.xaxis.set_major_locator(MultipleLocator(6000))
+            _axis.xaxis.set_minor_locator(MultipleLocator(2000))
         _axis.yaxis.set_major_locator(MultipleLocator(1))
         _axis.yaxis.set_minor_locator(MultipleLocator(0.2))
         _axis.tick_params(axis='both',direction='in',which='both')
