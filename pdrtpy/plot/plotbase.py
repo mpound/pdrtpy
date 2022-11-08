@@ -246,10 +246,10 @@ class PlotBase:
         """
         self._plt.rc('axes', prop_cycle=(cycler('color',  colorcycle)))
 
-    def _superplot(self,data,**kwargs):
+    def _plot(self,data,**kwargs):
         '''generic plotting method used by other plot methods'''
 
-        print("SUPERPLOT")
+        test = kwargs.pop('test',False)
         kwargs_plot = {'show' : 'data' # or 'mask' or 'error'
                       }
 
@@ -273,7 +273,7 @@ class PlotBase:
         kwargs_opts.update(kwargs)
         kwargs_plot.update(kwargs)
 
-        _data = data  # default is show the data
+        _data = deepcopy(data)  # default is show the data
 
         if kwargs_plot['show'] == 'error':
             _data = deepcopy(data)
@@ -380,7 +380,7 @@ class PlotBase:
             # suppress errors and warnings about unused keywords
             for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect',
                        'colorbar','reset', 'nrows', 'ncols', 'index','show','yaxis_unit',
-                       'xaxis_unit','norm','constrained_layout','figsize','stretch','legend']:
+                       'xaxis_unit','norm','constrained_layout','figsize','stretch','legend','markersize','show_fit']:
                 kwargs_contour.pop(kx,None)
 
             contourset = self._axis[axidx].contour(km, **kwargs_contour)

@@ -98,7 +98,7 @@ class LineRatioPlot(PlotBase):
 
         kwargs_opts = {'title': self._tool._modelset.table.loc[id]["title"], 'units': u.dimensionless_unscaled , 'colorbar':False}
         kwargs_opts.update(kwargs)
-        self._superplot(data=self._tool._observedratios[id],**kwargs_opts)
+        self._plot(data=self._tool._observedratios[id],**kwargs_opts)
 
     def density(self,**kwargs):
         '''Plot the hydrogen nucleus volume density map that was computed by :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool. Default units: cm :math:`^{-3}`
@@ -121,7 +121,7 @@ class LineRatioPlot(PlotBase):
 
         tunit=u.Unit(kwargs_opts['units'])
         kwargs_opts['title'] = r"n [{0:latex_inline}]".format(tunit)
-        self._superplot(self._tool._density,**kwargs_opts)
+        self._plot(self._tool._density,**kwargs_opts)
 
     def radiation_field(self,**kwargs):
         '''Plot the radiation field map that was computed by :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool. Default units: Habing.
@@ -147,7 +147,7 @@ class LineRatioPlot(PlotBase):
             tunit=u.Unit(kwargs_opts['units'])
             kwargs_opts['title'] = r"{0} [{1:latex_inline}]".format(rad_title,tunit)
 
-        self._superplot(self._tool.radiation_field,**kwargs_opts)
+        self._plot(self._tool.radiation_field,**kwargs_opts)
 
     #@TODO refactor this method with reduced_chisq()
     def chisq(self, **kwargs):
@@ -182,7 +182,7 @@ class LineRatioPlot(PlotBase):
             data = self._tool.chisq(min=True)
             if 'title' not in kwargs:
                 kwargs_opts['title'] = r'$\chi^2$ (dof=%d)'%self._tool._dof
-            self._superplot(data,**kwargs_opts)
+            self._plot(data,**kwargs_opts)
         else:
             data = self._tool.chisq(min=False)
             self._modelplot._plot_no_wcs(data,header=None,**kwargs_opts)
@@ -253,7 +253,7 @@ class LineRatioPlot(PlotBase):
             if 'title' not in kwargs:
                 kwargs_opts['title'] = r'$\chi_\nu^2$ (dof=%d)'%self._tool._dof
             data = self._tool.reduced_chisq(min=True)
-            self._superplot(data,**kwargs_opts)
+            self._plot(data,**kwargs_opts)
             # doesn't make sense to point out minimum chisq on a spatial-spatial map,
             # so no legend
         else:
@@ -522,149 +522,3 @@ class LineRatioPlot(PlotBase):
             # available ratios
             for i in range(self._tool.ratiocount,len(self._axis)):
                 self._axis[i].axis('off')
-
-
-    def _plot(self,data,**kwargs):
-        '''generic plotting method used by other plot methods'''
-
-        test = kwargs.pop('test',None)
-        #if test:
-        #    self._superplot(data,**kwargs)
-        #    return
-
-        kwargs_plot = {'show' : 'data' # or 'mask' or 'error'
-                      }
-
-        kwargs_opts = {'units' : None,
-                       'image':True,
-                       'colorbar': True,
-                       'contours': True,
-                       'label': False,
-                       'title': None
-                       }
-
-        kwargs_contour = {'levels': None,
-                          'colors': ['white'],
-                          'linewidths': 1.0}
-
-
-        # Merge in any keys the user provided, overriding defaults.
-        kwargs_contour.update(kwargs)
-        kwargs_opts.update(kwargs)
-        kwargs_plot.update(kwargs)
-
-        _data = data  # default is show the data
-
-        if kwargs_plot['show'] == 'error':
-            _data = deepcopy(data)
-            _data.data = _data.error
-        if kwargs_plot['show'] == 'mask':
-            _data = deepcopy(data)
-            _data.data = _data.mask
-            # can't contour a boolean
-            kwargs_opts['contours'] = False
-
-        if self._tool._modelnaxis == 2 or len(_data.shape)==2:
-            if kwargs_opts['units'] is not None:
-                k = utils.to(kwargs_opts['units'], _data)
-            else:
-                k = _data
-        elif self._tool._modelnaxis == 3:
-            if kwargs_opts['units'] is not None:
-                k = utils.to(kwargs_opts['units'], _data[0,:,:])
-            else:
-                k = _data[0,:,:]
-        else:
-            raise Exception("Unexpected model naxis: %d"%self._tool._modelnaxis)
-
-        km = ma.masked_invalid(k)
-        if getattr(k,"mask",None) is not None:
-            km.mask = np.logical_or(k.mask,km.mask)
-        # make sure nans don't affect the color map
-        min_ = np.nanmin(km)
-        max_ = np.nanmax(km)
-
-        kwargs_imshow = { 'origin': 'lower',
-                          'norm': 'simple',
-                          'stretch': 'linear',
-                          'vmin': min_,
-                          'vmax': max_,
-                          'cmap': 'plasma',
-                          'aspect': 'auto'}
-
-        kwargs_subplot = {'nrows': 1,
-                          'ncols': 1,
-                          'index': 1,
-                          'reset': True,
-                          'constrained_layout': False # this appears to have no effect
-                         }
-
-        # delay merge until min_ and max_ are known
-        kwargs_imshow.update(kwargs)
-        kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km,
-                                             kwargs_imshow['vmin'],kwargs_imshow['vmax'],
-                                             kwargs_imshow['stretch'])
-
-        kwargs_subplot.update(kwargs)
-        # swap ncols and nrows in figsize to preserve aspect ratio
-        kwargs_subplot['figsize'] = kwargs.get("figsize",(kwargs_subplot["ncols"]*5,kwargs_subplot["nrows"]*5))
-
-        axidx = kwargs_subplot['index']-1
-        if kwargs_subplot['reset']:
-            self._figure,self._axis = self._plt.subplots(kwargs_subplot['nrows'],kwargs_subplot['ncols'],
-                                                    figsize=kwargs_subplot['figsize'],
-                                                    subplot_kw={'projection':k.wcs,
-                                                                'aspect':kwargs_imshow['aspect']},
-                                                    constrained_layout=kwargs_subplot['constrained_layout'])
-
-        # Make sure self._axis is an array because we will index it below.
-        if type(self._axis) is not np.ndarray:
-            self._axis = np.array([self._axis])
-        for a in self._axis:
-            a.tick_params(axis='both',direction='in') # axes vs axis???
-            for c in a.coords:
-                c.display_minor_ticks(True)
-        if kwargs_opts['image']:
-            current_cmap = copy(mcm.get_cmap(kwargs_imshow['cmap']))
-            current_cmap.set_bad(color='white',alpha=1)
-            # suppress errors and warnings about unused keywords
-            #@todo need a better solution for this, it is not scalable.
-            #push onto a stack?
-            for kx in ['units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols',
-                       'index', 'reset','colors','colorbar','show','yaxis_unit','xaxis_unit',
-                       'constrained_layout','figsize','stretch','legend']:
-                kwargs_imshow.pop(kx,None)
-            # eliminate deprecation warning.  vmin,vmax are passed to Normalization object.
-            if kwargs_opts['norm'] is not None:
-                kwargs_imshow.pop('vmin',None)
-                kwargs_imshow.pop('vmax',None)
-            im=self._axis[axidx].imshow(km,**kwargs_imshow)
-            if kwargs_opts['colorbar']:
-                self._wcs_colorbar(im,self._axis[axidx])
-
-        if kwargs_opts['contours']:
-            if kwargs_contour['levels'] is None:
-                # Figure out some autolevels
-                kwargs_contour['levels'] = self._autolevels(km,'log')
-
-            # suppress errors and warnings about unused keywords
-            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect',
-                       'colorbar','reset', 'nrows', 'ncols', 'index','show','yaxis_unit',
-                       'xaxis_unit','norm','constrained_layout','figsize','stretch','legend']:
-                kwargs_contour.pop(kx,None)
-
-            contourset = self._axis[axidx].contour(km, **kwargs_contour)
-            if kwargs_opts['label']:
-                self._axis[axidx].clabel(contourset,contourset.levels,inline=True,fmt='%1.1e')
-
-        if kwargs_opts['title'] is not None:
-            #self.figure.subplots_adjust(top=0.95)
-            #self._axis[axidx].set_title(kwargs_opts['title'])
-            # Using ax.set_title causes the title to be cut off.  No amount of
-            # diddling with tight_layout, constrained_layout, subplot adjusting, etc
-            # would affect this.  However using Figure.suptitle seems to work.
-            self.figure.suptitle(kwargs_opts['title'],y=0.95)
-
-        if k.wcs is not None:
-            self._axis[axidx].set_xlabel(k.wcs.wcs.lngtyp)
-            self._axis[axidx].set_ylabel(k.wcs.wcs.lattyp)
