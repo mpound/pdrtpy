@@ -93,8 +93,8 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
             cdsort = self._sorted_by_vibrational_level(cdavg)
             ensort = self._sorted_by_vibrational_level(energies)
             #print("ENSORT" ,ensort.values())
-            cyc = cycler('color',  self._CB_color_cycle)
-            cyfill = cycler('fillstyle',['full', 'none', 'full', 'none', 'full', 'none', 'full', 'none', 'full'])
+            #cyc = cycler('color',  self._CB_color_cycle)
+            #cyfill = cycler('fillstyle',['full', 'none', 'full', 'none', 'full', 'none', 'full', 'none', 'full'])
             #self._plt.rc('axes', prop_cycle=(cyc+cyfill))
 
             fmtd = {False: 'o',True:'^'} #there is no cycler for fmt, do it manually
