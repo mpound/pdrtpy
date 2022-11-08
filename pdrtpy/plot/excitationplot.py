@@ -1,7 +1,7 @@
 import numpy as np
 
 from matplotlib.ticker import MultipleLocator
-from cycler import cycler
+#from cycler import cycler
 
 import astropy.units as u
 from astropy.nddata import StdDevUncertainty
