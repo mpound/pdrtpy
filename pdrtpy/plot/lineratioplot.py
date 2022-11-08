@@ -7,14 +7,12 @@
 # Also https://docs.bokeh.org/en
 # especially for coloring and style
 
-from copy import deepcopy,copy
+from copy import deepcopy
 import warnings
 
 import numpy as np
-import numpy.ma as ma
 import scipy.stats as stats
 
-import matplotlib.cm as mcm
 from matplotlib.lines import Line2D
 
 import astropy.wcs as wcs

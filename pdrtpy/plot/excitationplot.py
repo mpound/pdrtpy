@@ -1,9 +1,5 @@
 import numpy as np
-import numpy.ma as ma
-from copy import deepcopy,copy
 
-import matplotlib.cm as mcm
-#from matplotlib import ticker
 from matplotlib.ticker import MultipleLocator
 from cycler import cycler
 
@@ -12,7 +8,7 @@ from astropy.nddata import StdDevUncertainty
 
 from ..measurement import Measurement
 from .plotbase import PlotBase
-from ..pdrutils import float_formatter,LOGE,to
+from ..pdrutils import float_formatter,LOGE
 
 class ExcitationPlot(PlotBase):
     """
@@ -23,6 +19,7 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         self._xlim = []
         self._ylim = []
         self._label = label
+        self._logfile = None
 
     def _sorted_by_vibrational_level(self,measurements):
         # d is a dict of measurements
@@ -320,8 +317,10 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
                                 norm=True,show_fit=show_fit)
                     #self._axis[0].set_title(f'{position}')
             except Exception as err:
-                pass
-                #self._logfile.write("Exception {0}".format(err))
+                if self._logfile is None:
+                    pass
+                else:
+                    self._logfile.write("Exception {0}".format(err))
 
             #self._logfile.close()
             self._figure.canvas.draw_idle()
