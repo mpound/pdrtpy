@@ -237,7 +237,7 @@ class ModelPlot(PlotBase):
             'loc':"upper left",
             'xaxis_unit':None,
             'yaxis_unit':None,
-            'test':True, 
+            'test':False, 
         }
         kwargs_opts.update(kwargs)
         model = self._modelset.get_model(identifier)
@@ -661,7 +661,7 @@ class ModelPlot(PlotBase):
                        'legend': False,
                        'meas_color': ['#4daf4a'],
                        'shading': 0.4,
-                       'test':True
+                       'test':False,
                        }
 
         kwargs_contour = {'levels': None,
