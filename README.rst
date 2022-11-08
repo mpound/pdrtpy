@@ -33,7 +33,7 @@ PhotoDissociation Region Toolbox --- Python
 .. image:: https://github.com/mpound/pdrtpy/actions/workflows/run-integration-tests.yml/badge.svg?branch=active-devel
  :alt: Integration test status
 
-.. image:: https://github.com/mpound/pdrtpy/blob/aj_post_review/coverage.svg?branch=master
+.. image:: https://github.com/mpound/pdrtpy/blob/master/coverage.svg?branch=master
  :alt: Code coverage
 
 ``pdrtpy`` is the new and improved version of the formerly web-based `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/>`_, rewritten in Python with new capabilities and giving more flexibility to end users.  (The web-based /CGI version of PDRT is deprecated and no longer supported). 
