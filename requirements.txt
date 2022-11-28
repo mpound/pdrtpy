@@ -11,4 +11,4 @@ numdifftools>=0.9.40
 numpy>=1.18
 pandas>=1.3
 scipy>=1.4
-tiqdm>=4.62.0
+tqdm>=4.62.0
