@@ -45,7 +45,6 @@ mpkt = ModelPlot(mskt)
 mpkt.plot('OI_145+CII_158/FIR',yaxis_unit='Habing',
         label=True, cmap='viridis', colors='k',norm='log')
 mpkt.savefig("example1b_figure.pdf")
-
 rcw49 = []
 label = ["shell","pillar","northern cloud","ridge"]
 format_ = ["k+","b+","g+","r+"]
@@ -55,7 +54,7 @@ for region in ["shell","pil","nc","ridge"]:
     f2 = utils.get_testdata(f"cii-co-{region}.tab")
     rcw49.append(Measurement.from_table(f1))
     rcw49.append(Measurement.from_table(f2))
-    
+
 mp.phasespace(['CII_158/FIR','CII_158/CO_32'],nax1_clip=[1E2,1E5]*u.Unit("cm-3"),
                nax2_clip=[1E1,1E6]*utils.habing_unit, measurements=rcw49,label=label,
                fmt=format_,title="RCW 49 Regions")

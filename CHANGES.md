@@ -1,4 +1,40 @@
 ## Change Log
+### Release 2.3.x
+#### _H2 Excitation Tool_
+
+- allow single temperature fit
+
+- allow plotting of multiple vibrational levels
+
+- 
+
+#### _Models_
+
+- added 2020 Kosma-Tau models
+
+#### _Plotting_
+
+- new ModelPlot.isoplot method to make isocontour plots of individual model parameters
+
+- refactoring _plot -> PlotBase
+
+#### _Documentation_
+
+- updated
+
+#### _Notebooks_ ###
+
+- existing example notebooks updated  (more detail
+
+#### _Issues_
+
+- issues x,y,z closed
+
+- various other bugs discovered and fixed
+
+#### _Website_
+
+- meh?
 
 ### Release 2.2.9
 

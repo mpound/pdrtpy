@@ -22,7 +22,7 @@ For an example how to use `H2ExcitationFit` and `ExcitationPlot` see the noteboo
 ToolBase
 --------
 
-The base class of all tools.  Tools have a :meth:`run` method both of which subclasses must define.
+The base class of all tools.  Tools have a :meth:`~pdrtpy.tool.toolbase.ToolBase.run` method both of which subclasses must define.
 
 .. automodule:: pdrtpy.tool.toolbase
    :members:

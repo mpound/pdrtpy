@@ -2,7 +2,6 @@ import warnings
 from copy import deepcopy
 import numpy as np
 import numpy.ma as ma
-
 from matplotlib import ticker
 from matplotlib.lines import Line2D
 
@@ -12,7 +11,6 @@ import astropy.units as u
 from .plotbase import PlotBase
 from ..measurement import Measurement
 from .. import pdrutils as utils
-
 
 class ModelPlot(PlotBase):
     """ModelPlot is a tool for exploring sets of models.  It can plot individual intensity or ratio models, phase-space diagrams, and optionally overlay observations.   Units are seamlessly transformed, so you can plot in Habing units, Draine units, or any conformable quantity.  ModelPlot does not require model fitting with :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` first.
@@ -64,6 +62,8 @@ class ModelPlot(PlotBase):
                        'colors':['white'],
                        'meas_color': [self._CB_color_cycle[0]],
                        'legend':True,
+                       'bbox_to_anchor':None,
+                       'loc':"upper center",
                        'image':True,
                        'measurements':None
                       }
@@ -71,7 +71,7 @@ class ModelPlot(PlotBase):
 
         # make a sensible choice about contours if image is not shown
         if not kwargs_opts['image'] and kwargs_opts['colors'][0] == 'white':
-           kwargs_opts['colors'][0] = 'black'
+            kwargs_opts['colors'][0] = 'black'
 
         self._plot_no_wcs(model,**kwargs_opts)
         if kwargs_opts['legend']:
@@ -83,8 +83,9 @@ class ModelPlot(PlotBase):
             if kwargs_opts['measurements'] is not None:
                 lines.append(Line2D([0], [0], color=kwargs_opts['meas_color'][0], linewidth=3, linestyle='-'))
                 labels.append("observed")
-            #maybe loc should be 'best' but then it bounces around
-            self._axis[0].legend(lines, labels,loc='upper center',title=kwargs_opts['title'])
+            self._axis[0].legend(lines, labels, loc=kwargs_opts['loc'],
+                            bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
+                            title=kwargs_opts['title'])
 
     def intensity(self,identifier,**kwargs):
         """Plot a model ratio
@@ -114,12 +115,14 @@ class ModelPlot(PlotBase):
                        'colors':['white'],
                        'meas_color': [self._CB_color_cycle[0]],
                        'legend':True,
+                       'bbox_to_anchor':None,
+                       'loc':"upper center",
                        'image':True
                       }
 
         kwargs_opts.update(kwargs)
         if not kwargs_opts['image'] and kwargs_opts['colors'][0] == 'white':
-           kwargs_opts['colors'][0] = 'black'
+            kwargs_opts['colors'][0] = 'black'
         self._plot_no_wcs(model[identifier],**kwargs_opts)
         if kwargs_opts['legend']:
             lines = list()
@@ -131,7 +134,9 @@ class ModelPlot(PlotBase):
                 lines.append(Line2D([0], [0], color=kwargs_opts['meas_color'][0], linewidth=3, linestyle='-'))
                 labels.append("observed")
             #maybe loc should be 'best' but then it bounces around
-            self._axis[0].legend(lines, labels,loc='upper center',title=kwargs_opts['title'])
+            self._axis[0].legend(lines, labels, loc=kwargs_opts['loc'],
+                            bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
+                            title=kwargs_opts['title']) 
 
 
     def overlay(self,measurements,**kwargs):
@@ -139,7 +144,7 @@ class ModelPlot(PlotBase):
 
         :param measurements: a list of one or more :class:`~pdrtpy.measurement.Measurement` to overlay.
         :type measurements: list
-        :param shading: Controls how measurements and errors are drawn.  If ``shading`` is zero, Measurements will be drawn in solid contour for the value and dashed for the +/- errors. If ``shading`` is between 0 and 1, Measurements are drawn with as filled contours representing the size of the errors (see :meth:`matplotlib.pyplot.contourf`) with alpha set to the ``shading`` value.  Default value: 0.4
+        :param shading: Controls how measurements and errors are drawn.  If ``shading`` is zero, Measurements will be drawn in solid contour for the value and dashed for the +/- errors. If ``shading`` is between 0 and 1, Measurements are drawn with as filled contours representing the size of the errors (see :func:`matplotlib.pyplot.contourf`) with alpha set to the ``shading`` value.  Default value: 0.4
         :type shading: float
 
         '''
@@ -156,6 +161,8 @@ class ModelPlot(PlotBase):
                        'title': None,
                        'reset': True,
                        'legend': True,
+                       'bbox_to_anchor':None,
+                       'loc':"upper center",
                        'shading': 0.4}
 
         kwargs_opts.update(kwargs)
@@ -194,8 +201,138 @@ class ModelPlot(PlotBase):
                 word = "Values"
             lines = [Line2D([0], [0], color=c, linewidth=3, linestyle='-') for c in kwargs_opts['meas_color'][0:i]]
             labels = [k.title for k in models]
-            self._plt.legend(lines, labels,loc='upper center',title='Observed '+word)
+            self._plt.legend(lines, labels,loc=kwargs_opts['loc'],
+                             bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
+                             title='Observed '+word)
 
+    def isoplot(self,identifier,plotnaxis,nax_clip=[1000,1E5]*u.Unit("K"),**kwargs):
+        '''Plot lines of constant model parameter as a function of the other model parameter and a model intensity or ratio
+
+        :param identifier: identifier tag for the model to plot, e.g., "OI_63/CO_21" or "CII_158"
+        :type identifier:  str 
+        :param plotnaxis: Which NAXIS to use to compute lines of constant value. Since models have two axes, this must be either 1 or 2
+        :type plotnaxis: int
+        :param nax_clip: The range of model parameters on NAXIS{plotnaxis} to show in the plot.  Must be given as a range of astropy quanitities, e.g. [10,1E7]*Unit("cm-3"). Default is None which means plot full range of the parameter.
+        :type nax_clip: array-like, must contain :class:`~astropy.units.Quantity`
+        :param step: Allows skipping of lines of constant value, e.g. plot every `step-th` value. Useful when parameter space is crowded, and a cleaner looking plot is desired.  Default: 1 -- plot every value
+        :type step: int
+        '''
+        kwargs_opts = {
+            'errorbar':False,
+            'fmt': None,
+            'label': None,
+            'legend': True,
+            'title': None,
+            'grid' :True,
+            'figsize':(8,5),
+            'linewidth': 2.0,
+            'aspect': 'auto',
+            'step': 1,
+            'logx': False,
+            'logy': False,                       
+            'title': None,
+            'grid' :True,                        
+            'measurements':None,
+            'bbox_to_anchor':(1.024,1),
+            'loc':"upper left",
+            'xaxis_unit':None,
+            'yaxis_unit':None,
+            'test':False, 
+        }
+        kwargs_opts.update(kwargs)
+        model = self._modelset.get_model(identifier)
+        self._figure,self._axis = self._plt.subplots(nrows=1, ncols=1, 
+                                                     figsize=kwargs_opts['figsize'])
+        # this code substantially copied from phasespace(). At some point 
+        # perhaps they can be refactored.
+        if plotnaxis != 1 and plotnaxis !=2:
+            raise ValueError("plotnaxis must be 1 or 2")
+        if plotnaxis == 1:
+            otheraxis = 2
+            otherindex = 1
+        if plotnaxis == 2:
+            otheraxis = 1
+            otherindex = 0
+        xaxis = ["naxis2","naxis1"]
+        pindex = plotnaxis - 1
+        naxis_is_log = ['log' in c for c in  model.wcs.wcs.ctype]
+        naxis = list(self._get_xy_from_wcs(model,quantity=True,linear=True))
+        naxislog=self._get_xy_from_wcs(model,quantity=True,linear=False)
+        if nax_clip is None:
+            nax_clip = [naxis[pindex][0].value,naxis[pindex][-1].value]*naxis[pindex].unit
+        dcc=nax_clip.to(naxis[pindex].unit)
+        #Select the model naxis *indices* within the NAX limits
+        xi=np.where((naxis[pindex]>=dcc[0]) & (naxis[pindex]<=dcc[1]))[0]
+        if naxis_is_log[pindex]:
+            # Create an array containing *indices* of the range of naxis[pindex] alues.
+            # -5,12 is a large enough logarithmic range to contain any model we have
+            # this picks out integer values of log(naxis).
+            x2= np.hstack([np.where((np.round(naxislog[pindex].value,1))==i)[0] for i in np.arange(-5,12)])
+        else:
+            x2 = np.arange(model.wcs._naxis[pindex])
+
+        xi2=np.intersect1d(xi,x2)
+        naxis[otherindex],xlabel = utils.rescale_axis_units(naxis[otherindex],naxis[otherindex].unit,
+                                 model.wcs.wcs.ctype[otherindex],kwargs_opts['xaxis_unit'])
+        # @TODO possibly support plotaxis_unit
+        lines = []
+        # convert the yaxis if requested. The yaxis is the pixel values in the model,
+        # which have units as specified in BUNIT header item.
+        bunit = 1.0*u.Unit(model.header.get("BUNIT",""))
+        bscale = 1.0 
+        if kwargs_opts['yaxis_unit'] is not None:
+            bunit = bunit.to(kwargs_opts['yaxis_unit'])
+            bscale = bunit.value
+        if bunit != u.dimensionless_unscaled:
+            ylabel = r"{0} [{1:latex_inline}]".format(model.title,bunit.unit)
+        else:
+            ylabel = model.title
+        for j in xi2[::kwargs_opts['step']]:
+            if plotnaxis == 1:
+                yy=bscale*model[0:len(naxis[otherindex]),j]
+            else:
+                yy=bscale*model[j,0:len(naxis[otherindex])]
+            if naxis_is_log[pindex]:
+                label='{0:.1f}'.format(np.round(np.log10(naxis[pindex][j].to(nax_clip.unit).value),1))
+            else:
+                label='{0:.0f}'.format(np.round(naxis[pindex][j].to(nax_clip.unit).value,0))
+            lines.extend(self._axis.plot(naxis[otherindex],yy,label=label))
+        # Format the plot in a sensible way
+        self._axis.set_ylabel(ylabel)
+        self._axis.set_xlabel(xlabel)
+        self._axis.set_aspect(kwargs_opts['aspect'])
+        self._axis.ticklabel_format(axis='both',useMathText=True)
+        if kwargs_opts['logx']:
+            self._axis.set_xscale('log')
+        if kwargs_opts['logy']:
+            self._axis.set_yscale('log')
+        self._axis.tick_params(axis='both',direction='in',which='both')
+        self._axis.tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both')
+        if kwargs_opts['grid']:
+            self._axis.grid(b=True,which='major',axis='both',
+                lw=kwargs_opts['linewidth']/2,
+                color='k',alpha=0.33)
+            self._axis.grid(b=True,which='minor',axis='both',
+                lw=kwargs_opts['linewidth']/2,
+                color='k',alpha=0.22,linestyle='--')
+        if kwargs_opts['legend']:
+            # Manually build the legend. 
+            title1 = model.wcs.wcs.ctype[pindex]
+            if "_" in title1:
+                title1 = r"${\rm "+title1+"}$"
+            unit1="["+nax_clip.unit.to_string("latex_inline")+"]"
+            handles,labels=self._axis.get_legend_handles_labels()
+            phantom = [self._axis.plot([],marker="", markersize=0,ls="",lw=0)[0]]*2
+            labels = [title1,unit1]+labels
+            handles = phantom + lines                          
+            leg=self._axis.legend(handles,labels,ncol=1,markerfirst=True,
+                                  bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
+                                  loc=kwargs_opts['loc'])
+            for vpack in leg._legend_handle_box.get_children():
+                for hpack in vpack.get_children()[:2]:
+                    hpack.get_children()[0].set_width(0)
+        if kwargs_opts['title'] is not None:
+            self._axis.set_title(kwargs_opts['title'])
 
     # note when plotting the units as axis labels, the order is not what we specify in _OBS_UNIT because astropy's Unit class
     # sorts by power .  They have a good reason for this (hashing), but it does mean we get sub-optimal unit ordering.
@@ -209,9 +346,9 @@ class ModelPlot(PlotBase):
         :param identifiers: list of two identifier tags for the model to plot, e.g., ["OI_63/CO_21", "CII_158"]
         :type identifiers: list of str
         :param nax1_clip: The range of model densities on NAXIS1 to show in the plot. For most model NAXIS1 is hydrogen number density $n_H$ in cm$^{-3}$.  For ionized gas models, it is electron temperature $T_e$ in K.  Must be given as a range of astropy quanitities.  Default: [10,1E7]*Unit("cm-3")
-        :type nax1_clip: array-like, must contain Quantity
+        :type nax1_clip: array-like, must contain :class:`~astropy.units.Quantity`
         :param nax2_clip: The range of model parameters on NAXIS2 to show in the plot.  For most models NAXIS2 is radiation field intensities in Habing or cgs units.  For ionized gas models, it is electron volume density $n_e$.  Must be given as a range of astropy quantities.  Default: nax1_clip=[10,1E6]*utils.habing_unit.
-        :type nax2_clip:  array-like, must contain Quantity
+        :type nax2_clip: array-like, must contain :class:`~astropy.units.Quantity`
         :param reciprocal: Whether or not the plot the reciprocal of the model on each axis.  Given as a pair of booleans.  e.g. [False,True] means don't flip the quantity X axis, but flip quantity the Y axis.  i.e. if the model is "CII/OI", and reciprocal=True then the axis will be "OI/CII".  Default: [False, False]
         :type reciprocal: array-like bool
 
@@ -230,7 +367,7 @@ class ModelPlot(PlotBase):
         :param title: Title to draw on the plot.  Default: None
         :type title: str
         :param linewidth: line width
-        :type linewidth: float
+        :type linewidth: float           
         :param grid: show grid or not, Default: True
         :type grid: bool
         :param figsize: Figure dimensions (width, height) in inches. Default: (8,5)
@@ -251,7 +388,9 @@ class ModelPlot(PlotBase):
                        'linewidth': 2.0,
                        'capsize': 5.0,
                        'markersize': 8.0,
-                       'aspect': 'auto'
+                       'aspect': 'auto',
+                       'bbox_to_anchor':(1.024,1),
+                       'loc':"upper left"
                        }
 
         kwargs_opts.update(kwargs)
@@ -274,14 +413,8 @@ class ModelPlot(PlotBase):
         # First get the x,y of the models
         xlog,ylog=self._get_xy_from_wcs(models[0],quantity=True,linear=False)
         xlin,ylin=self._get_xy_from_wcs(models[0],quantity=True,linear=True)
-
-        x_is_log = False
-        y_is_log = False
-        if 'log' in models[0].wcs.wcs.ctype[0]: 
-            x_is_log = True
-        if 'log' in models[0].wcs.wcs.ctype[1]: 
-            y_is_log = True
-
+        x_is_log = 'log' in models[0].wcs.wcs.ctype[0]
+        y_is_log = 'log' in models[0].wcs.wcs.ctype[1]
         # linear and log units are same so doesn't matter which is used for conversion
         dcc=nax1_clip.to(xlog.unit)
         rcc=nax2_clip.to(ylog.unit)
@@ -289,11 +422,12 @@ class ModelPlot(PlotBase):
         xi=np.where((xlin>=dcc[0]) & (xlin<=dcc[1]))[0]
         yi=np.where((ylin>=rcc[0]) & (ylin<=rcc[1]))[0]
         # Create an array containing *indices* of the range of x,y values.
+        # -5,12 is a large enough logarithmic range to contain any model we have
         if x_is_log:
             x2= np.hstack([np.where((np.round(xlog.value,1))==i)[0] for i in np.arange(-5,12)])
         else:
             x2 = np.arange(len(xlin))
-        # for 2020 models Y is not an integral value in erg s-1 cm-2
+        # for 2020 models FUV is not an integral value in erg s-1 cm-2
         # so rounding is necessary.
         if y_is_log:
             y2 = np.hstack([np.where((np.round(ylog.value,1))==i)[0] for i in np.arange(-5,12)])
@@ -302,7 +436,6 @@ class ModelPlot(PlotBase):
         # Intersection of these two arrays contain the indices of desired model plot points.
         xi2=np.intersect1d(xi,x2)
         yi2=np.intersect1d(yi,y2)
-
         self._figure,self._axis = self._plt.subplots(nrows=1,ncols=1,figsize=kwargs_opts['figsize'])
         linesN=[]
         linesG=[]
@@ -353,7 +486,6 @@ class ModelPlot(PlotBase):
         # [m1x,m1y,m2x,m2y,...]
         # [fmt1,fmt2,...]
         # [label1,label2,...]
-
         if kwargs_opts['measurements'] is not None:
             l_meas = len(kwargs_opts['measurements'])
             if l_meas %2 != 0:
@@ -392,8 +524,8 @@ class ModelPlot(PlotBase):
                 # Note use of zorder to ensure points are on top of lines.
                 if kwargs_opts['errorbar']:
                     self._axis.errorbar(x=_x.data,y=_y.data,xerr=_x.error,yerr=_y.error,
-                                        capsize=kwargs_opts['capsize'],fmt=fmt[i],capthick=2,ls=None,zorder=6,
-                                        markersize=kwargs_opts['markersize'])
+                                capsize=kwargs_opts['capsize'],fmt=fmt[i],capthick=2,ls=None,zorder=6,
+                                markersize=kwargs_opts['markersize'])
                 i=i+1
             # the data points
             dataline = self._axis.loglog(*args,zorder=5,markersize=kwargs_opts['markersize'])
@@ -407,12 +539,10 @@ class ModelPlot(PlotBase):
                             color='k',alpha=0.33)
             self._axis.grid(b=True,which='minor',axis='both',lw=kwargs_opts['linewidth']/2,
                             color='k',alpha=0.22,linestyle='--')
-
-
         if kwargs_opts['legend']:
             # Manually build the legend. Create the column headers for the legend
             # and blank handles and labels to take up space for the headers and
-            # when the number of density traces and radiation field traces
+            # when the number of naxis1 and naxis2 traces
             # are not equal.
             title1 = models[0].wcs.wcs.ctype[0]
             if "_" in title1:
@@ -463,7 +593,9 @@ class ModelPlot(PlotBase):
                 dl = self._axis.legend(dataline,label,loc='best')
                 self._axis.add_artist(dl)
 
-            leg=self._axis.legend(handles,labels,ncol=2,markerfirst=True,bbox_to_anchor=(1.024,1),loc="upper left")
+            leg=self._axis.legend(handles,labels,ncol=2, markerfirst=True, 
+                                  bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
+                                  loc=kwargs_opts['loc'])
             # trick to remove extra left side space in legend column headers.
             # doesn't completely center the headers, but gets as close as possible
             # See https://stackoverflow.com/questions/44071525/matplotlib-add-titles-to-the-legend-rows/44072076
@@ -524,12 +656,14 @@ class ModelPlot(PlotBase):
                        'title':None,
                        'xaxis_unit': None,
                        'yaxis_unit': None,
+                       'logx': True,
                        'xlim':None,
+                       'logy': True,
                        'ylim':None,
                        'legend': False,
                        'meas_color': ['#4daf4a'],
                        'shading': 0.4,
-                       'test':False
+                       'test':False,
                        }
 
         kwargs_contour = {'levels': None,
@@ -615,57 +749,33 @@ class ModelPlot(PlotBase):
         if len(self._axis.shape) > 1:
             self._axis = self._axis.flatten()
 
-        ax1='1'
+        ax1='1' #Why hardcoded? leftover from something methinks
         ax2='2'
 
         # make the x and y axes.  Since the models are computed on a log grid, we
         # use logarithmic ticks.
         x,y = self._get_xy_from_wcs(data,quantity=True,linear=True)
-        locmaj = ticker.LogLocator(base=10.0, subs=(1.0, ),numticks=10)
-        locmin = ticker.LogLocator(base=10.0, subs=np.arange(2, 10)*.1,numticks=10)
 
-        #allow unit conversion of density axis
-        xax_unit = u.Unit(_header['CUNIT'+ax1])
-        # cover the base where we had to erase the wcs unit to avoid FITS error
-        if x._unit is None or x._unit is u.dimensionless_unscaled:
-            x._unit = xax_unit
-        if kwargs_opts['xaxis_unit'] is not None:
-            # Make density axis of the grid into a Quantity using the cunits from the grid header
-            #temp_x = x * xax_unit
-
-            # Get desired unit from arguments
-            xax_unit = u.Unit(kwargs_opts['xaxis_unit'])
-
-            # Convert the unit-aware grid to the desired units and set X to the value (so it's no longer a Quantity)
-            #x = temp_x.to(xax_unit).value
-            x = x.to(xax_unit)
-
-        # Set the x label appropriately, use LaTeX inline formatting
-        xlab = r"{0} [{1:latex_inline}]".format(_header['CTYPE'+ax1],xax_unit)
-
-        yax_unit = u.Unit(_header['CUNIT'+ax2])
-        if y._unit is None or y._unit is u.dimensionless_unscaled:
-            y._unit = yax_unit
-        ytype = "log({0})".format(utils.get_rad(yax_unit))
-        #allow unit conversion to cgs or Draine, for Y axis (FUV field):
-        if kwargs_opts['yaxis_unit'] is not None:
-            # Make FUV axis of the grid into a Quantity using the cunits from the grid header
-            #temp_y = y * yax_unit
-
-            # Get desired unit from arguments; for special cases, use
-            # the conventional symbol for the label (e.g. G_0 for Habing units)
-            yunit = kwargs_opts['yaxis_unit']
-            ytype = "log({0})".format(utils.get_rad(yunit))
-            yax_unit = u.Unit(yunit)
-
-            # Convert the unit-aware grid to the desired units and set Y to the value (so it's no longer a Quantity)
-            #y = temp_y.to(yax_unit).value
-            y = y.to(yunit)
-
-        # Set the y label appropriately, use LaTeX inline formatting
-        ylab = r"{0} [{1:latex_inline}]".format(ytype,yax_unit)
-
+        loglabel = not kwargs_opts['logx']
+        x,xlab = utils.rescale_axis_units(x,_header['CUNIT'+ax1],_header['CTYPE'+ax1],kwargs_opts['xaxis_unit'],loglabel)
+        loglabel = not kwargs_opts['logy']        
+        y,ylab = utils.rescale_axis_units(y,_header['CUNIT'+ax2],_header['CTYPE'+ax2],kwargs_opts['yaxis_unit'],loglabel)
         # Finish up axes details.
+        locmaj = ticker.LogLocator(base=10.0, subs=(1.0, ),numticks=10)
+        locmin = ticker.LogLocator(base=10.0, subs='auto',numticks=10)
+        locmaj2 = ticker.LogLocator(base=10.0, subs=(1.0, ),numticks=10)
+        locmin2 = ticker.LogLocator(base=10.0, subs='auto',numticks=10)
+        if kwargs_opts['logx']:
+            # order matters here: set_xscale will set a default LogLocator with ticks every 2 decades, so we need to override that.
+            self._axis[axidx].set_xscale('log')
+            self._axis[axidx].xaxis.set_major_locator(locmaj)
+            self._axis[axidx].xaxis.set_minor_locator(locmin) 
+            self._axis[axidx].xaxis.set_minor_formatter(ticker.NullFormatter())
+        if kwargs_opts['logy']:
+            self._axis[axidx].set_yscale('log')
+            self._axis[axidx].yaxis.set_major_locator(locmaj2)
+            self._axis[axidx].yaxis.set_minor_locator(locmin2)
+            self._axis[axidx].yaxis.set_minor_formatter(ticker.NullFormatter())  
         self._axis[axidx].set_ylabel(ylab)
         self._axis[axidx].set_xlabel(xlab)
         if kwargs_opts['xlim'] is not None:
@@ -674,11 +784,6 @@ class ModelPlot(PlotBase):
         if kwargs_opts['ylim'] is not None:
             ylim = kwargs_opts['ylim']
             self._axis[axidx].set_ylim(bottom=ylim[0],top=ylim[1])
-        self._axis[axidx].set_xscale('log')
-        self._axis[axidx].set_yscale('log')
-        self._axis[axidx].xaxis.set_major_locator(locmaj)
-        self._axis[axidx].xaxis.set_minor_locator(locmin)
-        self._axis[axidx].xaxis.set_minor_formatter(ticker.NullFormatter())
 
         if kwargs_opts['image']:
             # pass shading = auto to avoid deprecation warning
@@ -686,11 +791,7 @@ class ModelPlot(PlotBase):
             im = self._axis[axidx].pcolormesh(x.value,y.value,km,cmap=kwargs_imshow['cmap'],
                                               norm=_norm,shading='auto')
             if kwargs_opts['colorbar']:
-                if kwargs_opts['test']:
-                    cbar = self._wcs_colorbar(im,self._axis[axidx],pad=0.1,width="5%") #looks like crap
-                else:
-                    cbar = self._figure.colorbar(im,ax=self._axis[axidx])#,format=ticker.ScalarFormatter(useMathText=True))
-
+                cbar = self._figure.colorbar(im, ax=self._axis[axidx])
                 if kwargs_imshow['norm'].lower() != "log":
                     #avoid AttributeError: 'LogFormatterSciNotation' object has no attribute 'set_powerlimits'
                     cbar.formatter = ticker.ScalarFormatter(useMathText=True)
@@ -699,7 +800,6 @@ class ModelPlot(PlotBase):
                     cbar.update_ticks()
                 if "BUNIT" in _header:
                     lstr = u.Unit(_header["BUNIT"]).to_string('latex_inline')
-
                     cbar.ax.set_ylabel(lstr,rotation=90)
 
         if kwargs_opts['contours']:
@@ -750,16 +850,14 @@ class ModelPlot(PlotBase):
                 colors = kwargs_opts['meas_color'][jj]*mlen
                 if kwargs_opts['shading'] != 0:
                     cset = self._axis[axidx].contourf(x.value,y.value,k.data,levels=m.levels, colors=colors,alpha=kwargs_opts['shading'])
-                # Add extra call to plot contour because savefig("file.pdf") gets zorder of shading vs. contour wrong and contour lines don't show up. Only a bug when output is pdf. Harumph.
+                # Add extra call to plot contour because savefig("file.pdf") 
+                # gets zorder of shading vs. contour wrong and contour lines 
+                # don't show up. Only a bug when output is pdf. Harumph.
                 # See https://github.com/mpound/pdrtpy/issues/23
-                    cset2 = self._axis[axidx].contour(x.value,y.value,k.data,levels=[m.levels[1]], colors=colors, alpha=kwargs_opts['shading'])
+                    cset2 = self._axis[axidx].contour(x.value, y.value, k.data, 
+                                                      levels=[m.levels[1]], colors=colors,
+                                                      alpha=kwargs_opts['shading'])
                 else:
                     cset = self._axis[axidx].contour(x.value,y.value,k.data,levels=m.levels,
                                                      linestyles=lstyles, colors=colors)
                 jj=jj+1
-
-#@todo Is a separate legend() method needed? Would be helpful for users to modify the legend.
-#def legend(self,labels,colors,loc='upper center',title=None,axindex=0):
-#    lw = 3
-#    ls = '-'
-#    self._axis[axindex].legend(lin
