@@ -1,22 +1,16 @@
 ## Change Log
-### Release 2.3.x
+### Release 2.3.0b
 #### _H2 Excitation Tool_
 
-- allow single temperature fit
+- allow single temperature fit 
 
 - allow plotting of multiple vibrational levels
 
-- 
-
-#### _Models_
-
-- added 2020 Kosma-Tau models
-
 #### _Plotting_
 
-- new ModelPlot.isoplot method to make isocontour plots of individual model parameters
+- new ModelPlot.isoplot method to make isocontour plots of individual model parameters 
 
-- refactoring _plot -> PlotBase
+- refactoring of plotting capability in plot-based tools
 
 #### _Documentation_
 
@@ -24,17 +18,17 @@
 
 #### _Notebooks_ ###
 
-- existing example notebooks updated  (more detail
+- existing example notebooks updated, most notably to show new PDR Toolbox functionality
 
 #### _Issues_
 
-- issues x,y,z closed
+- issues 22,59,60,65 closed
 
-- various other bugs discovered and fixed
+- various other bugs discovered or reported and fixed
 
 #### _Website_
 
-- meh?
+- fixed labelling of ionized line plots 
 
 ### Release 2.2.9
 
