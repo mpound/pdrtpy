@@ -6,6 +6,10 @@ PhotoDissociation Region Toolbox --- Python
 
 ------------------------------------------------------------
 
+.. image:: https://api.codacy.com/project/badge/Grade/f9a3b10790e74ba887ea7f3a7525189d
+   :alt: Codacy Badge
+   :target: https://app.codacy.com/gh/mpound/pdrtpy?utm_source=github.com&utm_medium=referral&utm_content=mpound/pdrtpy&utm_campaign=Badge_Grade_Settings
+
 .. image:: https://img.shields.io/badge/ascl-1102.022-blue.svg?colorB=262255&style=plastic
    :target: http://ascl.net/1102.022
    :alt: Astrophysics Source Code Library 1102.022
