@@ -90,6 +90,7 @@ class Measurement(CCDData):
         _beam["BPA"]  = self._beam_convert(kwargs.pop('bpa', None))
         self._restfreq = kwargs.pop('restfreq',None)
         self._filename = None
+        self._data = None # shut up Codacy
 
         #This won't work: On arithmetic operations, this raises the exception.
         #if self._identifier is None:
