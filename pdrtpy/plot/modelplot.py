@@ -656,7 +656,9 @@ class ModelPlot(PlotBase):
                        'title':None,
                        'xaxis_unit': None,
                        'yaxis_unit': None,
+                       'logx': True,
                        'xlim':None,
+                       'logy': True,
                        'ylim':None,
                        'legend': False,
                        'meas_color': ['#4daf4a'],
@@ -753,11 +755,27 @@ class ModelPlot(PlotBase):
         # make the x and y axes.  Since the models are computed on a log grid, we
         # use logarithmic ticks.
         x,y = self._get_xy_from_wcs(data,quantity=True,linear=True)
-        locmaj = ticker.LogLocator(base=10.0, subs=(1.0, ),numticks=10)
-        locmin = ticker.LogLocator(base=10.0, subs=np.arange(2, 10)*.1,numticks=10)
-        x,xlab = utils.rescale_axis_units(x,_header['CUNIT'+ax1],_header['CTYPE'+ax1],kwargs_opts['xaxis_unit'])
-        y,ylab = utils.rescale_axis_units(y,_header['CUNIT'+ax2],_header['CTYPE'+ax2],kwargs_opts['yaxis_unit'])
+
+        loglabel = not kwargs_opts['logx']
+        x,xlab = utils.rescale_axis_units(x,_header['CUNIT'+ax1],_header['CTYPE'+ax1],kwargs_opts['xaxis_unit'],loglabel)
+        loglabel = not kwargs_opts['logy']        
+        y,ylab = utils.rescale_axis_units(y,_header['CUNIT'+ax2],_header['CTYPE'+ax2],kwargs_opts['yaxis_unit'],loglabel)
         # Finish up axes details.
+        locmaj = ticker.LogLocator(base=10.0, subs=(1.0, ),numticks=10)
+        locmin = ticker.LogLocator(base=10.0, subs='auto',numticks=10)
+        locmaj2 = ticker.LogLocator(base=10.0, subs=(1.0, ),numticks=10)
+        locmin2 = ticker.LogLocator(base=10.0, subs='auto',numticks=10)
+        if kwargs_opts['logx']:
+            # order matters here: set_xscale will set a default LogLocator with ticks every 2 decades, so we need to override that.
+            self._axis[axidx].set_xscale('log')
+            self._axis[axidx].xaxis.set_major_locator(locmaj)
+            self._axis[axidx].xaxis.set_minor_locator(locmin) 
+            self._axis[axidx].xaxis.set_minor_formatter(ticker.NullFormatter())
+        if kwargs_opts['logy']:
+            self._axis[axidx].set_yscale('log')
+            self._axis[axidx].yaxis.set_major_locator(locmaj2)
+            self._axis[axidx].yaxis.set_minor_locator(locmin2)
+            self._axis[axidx].yaxis.set_minor_formatter(ticker.NullFormatter())  
         self._axis[axidx].set_ylabel(ylab)
         self._axis[axidx].set_xlabel(xlab)
         if kwargs_opts['xlim'] is not None:
@@ -766,11 +784,6 @@ class ModelPlot(PlotBase):
         if kwargs_opts['ylim'] is not None:
             ylim = kwargs_opts['ylim']
             self._axis[axidx].set_ylim(bottom=ylim[0],top=ylim[1])
-        self._axis[axidx].set_xscale('log')
-        self._axis[axidx].set_yscale('log')
-        self._axis[axidx].xaxis.set_major_locator(locmaj)
-        self._axis[axidx].xaxis.set_minor_locator(locmin)
-        self._axis[axidx].xaxis.set_minor_formatter(ticker.NullFormatter())
 
         if kwargs_opts['image']:
             # pass shading = auto to avoid deprecation warning
