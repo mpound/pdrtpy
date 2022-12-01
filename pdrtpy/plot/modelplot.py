@@ -273,7 +273,7 @@ class ModelPlot(PlotBase):
 
         xi2=np.intersect1d(xi,x2)
         naxis[otherindex],xlabel = utils.rescale_axis_units(naxis[otherindex],naxis[otherindex].unit,
-                                 model.wcs.wcs.ctype[otherindex],kwargs_opts['xaxis_unit'])
+                                 model.wcs.wcs.ctype[otherindex],kwargs_opts['xaxis_unit'],loglabel=False)
         # @TODO possibly support plotaxis_unit
         lines = []
         # convert the yaxis if requested. The yaxis is the pixel values in the model,

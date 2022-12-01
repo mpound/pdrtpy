@@ -731,13 +731,15 @@ def rescale_axis_units(x,from_unit,from_ctype,to_unit,loglabel=True):
         else:
             xtype = "{0}".format(get_rad(xax_unit))
     else:
-        if "_" in from_ctype:
-            xtype = r"${\rm "+from_ctype+"}$"
-        else:
-            if loglabel and 'log' in from_ctype:
-                xtype = from_ctype
+        if loglabel and 'log' in from_ctype:
+            if "_" in from_ctype:
+                xtype = r"${\rm "+from_ctype+"}$"
             else:
-                xtype = from_ctype.replace("log(","").replace(")","")
+                xtype = from_ctype
+        else:
+            xtype = from_ctype.replace("log(","").replace(")","")
+            if "_" in xtype:
+                xtype = r"${\rm "+xtype+"}$"
     if to_unit is not None:
         # Make  axis of the grid into a Quantity using the cunit from the grid header
         # Get desired unit from arguments
