@@ -660,6 +660,9 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             startn = np.nanmean(self._density.value)
             startfuv = np.nanmean(self._radiation_field.value)
         self._fitparam = Parameters()
+    #@todo let user limit these ranges. either they pass in Parameters or
+    # limits = {'density':[low,hi], 'radiation_field':[low,hi]}
+    # in any unit and convert
         self._fitparam.add('density',min=minn,max=maxn,value=startn)
         self._fitparam.add('radiation_field',min=minfuv,max=maxfuv,value=startfuv)
         #self._fitparam.pretty_print()
