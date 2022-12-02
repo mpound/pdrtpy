@@ -309,10 +309,10 @@ class ModelPlot(PlotBase):
         self._axis.tick_params(axis='both',direction='in',which='both')
         self._axis.tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both')
         if kwargs_opts['grid']:
-            self._axis.grid(b=True,which='major',axis='both',
+            self._axis.grid(visible=True,which='major',axis='both',
                 lw=kwargs_opts['linewidth']/2,
                 color='k',alpha=0.33)
-            self._axis.grid(b=True,which='minor',axis='both',
+            self._axis.grid(visible=True,which='minor',axis='both',
                 lw=kwargs_opts['linewidth']/2,
                 color='k',alpha=0.22,linestyle='--')
         if kwargs_opts['legend']:
@@ -535,9 +535,9 @@ class ModelPlot(PlotBase):
             self._axis.tick_params(axis='both',direction='in',which='both')
             self._axis.tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both')
         if kwargs_opts['grid']:
-            self._axis.grid(b=True,which='major',axis='both',lw=kwargs_opts['linewidth']/2,
+            self._axis.grid(visible=True,which='major',axis='both',lw=kwargs_opts['linewidth']/2,
                             color='k',alpha=0.33)
-            self._axis.grid(b=True,which='minor',axis='both',lw=kwargs_opts['linewidth']/2,
+            self._axis.grid(visible=True,which='minor',axis='both',lw=kwargs_opts['linewidth']/2,
                             color='k',alpha=0.22,linestyle='--')
         if kwargs_opts['legend']:
             # Manually build the legend. Create the column headers for the legend
