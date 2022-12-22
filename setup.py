@@ -16,8 +16,8 @@ def readme():
     with open('README.rst') as f:
         return f.read()
 
-# Ensure they are using Python 3.7 or above
-check_python(3,7)
+# Ensure they are using Python 3.8 or above
+check_python(3,8)
 
 #excludelist= ["build","dist"]
 excludelist= []
@@ -35,11 +35,15 @@ setup(
     include_package_data = True,
     install_requires = [
         'astropy>=4.1',
-        'numpy>=1.1.8',
+        'numpy>=1.18',
         'scipy>=1.4',
         'matplotlib>=3.3.1',
         'lmfit>=1.0.2',
-        'numdifftools>=0.9.40'
+        'numdifftools>=0.9.40',
+        'emcee>=3.0.0',
+        'corner>=2.0.0',
+        'mpl-interactions',
+        'mpl-interactions[jupyter]',
     ],
     url = "http://dustem.astro.umd.edu",
     project_urls = {
@@ -55,5 +59,5 @@ setup(
     ],
     license = "GPLv3",
     zip_safe = False,
-    python_requires = '>=3.7'
+    python_requires = '>=3.8'
 )

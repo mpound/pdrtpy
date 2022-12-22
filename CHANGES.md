@@ -1,10 +1,86 @@
 ## Change Log
+### Release 2.3.0b
+#### _H2 Excitation Tool_
 
-### Release 2.2.1
+- allow single temperature fit 
+
+- allow plotting of multiple vibrational levels
+
+#### _Plotting_
+
+- new ModelPlot.isoplot method to make isocontour plots of individual model parameters 
+
+- refactoring of plotting capability in plot-based tools
+
+#### _Documentation_
+
+- updated
+
+#### _Notebooks_ ###
+
+- existing example notebooks updated, most notably to show new PDR Toolbox functionality
+
+#### _Issues_
+
+- issues 22,59,60,65 closed
+
+- various other bugs discovered or reported and fixed
+
+#### _Website_
+
+- fixed labelling of ionized line plots 
+
+### Release 2.2.9
+
+#### _Models_
+
+- allow user added models
+
+#### _Plotting_
+
+- consistent handling of aspect ratios and colorbars
+
+#### _Documentation_
+
+- updated
+
+#### _Issues_
+
+- issues 55, 58, 59 closed
+
+- various other bugs discovered and fixed
+
+#### _Notebooks_ ###
+
+- existing example notebooks updated 
+
+### _Testing_
+
+- expanded test suite using GitHub workflow
+
+- PEP8 compliance with flake
+
+- added examples directory with test code from AJ paper, which are now auto-run as part of test suite
+
+### Release 2.2.6
+#### _Models_
+
+- adds CI/13CO models
+
+- typo fix in  CII\_158/OI\_145  model tag
+
+### Release 2.2.5
+#### _Models_
+
+- adds 13CO models and updates iron line ionized gas models
+
+### Release 2.2.3
 #### _H2 Excitation Fitting_
 
 - H2 Excitation fitting for maps completed.  
 
+    - each unmasked pixel in a map fitted 
+    
     - user can see maps of column density, hot and cold temperature, ortho-to-para ratios
 
     - "explore" function to see fit at various points in a map
@@ -37,6 +113,8 @@
 #### _Issues_
 
 - issues 28, 34, 38 closed
+
+- various other bugs discovered and fixed
 
 #### _Notebooks_ ###
 

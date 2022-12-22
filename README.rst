@@ -27,8 +27,17 @@ PhotoDissociation Region Toolbox --- Python
  :alt: Documentation status
  
 .. image:: https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg?style=plastic
- :target: https://github.com/mpound/pdrtpy/blob/stable_release/CODE_OF_CONDUCT.md
+ :target: https://github.com/mpound/pdrtpy/blob/master/CODE_OF_CONDUCT.md
  :alt: Contributor Covenant Code of Conduct  
+
+.. image:: https://github.com/mpound/pdrtpy/actions/workflows/run-integration-tests.yml/badge.svg
+ :alt: Integration test status
+
+.. image:: https://github.com/mpound/pdrtpy/blob/master/coverage.svg
+ :alt: Code coverage
+
+.. image:: https://app.codacy.com/project/badge/Grade/dfa0433c8679423ca57cc75a84dc9083
+ :alt: Codacy quality grade
 
 ``pdrtpy`` is the new and improved version of the formerly web-based `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/>`_, rewritten in Python with new capabilities and giving more flexibility to end users.  (The web-based /CGI version of PDRT is deprecated and no longer supported). 
 
@@ -60,6 +69,8 @@ communication) and have included |13C| chemistry along with the
 emitted line intensities for  |13CII| and |13CO|.
 
 We also support fitting of temperatures and column densities to |H2| excitation diagrams.
+
+Up to date documentation can be found at `pdrtpy.readthedocs.io <http://pdrtpy.readthedocs.io/>`_.
 
 What is a PDR? 
 ==============
@@ -103,6 +114,8 @@ should show e.g., *3.7.6*.
 Install the package
 ^^^^^^^^^^^^^^^^^^^
 
+With pip
+--------
 Python has numerous ways to install packages; the easiest is with *pip*. 
 The code is hosted at the `Python Packaging Index <https://pypi.org/project/pdrtpy/>`_, so you can type:
 
@@ -116,6 +129,7 @@ If you do not have permission to install into your Python system package area, y
 
    pip install --user pdrtpy
 
+* For installation from github, see `For Developers`_ below.
 
 Then go ahead and install the `Example Notebooks`_.
 
@@ -124,7 +138,7 @@ Then go ahead and install the `Example Notebooks`_.
 Example Notebooks
 -----------------
 
-We have prepared jupyter iPython notebooks with examples of how to use ``pdrtpy``.  You can download these as follows.
+We have prepared Jupyter iPython notebooks with examples of how to use ``pdrtpy``.  You can download these as follows.
 
 .. code-block:: sh
 
@@ -141,6 +155,7 @@ To familiarize yourself with the capabilities of ``pdrtpy``, we suggest you do t
 - `Determining Radiation Field and Intensity <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Find_n_G0_Single_Pixel.ipynb>`_
 - `Image Radiation Field and Intensity for Maps <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Make_n_G0_maps.ipynb>`_
 - `Fitting |H2| Excitation Diagrams <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_H2_Excitation.ipynb>`_
+- `Adding Custom Models <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Adding_Models.ipynb>`_
 
 Getting Help & Giving Feedback
 ==============================
@@ -157,8 +172,8 @@ create a Github account, you can post to the `PDR Toolbox forum
 
 Contribute Code or Documentation
 =================================
-We welcome contributions and ideas to improve the PDR Toolbox!  **All contributors agree to follow our** `Code of Conduct <https://github.com/mpound/pdrtpy/blob/stable_release/CODE_OF_CONDUCT.md>`_ .  Please look at our 
-`Roadmap of Functionality <https://github.com/mpound/pdrtpy/blob/stable_release/roadmap.md>`_ 
+We welcome contributions and ideas to improve the PDR Toolbox!  **All contributors agree to follow our** `Code of Conduct <https://github.com/mpound/pdrtpy/blob/master/CODE_OF_CONDUCT.md>`_ .  Please look at our 
+`Roadmap of Functionality <https://github.com/mpound/pdrtpy/blob/master/roadmap.md>`_ 
 to see the main new features we want to build.  You can help out with those or suggest new features. 
 
 For Developers
@@ -173,7 +188,7 @@ You may want to use a virtual environment to protect from polluting your daily w
   
    sudo apt-get install python3-venv
    python -m venv ~/pdrtpy_venv
-   source ~/venv/bin/activate
+   source ~/pdrtpy_venv/bin/activate[.csh] 
    cd pdrtpy
    pip install -r requirements.txt
    pip install -e .

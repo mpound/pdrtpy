@@ -1,7 +1,7 @@
 If you use pdrtpy for a publication, you can use the following acknowledgment:
 
     This research made use of pdrtpy, The PhotoDissociation Region Toolbox, an open source PDR model and data analysis package.
-    (Pound & Wolfire 2008; Kaufman, Wolfire, & Hollenbach 2006; Pound & Wolfire 2011)
+    (Pound & Wolfire 2022; Pound & Wolfire 2008; Kaufman, Wolfire, & Hollenbach 2006; Pound & Wolfire 2011)
 
 The BibTex entries are:
 
