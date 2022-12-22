@@ -93,12 +93,7 @@
       FEII_5.67         FEII_5.34       FEII_5.67/FEII_5.34       FEII5p67_FEII5p34           1   [Fe II] 5.67 $\mu$m/[Fe II] 5.34 $\mu$m
      FEII_17.94         FEII_5.34      FEII_17.94/FEII_5.34      FEII17p94_FEII5p34           1   [Fe II] 17.94 $\mu$m/[Fe II] 5.34 $\mu$m
      FEII_22.90         FEII_5.34      FEII_22.90/FEII_5.34      FEII22p90_FEII5p34           1   [Fe II] 22.90 $\mu$m/[Fe II] 5.34 $\mu$m
-<<<<<<< HEAD
-     FEII_25.99         FEII_5.34      FEII_25.99/FEII_5.34      FEII25p99_FEII5p34           1   [Fe II] 25.99 $\mu$m/[Fe II] 5.34 $\mu$m
-     FEII_25.99                 1                FEII_25.99               FEII25p99           1   [Fe II] 25.99 $\mu$m 
-=======
         FEII_26         FEII_5.34         FEII_26/FEII_5.34      FEII25p99_FEII5p34           1   [Fe II] 25.99 $\mu$m/[Fe II] 5.34 $\mu$m
         FEII_26                 1                   FEII_26               FEII25p99           1   [Fe II] 25.99 $\mu$m
     ARIII_21.83        ARIII_8.99    ARIII_21.83/ARIII_8.99    ARIII21p83_ARIII8p99           1   [Ar III] 21.83 $\mu$m/[Ar III] 8.99 $\mu$m
       ARV_13.07          ARV_7.91        ARV_13.07/ARV_7.91        ARV13p07_ARV7p91           1   [Ar V] 13.07 $\mu$m/[Ar V] 7.91 $\mu$m
->>>>>>> master
