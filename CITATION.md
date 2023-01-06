@@ -5,27 +5,27 @@ If you use pdrtpy for a publication, you can use the following acknowledgment:
 
 The BibTex entries are:
 
-@ARTICLE{2023AJ....165...25P,
-       author = {{Pound}, Marc W. and {Wolfire}, Mark G.},
-        title = "{The PhotoDissociation Region Toolbox: Software and Models for Astrophy
-sical Analysis}",
-      journal = {\aj},
-     keywords = {Photodissociation regions, Astronomy software, Molecular gas, Interstel
-lar atomic gas, 1223, 1855, 1073, 833, Astrophysics - Instrumentation and Methods for As
-trophysics, Astrophysics - Astrophysics of Galaxies},
-         year = 2023,
-        month = jan,
-       volume = {165},
-       number = {1},
-          eid = {25},
-        pages = {25},
-          doi = {10.3847/1538-3881/ac9b1f},
-archivePrefix = {arXiv},
-       eprint = {2210.08062},
- primaryClass = {astro-ph.IM},
-       adsurl = {https://ui.adsabs.harvard.edu/abs/2023AJ....165...25P},
-      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
-}
+    @ARTICLE{2023AJ....165...25P,
+           author = {{Pound}, Marc W. and {Wolfire}, Mark G.},
+            title = "{The PhotoDissociation Region Toolbox: Software and Models for Astrophy
+    sical Analysis}",
+          journal = {\aj},
+         keywords = {Photodissociation regions, Astronomy software, Molecular gas, Interstel
+    lar atomic gas, 1223, 1855, 1073, 833, Astrophysics - Instrumentation and Methods for As
+    trophysics, Astrophysics - Astrophysics of Galaxies},
+             year = 2023,
+            month = jan,
+           volume = {165},
+           number = {1},
+              eid = {25},
+            pages = {25},
+              doi = {10.3847/1538-3881/ac9b1f},
+    archivePrefix = {arXiv},
+           eprint = {2210.08062},
+     primaryClass = {astro-ph.IM},
+           adsurl = {https://ui.adsabs.harvard.edu/abs/2023AJ....165...25P},
+          adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+    }
 
     @INPROCEEDINGS{2008ASPC..394..654P,
            author = {{Pound}, M.~W. and {Wolfire}, M.~G.},
