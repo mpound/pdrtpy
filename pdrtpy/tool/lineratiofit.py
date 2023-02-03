@@ -45,12 +45,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             # may need to disable this
             self._initialize_modelTable(modelset)
         self._modelset = modelset
-
-        if type(measurements) == dict or measurements is None:
-            self._measurements = measurements
-        else:
-            self._init_measurements(measurements)
-
+        self._init_measurements(measurements)
         self._set_measurementnaxis()
         self._modelratios = None
         self._modelnaxis = None
@@ -165,16 +160,25 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             return self._reduced_chisq
 
     def _init_measurements(self,m):
-        """Initialize the measurements from an input list
+        """Initialize the measurements from an input list or dict. If a dict, the dictionary keys must be valid measurement identifiers.
 
         :param m: the input list of Measurements
-        :type m: list
+        :type m: list, tuple, or dict
         """
-        self._measurements = dict()
         self._masks = dict() # need to save these so they can be reset later
-        for mm in m:
-            self._measurements[mm.id] = mm
-            self._masks[mm.id] = deepcopy(mm.mask)
+        if m is None:
+            self._measurements = None
+        elif type(m) == list or type(m) == tuple:
+            self._measurements = dict()
+            for mm in m:
+                self._measurements[mm.id] = mm
+                self._masks[mm.id] = deepcopy(mm.mask)
+        elif type(m) == dict:
+            self._measurements = deepcopy(m)
+            for key in m:
+                self._masks[key] = deepcopy(m[key].mask)
+        else:
+            raise ValueError("Input measurements must be list, tuple, or dict")
 
     def _set_model_files_used(self):
         self._model_files_used = dict()
