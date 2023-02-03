@@ -16,6 +16,8 @@ import numpy as np
 import numpy.ma as ma
 from scipy.interpolate import interp2d
 from . import pdrutils as utils
+import warnings
+
 
 class Measurement(CCDData):
     r"""Measurement represents one or more observations of a given spectral
@@ -77,6 +79,7 @@ class Measurement(CCDData):
     By default image axes with only a single dimension are removed on read.  If you do not want this behavior, used `read(squeeze=False)`. See also: :class:`astropy.nddata.CCDData`.
     """
     def __init__(self,*args, **kwargs):
+        warnings.simplefilter("ignore",DeprecationWarning)
         debug = kwargs.pop('debug', False)
 
         if debug:
