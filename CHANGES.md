@@ -1,5 +1,26 @@
 ## Change Log
-### Release 2.3.0b
+
+### Release 2.3.1
+#### _Models_
+
+- added new Kosma-tau kt2020 models which use parameters that closely match wk2020 models
+
+- updated HII region diagnostic models
+
+#### _Issues_
+
+- issue #78 reported, fixed, and closed
+
+#### _Documentation_
+
+- updated
+
+#### _Notebooks_ ###
+
+- existing example notebooks updated, new notebook from Dec 6 JWST webinar added
+
+
+### Release 2.3.0
 #### _H2 Excitation Tool_
 
 - allow single temperature fit 
