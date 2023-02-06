@@ -218,9 +218,9 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         _axis.tick_params(axis='both',direction='in',which='both')
         _axis.tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both')
         if kwargs_opts['grid']:
-            _axis.grid(b=True,which='major',axis='both',lw=kwargs_opts['linewidth']/2,
+            _axis.grid(visible=True,which='major',axis='both',lw=kwargs_opts['linewidth']/2,
                             color='k',alpha=0.33)
-            _axis.grid(b=True,which='minor',axis='both',lw=kwargs_opts['linewidth']/2,
+            _axis.grid(visible=True,which='minor',axis='both',lw=kwargs_opts['linewidth']/2,
                             color='k',alpha=0.22,linestyle='--')
 
         _axis.legend(handles,labels,
