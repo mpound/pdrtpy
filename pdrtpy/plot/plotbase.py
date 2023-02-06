@@ -245,11 +245,11 @@ class PlotBase:
         :type colorcycle: list
         """
         self._plt.rc('axes', prop_cycle=(cycler('color',  colorcycle)))
-    
+
     def reset_colorcycle(self):
         """Reset the color cycle to the default color-blind friendly one"""
         self.colorcycle(self._CB_color_cycle)
-        
+
     def _plot(self,data,**kwargs):
         '''generic plotting method used by other plot methods'''
 
