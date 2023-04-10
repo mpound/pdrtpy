@@ -411,6 +411,7 @@ class ModelSet(object):
             m = Measurement.read(model,identifier=identifier)
         else:
             m = model
+        m._title = title
         self._user_added_models[identifier] = m
         if "/" in identifier: # it's a ratio
             if identifier in self._supported_ratios["ratio label"]:
