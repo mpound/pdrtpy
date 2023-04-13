@@ -1,4 +1,4 @@
-astropy>=5.0
+astropy>=5.2.1
 corner>=2.0.0
 cycler>=0.10.0
 emcee>=3.0.0
