@@ -56,7 +56,7 @@ class LineRatioPlot(PlotBase):
            :raises KeyError: if is id not in existing model intensities
         """
         ms = self._tool.modelset
-        if id not in ms.supported_lines["intensity label"]:
+        if id not in ms.supported_intensities["intensity label"]:
             raise KeyError(f"{id} is not in the ModelSet of your LineRatioFit")
 
         model = ms.get_models([id],model_type="intensity")
