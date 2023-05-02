@@ -459,6 +459,8 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
 
         :rtype: :class:`~pdrtpy.measurement.Measurement`
         '''
+        if self._numcomponents == 1:
+            return self._total_colden["cold"]
         return self._total_colden["hot"]+self._total_colden["cold"]
 
     @property
