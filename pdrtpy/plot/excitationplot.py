@@ -4,6 +4,7 @@ from matplotlib.ticker import MultipleLocator
 #from cycler import cycler
 
 import astropy.units as u
+from astropy.coordinates import SkyCoord
 from astropy.nddata import StdDevUncertainty
 
 from ..measurement import Measurement
@@ -37,8 +38,8 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         #or a :class:`~astropy.coordinates.SkyCoord`, which will use the :class:`~astropy.wcs.WCS` of the ::class:`~pdrtpy.measurement.Measurement`s added to this tool.
         r"""Plot the excitation diagram.  For maps of excitation parameters, a position and optional size are required.  To examine the entire map, use :meth:`explore`.
 
-        :param position: The spatial position of excitation diagram.  For spatial averaging this is the cutout array's center with respect to the data array. The position is specified as a `(x, y)` tuple of pixel coordinates.
-        :type position: tuple
+        :param position: The spatial position of excitation diagram.  For spatial averaging this is the cutout array's center with respect to the data array. The position may be specified as an `(x, y)` tuple of pixel coordinates or a SkyCoord coordinate
+        :type position: tuple or :class:`~astropy.coordinates.SkyCoord`
         :param size: The size of the cutout array along each axis. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(ny, nx)` order. Scalar numbers in size are assumed to be in units of pixels. `size` can also be a :class:`~astropy.units.Quantity` object or contain :class:`~astropy.units.Quantity` objects. Such :class:`~astropy.units.Quantity` objects must be in pixel or angular units. For all cases, size will be converted to an integer number of pixels, rounding the the nearest integer.  See :class:`~astropy.nddata.utils.Cutout2D`
         :type size: int, array_like, or :class:`astropy.units.Quantity`
         :param norm: if True, normalize the column densities by the
@@ -67,11 +68,18 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
                       'test': False}
         kwargs_opts.update(kwargs)
 
+        print(f"norm={norm} pos={position} size={size}")
+        if type(position) == SkyCoord:
+            position = self._tool.fitresult.get_pixel_from_coord(coord)
+            print(f"AFTER norm={norm} pos={position} size={size}")
         cdavg = self._tool.average_column_density(norm=norm, position=position, size=size, line=True)
+        #print("CDAVG ",cdavg)
         energies = self._tool.energies(line=True)
         energy = np.array(list(energies.values()))
         colden = np.squeeze(np.array([c.data for c in cdavg.values()]))
         error = np.squeeze(np.array([c.error for c in cdavg.values()]))
+        #print("ERROR ",error)
+        #print("COLDEN",colden)
         sigma = LOGE*error/colden
         if kwargs_opts['axis'] is None:
             self._figure, self._axis = self._plt.subplots(figsize=kwargs_opts['figsize'])
@@ -159,6 +167,7 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
                 ss=str(self._tool._ac.loc[lab]["Ju"])
                 _axis.text(x=energies[lab]+100,y=np.log10(cdavg[lab]),s=ss)
         handles,labels=_axis.get_legend_handles_labels()
+        print(f"show_fit is {show_fit}")
         if show_fit:
             if tt.fit_result is None:
                 raise ValueError("No fit to show. Have you run the fit in your H2ExcitationFit?")
@@ -200,6 +209,7 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         if kwargs_opts['xmax'] is None:
             kwargs_opts['xmax'] = np.round(500.+energy.max(),-3)
         _axis.set_xlim(kwargs_opts['xmin'],kwargs_opts['xmax'])
+        print(f"setting ylim [{kwargs_opts['ymin']},{kwargs_opts['ymax']}]")
         _axis.set_ylim(kwargs_opts['ymin'],kwargs_opts['ymax'])
         # try to make reasonably-spaced xaxis tickmarks.  
         # if I were clever, I'd do this with a function
@@ -283,7 +293,16 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
                        }
         # starting position is middle pixel of image. note // for integer arithmetic
         position = tuple(np.array(np.shape(data))//2)
-        print("Explore using position: ",position, " size=1")
+        #print(position)
+        #print(f"fit result at {position} is {self._tool.fit_result[position]}")
+        #print(f"NONE? {self._tool.fit_result[position] is None}")
+        if self._tool.fit_result[position] is None:
+            # find another position where the fit succeeded
+            ok = np.where(self._tool.fit_result._data != None)
+            position = (ok[0][0],ok[1][0])
+        print(f"Trying to get world coordinates at position {position}")
+        coord = self._tool.fit_result.get_skycoord(position[0],position[1])
+        print("Explore using position: ",position, " world ",coord.to_string('hmsdms')," size=1")
         kwargs_opts.update(kwargs)
         self._figure = self._plt.figure(figsize=kwargs_opts['figsize'],clear=True)
         self._axis = np.empty([2],dtype=object)
@@ -294,16 +313,19 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         fmt      = kwargs_opts.pop('fmt','r+')
         show_fit = kwargs_opts.pop('show_fit')
         self._plot(data,axis=self._axis,index=1,**kwargs_opts)
+        print("inital ex_diagram")
         self.ex_diagram(axis=self._axis[1], reset=False,position=position,size=1,
-                        norm=True,show_fit=show_fit)
+                        norm=True,show_fit=show_fit,ymin=0,ymax=30)
 
         self._marker = self.axis[0].plot(position[0],position[1],fmt,markersize=kwargs_opts['markersize'])
 
 
         def update_lines(event):
+            self._logfile = None
             try:
-                #self._logfile = open(f"/tmp/test.log","a")
-               # self._logfile.write(f"event.inaxes = {event.inaxes} x,y={event.xdata,event.ydata}\n")
+                self._logfile = open(f"/tmp/test.log","a")
+                self._logfile.write(f"event.inaxes = {event.inaxes} x,y={event.xdata,event.ydata}\n")
+                self._logfile.write(f"event dict: {event.__dict__}")
                 if event.inaxes == self._axis[0]:  # the click must be on the left panel (map)
                     position = (int(round(event.xdata)),int(round(event.ydata)))
                     self._marker[0].set_marker(None)
@@ -313,16 +335,18 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
                     self._axis[1] = self._figure.add_subplot(122,projection=None,aspect='auto')
                     self._axis[1].tick_params('y',labelright=True,labelleft=False)
                     self._axis[1].get_yaxis().set_label_position("right")
+                    print("in update calling ex_diagram")
                     self.ex_diagram(axis=self._axis[1], reset=False,position=position,size=1,figsize=(5,3),
-                                norm=True,show_fit=show_fit)
-                    #self._axis[0].set_title(f'{position}')
+                                norm=True,show_fit=True,ymin=0,ymax=30)
+                    self._logfile.write(f'pos={position}')
             except Exception as err:
                 if self._logfile is None:
                     pass
                 else:
                     self._logfile.write("Exception {0}".format(err))
 
-            #self._logfile.close()
+            if self._logfile:
+                self._logfile.close()
             self._figure.canvas.draw_idle()
 
         if interaction_type == "move":
