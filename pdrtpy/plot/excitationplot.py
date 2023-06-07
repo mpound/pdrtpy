@@ -70,7 +70,7 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
 
         print(f"norm={norm} pos={position} size={size}")
         if type(position) == SkyCoord:
-            position = self._tool.fitresult.get_pixel_from_coord(coord)
+            position = self._tool.fitresult.get_pixel_from_coord(position)
             print(f"AFTER norm={norm} pos={position} size={size}")
         cdavg = self._tool.average_column_density(norm=norm, position=position, size=size, line=True)
         #print("CDAVG ",cdavg)
@@ -298,7 +298,7 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         #print(f"NONE? {self._tool.fit_result[position] is None}")
         if self._tool.fit_result[position] is None:
             # find another position where the fit succeeded
-            ok = np.where(self._tool.fit_result._data != None)
+            ok = np.where(self._tool.fit_result._data is not None)
             position = (ok[0][0],ok[1][0])
         print(f"Trying to get world coordinates at position {position}")
         coord = self._tool.fit_result.get_skycoord(position[0],position[1])
@@ -323,7 +323,7 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         def update_lines(event):
             self._logfile = None
             try:
-                self._logfile = open(f"/tmp/test.log","a")
+                self._logfile = open("/tmp/test.log","a")
                 self._logfile.write(f"event.inaxes = {event.inaxes} x,y={event.xdata,event.ydata}\n")
                 self._logfile.write(f"event dict: {event.__dict__}")
                 if event.inaxes == self._axis[0]:  # the click must be on the left panel (map)
