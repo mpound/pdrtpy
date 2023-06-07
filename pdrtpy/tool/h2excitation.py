@@ -742,7 +742,11 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                     weights = np.array([ca.uncertainty.array])
                 else:
                     weights = ca.uncertainty.array
-            cdavg = np.average(cddata,weights=weights)
+            #print(f"weights {weights} avg,sum:{np.average(weights)},{np.sum(weights)}")
+            if(np.sum(weights) == 0):
+                cdavg = np.average(cddata)
+            else:
+                cdavg = np.average(cddata,weights=weights)
             error = np.nanmean(ca.error)/np.sqrt(ca.error.size)#-1
             cdmeas[cd] = Measurement(data=cdavg,
                                         uncertainty=StdDevUncertainty(error),
