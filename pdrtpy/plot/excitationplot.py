@@ -1,18 +1,15 @@
 import numpy as np
-import numpy.ma as ma
-from copy import deepcopy,copy
 
-import matplotlib.cm as mcm
-#from matplotlib import ticker
 from matplotlib.ticker import MultipleLocator
-from cycler import cycler
+#from cycler import cycler
 
 import astropy.units as u
+from astropy.coordinates import SkyCoord
 from astropy.nddata import StdDevUncertainty
 
 from ..measurement import Measurement
 from .plotbase import PlotBase
-from ..pdrutils import float_formatter,LOGE,to
+from ..pdrutils import float_formatter,LOGE
 
 class ExcitationPlot(PlotBase):
     """
@@ -23,6 +20,7 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         self._xlim = []
         self._ylim = []
         self._label = label
+        self._logfile = None
 
     def _sorted_by_vibrational_level(self,measurements):
         # d is a dict of measurements
@@ -40,8 +38,8 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         #or a :class:`~astropy.coordinates.SkyCoord`, which will use the :class:`~astropy.wcs.WCS` of the ::class:`~pdrtpy.measurement.Measurement`s added to this tool.
         r"""Plot the excitation diagram.  For maps of excitation parameters, a position and optional size are required.  To examine the entire map, use :meth:`explore`.
 
-        :param position: The spatial position of excitation diagram.  For spatial averaging this is the cutout array's center with respect to the data array. The position is specified as a `(x, y)` tuple of pixel coordinates.
-        :type position: tuple
+        :param position: The spatial position of excitation diagram.  For spatial averaging this is the cutout array's center with respect to the data array. The position may be specified as an `(x, y)` tuple of pixel coordinates or a SkyCoord coordinate
+        :type position: tuple or :class:`~astropy.coordinates.SkyCoord`
         :param size: The size of the cutout array along each axis. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(ny, nx)` order. Scalar numbers in size are assumed to be in units of pixels. `size` can also be a :class:`~astropy.units.Quantity` object or contain :class:`~astropy.units.Quantity` objects. Such :class:`~astropy.units.Quantity` objects must be in pixel or angular units. For all cases, size will be converted to an integer number of pixels, rounding the the nearest integer.  See :class:`~astropy.nddata.utils.Cutout2D`
         :type size: int, array_like, or :class:`astropy.units.Quantity`
         :param norm: if True, normalize the column densities by the
@@ -54,6 +52,8 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
                       'xmax':None, #  we use np.max() later if user does not specify
                       'ymax':22,
                       'ymin': 15,
+                      'xlabel':None,
+                      'ylabel':None,
                       'grid' :False,
                       'figsize':(10,7),
                       'capsize':3,
@@ -62,14 +62,24 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
                       'color':None,
                       'axis':None,
                       'label':None,
-                      'aspect': 'auto'}
+                      'aspect': 'auto',
+                      'bbox_to_anchor':None,
+                      'loc':"best",
+                      'test': False}
         kwargs_opts.update(kwargs)
 
+        print(f"norm={norm} pos={position} size={size}")
+        if isinstance(position,SkyCoord):
+            position = self._tool.fitresult.get_pixel_from_coord(position)
+            print(f"AFTER norm={norm} pos={position} size={size}")
         cdavg = self._tool.average_column_density(norm=norm, position=position, size=size, line=True)
+        #print("CDAVG ",cdavg)
         energies = self._tool.energies(line=True)
         energy = np.array(list(energies.values()))
         colden = np.squeeze(np.array([c.data for c in cdavg.values()]))
         error = np.squeeze(np.array([c.error for c in cdavg.values()]))
+        #print("ERROR ",error)
+        #print("COLDEN",colden)
         sigma = LOGE*error/colden
         if kwargs_opts['axis'] is None:
             self._figure, self._axis = self._plt.subplots(figsize=kwargs_opts['figsize'])
@@ -91,8 +101,8 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
             cdsort = self._sorted_by_vibrational_level(cdavg)
             ensort = self._sorted_by_vibrational_level(energies)
             #print("ENSORT" ,ensort.values())
-            cyc = cycler('color',  self._CB_color_cycle)
-            cyfill = cycler('fillstyle',['full', 'none', 'full', 'none', 'full', 'none', 'full', 'none', 'full'])
+            #cyc = cycler('color',  self._CB_color_cycle)
+            #cyfill = cycler('fillstyle',['full', 'none', 'full', 'none', 'full', 'none', 'full', 'none', 'full'])
             #self._plt.rc('axes', prop_cycle=(cyc+cyfill))
 
             fmtd = {False: 'o',True:'^'} #there is no cycler for fmt, do it manually
@@ -130,25 +140,34 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
                                 linestyle='none',color='k',
                                 lw=kwargs_opts['linewidth'],
                                 ms=kwargs_opts['markersize'])
-        _axis.set_xlabel("$E_u/k$ (K)")
-        if norm:
-            _axis.set_ylabel("log $(N_u/g_u) ~({\\rm cm}^{-2})$")
+        if kwargs_opts['xlabel'] is None:
+            _axis.set_xlabel("$E_u/k$ (K)")
         else:
-            _axis.set_ylabel("log $(N_u) ~({\\rm cm}^{-2})$")
-        if kwargs_opts['label'] == 'j' or kwargs_opts['label']=='id':
-            # label the points with e.g. J=2,3,4...
-            if kwargs_opts['label'] == 'j':  # STILL WRONG
-                first=True
+            _axis.set_xlabel(kwargs_opts['xlabel'])
+        if kwargs_opts['ylabel'] is None:
+            if norm:
+                _axis.set_ylabel("log $(N_u/g_u) ~({\\rm cm}^{-2})$")
             else:
-                first=False
+                _axis.set_ylabel("log $(N_u) ~({\\rm cm}^{-2})$")
+        else:
+            _axis.set_ylabel(kwargs_opts['ylabel'])
+        first = True
+        if kwargs_opts['label']=='id':
             for lab in sorted(cdavg):
-                if first:
-                    ss="J="+self._tool._ac.loc[lab]["Ju"]
-                    first=False
-                else:
-                    ss=str(lab)
+                _axis.text(x=energies[lab]+100,y=np.log10(cdavg[lab]),s=str(lab))
+        elif kwargs_opts['label'] == 'j':  # label the points with e.g. J=2,3,4...
+            for lab in sorted(cdavg):
+                # this fails because the lowest J may not be the first data point.
+                # we'd have to sort on Ju of the data. Which isn't even unique
+                # if there are multiple vibrational levels.
+                #if first:
+                #    ss="J="+str(self._tool._ac.loc[lab]["Ju"])
+                #    first=False
+                #else:
+                ss=str(self._tool._ac.loc[lab]["Ju"])
                 _axis.text(x=energies[lab]+100,y=np.log10(cdavg[lab]),s=ss)
         handles,labels=_axis.get_legend_handles_labels()
+        print(f"show_fit is {show_fit}")
         if show_fit:
             if tt.fit_result is None:
                 raise ValueError("No fit to show. Have you run the fit in your H2ExcitationFit?")
@@ -188,23 +207,35 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
             labels.append(labnh)
         # Scale xaxis with max(energy). Round up to nearest 1000
         if kwargs_opts['xmax'] is None:
-            kwargs_opts['xmax'] = np.round(1000.+energy.max(),-3)
+            kwargs_opts['xmax'] = np.round(500.+energy.max(),-3)
         _axis.set_xlim(kwargs_opts['xmin'],kwargs_opts['xmax'])
+        print(f"setting ylim [{kwargs_opts['ymin']},{kwargs_opts['ymax']}]")
         _axis.set_ylim(kwargs_opts['ymin'],kwargs_opts['ymax'])
-        if (kwargs_opts['xmax']-kwargs_opts['xmin']) <=10000:
+        # try to make reasonably-spaced xaxis tickmarks.  
+        # if I were clever, I'd do this with a function
+        temperature_range = kwargs_opts['xmax']-kwargs_opts['xmin']
+        if temperature_range <= 10000:
             _axis.xaxis.set_major_locator(MultipleLocator(1000))
             _axis.xaxis.set_minor_locator(MultipleLocator(200))
+        elif temperature_range <= 26000:
+            _axis.xaxis.set_major_locator(MultipleLocator(2000))
+            _axis.xaxis.set_minor_locator(MultipleLocator(500))
+        else:
+            _axis.xaxis.set_major_locator(MultipleLocator(6000))
+            _axis.xaxis.set_minor_locator(MultipleLocator(2000))
         _axis.yaxis.set_major_locator(MultipleLocator(1))
         _axis.yaxis.set_minor_locator(MultipleLocator(0.2))
         _axis.tick_params(axis='both',direction='in',which='both')
         _axis.tick_params(axis='both',bottom=True,top=True,left=True,right=True, which='both')
         if kwargs_opts['grid']:
-            _axis.grid(b=True,which='major',axis='both',lw=kwargs_opts['linewidth']/2,
+            _axis.grid(visible=True,which='major',axis='both',lw=kwargs_opts['linewidth']/2,
                             color='k',alpha=0.33)
-            _axis.grid(b=True,which='minor',axis='both',lw=kwargs_opts['linewidth']/2,
+            _axis.grid(visible=True,which='minor',axis='both',lw=kwargs_opts['linewidth']/2,
                             color='k',alpha=0.22,linestyle='--')
 
-        _axis.legend(handles,labels)
+        _axis.legend(handles,labels,
+                     bbox_to_anchor=kwargs_opts['bbox_to_anchor'],
+                     loc=kwargs_opts['loc'])
 
     def temperature(self,component,**kwargs):
         """Plot the temperature of hot or cold gas component.
@@ -227,163 +258,9 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
 
     def opr(self,**kwargs):
         """Plot the ortho-to-para ratio.  This will be a map if the input data are a map, otherwise a float value is returned."""
-        if type(self._tool.opr) == float:
+        if isinstance(self._tool.opr, float):
             return self._tool.opr
         self._plot(self._tool.opr,**kwargs)
-
-    def _plot(self,data,**kwargs):
-        '''generic plotting method used by other plot methods'''
-
-        kwargs_plot = {'show' : 'data' # or 'mask' or 'error'
-                      }
-
-        kwargs_opts = {'units' : None,
-                       'image':True,
-                       'colorbar': True,
-                       'contours': True,
-                       'label': False,
-                       'title': None,
-                       'norm': 'simple',
-                       'log': False,
-                       'axis': None
-                       }
-
-        kwargs_contour = {'levels': None,
-                          'colors': ['white'],
-                          'linewidths': 1.0}
-
-        # Merge in any keys the user provided, overriding defaults.
-        kwargs_contour.update(kwargs)
-        kwargs_opts.update(kwargs)
-        kwargs_plot.update(kwargs)
-
-        _data = deepcopy(data)  # default is show the data
-
-        if kwargs_plot['show'] == 'error':
-            _data.data = _data.error
-        # do the log here, because we won't take log of a mask.
-        if kwargs_opts['log']:
-            _data.data = np.log10(_data.data)
-        kwargs_opts.pop('log',None)
-        kwargs.pop('log',None)
-        if kwargs_plot['show'] == 'mask':
-            _data = deepcopy(data)
-            _data.data = _data.mask
-            # can't contour a boolean
-            kwargs_opts['contours'] = False
-
-        if self._tool._modelnaxis == 2 or len(_data.shape)==2:
-            if kwargs_opts['units'] is not None:
-                k = to(kwargs_opts['units'], _data)
-            else:
-                k = _data
-        elif self._tool._modelnaxis == 3:
-            if kwargs_opts['units'] is not None:
-                k = to(kwargs_opts['units'], _data[0,:,:])
-            else:
-                k = _data[0,:,:]
-        else:
-            raise Exception("Unexpected model naxis: %d"%self._tool._modelnaxis)
-
-        km = ma.masked_invalid(k)
-        if getattr(k,"mask",None) is not None:
-            km.mask = np.logical_or(k.mask,km.mask)
-        # make sure nans don't affect the color map
-        min_ = np.nanmin(km)
-        max_ = np.nanmax(km)
-
-        kwargs_imshow = { 'origin': 'lower',
-                          'norm': 'simple',
-                          'stretch': 'linear',
-                          'vmin': min_,
-                          'vmax': max_,
-                          'cmap': 'plasma',
-                          'aspect': 'auto'}
-
-        kwargs_subplot = {'nrows': 1,
-                          'ncols': 1,
-                          'index': 1,
-                          'reset': True,
-                          'constrained_layout': False # this appears to have no effect
-                         }
-
-        # delay merge until min_ and max_ are known
-        kwargs_imshow.update(kwargs)
-        kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km,
-                                             kwargs_imshow['vmin'],kwargs_imshow['vmax'],
-                                             kwargs_imshow['stretch'])
-
-        kwargs_subplot.update(kwargs)
-        # swap ncols and nrows in figsize to preserve aspect ratio
-        kwargs_subplot['figsize'] = kwargs.get("figsize",(kwargs_subplot["ncols"]*5,kwargs_subplot["nrows"]*5))
-
-        axidx = kwargs_subplot['index']-1
-        if kwargs_opts['axis'] is None:
-            self._figure,self._axis = self._plt.subplots(kwargs_subplot['nrows'],kwargs_subplot['ncols'],
-                                                    figsize=kwargs_subplot['figsize'],
-                                                    subplot_kw={'projection':k.wcs,
-                                                                'aspect':kwargs_imshow['aspect']},
-                                                    constrained_layout=kwargs_subplot['constrained_layout'])
-            _axis = self._axis
-        else:
-            _axis = kwargs_opts['axis']
-
-        # Make sure self._axis is an array because we will index it below.
-        if type(_axis) is not np.ndarray:
-            _axis= np.array([_axis])
-        for a in _axis:
-            a.tick_params(axis='both',direction='in',which='both')
-            # astropy complains if you use axis=both and bottom, top etc.
-            a.tick_params(axis='x',bottom=True,top=True,left=True,right=True, which='both')
-            a.tick_params(axis='y',bottom=True,top=True,left=True,right=True, which='both')
-            if hasattr(a,'coords'):
-                for c in a.coords:
-                    c.display_minor_ticks(True)
-        if kwargs_opts['image']:
-            current_cmap = copy(mcm.get_cmap(kwargs_imshow['cmap']))
-            current_cmap.set_bad(color='white',alpha=1)
-            # suppress errors and warnings about unused keywords
-            #@todo need a better solution for this, it is not scalable.
-            #push onto a stack?
-            for kx in ['units', 'image', 'contours', 'label', 'title','linewidths','levels','nrows','ncols',
-                       'index', 'reset','colors','colorbar','show','yaxis_unit','xaxis_unit','axis',
-                       'constrained_layout','figsize','stretch','legend','markersize','show_fit']:
-                kwargs_imshow.pop(kx,None)
-            # eliminate deprecation warning.  vmin,vmax are passed to Normalization object.
-            if kwargs_opts['norm'] is not None:
-                kwargs_imshow.pop('vmin',None)
-                kwargs_imshow.pop('vmax',None)
-            im=_axis[axidx].imshow(km,**kwargs_imshow)
-            if kwargs_opts['colorbar']:
-                self._wcs_colorbar(im,_axis[axidx])
-
-        if kwargs_opts['contours']:
-            if kwargs_contour['levels'] is None:
-                # Figure out some autolevels
-                kwargs_contour['levels'] = self._autolevels(km,'log')
-
-            # suppress errors and warnings about unused keywords
-            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect',
-                       'colorbar','reset', 'nrows', 'ncols', 'index','show','yaxis_unit','axis',
-                       'xaxis_unit','norm','constrained_layout','figsize','stretch','legend','markersize','show_fit']:
-                kwargs_contour.pop(kx,None)
-
-            contourset = _axis[axidx].contour(km, **kwargs_contour)
-            if kwargs_opts['label']:
-                _axis[axidx].clabel(contourset,contourset.levels,inline=True,fmt='%1.1e')
-
-        if kwargs_opts['title'] is not None:
-            #self.figure.subplots_adjust(top=0.95)
-            #self._axis[axidx].set_title(kwargs_opts['title'])
-            # Using ax.set_title causes the title to be cut off.  No amount of
-            # diddling with tight_layout, constrained_layout, subplot adjusting, etc
-            # would affect this.  However using Figure.suptitle seems to work.
-            self.figure.suptitle(kwargs_opts['title'],y=0.95)
-
-        if k.wcs is not None:
-            _axis[axidx].set_xlabel(k.wcs.wcs.lngtyp)
-            _axis[axidx].set_ylabel(k.wcs.wcs.lattyp)
-
 
     def explore(self,data=None,interaction_type="click",**kwargs):
         """Explore the fitted parameters of a map. A user-requested map is displayed in the left panel and in the right panel is the fitted excitation diagram for a point selected by the user.  The user clicks on a point in the left panel and the right panel will update with the excitation diagram for that point.
@@ -416,7 +293,16 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
                        }
         # starting position is middle pixel of image. note // for integer arithmetic
         position = tuple(np.array(np.shape(data))//2)
-        print("Explore using position: ",position, " size=1")
+        #print(position)
+        #print(f"fit result at {position} is {self._tool.fit_result[position]}")
+        #print(f"NONE? {self._tool.fit_result[position] is None}")
+        if self._tool.fit_result[position] is None:
+            # find another position where the fit succeeded
+            ok = np.where(self._tool.fit_result._data is not None)
+            position = (ok[0][0],ok[1][0])
+        print(f"Trying to get world coordinates at position {position}")
+        coord = self._tool.fit_result.get_skycoord(position[0],position[1])
+        print("Explore using position: ",position, " world ",coord.to_string('hmsdms')," size=1")
         kwargs_opts.update(kwargs)
         self._figure = self._plt.figure(figsize=kwargs_opts['figsize'],clear=True)
         self._axis = np.empty([2],dtype=object)
@@ -427,16 +313,19 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         fmt      = kwargs_opts.pop('fmt','r+')
         show_fit = kwargs_opts.pop('show_fit')
         self._plot(data,axis=self._axis,index=1,**kwargs_opts)
+        print("inital ex_diagram")
         self.ex_diagram(axis=self._axis[1], reset=False,position=position,size=1,
-                        norm=True,show_fit=show_fit)
+                        norm=True,show_fit=show_fit,ymin=0,ymax=30)
 
         self._marker = self.axis[0].plot(position[0],position[1],fmt,markersize=kwargs_opts['markersize'])
 
 
         def update_lines(event):
+            self._logfile = None
             try:
-                #self._logfile = open(f"/tmp/test.log","a")
-               # self._logfile.write(f"event.inaxes = {event.inaxes} x,y={event.xdata,event.ydata}\n")
+                self._logfile = open("/tmp/test.log","a")
+                self._logfile.write(f"event.inaxes = {event.inaxes} x,y={event.xdata,event.ydata}\n")
+                self._logfile.write(f"event dict: {event.__dict__}")
                 if event.inaxes == self._axis[0]:  # the click must be on the left panel (map)
                     position = (int(round(event.xdata)),int(round(event.ydata)))
                     self._marker[0].set_marker(None)
@@ -446,14 +335,18 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
                     self._axis[1] = self._figure.add_subplot(122,projection=None,aspect='auto')
                     self._axis[1].tick_params('y',labelright=True,labelleft=False)
                     self._axis[1].get_yaxis().set_label_position("right")
+                    print("in update calling ex_diagram")
                     self.ex_diagram(axis=self._axis[1], reset=False,position=position,size=1,figsize=(5,3),
-                                norm=True,show_fit=show_fit)
-                    #self._axis[0].set_title(f'{position}')
+                                norm=True,show_fit=True,ymin=0,ymax=30)
+                    self._logfile.write(f'pos={position}')
             except Exception as err:
-                pass
-                #self._logfile.write("Exception {0}".format(err))
+                if self._logfile is None:
+                    pass
+                else:
+                    self._logfile.write("Exception {0}".format(err))
 
-            #self._logfile.close()
+            if self._logfile:
+                self._logfile.close()
             self._figure.canvas.draw_idle()
 
         if interaction_type == "move":

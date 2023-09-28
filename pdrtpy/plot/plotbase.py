@@ -1,12 +1,16 @@
+from copy import deepcopy,copy
 import numpy as np
+import numpy.ma as ma
 
 import matplotlib.axes as maxes
+import matplotlib.cm as mcm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from astropy.visualization import simple_norm, ZScaleInterval , ImageNormalize
 from astropy.visualization.stretch import LinearStretch, PowerStretch, AsinhStretch, LogStretch, SqrtStretch
 from matplotlib.colors import LogNorm
 from cycler import cycler
+from .. import pdrutils as utils
 
 class PlotBase:
     """Base class for plotting.
@@ -159,7 +163,7 @@ class PlotBase:
         :type stretch: str
         :returns: :mod:`astropy.visualization.normalization` object
         """
-        if type(norm) == str:
+        if isinstance(norm, str):
             norm = norm.lower()
             if norm not in self._valid_norms:
                 raise ValueError("Unrecognized normalization %s. Valid values are %s"%(norm,self._valid_norms))
@@ -241,3 +245,160 @@ class PlotBase:
         :type colorcycle: list
         """
         self._plt.rc('axes', prop_cycle=(cycler('color',  colorcycle)))
+
+    def reset_colorcycle(self):
+        """Reset the color cycle to the default color-blind friendly one"""
+        self.colorcycle(self._CB_color_cycle)
+
+    def _plot(self,data,**kwargs):
+        '''generic plotting method used by other plot methods'''
+
+        test = kwargs.pop('test',False)
+        kwargs_plot = {'show' : 'data' # or 'mask' or 'error'
+                      }
+
+        kwargs_opts = {'units' : None,
+                       'image':True,
+                       'colorbar': True,
+                       'contours': True,
+                       'label': False,
+                       'title': None,
+                       'log': False,
+                       'axis': None
+                       }
+
+        kwargs_contour = {'levels': None,
+                          'colors': ['white'],
+                          'linewidths': 1.0}
+
+
+        # Merge in any keys the user provided, overriding defaults.
+        kwargs_contour.update(kwargs)
+        kwargs_opts.update(kwargs)
+        kwargs_plot.update(kwargs)
+
+        _data = deepcopy(data)  # default is show the data
+
+        if kwargs_plot['show'] == 'error':
+            _data = deepcopy(data)
+            _data.data = _data.error
+        # do the log here, because we won't take log of a mask.
+        if kwargs_opts['log']:
+            _data.data = np.log10(_data.data)
+        kwargs_opts.pop('log',None)
+        kwargs.pop('log',None)
+        if kwargs_plot['show'] == 'mask':
+            _data = deepcopy(data)
+            _data.data = _data.mask
+            # can't contour a boolean
+            kwargs_opts['contours'] = False
+
+        if self._tool._modelnaxis == 2 or len(_data.shape)==2:
+            if kwargs_opts['units'] is not None:
+                k = utils.to(kwargs_opts['units'], _data)
+            else:
+                k = _data
+        elif self._tool._modelnaxis == 3:
+            if kwargs_opts['units'] is not None:
+                k = utils.to(kwargs_opts['units'], _data[0,:,:])
+            else:
+                k = _data[0,:,:]
+        else:
+            raise Exception("Unexpected model naxis: %d"%self._tool._modelnaxis)
+
+        km = ma.masked_invalid(k)
+        if getattr(k,"mask",None) is not None:
+            km.mask = np.logical_or(k.mask,km.mask)
+        # make sure nans don't affect the color map
+        min_ = np.nanmin(km)
+        max_ = np.nanmax(km)
+
+        kwargs_imshow = { 'origin': 'lower',
+                          'norm': 'simple',
+                          'stretch': 'linear',
+                          'vmin': min_,
+                          'vmax': max_,
+                          'cmap': 'plasma',
+                          'aspect': 'auto'}
+
+        kwargs_subplot = {'nrows': 1,
+                          'ncols': 1,
+                          'index': 1,
+                          'reset': True,
+                          'constrained_layout': False # this appears to have no effect
+                         }
+
+        # delay merge until min_ and max_ are known
+        kwargs_imshow.update(kwargs)
+        kwargs_imshow['norm']=self._get_norm(kwargs_imshow['norm'],km,
+                                             kwargs_imshow['vmin'],kwargs_imshow['vmax'],
+                                             kwargs_imshow['stretch'])
+
+        kwargs_subplot.update(kwargs)
+        # swap ncols and nrows in figsize to preserve aspect ratio
+        kwargs_subplot['figsize'] = kwargs.get("figsize",(kwargs_subplot["ncols"]*5,kwargs_subplot["nrows"]*5))
+
+        axidx = kwargs_subplot['index']-1
+        if kwargs_subplot['reset'] and kwargs_opts['axis'] is None:
+            self._figure,self._axis = self._plt.subplots(kwargs_subplot['nrows'],kwargs_subplot['ncols'],
+                                                    figsize=kwargs_subplot['figsize'],
+                                                    subplot_kw={'projection':k.wcs,
+                                                                'aspect':kwargs_imshow['aspect']},
+                                                    constrained_layout=kwargs_subplot['constrained_layout'])
+
+        if kwargs_opts['axis'] is not None:
+            self._axis = kwargs_opts['axis']
+        if type(self._axis) is not np.ndarray:
+            self._axis = np.array([self._axis])
+        for a in self._axis:
+            a.tick_params(axis='both',direction='in') # axes vs axis???
+            if hasattr(a,'coords'):
+                for c in a.coords:
+                    c.display_minor_ticks(True)
+        if kwargs_opts['image']:
+            current_cmap = copy(mcm.get_cmap(kwargs_imshow['cmap']))
+            current_cmap.set_bad(color='white',alpha=1)
+            # suppress errors and warnings about unused keywords
+            #@todo need a better solution for this, it is not scalable.
+            #push onto a stack? or pop everything that is NOT related to imshow.
+            for kx in ['units', 'image', 'contours', 'label', 'title',
+                       'linewidths','levels','nrows','ncols','test',
+                       'index', 'reset','colors','colorbar','show',
+                       'axis','yaxis_unit','xaxis_unit','bbox_to_anchor','loc',
+                       'constrained_layout','figsize','stretch','legend',
+                       'markersize','show_fit']:
+                kwargs_imshow.pop(kx,None)
+            # eliminate deprecation warning.  vmin,vmax are passed to Normalization object.
+            if kwargs_imshow['norm'] is not None:
+                kwargs_imshow.pop('vmin',None)
+                kwargs_imshow.pop('vmax',None)
+            im=self._axis[axidx].imshow(km,**kwargs_imshow)
+            if kwargs_opts['colorbar']:
+                self._wcs_colorbar(im,self._axis[axidx])
+
+        if kwargs_opts['contours']:
+            if kwargs_contour['levels'] is None:
+                # Figure out some autolevels
+                kwargs_contour['levels'] = self._autolevels(km,'log')
+
+            # suppress errors and warnings about unused keywords
+            for kx in ['units', 'image', 'contours', 'label', 'title', 'cmap','aspect',
+                       'colorbar','reset', 'nrows', 'ncols', 'index','show','yaxis_unit',
+                       'xaxis_unit','norm','constrained_layout','figsize','stretch','legend','markersize','show_fit']:
+                kwargs_contour.pop(kx,None)
+
+            contourset = self._axis[axidx].contour(km, **kwargs_contour)
+            if kwargs_opts['label']:
+                self._axis[axidx].clabel(contourset,contourset.levels,inline=True,fmt='%1.1e')
+
+        if kwargs_opts['title'] is not None:
+            #self.figure.subplots_adjust(top=0.95)
+            #self._axis[axidx].set_title(kwargs_opts['title'])
+            # Using ax.set_title causes the title to be cut off.  No amount of
+            # diddling with tight_layout, constrained_layout, subplot adjusting, etc
+            # would affect this.  However using Figure.suptitle seems to work.
+            self.figure.suptitle(kwargs_opts['title'],y=0.95)
+
+        if k.wcs is not None:
+            self._axis[axidx].set_xlabel(k.wcs.wcs.lngtyp)
+            self._axis[axidx].set_ylabel(k.wcs.wcs.lattyp)

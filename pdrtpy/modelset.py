@@ -10,7 +10,7 @@ from .pdrutils import get_table,model_dir, _OBS_UNIT_
 from .measurement import Measurement
 
 class ModelSet(object):
-    """Class for computed PDR Model Sets. :class:`ModelSet` provides interface with a directory containing the model FITS files and the ability to query details about
+    """Class for computed PDR Model Sets. :class:`ModelSet` provides interface to a directory containing the model FITS files and the ability to query details about.
 
     :param name: identifying name, e.g., 'wk2006'
     :type name: str
@@ -20,11 +20,26 @@ class ModelSet(object):
     :type medium: str
     :param mass: maximum clump mass (for KosmaTau models).  Default:None (appropriate for Wolfire/Kaufman models)
     :type float:
+    :params modelsetinfo: For adding user specified ModelSet, this parameter specifies the file with information about the ModelSet. It can be a pathname to an externalt tabular file in an astropy-recognized or an astropy Table object.  If an external tabular file, its format should be give by the `format` keyword. The columns are:
+
+    ['PDR code','name', 'version','path','filename','medium','z','mass','description']
+
+    `z` and `mass` should be floats, the rest should be strings. 
+    The 'name`, `version`, `medium`, `z`, and `mass` columns contain the values available in the input ModelSet as described above. `PDR code` is the originator of the code e.g., "KOSMA-tau", `version` is the code version, `path` is the full-qualified pathname to the FITS files, `filename` is the tabular file which contains descriptions of individual FITS files.  This must also be in the format specified by the `format` keyword.  `description` is a description of the input ModelSet.
+    :type modelsetinfo: str or :class:~astropy.Table
+    :format: If `modelsetinfo` is a file, give the format of file. Must be `an astropy recognized Table format. <https://docs.astropy.org/en/stable/io/unified.html#built-in-readers-writers>`_ e.g., ascii, ipac, votable. Default is `IPAC format  <https://docs.astropy.org/en/stable/api/astropy.io.ascii.Ipac.html#astropy.io.ascii.Ipac>`_
+    :type format: str
     :raises ValueError: If model set not recognized/found.
     """
     #@ToDo replace with kwargs?
-    def __init__(self,name,z,medium="constant density",mass=None):
-        self._all_models = get_table("all_models.tab")
+    def __init__(self,name,z,medium="constant density",mass=None,modelsetinfo=None,format='ipac'):
+        if modelsetinfo is None:
+            #get the package default
+            self._all_models = get_table("all_models.tab")
+        elif type(modelsetinfo) is str:
+            self._all_models = Table.read(modelsetinfo,format=format)
+        else: # must be an Astropy Table
+            self._all_models = deepcopy(modelsetinfo)
         self._all_models.add_index("name")
         possible = dict()
         if name not in self._all_models["name"]:
@@ -64,13 +79,14 @@ class ModelSet(object):
             raise ValueError(msg)
 
         self._tabrow = self._all_models[matching_rows].loc[name]
-        self._table = get_table(path=self._tabrow["path"],filename=self._tabrow["filename"])
+        self._table = get_table(path=self._tabrow["path"],filename=self._tabrow["filename"],format=format)
         self._table.add_index("ratio")
         self._set_identifiers()
         self._set_ratios()
         self._default_unit = dict()
         self._default_unit["ratio"] = u.dimensionless_unscaled
         self._default_unit["intensity"] = _OBS_UNIT_
+        self._default_unit["emissivity"] = "erg / (cm3 ion s)"
         self._user_added_models = dict()
 
     @property
@@ -267,9 +283,9 @@ class ModelSet(object):
 
         if identifier not in self.table["ratio"]:
             raise KeyError(f"{identifier} is not in this ModelSet")
-
+        _filename = self.table.loc[identifier]["filename"] +"."+ext
         d = model_dir()
-        _thefile = d+self._tabrow["path"]+self.table.loc[identifier]["filename"]+"."+ext
+        _thefile = d+self._tabrow["path"] + _filename
         _title = self._table.loc[identifier]['title']
         # @TODO Fix this: see issues 66 & 67
         if unit is None or unit == "":
@@ -283,7 +299,7 @@ class ModelSet(object):
                 modeltype = "ratio"
             else:
                 unit = self._default_unit['intensity']
-                modeltype = "intensity"
+                modeltype = "intensity" #this is wrong for emissivity modeltypes
         else:
             if unit == u.dimensionless_unscaled:
                 modeltype = "ratio"
@@ -294,7 +310,8 @@ class ModelSet(object):
         #if _model.unit=="":
         #    _model.unit = u.Unit("adu")#self._default_unit["ratio"]
         _wcs = _model.wcs
-        _model.header["MODELTYP"] = modeltype
+        if "MODELTYP" not in _model.header:
+            _model.header["MODELTYP"] = modeltype
         _model.modeltype = modeltype
         #@todo this is messy.  clean up by doing if wcs.. first?
         if self.is_wk2006 or self.name == "smc":
@@ -388,13 +405,13 @@ class ModelSet(object):
             #print(f"Overwriting {identifier}.")
             self._really_add_model(identifier,model,title)
 
-
     def _really_add_model(self,identifier,model,title):
         print("Adding user model %s"%identifier)
         if type(model) is str:
             m = Measurement.read(model,identifier=identifier)
         else:
             m = model
+        m._title = title
         self._user_added_models[identifier] = m
         if "/" in identifier: # it's a ratio
             if identifier in self._supported_ratios["ratio label"]:
@@ -402,11 +419,18 @@ class ModelSet(object):
                 index = np.where(self._supported_ratios["ratio label"] == identifier)[0][0]
                 self._supported_ratios.remove_row(index)
             self._supported_ratios.add_row([title,identifier])
+            numerator, denominator = identifier.split('/')
+            fakefilename = "user-"+numerator.replace("_","")+"_"+denominator.replace("_","")
         else:
             if identifier in self._supported_lines["intensity label"]:
                 index = np.where(self._supported_lines["intensity label"] == identifier)[0][0]
                 self._supported_lines.remove_row(index)
             self._supported_lines.add_row([title,identifier])
+            numerator = identifier
+            denominator = 1
+            fakefilename = "user-"+numerator.replace("_","")
+          #numerator denominator ratio filename z title
+        self.table.add_row([numerator, denominator, identifier, fakefilename, self.z, title])
 
     def _find_ratio_elements(self,m):
         # TODO handle case of OI+CII/FIR so it is not special cased in lineratiofit.py

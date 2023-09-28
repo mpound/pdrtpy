@@ -1,0 +1,67 @@
+|numerator     |denominator|ratio             |filename        |z    |title                                         |
+|char          |char       |char              |char            |float|char                                          |
+|              |           |                  |                |     |null                                          |
+|null          |null       |null              |null            |null |null                                          |
+ CI_609         1           CI_609             CI609            1     [C I] 609 $\mu$m
+ CI_370         1           CI_370             CI370            1     [C I] 370 $\mu$m
+ OI_63          1           OI_63              OI63             1     [O I] 63 $\mu$m
+ OI_145         1           OI_145             OI145            1     [O I] 145 $\mu$m
+ CII_158        1           CII_158            CII158           1     [C II] 158 $\mu$m
+ CO_10          1           CO_10              CO10             1     CO(J=1-0)
+ CO_21          1           CO_21              CO21             1     CO(J=2-1)
+ CO_32          1           CO_32              CO32             1     CO(J=3-2)
+ CO_43          1           CO_43              CO43             1     CO(J=4-3)
+ CO_54          1           CO_54              CO54             1     CO(J=5-4)
+ CO_65          1           CO_65              CO65             1     CO(J=6-5)
+ CO_76          1           CO_76              CO76             1     CO(J=7-6)
+ CO_87          1           CO_87              CO87             1     CO(J=8-7)
+ CO_98          1           CO_98              CO98             1     CO(J=9-8)
+ CO_109         1           CO_109             CO109            1     CO(J=10-9)
+ CO_1110        1           CO_1110            CO1110           1     CO(J=11-10)
+ CO_1211        1           CO_1211            CO1211           1     CO(J=12-11)
+ CO_1312        1           CO_1312            CO1312           1     CO(J=13-12)
+ CO_1413        1           CO_1413            CO1413           1     CO(J=14-13)
+ FIR            1           FIR                FIR              1     I$_{FIR}$
+ OI_63+CII_158  1           OI_63+CII_158      OI63+CII158      1     [O I] 63 $\mu$m + [C II] 158 $\mu$m
+ OI_145+CII_158 1           OI_145+CII_158     OI145+CII158     1     [O I] 145 $\mu$m + [C II] 158 $\mu$m
+ OI_145         OI_63       OI_145/OI_63       OI145_OI63       1     [O I] 145 $\mu$m/[O I] 63 $\mu$m
+ OI_145         CII_158     OI_145/CII_158     OI145_CII158     1     [O I] 145 $\mu$m/[C II] 158 $\mu$m
+ OI_63          CII_158     OI_63/CII_158      OI63_CII158      1     [O I] 63 $\mu$m/[C II] 158 $\mu$m
+ CII_158        CI_609      CII_158/CI_609     CII158_CI609     1     [C II] 158 $\mu$m/[C I] 609 $\mu$m
+ CI_370         CI_609      CI_370/CI_609      CI370_CI609      1     [C I] 370 $\mu$m/[C I] 609 $\mu$m
+ CII_158        CO_10       CII_158/CO_10      CII158_CO10      1     [C II] 158 $\mu$m/CO(J=1-0)
+ CII_158        CO_21       CII_158/CO_21      CII158_CO21      1     [C II] 158 $\mu$m/CO(J=2-1)
+ CII_158        CO_32       CII_158/CO_32      CII158_CO32      1     [C II] 158 $\mu$m/CO(J=3-2)
+ CII_158        CO_43       CII_158/CO_43      CII158_CO43      1     [C II] 158 $\mu$m/CO(J=4-3)
+ CII_158        CO_54       CII_158/CO_54      CII158_CO54      1     [C II] 158 $\mu$m/CO(J=5-4)
+ CII_158        CO_65       CII_158/CO_65      CII158_CO65      1     [C II] 158 $\mu$m/CO(J=6-5)
+ CO_21          CO_10       CO_21/CO_10        CO21_CO10        1     CO(J=2-1)/CO(J=1-0)
+ CO_32          CO_10       CO_32/CO_10        CO32_CO10        1     CO(J=3-2)/CO(J=1-0)
+ CO_32          CO_21       CO_32/CO_21        CO32_CO21        1     CO(J=3-2)/CO(J=2-1)
+ CO_43          CO_10       CO_43/CO_10        CO43_CO10        1     CO(J=4-3)/CO(J=1-0)
+ CO_43          CO_21       CO_43/CO_21        CO43_CO21        1     CO(J=4-3)/CO(J=2-1)
+ CO_65          CO_10       CO_65/CO_10        CO65_CO10        1     CO(J=6-5)/CO(J=1-0)
+ CO_65          CO_21       CO_65/CO_21        CO65_CO21        1     CO(J=6-5)/CO(J=2-1)
+ CO_65          CO_54       CO_65/CO_54        CO65_CO54        1     CO(J=6-5)/CO(J=5-4)
+ CO_76          CO_10       CO_76/CO_10        CO76_CO10        1     CO(J=7-6)/CO(J=1-0)
+ CO_76          CO_21       CO_76/CO_21        CO76_CO21        1     CO(J=7-6)/CO(J=2-1)
+ CO_76          CO_43       CO_76/CO_43        CO76_CO43        1     CO(J=7-6)/CO(J=4-3)
+ CO_76          CO_54       CO_76/CO_54        CO76_CO54        1     CO(J=7-6)/CO(J=5-4)
+ CO_76          CO_65       CO_76/CO_65        CO76_CO65        1     CO(J=7-6)/CO(J=6-5)
+ CO_87          CO_54       CO_87/CO_54        CO87_CO54        1     CO(J=8-7)/CO(J=5-4)
+ CO_87          CO_65       CO_87/CO_65        CO87_CO65        1     CO(J=8-7)/CO(J=6-5)
+ CO_98          CO_54       CO_98/CO_54        CO98_CO54        1     CO(J=9-8)/CO(J=5-4)
+ CO_98          CO_65       CO_98/CO_65        CO98_CO65        1     CO(J=9-8)/CO(J=6-5)
+ CO_109         CO_54       CO_109/CO_54       CO109_CO54       1     CO(J=10-9)/CO(J=5-4)
+ CO_109         CO_65       CO_109/CO_65       CO109_CO65       1     CO(J=10-9)/CO(J=6-5)
+ CO_109         CO_76       CO_109/CO_76       CO109_CO76       1     CO(J=10-9)/CO(J=7-6)
+ CO_1110        CO_54       CO_1110/CO_54      CO1110_CO54      1     CO(J=11-10)/CO(J=5-4)
+ CO_1110        CO_65       CO_1110/CO_65      CO1110_CO65      1     CO(J=11-10)/CO(J=6-5)
+ CO_1211        CO_54       CO_1211/CO_54      CO1211_CO54      1     CO(J=12-11)/CO(J=5-4)
+ CO_1211        CO_65       CO_1211/CO_65      CO1211_CO65      1     CO(J=12-11)/CO(J=6-5)
+ CO_1312        CO_54       CO_1312/CO_54      CO1312_CO54      1     CO(J=13-12)/CO(J=5-4)
+ CO_1312        CO_65       CO_1312/CO_65      CO1312_CO65      1     CO(J=13-12)/CO(J=6-5)
+ CO_1413        CO_54       CO_1413/CO_54      CO1413_CO54      1     CO(J=14-13)/CO(J=5-4)
+ CO_1413        CO_65       CO_1413/CO_65      CO1413_CO65      1     CO(J=14-13)/CO(J=6-5)
+ OI_63+CII_158  FIR         OI_63+CII_158/FIR  OI63+CII158_FIR  1     [O I] 63 $\mu$m + [C II] 158 $\mu$m/I$_{FIR}$
+ OI_145+CII_158 FIR         OI_145+CII_158/FIR OI145+CII158_FIR 1     [O I] 145 $\mu$m + [C II] 158 $\mu$m/I$_{FIR}$

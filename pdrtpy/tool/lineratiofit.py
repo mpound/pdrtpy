@@ -41,16 +41,11 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
     """
     def __init__(self,modelset=ModelSet("wk2006",z=1),measurements=None):
         super().__init__() # needed?
-        if type(modelset) == str:
+        if isinstance(modelset,str):
             # may need to disable this
             self._initialize_modelTable(modelset)
         self._modelset = modelset
-
-        if type(measurements) == dict or measurements is None:
-            self._measurements = measurements
-        else:
-            self._init_measurements(measurements)
-
+        self._init_measurements(measurements)
         self._set_measurementnaxis()
         self._modelratios = None
         self._modelnaxis = None
@@ -165,16 +160,25 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             return self._reduced_chisq
 
     def _init_measurements(self,m):
-        """Initialize the measurements from an input list
+        """Initialize the measurements from an input list or dict. If a dict, the dictionary keys must be valid measurement identifiers.
 
         :param m: the input list of Measurements
-        :type m: list
+        :type m: list, tuple, or dict
         """
-        self._measurements = dict()
         self._masks = dict() # need to save these so they can be reset later
-        for mm in m:
-            self._measurements[mm.id] = mm
-            self._masks[mm.id] = deepcopy(mm.mask)
+        if m is None:
+            self._measurements = None
+        elif isinstance(m,list) or isinstance(m,tuple):
+            self._measurements = dict()
+            for mm in m:
+                self._measurements[mm.id] = mm
+                self._masks[mm.id] = deepcopy(mm.mask)
+        elif isinstance(m,dict):
+            self._measurements = deepcopy(m)
+            for key in m:
+                self._masks[key] = deepcopy(m[key].mask)
+        else:
+            raise ValueError("Input measurements must be list, tuple, or dict")
 
     def _set_model_files_used(self):
         self._model_files_used = dict()
@@ -660,6 +664,9 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             startn = np.nanmean(self._density.value)
             startfuv = np.nanmean(self._radiation_field.value)
         self._fitparam = Parameters()
+    #@todo let user limit these ranges. either they pass in Parameters or
+    # limits = {'density':[low,hi], 'radiation_field':[low,hi]}
+    # in any unit and convert
         self._fitparam.add('density',min=minn,max=maxn,value=startn)
         self._fitparam.add('radiation_field',min=minfuv,max=maxfuv,value=startfuv)
         #self._fitparam.pretty_print()
@@ -772,7 +779,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             thirdindex = 3
             fourthindex = 4
         rchi_min=np.amin(self._reduced_chisq.data,(firstindex,secondindex))
-        chi_min=np.amin(self._chisq,(firstindex,secondindex))
+        chi_min=np.amin(self._chisq.data,(firstindex,secondindex))
         gnxy = np.where(self._reduced_chisq==rchi_min)
         gi = gnxy[firstindex]
         ni = gnxy[secondindex]

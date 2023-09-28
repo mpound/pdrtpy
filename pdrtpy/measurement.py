@@ -16,6 +16,8 @@ import numpy as np
 import numpy.ma as ma
 from scipy.interpolate import interp2d
 from . import pdrutils as utils
+import warnings
+
 
 class Measurement(CCDData):
     r"""Measurement represents one or more observations of a given spectral
@@ -77,6 +79,7 @@ class Measurement(CCDData):
     By default image axes with only a single dimension are removed on read.  If you do not want this behavior, used `read(squeeze=False)`. See also: :class:`astropy.nddata.CCDData`.
     """
     def __init__(self,*args, **kwargs):
+        warnings.simplefilter("ignore",DeprecationWarning)
         debug = kwargs.pop('debug', False)
 
         if debug:
@@ -90,6 +93,7 @@ class Measurement(CCDData):
         _beam["BPA"]  = self._beam_convert(kwargs.pop('bpa', None))
         self._restfreq = kwargs.pop('restfreq',None)
         self._filename = None
+        self._data = None # shut up Codacy
 
         #This won't work: On arithmetic operations, this raises the exception.
         #if self._identifier is None:
@@ -145,7 +149,7 @@ class Measurement(CCDData):
     def _beam_convert(self,bpar):
         if bpar is None:
             return bpar
-        if type(bpar) == u.Quantity:
+        if isinstance(bpar,u.Quantity):
             return bpar.to("degree").value
         raise TypeError("Beam parameters must be astropy Quantities")
 
@@ -333,10 +337,6 @@ class Measurement(CCDData):
         """
         self._world_axis = utils.get_xy_from_wcs(self,quantity=False,linear=False)
         self._world_axis_lin = utils.get_xy_from_wcs(self,quantity=False,linear=True)
-        #print("M WORLD AXIS LOG: ",self._world_axis)
-        #print("LEN WALOG",len(self._world_axis[0]),len(self._world_axis[1]))
-        #print("M WORLD AXIS LIN: ",self._world_axis_lin)
-        #print("LEN WALIN",len(self._world_axis_lin[0]),len(self._world_axis_lin[1]))
         self._interp_log = interp2d(self._world_axis[0],self._world_axis[1],z=self.data,kind=kind,bounds_error=True)
         self._interp_lin = interp2d(self._world_axis_lin[0],self._world_axis_lin[1],z=self.data,kind=kind,bounds_error=True)
 
@@ -518,8 +518,7 @@ class Measurement(CCDData):
 
         :param filename: Name of table file.
         :type filename: str
-        :param format: `Astropy Table format <https://docs.astropy.org/en/stable/table/io.html>`_ Supported formats are ascii, ipac, votable. Default is `IPAC format  <https://docs.astropy.org/en/stable/api/astropy.io.ascii.Ipac.html#astropy.io.ascii.Ipac>`_
-        :type format: str
+        :param format: `Astropy Table format  format. <https://docs.astropy.org/en/stable/io/unified.html#built-in-readers-writers>`_ e.g., ascii, ipac, votable. Default is `IPAC format <https://docs.astropy.org/en/stable/api/astropy.io.ascii.Ipac.html#astropy.io.ascii.Ipac>`_
         :param array: Controls whether a list of Measurements or a single Measurement is returned. If `array` is True,  one Measurement instance will be created for each row in the table and a Python list of Measurements will be returned.  If `array` is False,  one Measurement containing all the points in the `data` member will be returned. If `array` is False, the *identifier* and beam parameters of the first row will be used. If feeding the return value to a plot method such as :meth:`~pdrtpy.plot.modelplot.ModelPlot.phasespace`, choose `array=False`. Default:False.
         :type array: bool
 

@@ -5,7 +5,6 @@
 from pdrtpy.measurement import Measurement
 from pdrtpy.modelset import ModelSet
 from pdrtpy.tool.lineratiofit import LineRatioFit
-from pdrtpy.plot.lineratioplot import LineRatioPlot
 import pdrtpy.pdrutils as utils
 from astropy.nddata import StdDevUncertainty
 from copy import deepcopy

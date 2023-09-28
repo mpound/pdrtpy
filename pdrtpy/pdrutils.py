@@ -50,6 +50,9 @@ r"""The Mathis radiation field unit
 """
 u.add_enabled_units(mathis_unit)
 
+ion_unit = u.def_unit("ion")  # number of ions
+u.add_enabled_units(ion_unit)
+
 _rad_title = dict()
 _rad_title['Habing'] = '$G_0$'
 _rad_title['Draine'] = '$\chi$'
@@ -211,7 +214,7 @@ def addkey(key,value,image):
        :param image: The image which to add the key,val to.
        :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
     """
-    if key in image.header and type(value) == str:
+    if key in image.header and isinstance(value,str):
         s =  str(image.header[key])
         # avoid concatenating duplicates
         if s != value:
@@ -715,3 +718,48 @@ def get_xy_from_wcs(data,quantity=False,linear=False):
             if 'log' in w.wcs.ctype[1].lower():
                 y = np.power(k,y)
     return (x,y)
+
+def rescale_axis_units(x,from_unit,from_ctype,to_unit,loglabel=True):
+    #allow unit conversion of density axis
+    xax_unit = u.Unit(from_unit)
+    # cover the base where we had to erase the wcs unit to avoid FITS error
+    if x._unit is None or x._unit is u.dimensionless_unscaled:
+        x._unit = xax_unit
+    if is_rad(xax_unit):
+        if loglabel:
+            xtype = "log({0})".format(get_rad(xax_unit))
+        else:
+            xtype = "{0}".format(get_rad(xax_unit))
+    else:
+        if loglabel and 'log' in from_ctype:
+            if "_" in from_ctype:
+                xtype = r"${\rm "+from_ctype+"}$"
+            else:
+                xtype = from_ctype
+        else:
+            xtype = from_ctype.replace("log(","").replace(")","")
+            if "_" in xtype:
+                xtype = r"${\rm "+xtype+"}$"
+    if to_unit is not None:
+        # Make  axis of the grid into a Quantity using the cunit from the grid header
+        # Get desired unit from arguments
+        xax_unit = u.Unit(to_unit)
+        # Now create the CTYPE string. For special cases, use
+        # the conventional symbol for the label (e.g. G_0 for Habing units)
+        if is_rad(to_unit):
+            if loglabel:
+                xtype = "log({0})".format(get_rad(xax_unit))
+            else:
+                xtype = "{0}".format(get_rad(xax_unit))
+        else:
+            if loglabel and 'log' in from_ctype:
+                xtype = from_ctype
+            else:
+                xtype = from_ctype.replace("log(","").replace(")","")
+        # Convert the unit-aware grid to the desired units and set X to the value (so it's no longer a Quantity)
+        x = x.to(xax_unit)
+
+    # Set the axis label appropriately, use LaTeX inline formatting
+    xlabel = r"{0} [{1:latex_inline}]".format(xtype,xax_unit)
+
+    return (x,xlabel)
