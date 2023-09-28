@@ -41,7 +41,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
     """
     def __init__(self,modelset=ModelSet("wk2006",z=1),measurements=None):
         super().__init__() # needed?
-        if type(modelset) == str:
+        if isinstance(modelset,str):
             # may need to disable this
             self._initialize_modelTable(modelset)
         self._modelset = modelset
@@ -168,12 +168,12 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
         self._masks = dict() # need to save these so they can be reset later
         if m is None:
             self._measurements = None
-        elif type(m) == list or type(m) == tuple:
+        elif isinstance(m,list) or isinstance(m,tuple):
             self._measurements = dict()
             for mm in m:
                 self._measurements[mm.id] = mm
                 self._masks[mm.id] = deepcopy(mm.mask)
-        elif type(m) == dict:
+        elif isinstance(m,dict):
             self._measurements = deepcopy(m)
             for key in m:
                 self._masks[key] = deepcopy(m[key].mask)

@@ -149,7 +149,7 @@ class Measurement(CCDData):
     def _beam_convert(self,bpar):
         if bpar is None:
             return bpar
-        if type(bpar) == u.Quantity:
+        if isinstance(bpar,u.Quantity):
             return bpar.to("degree").value
         raise TypeError("Beam parameters must be astropy Quantities")
 

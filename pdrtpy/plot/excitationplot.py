@@ -69,7 +69,7 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
         kwargs_opts.update(kwargs)
 
         print(f"norm={norm} pos={position} size={size}")
-        if type(position) == SkyCoord:
+        if isinstance(position,SkyCoord):
             position = self._tool.fitresult.get_pixel_from_coord(position)
             print(f"AFTER norm={norm} pos={position} size={size}")
         cdavg = self._tool.average_column_density(norm=norm, position=position, size=size, line=True)
@@ -258,7 +258,7 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
 
     def opr(self,**kwargs):
         """Plot the ortho-to-para ratio.  This will be a map if the input data are a map, otherwise a float value is returned."""
-        if type(self._tool.opr) == float:
+        if isinstance(self._tool.opr, float):
             return self._tool.opr
         self._plot(self._tool.opr,**kwargs)
 

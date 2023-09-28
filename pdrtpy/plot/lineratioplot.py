@@ -484,7 +484,7 @@ class LineRatioPlot(PlotBase):
         kwargs_opts["ncols"] = min(kwargs_opts["ncols"],self._tool.ratiocount)
         kwargs_opts["nrows"] = int(round(self._tool.ratiocount/kwargs_opts["ncols"]+0.49,0))
         # defend against meas_color not being a list
-        if type(kwargs_opts['meas_color']) == str:
+        if isinstance(kwargs_opts['meas_color'],str):
             #warnings.warn("meas_color should be a list")
             kwargs_opts['meas_color']=[kwargs_opts['meas_color']]
 

@@ -163,7 +163,7 @@ class PlotBase:
         :type stretch: str
         :returns: :mod:`astropy.visualization.normalization` object
         """
-        if type(norm) == str:
+        if isinstance(norm, str):
             norm = norm.lower()
             if norm not in self._valid_norms:
                 raise ValueError("Unrecognized normalization %s. Valid values are %s"%(norm,self._valid_norms))

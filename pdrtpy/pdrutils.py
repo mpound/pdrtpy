@@ -214,7 +214,7 @@ def addkey(key,value,image):
        :param image: The image which to add the key,val to.
        :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
     """
-    if key in image.header and type(value) == str:
+    if key in image.header and isinstance(value,str):
         s =  str(image.header[key])
         # avoid concatenating duplicates
         if s != value:

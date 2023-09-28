@@ -31,7 +31,7 @@ class ExcitationFit(ToolBase):
         self._t_units = "K"
         self._numcomponents = 0 # number of components to fit. user-settable
         self._valid_components = ['hot','cold','total']
-        if type(measurements) == dict or measurements is None:
+        if isinstance(measurements,dict) or measurements is None:
             self._measurements = measurements
         else:
             self._init_measurements(measurements)
@@ -386,7 +386,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
 
     def _is_ortho(self,identifier):
         #identifier is J level
-        if type(identifier) == int:
+        if isinstance(identifier,int):
             return utils.is_odd(identifier)
         else: #identifier is e.g., H210S7
             return self._ac.loc[identifier]["Ju"]%2!=0
