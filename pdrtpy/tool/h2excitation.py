@@ -7,6 +7,7 @@ import numpy as np
 from lmfit import Parameters#, fit_report
 from lmfit.model import Model#, ModelResult
 from emcee.pbar import get_progress_bar
+from scipy.interpolate import interp1d
 import cProfile 
 import pstats
 import io
@@ -31,6 +32,7 @@ class ExcitationFit(ToolBase):
         self._t_units = "K"
         self._numcomponents = 0 # number of components to fit. user-settable
         self._valid_components = ['hot','cold','total']
+        self._av_interp = None
         if isinstance(measurements,dict) or measurements is None:
             self._measurements = measurements
         else:
@@ -135,6 +137,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         # of the limits
         #print(f'initializing parameters with nc = {self._numcomponents}')
         self._params.add('opr',value=3.0,min=1.0,max=3.5,vary=False)
+        self._params.add('av',value=0.0,min=0.0,max=100,vary=False)
         self._params.add('m1',value=0,min=-1,max=0)
         self._params.add('n1',value=15,min=10,max=30)
         if self._numcomponents == 2:
@@ -153,6 +156,8 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         # be low by a factor of 3/opr.
         # So we must LOWER model[idx] artificially by dividing it by
         # 3/opr, i.e. multiplying by opr/3.  This is equivalent to addition in log-space.
+        #
+        #@TODO add extinction correction. however this method is not currently used.
         p = params.valuesdict()
         y1 = 10**(x*p['m1']+p['n1'])
         y2 = 10**(x*p['m2']+p['n2'])
@@ -162,6 +167,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         return (model - data)/error
 
     def _one_component_residual(self,params,x,data,error,idx):
+        #@TODO add extinction correction. however this method is not currently used.
         p = params.valuesdict()
         model = x*p['m1']+p['n1']
         if params['opr'].vary:
@@ -207,17 +213,19 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
             model[idx] += np.log10(opr/self._canonical_opr)
         return model
 
-    def _one_component_model(self,x,m1,n1,opr,idx=[],fit_opr=False):
+    def _one_component_model(self,x,m1,n1,opr,av,idx=[],fit_opr=False,fit_av=False,extinction_ratio=None):
         model = x*m1+n1
         if fit_opr:
             model[idx] *= opr/self._canonical_opr
+        if fit_av:
+            model = model - 0.4*extinction_ratio*av
         return model
 
     def _init_model(self):
         #@todo make a separate class that subclasses Model.
         # potentially allow users to change it.
         #print(f'initializing model with nc = {self._numcomponents}')
-        self._model=Model(self._model_functions[self._numcomponents],oaram_names=list(self._params.keys()))
+        self._model=Model(self._model_functions[self._numcomponents],param_names=list(self._params.keys()))
         for p,q in self._params.items():
             self._model.set_param_hint(p, value=q.value,
                                        min=q.min, max=q.max,
@@ -253,6 +261,8 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
             unc = np.full(shape=size,fill_value=np.nan,dtype=float)
             opr = np.full(shape=size,fill_value=np.nan,dtype=float)
             uopr = np.full(shape=size,fill_value=np.nan,dtype=float)
+            av = np.full(shape=size,fill_value=np.nan,dtype=float)
+            uav = np.full(shape=size,fill_value=np.nan,dtype=float)
 
             th = np.full(shape=size,fill_value=np.nan,dtype=float)
             uth = np.full(shape=size,fill_value=np.nan,dtype=float)
@@ -292,6 +302,8 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                 unh[i] = utils.LN10*params[nhot].stderr*nh[i]
                 opr[i] = params['opr'].value
                 uopr[i] = params['opr'].stderr
+                av[i] = params['av'].value
+                uav[i] = params['av'].stderr
 
             # now reshape them all back to map shape
             tc = tc.reshape(fitmap.data.shape)
@@ -304,6 +316,8 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
             unc = unc.reshape(fitmap.data.shape)
             opr = opr.reshape(fitmap.data.shape)
             uopr = uopr.reshape(fitmap.data.shape)
+            av = av.reshape(fitmap.data.shape)
+            uav = uav.reshape(fitmap.data.shape)
 
             mask = fitmap.mask | np.logical_not(np.isfinite(tc))
             ucc= StdDevUncertainty(np.abs(tc*utc))
@@ -328,6 +342,8 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
             mask = fitmap.mask | np.logical_not(np.isfinite(opr))
             self._opr = Measurement(opr, unit=u.dimensionless_unscaled,
                                     uncertainty=StdDevUncertainty(uopr),wcs=fitmap.wcs, mask=mask)
+            self._av = Measurement(av, unit=u.dimensionless_unscaled,
+                                    uncertainty=StdDevUncertainty(uav),wcs=fitmap.wcs, mask=mask)
         elif self._numcomponents == 1:
             tc = np.full(shape=size,fill_value=np.nan,dtype=float)
             utc = np.full(shape=size,fill_value=np.nan,dtype=float)
@@ -335,6 +351,8 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
             unc = np.full(shape=size,fill_value=np.nan,dtype=float)
             opr = np.full(shape=size,fill_value=np.nan,dtype=float)
             uopr = np.full(shape=size,fill_value=np.nan,dtype=float)
+            av = np.full(shape=size,fill_value=np.nan,dtype=float)
+            uav = np.full(shape=size,fill_value=np.nan,dtype=float)
             ff = fitmap.data.flatten()
             ffmask = fitmap.mask.flatten()
             for i in range(size):
@@ -356,6 +374,8 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                 unc[i] = utils.LN10*params[ncold].stderr*nc[i]
                 opr[i] = params['opr'].value
                 uopr[i] = params['opr'].stderr
+                av[i] = params['av'].value
+                uav[i] = params['av'].stderr
 
             # now reshape them all back to map shape
             tc = tc.reshape(fitmap.data.shape)
@@ -364,6 +384,8 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
             unc = unc.reshape(fitmap.data.shape)
             opr = opr.reshape(fitmap.data.shape)
             uopr = uopr.reshape(fitmap.data.shape)
+            av = av.reshape(fitmap.data.shape)
+            uav = uav.reshape(fitmap.data.shape)
 
             mask = fitmap.mask | np.logical_not(np.isfinite(tc))
             ucc= StdDevUncertainty(np.abs(tc*utc))
@@ -381,6 +403,8 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
             mask = fitmap.mask | np.logical_not(np.isfinite(opr))
             self._opr = Measurement(opr, unit=u.dimensionless_unscaled,
                                     uncertainty=StdDevUncertainty(uopr),wcs=fitmap.wcs, mask=mask)
+            self._av = Measurement(av, unit=u.dimensionless_unscaled,
+                                    uncertainty=StdDevUncertainty(uav),wcs=fitmap.wcs, mask=mask)
         else:
             raise Exception(f"Bad numcomponents: {self._numcomponents}")
 
@@ -406,6 +430,25 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         :rtype: int
         '''
         return self._numcomponents
+    @property
+    def av_fitted(self):
+        '''Was the visual extinction fitted?
+
+        :returns: True if Av was fitted, False if not
+        :rtype: bool
+        '''
+        if self._fitresult is None:
+            return False
+        return self._params['av'].vary
+
+    @property
+    def av(self):
+        '''The visual extinction
+
+        :returns: The fitted Av if it was determined in the fit, otherwise 0
+        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        '''
+        return self._av
 
     @property
     def opr_fitted(self):
@@ -422,7 +465,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
     def opr(self):
         '''The ortho-to-para ratio (OPR)
 
-        :returns: The fitted OPR is it was determined in the fit, otherwise the canonical LTE OPR
+        :returns: The fitted OPR if it was determined in the fit, otherwise the canonical LTE OPR
         :rtype: :class:`~pdrtpy.measurement.Measurement`
         '''
         return self._opr
@@ -564,6 +607,31 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                 t[self._ac.loc[m]["Ju"]] = self._ac.loc[m]["Tu"]
         return t
 
+    def wavelengths(self,line=True,units=False):
+        '''Wavelengths of transitions, in micron (assumed unit using Roueff et al table)
+
+           :param line: if True, the dictionary index is the Line name,
+                     otherwise it is the upper state :math:`J` number.  Default: False
+           :type line: bool
+           :param units: if True, values are returned with units as astropy Quantity
+           :type units: bool
+           :returns: dictionary indexed by upper state :math:`J` number or Line name. Default: False means return indexed by :math:`J`.
+           :rtype: dict
+        '''
+        t = dict()
+        if units:
+            x = self._ac["lambda"].unit
+        else:
+            x=1
+        if line:
+            for m in self._measurements:
+                t[m] = self._ac.loc[m]["lambda"]*x
+        else:
+            for m in self._measurements:
+                t[self._ac.loc[m]["Ju"]] = self._ac.loc[m]["lambda"]*x
+        return t
+
+
     def run(self,position=None,size=None,fit_opr=False,**kwargs):
         r'''Fit the :math:`log N_u-E` diagram with two excitation temperatures,
         a ``hot`` :math:`T_{ex}` and a ``cold`` :math:`T_{ex}`.
@@ -582,13 +650,34 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                         'nan_policy': 'raise',
                         'test':False,
                         'profile':False,
+                        'fit_av': False,
                         'components': 2
                       }
         kwargs_opts.update(kwargs)
+        if fit_opr and kwargs_opts['fit_av']:
+            raise ValueError("You can't fit OPR and Av simultaneously. Pick one.")
+        if kwargs_opts['fit_av']:
+            if self._av_interp is None:
+                raise Exception("You must set an excition law before fitting for Av. See H2ExcitationFit.set_extinction_law()")
         self._numcomponents = kwargs_opts.pop('components')
         self._init_params()
         self._init_model()
         return self._fit_excitation(position,size,fit_opr,**kwargs_opts)
+
+    def set_extinction_law(self,wavelength, aratio):
+        '''Set the extinction law to use when fitting for Av. It should
+            be of the form A_lambda/A_v as a function of lambda in microns.
+
+        :param wavelength: The wavelength in microns
+        :type wavelength: numpy array of float
+        :param aratio:  A_lambda/Av ratio
+        :type aratio:  numpy array of float
+        '''
+        if len(wavelength) != len(aratio):
+            raise ValueError(f"Wavelength and Aratio array lengths differ {len(wavelength)} != {len(aratio)}")
+        self._av_wave = wavelength
+        self._av_aratio = aratio
+        self._av_interp = interp1d(wavelength,aratio)
 
     def intensity(self,colden):
         '''Given an upper state column density :math:`N_u`, compute the intensity :math:`I`.
@@ -826,6 +915,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         :rtype:  :class:`lmfit.model.ModelResult`
         """
         profile = kwargs.pop('profile')
+        fit_av = kwargs.pop('fit_av')
         self._stats = None
         if profile:
             pr = cProfile.Profile()
@@ -835,8 +925,17 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         else:
             min_points = self._numcomponents*2 
             self._opr = Measurement(data=[self._canonical_opr],uncertainty=None)
+        if fit_av:
+            min_points = self._numcomponents*2 + 1
+            wavelengths = np.array(list(self.wavelengths(line=True).values())) # assume micron for now
+            extinction_ratios = self._av_interp(wavelengths) # A_lambda/A_v at the wavelengths of the transitions
+        else:
+            min_points = self._numcomponents*2 
+            self._av = Measurement(data=[0.0],uncertainty = None)
+            extinction_ratios = None
 
         self._params['opr'].vary = fit_opr
+        self._params['av'].vary = fit_av
         energy = self.energies(line=True)
         _ee = np.array([c for c in energy.values()])
         #@ todo: allow fitting of one-temperature model
@@ -851,7 +950,6 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         if position is None or size is None:
             colden = self.column_densities(norm=True,line=True)
         else:
-
             colden = self.average_column_density(norm=True, position=position,
                                              size=size, line=True)
 
@@ -906,6 +1004,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         badfit = 0
         # update whether opr is allowed to vary or not.
         self._model.set_param_hint('opr',vary = fit_opr)
+        self._model.set_param_hint('av',vary = fit_av)
         # use progress bar if more than one pixel
         if total > 1:
             progress = kwargs.pop("progress",True)
@@ -927,8 +1026,11 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                     try:
                         #print("X=",x)
                         #print("Y=",yr[:i])
+                        print(f"fitting with fit_av={fit_av}")
                         fmdata[i] = self._model.fit(data=yr[:,i], weights=wts, x=x,params=p,
-                                                      idx=idx,fit_opr=fit_opr,method=kwargs['method'],
+                                                      idx=idx,fit_opr=fit_opr,fit_av=fit_av,
+                                                      extinction_ratio = extinction_ratios,
+                                                      method=kwargs['method'],
                                                       nan_policy = kwargs['nan_policy'])
                         if fmdata[i].success and fmdata[i].errorbars:
                             count = count+1

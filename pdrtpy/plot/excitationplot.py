@@ -199,7 +199,17 @@ ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.
                 _axis.plot(x_fit,tt._one_line(x_fit, outpar['m2'],
                                 outpar['n2']), '.', label=labhot,
                                 lw=kwargs_opts['linewidth'])
-            _axis.plot(x_fit, tt.fit_result[position].eval(x=x_fit,fit_opr=False), label="fit")
+            if tt.av_fitted:
+                # need to evaluate Av at x_fit energies. so need wavelenghts
+                x_wave = tt._ac.loc[list(tt._measurements.keys())]["lambda"].data
+                ext_ratio = tt._av_interp(x_wave)
+                x_fit = np.array(list(tt.energies(line=True).values()))
+                flabel = f"Fitted $A_v$ = {tt._av:.1f}"
+            else:
+                ext_ratio = None
+                flabel = "fit"
+
+            _axis.plot(x_fit, tt.fit_result[position].eval(x=x_fit,fit_opr=False,fit_av=tt.av_fitted,extinction_ratio=ext_ratio), label=flabel)
             handles,labels=_axis.get_legend_handles_labels()
             #kluge to ensure N(H2) label is last
             phantom = _axis.plot([],marker="", markersize=0,ls="",lw=0)
