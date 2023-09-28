@@ -9,8 +9,8 @@ import os
 class TestMeasurement(unittest.TestCase):
     def test_arithmetic(self):
         print("Measurement Unit Test")
-        _data = np.array([np.array([30,20]),10,10,100])
-        _error = np.array([np.array([5,5]),2,1.5,100])
+        _data = np.array([np.array([30,20]),10,10,100],dtype=object)
+        _error = np.array([np.array([5,5]),2,1.5,100],dtype=object)
         _id = ["OI_145","CI_609","CO_21","CII_158"]
         m = list()
         for i in range(len(_data)):

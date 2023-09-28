@@ -31,7 +31,7 @@ class ExcitationFit(ToolBase):
         self._t_units = "K"
         self._numcomponents = 0 # number of components to fit. user-settable
         self._valid_components = ['hot','cold','total']
-        if type(measurements) == dict or measurements is None:
+        if isinstance(measurements,dict) or measurements is None:
             self._measurements = measurements
         else:
             self._init_measurements(measurements)
@@ -386,7 +386,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
 
     def _is_ortho(self,identifier):
         #identifier is J level
-        if type(identifier) == int:
+        if isinstance(identifier,int):
             return utils.is_odd(identifier)
         else: #identifier is e.g., H210S7
             return self._ac.loc[identifier]["Ju"]%2!=0
@@ -459,6 +459,8 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
 
         :rtype: :class:`~pdrtpy.measurement.Measurement`
         '''
+        if self._numcomponents == 1:
+            return self._total_colden["cold"]
         return self._total_colden["hot"]+self._total_colden["cold"]
 
     @property
@@ -740,7 +742,11 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                     weights = np.array([ca.uncertainty.array])
                 else:
                     weights = ca.uncertainty.array
-            cdavg = np.average(cddata,weights=weights)
+            #print(f"weights {weights} avg,sum:{np.average(weights)},{np.sum(weights)}")
+            if(np.sum(weights) == 0):
+                cdavg = np.average(cddata)
+            else:
+                cdavg = np.average(cddata,weights=weights)
             error = np.nanmean(ca.error)/np.sqrt(ca.error.size)#-1
             cdmeas[cd] = Measurement(data=cdavg,
                                         uncertainty=StdDevUncertainty(error),

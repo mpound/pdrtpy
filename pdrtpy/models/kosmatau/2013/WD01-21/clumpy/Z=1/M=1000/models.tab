@@ -1,7 +1,7 @@
-|numerator     |denominator|ratio             |filename        |z    |title                                                                       |
-|char          |char       |char              |char            |float|char                                                                        |
-|              |           |                  |                |     |null                                                                        |
-|null          |null       |null              |null            |null |null                                                                        |
+|numerator     |denominator|ratio             |filename        |z    |title                                         |
+|char          |char       |char              |char            |float|char                                          |
+|              |           |                  |                |     |null                                          |
+|null          |null       |null              |null            |null |null                                          |
  FIR            1           FIR                FIR              1     I$_{FIR}$
  OI_145         OI_63       OI_145/OI_63       OI145_OI63       1     [O I] 145 $\mu$m/[O I] 63 $\mu$m
  OI_145         CII_158     OI_145/CII_158     OI145_CII158     1     [O I] 145 $\mu$m/[C II] 158 $\mu$m
@@ -42,5 +42,5 @@
  CO_1312        CO_65       CO_1312/CO_65      CO1312_CO65      1     CO(J=13-12)/CO(J=6-5)
  CO_1413        CO_54       CO_1413/CO_54      CO1413_CO54      1     CO(J=14-13)/CO(J=5-4)
  CO_1413        CO_65       CO_1413/CO_65      CO1413_CO65      1     CO(J=14-13)/CO(J=6-5)
- OI_63+CII_158  FIR         OI_63+CII_158/FIR  OI63+CII158_FIR  1     ([O I] 63 $\mu$m + [C II] 158 $\mu$m) / I$_{FIR}$
- OI_145+CII_158 FIR         OI_145+CII_158/FIR OI145+CII158_FIR 1     ([O I] 145 $\mu$m + [C II] 158 $\mu$m) / I$_{FIR}$
+ OI_63+CII_158  FIR         OI_63+CII_158/FIR  OI63+CII158_FIR  1     [O I] 63 $\mu$m + [C II] 158 $\mu$m/I$_{FIR}$
+ OI_145+CII_158 FIR         OI_145+CII_158/FIR OI145+CII158_FIR 1     [O I] 145 $\mu$m + [C II] 158 $\mu$m/I$_{FIR}$

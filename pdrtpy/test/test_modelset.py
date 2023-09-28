@@ -14,6 +14,7 @@ class TestModelSet(unittest.TestCase):
             ms = ModelSet(name=n,z=z,medium=md,mass=m)
             for r in ms.table["ratio"]:
                 try:
+                    #print(r)
                     ms.get_model(r)
                 except Exception as e:
                     success = False

@@ -163,7 +163,7 @@ class PlotBase:
         :type stretch: str
         :returns: :mod:`astropy.visualization.normalization` object
         """
-        if type(norm) == str:
+        if isinstance(norm, str):
             norm = norm.lower()
             if norm not in self._valid_norms:
                 raise ValueError("Unrecognized normalization %s. Valid values are %s"%(norm,self._valid_norms))
@@ -245,6 +245,10 @@ class PlotBase:
         :type colorcycle: list
         """
         self._plt.rc('axes', prop_cycle=(cycler('color',  colorcycle)))
+
+    def reset_colorcycle(self):
+        """Reset the color cycle to the default color-blind friendly one"""
+        self.colorcycle(self._CB_color_cycle)
 
     def _plot(self,data,**kwargs):
         '''generic plotting method used by other plot methods'''

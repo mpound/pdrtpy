@@ -34,7 +34,7 @@ setup(
     packages = find_packages(exclude=excludelist),
     include_package_data = True,
     install_requires = [
-        'astropy>=5.0',
+        'astropy>=5.2.1',
         'numpy>=1.22.0',
         'scipy>=1.8.0',
         'matplotlib>=3.5.1',

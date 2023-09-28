@@ -411,6 +411,7 @@ class ModelSet(object):
             m = Measurement.read(model,identifier=identifier)
         else:
             m = model
+        m._title = title
         self._user_added_models[identifier] = m
         if "/" in identifier: # it's a ratio
             if identifier in self._supported_ratios["ratio label"]:
@@ -419,6 +420,7 @@ class ModelSet(object):
                 self._supported_ratios.remove_row(index)
             self._supported_ratios.add_row([title,identifier])
             numerator, denominator = identifier.split('/')
+            fakefilename = "user-"+numerator.replace("_","")+"_"+denominator.replace("_","")
         else:
             if identifier in self._supported_lines["intensity label"]:
                 index = np.where(self._supported_lines["intensity label"] == identifier)[0][0]
@@ -426,8 +428,9 @@ class ModelSet(object):
             self._supported_lines.add_row([title,identifier])
             numerator = identifier
             denominator = 1
+            fakefilename = "user-"+numerator.replace("_","")
           #numerator denominator ratio filename z title
-        self.table.add_row([numerator, denominator, identifier, "user", self.z, title])
+        self.table.add_row([numerator, denominator, identifier, fakefilename, self.z, title])
 
     def _find_ratio_elements(self,m):
         # TODO handle case of OI+CII/FIR so it is not special cased in lineratiofit.py

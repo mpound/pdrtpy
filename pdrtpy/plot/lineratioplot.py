@@ -56,7 +56,7 @@ class LineRatioPlot(PlotBase):
            :raises KeyError: if is id not in existing model intensities
         """
         ms = self._tool.modelset
-        if id not in ms.supported_lines["intensity label"]:
+        if id not in ms.supported_intensities["intensity label"]:
             raise KeyError(f"{id} is not in the ModelSet of your LineRatioFit")
 
         model = ms.get_models([id],model_type="intensity")
@@ -484,7 +484,7 @@ class LineRatioPlot(PlotBase):
         kwargs_opts["ncols"] = min(kwargs_opts["ncols"],self._tool.ratiocount)
         kwargs_opts["nrows"] = int(round(self._tool.ratiocount/kwargs_opts["ncols"]+0.49,0))
         # defend against meas_color not being a list
-        if type(kwargs_opts['meas_color']) == str:
+        if isinstance(kwargs_opts['meas_color'],str):
             #warnings.warn("meas_color should be a list")
             kwargs_opts['meas_color']=[kwargs_opts['meas_color']]
 

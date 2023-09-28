@@ -52,10 +52,10 @@ autosummary_generate = True
 
 intersphinx_mapping = { 
     'python': ('https://docs.python.org/3', None),
-    'numpy': ('http://docs.scipy.org/doc/numpy/', None),
-    'scipy': ('http://docs.scipy.org/doc/scipy/reference/', None),
-    'astropy': ('http://docs.astropy.org/en/stable/', None),
-    'matplotib': ('http://matplotlib.org/',None),
+    'numpy': ('https://numpy.org/doc/stable/', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy/', None),
+    'astropy': ('https://docs.astropy.org/en/stable/', None),
+    'matplotib': ('https://matplotlib.org/',None),
     'lmfit': ('https://lmfit.github.io/lmfit-py/',None)
 }
 

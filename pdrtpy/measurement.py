@@ -16,6 +16,8 @@ import numpy as np
 import numpy.ma as ma
 from scipy.interpolate import interp2d
 from . import pdrutils as utils
+import warnings
+
 
 class Measurement(CCDData):
     r"""Measurement represents one or more observations of a given spectral
@@ -77,6 +79,7 @@ class Measurement(CCDData):
     By default image axes with only a single dimension are removed on read.  If you do not want this behavior, used `read(squeeze=False)`. See also: :class:`astropy.nddata.CCDData`.
     """
     def __init__(self,*args, **kwargs):
+        warnings.simplefilter("ignore",DeprecationWarning)
         debug = kwargs.pop('debug', False)
 
         if debug:
@@ -90,6 +93,7 @@ class Measurement(CCDData):
         _beam["BPA"]  = self._beam_convert(kwargs.pop('bpa', None))
         self._restfreq = kwargs.pop('restfreq',None)
         self._filename = None
+        self._data = None # shut up Codacy
 
         #This won't work: On arithmetic operations, this raises the exception.
         #if self._identifier is None:
@@ -145,7 +149,7 @@ class Measurement(CCDData):
     def _beam_convert(self,bpar):
         if bpar is None:
             return bpar
-        if type(bpar) == u.Quantity:
+        if isinstance(bpar,u.Quantity):
             return bpar.to("degree").value
         raise TypeError("Beam parameters must be astropy Quantities")
 
