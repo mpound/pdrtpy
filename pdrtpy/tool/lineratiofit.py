@@ -779,7 +779,7 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             thirdindex = 3
             fourthindex = 4
         rchi_min=np.amin(self._reduced_chisq.data,(firstindex,secondindex))
-        chi_min=np.amin(self._chisq,(firstindex,secondindex))
+        chi_min=np.amin(self._chisq.data,(firstindex,secondindex))
         gnxy = np.where(self._reduced_chisq==rchi_min)
         gi = gnxy[firstindex]
         ni = gnxy[secondindex]
