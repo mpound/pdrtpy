@@ -174,7 +174,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
             model *= p['opr']/self._canonical_opr
         return (model - data)/error
 
-    def _two_component_model(self,x,m1,n1,m2,n2,opr,idx=[],fit_opr=False):
+    def _two_component_model(self,x,m1,n1,m2,n2,opr,av,idx=[],fit_opr=False,fit_av=False,extinction_ratio=None):
         '''Function for fitting the excitation curve as sum of two linear functions
            and allowing ortho-to-para ratio to vary.  Para is even J, ortho is odd J.
            :param x: independent axis array
@@ -188,11 +188,17 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
            :type n2: float
            :param opr: ortho-to-para ratio
            :type opr: float
+           :param av: visual extinction in magnitudes
+           :type av: float
            :type idx: np.ndarray
            :param idx: list of indices that may have variable opr (odd J transitions)
-           :param fit_opr: indicate whether opr will be fit, default False (opr fixed)
-           :type fit_opr: False
-           :return: Sum of lines in log space:log10(10**(x*m1+n1) + 10**(x*m2+n2)) + log10(opr/3.0)
+           :param fit_opr: indicate whether opr will be fit, default False (opr fixed = 3)
+           :type fit_opr: bool
+           :param fit_av: indicate whether Av will be fit, default False (Av=0)
+           :type fit_av: bool
+           :param extinction_ratio: The ratio of spectral line wavelength extinction to visual extinction. See set_extinction_law()
+           :type extinction_ratio: float
+           :return: Sum of lines in log space:log10(10**(x*m1+n1) + 10**(x*m2+n2)) + log10(opr/3.0)  0.4*extinction_ratio*av
            :rtype: :class:`numpy.ndarray`
         '''
         y1 = 10**(x*m1+n1)
@@ -211,12 +217,40 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         # 3/opr, i.e. multiplying by opr/3.  This is equivalent to addition in log-space.
         if fit_opr:
             model[idx] += np.log10(opr/self._canonical_opr)
+        if fit_av:
+            model = model - 0.4*extinction_ratio*av
         return model
 
     def _one_component_model(self,x,m1,n1,opr,av,idx=[],fit_opr=False,fit_av=False,extinction_ratio=None):
+        '''Function for fitting the excitation curve as sum of two linear functions
+           and allowing ortho-to-para ratio to vary.  Para is even J, ortho is odd J.
+           :param x: independent axis array
+           :param m1: slope of line
+           :type m1: float
+           :param n1: intercept of line
+           :type n1: float
+           :param opr: ortho-to-para ratio
+           :type opr: float
+           :param av: visual extinction in magnitudes
+           :type av: float
+           :type idx: np.ndarray
+           :param idx: list of indices that may have variable opr (odd J transitions)
+           :param fit_opr: indicate whether opr will be fit, default False (opr fixed = 3)
+           :type fit_opr: bool
+           :param fit_av: indicate whether Av will be fit, default False (Av=0)
+           :type fit_av: bool
+           :param extinction_ratio: The ratio of spectral line wavelength extinction to visual extinction. See set_extinction_law()
+           :type extinction_ratio: float
+           :return: line in log space: x*m1 + n1 + log10(opr/3.0) -  0.4*extinction_ratio*av
+
+           :rtype: :class:`numpy.ndarray`
+        '''
+        # model is already in log space
         model = x*m1+n1
         if fit_opr:
-            model[idx] *= opr/self._canonical_opr
+            #model[idx] *= opr/self._canonical_opr
+            print("Adding")
+            model[idx] += np.log10(opr/self._canonical_opr)
         if fit_av:
             model = model - 0.4*extinction_ratio*av
         return model
@@ -1005,6 +1039,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         # update whether opr is allowed to vary or not.
         self._model.set_param_hint('opr',vary = fit_opr)
         self._model.set_param_hint('av',vary = fit_av)
+        #self._params.add('av',value=0.0,min=0.0,max=100,vary=fit_av)
         # use progress bar if more than one pixel
         if total > 1:
             progress = kwargs.pop("progress",True)
@@ -1012,6 +1047,8 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
             progress = False
         #print("PARAMS")
         #self._params.pretty_print()
+        self._excount = 0
+        self._badfit = 0
         with get_progress_bar(progress,total,leave=True,position=0) as pbar:
             for i in range(total):
                 if np.isfinite(yr[:,i]).all() and np.isfinite(sig[:,i]).all():
@@ -1026,7 +1063,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                     try:
                         #print("X=",x)
                         #print("Y=",yr[:i])
-                        print(f"fitting with fit_av={fit_av}")
+                        #print(f"fitting with fit_av={fit_av}")
                         fmdata[i] = self._model.fit(data=yr[:,i], weights=wts, x=x,params=p,
                                                       idx=idx,fit_opr=fit_opr,fit_av=fit_av,
                                                       extinction_ratio = extinction_ratios,
@@ -1037,11 +1074,11 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
                         else:
                             fmdata[i] = None
                             fm_mask[i] = True
-                            badfit = badfit + 1
+                            self._badfit = self._badfit + 1
                     except ValueError:
                         fmdata[i] = None
                         fm_mask[i] = True
-                        excount = excount+1
+                        self._excount = self._excount+1
                 else:
                     fmdata[i] = None
                     fm_mask[i] = True
