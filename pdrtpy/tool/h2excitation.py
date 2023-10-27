@@ -1191,7 +1191,8 @@ class H2ExcitationFit(ExcitationFit):
                             method=kwargs["method"],
                             nan_policy=kwargs["nan_policy"],
                         )
-                        if fmdata[i].success and fmdata[i].errorbars:
+                        # if fmdata[i].success and fmdata[i].errorbars:
+                        if fmdata[i].success:
                             count = count + 1
                         else:
                             print(
