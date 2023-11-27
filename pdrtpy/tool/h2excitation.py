@@ -285,7 +285,7 @@ class H2ExcitationFit(ExcitationFit):
         model = x * m1 + n1
         if fit_opr:
             # model[idx] *= opr/self._canonical_opr
-            print("Adding")
+            #print("Adding")
             model[idx] += np.log10(opr / self._canonical_opr)
         if fit_av:
             model = model - 0.4 * extinction_ratio * av
@@ -765,6 +765,7 @@ class H2ExcitationFit(ExcitationFit):
             "profile": False,
             "fit_av": False,
             "components": 2,
+            "verbose": False,
         }
         kwargs_opts.update(kwargs)
         if fit_opr and kwargs_opts["fit_av"]:
@@ -1056,6 +1057,7 @@ class H2ExcitationFit(ExcitationFit):
         """
         profile = kwargs.pop("profile")
         fit_av = kwargs.pop("fit_av")
+        verbose= kwargs.pop("verbose")
         self._stats = None
         if profile:
             pr = cProfile.Profile()
@@ -1219,8 +1221,9 @@ class H2ExcitationFit(ExcitationFit):
         )
         # this will raise an exception if the fit was bad (fit errors == None)
         self._compute_quantities(self._fitresult)
-        print(f"fitted {count} of {slopecold.size} pixels")
-        print(f"got {excount} exceptions and {badfit} bad fits")
+        if verbose:
+            print(f"fitted {count} of {slopecold.size} pixels")
+            print(f"got {excount} exceptions and {badfit} bad fits")
         # if successful, set the used position and size
         self._position = position
         self._size = size
