@@ -33,7 +33,7 @@ jobs:
 
       - if: ${{ matrix.python-version == '3.9' }}
         name: Verify Changed files
-        uses: tj-actions/verify-changed-files@v9
+        uses: tj-actions/verify-changed-files@v17
         id: changed_files
         with:
           files: coverage.svg
