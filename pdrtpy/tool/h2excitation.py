@@ -348,7 +348,7 @@ class H2ExcitationFit(ExcitationFit):
                     continue
                 params = ff[i].params
                 for p in params:
-                    if params[p].stderr is None:
+                    if params[p].stderr is None and params[p].vary:
                         print("AT pixel i [mask]", i, ffmask[i])
                         params.pretty_print()
                         raise Exception(
