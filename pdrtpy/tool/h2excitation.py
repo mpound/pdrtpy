@@ -11,6 +11,7 @@ from scipy.interpolate import interp1d
 import cProfile
 import pstats
 import io
+from copy import deepcopy
 
 from .toolbase import ToolBase
 from .fitmap import FitMap
@@ -285,7 +286,7 @@ class H2ExcitationFit(ExcitationFit):
         model = x * m1 + n1
         if fit_opr:
             # model[idx] *= opr/self._canonical_opr
-            #print("Adding")
+            # print("Adding")
             model[idx] += np.log10(opr / self._canonical_opr)
         if fit_av:
             model = model - 0.4 * extinction_ratio * av
@@ -299,10 +300,9 @@ class H2ExcitationFit(ExcitationFit):
             self._model_functions[self._numcomponents],
             param_names=list(self._params.keys()),
         )
+        # This may be entirely unnecessary
         for p, q in self._params.items():
-            self._model.set_param_hint(
-                p, value=q.value, min=q.min, max=q.max, vary=q.vary
-            )
+            self._model.set_param_hint(p, min=q.min, max=q.max, vary=q.vary)
         pp = self._model.make_params()
         # pp.pretty_print()
 
@@ -452,11 +452,11 @@ class H2ExcitationFit(ExcitationFit):
                     continue
                 params = ff[i].params
                 for p in params:
-                    if params[p].stderr is None:
+                    if params[p].vary and params[p].stderr is None:
                         print("AT pixel i [mask]", i, ffmask[i])
                         params.pretty_print()
                         raise Exception(
-                            "Something went wrong with the fit and it was unable to calculate errors on the fitted parameters. It's likely that a two-temperature model is not appropriate for your data. Check the fit_result report and plot."
+                            "Something went wrong with the fit and it was unable to calculate errors on the fitted parameters. Check the fit_result report and plot."
                         )
                 mcold = "m1"
                 ncold = "n1"
@@ -766,6 +766,10 @@ class H2ExcitationFit(ExcitationFit):
             "fit_av": False,
             "components": 2,
             "verbose": False,
+            # for emcee
+            "burn": 0,
+            "steps": 1000,
+            "nwalkers": 100,
         }
         kwargs_opts.update(kwargs)
         if fit_opr and kwargs_opts["fit_av"]:
@@ -1057,7 +1061,7 @@ class H2ExcitationFit(ExcitationFit):
         """
         profile = kwargs.pop("profile")
         fit_av = kwargs.pop("fit_av")
-        verbose= kwargs.pop("verbose")
+        verbose = kwargs.pop("verbose")
         self._stats = None
         if profile:
             pr = cProfile.Profile()
@@ -1170,17 +1174,29 @@ class H2ExcitationFit(ExcitationFit):
             for i in range(total):
                 if np.isfinite(yr[:, i]).all() and np.isfinite(sig[:, i]).all():
                     # update Parameter hints based on first guess.
-                    self._model.set_param_hint("m1", value=slopecold[i], vary=True)
-                    self._model.set_param_hint("n1", value=intcold[i], vary=True)
+                    p = deepcopy(self._params)
+                    p["n1"].value = intcold[i]
+                    p["m1"].value = slopecold[i]
+                    # self._model.set_param_hint("m1", value=slopecold[i], vary=True)
+                    # self._model.set_param_hint("n1", value=intcold[i], vary=True)
                     if self._numcomponents == 2:
-                        self._model.set_param_hint("m2", value=slopehot[i], vary=True)
-                        self._model.set_param_hint("n2", value=inthot[i], vary=True)
-                    p = self._model.make_params()
+                        #    self._model.set_param_hint("m2", value=slopehot[i], vary=True)
+                        #    self._model.set_param_hint("n2", value=inthot[i], vary=True)
+                        p["n2"].value = inthot[i]
+                        p["m2"].value = slopehot[i]
                     wts = 1.0 / (sig[:, i] * sig[:, i])
                     try:
                         # print("X=",x)
                         # print("Y=",yr[:i])
                         # print(f"fitting with fit_av={fit_av}")
+                        if kwargs["method"] == "emcee":
+                            emcee_kwargs = {
+                                k: kwargs[k]
+                                for k in ("burn", "steps", "nwalkers")
+                                if k in kwargs
+                            }
+                        else:
+                            emcee_kwargs = None
                         fmdata[i] = self._model.fit(
                             data=yr[:, i],
                             weights=wts,
@@ -1192,6 +1208,7 @@ class H2ExcitationFit(ExcitationFit):
                             extinction_ratio=extinction_ratios,
                             method=kwargs["method"],
                             nan_policy=kwargs["nan_policy"],
+                            fit_kws=emcee_kwargs,
                         )
                         # if fmdata[i].success and fmdata[i].errorbars:
                         if fmdata[i].success:
