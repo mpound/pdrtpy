@@ -477,7 +477,15 @@ Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view th
             # deepcopy workaround for bug: https://github.com/astropy/astropy/issues/9006
             num = utils.convert_if_necessary(self._measurements[p["numerator"]])
             denom = utils.convert_if_necessary(self._measurements[p["denominator"]])
-            self._observedratios[label] = deepcopy(num/denom)
+
+            if (num/denom).unit != '':
+                try:
+                    self._observedratios[label] = deepcopy(num/denom).convert_unit_to("erg/cm^2 s")
+                except u.UnitConversionError:
+                    print(f"Ratios should be unitless, (except IFIR/Area), instead got {(num/denom).unit}")
+            else:
+                self._observedratios[label] = deepcopy(num/denom)
+
             #@TODO create a meaningful header for the ratio map
             self._ratioHeader(p["numerator"],p["denominator"],label)
             self._observedshape = self._observedratios[label].data.shape
