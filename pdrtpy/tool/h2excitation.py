@@ -759,7 +759,7 @@ class H2ExcitationFit(ExcitationFit):
         :param fit_av: Whether to fit the visual extinction. If True, the Av will be varied to determine the best value. If False, the Av is fixed at zero.
         :type fit_av: bool
         """
-        #@todo what happens if e.g., fit_av=True and init_av !=0 ?
+        # @todo what happens if e.g., fit_av=True and init_av !=0 ?
         kwargs_opts = {
             "mask": None,
             "method": "leastsq",
@@ -769,8 +769,8 @@ class H2ExcitationFit(ExcitationFit):
             "fit_av": False,
             "components": 2,
             "verbose": False,
-            "init_opr":, 3.0,
-            "init_av":, 0.0,
+            "init_opr": 3.0,
+            "init_av": 0.0,
             # for emcee
             "burn": 0,
             "steps": 1000,
@@ -1067,7 +1067,7 @@ class H2ExcitationFit(ExcitationFit):
         profile = kwargs.pop("profile")
         fit_av = kwargs.pop("fit_av")
         init_av = kwargs.pop("init_av", 0.0)
-        init_av = kwargs.pop("init_opr", 3.0)
+        init_opr = kwargs.pop("init_opr", 3.0)
         verbose = kwargs.pop("verbose")
         self._stats = None
         if profile:
@@ -1092,9 +1092,11 @@ class H2ExcitationFit(ExcitationFit):
             extinction_ratios = None
 
         self._params["opr"].vary = fit_opr
-        self._params["opr"].value = init_opr
+        if fit_opr:
+            self._params["opr"].value = init_opr
         self._params["av"].vary = fit_av
-        self._params["av"].value = init_av
+        if fit_av:
+            self._params["av"].value = init_av
         energy = self.energies(line=True)
         _ee = np.array([c for c in energy.values()])
         # @ todo: allow fitting of one-temperature model
