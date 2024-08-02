@@ -35,9 +35,11 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
   "coverage[toml]",
+  "coverage-badge",
   "pip-tools",
   "pre-commit",
   "ipdb",
+  "flake8",
   "numpydoc",
   "pytest",
   "pytest-cov",
@@ -165,8 +167,6 @@ src = ["pdrtpy"]#, "notebooks"]
 # Ignore  in all `__init__.py` files
 "__init__.py" = ["E402", "F405", "F403"]
 "**/{tests,docs,tools}/*" = ["E402", "B011"]
-# The stuff in the attic doesn't need to be linted at all
-"attic/**" = ["ALL"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
