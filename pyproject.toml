@@ -76,7 +76,9 @@ test = "pytest {args}"
 lint = "ruff check . {args}"
 lint-all = "ruff check --select ALL {args}"
 lint-fix = "ruff check --select ALL --fix {args}"
+# hatch run docs serves on localhost:8000
 docs = "sphinx-autobuild {root}/docs/source {root}/docs/build -b html {args}"
+# hatch run docs-build writes static output
 docs-build = "sphinx-build {root}/docs/source {root}/docs/build -b html {args}"
 
 [tool.hatch.envs.test]
