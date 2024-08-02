@@ -106,12 +106,12 @@ pygments_style = "sphinx"
 #
 #html_theme = 'bizstyle'
 html_theme = "sphinx_book_theme"
-#html_theme_options = {
-#    "logo": {
-#        "image_light": "_static/icon/dysh_logo_lightmode.png",
-#        "image_dark": "_static/icon/dysh_logo_darkmode.png",
-#    }
-#}
+html_theme_options = {
+    "logo": {
+        "image_light": "_static/icon/pdrtpy_logo_lightmode.png",
+        "image_dark": "_static/icon/pdrtpy_logo_darkmode.png",
+    }
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
