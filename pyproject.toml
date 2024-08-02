@@ -1,7 +1,7 @@
 [project]
-name = "dysh"
+name = "pdrtpy"
 description = 'PhotoDissociation Region Toolbox (PDRT), astrophysics analysis tools'
-readme = "README.md"
+readme = "README.rst"
 requires-python = ">=3.9"
 license = {file = "LICENSE"}
 keywords = []
@@ -28,6 +28,8 @@ dependencies = [
     'corner',
     'mpl-interactions',
     'mpl-interactions[jupyter]',
+    'pandas',
+    'tqdm',
  ]
 
 [project.optional-dependencies]
