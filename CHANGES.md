@@ -23,13 +23,13 @@
 ### Release 2.3.0
 #### _H2 Excitation Tool_
 
-- allow single temperature fit 
+- allow single temperature fit
 
 - allow plotting of multiple vibrational levels
 
 #### _Plotting_
 
-- new ModelPlot.isoplot method to make isocontour plots of individual model parameters 
+- new ModelPlot.isoplot method to make isocontour plots of individual model parameters
 
 - refactoring of plotting capability in plot-based tools
 
@@ -49,7 +49,7 @@
 
 #### _Website_
 
-- fixed labelling of ionized line plots 
+- fixed labelling of ionized line plots
 
 ### Release 2.2.9
 
@@ -73,7 +73,7 @@
 
 #### _Notebooks_ ###
 
-- existing example notebooks updated 
+- existing example notebooks updated
 
 ### _Testing_
 
@@ -98,10 +98,10 @@
 ### Release 2.2.3
 #### _H2 Excitation Fitting_
 
-- H2 Excitation fitting for maps completed.  
+- H2 Excitation fitting for maps completed.
 
-    - each unmasked pixel in a map fitted 
-    
+    - each unmasked pixel in a map fitted
+
     - user can see maps of column density, hot and cold temperature, ortho-to-para ratios
 
     - "explore" function to see fit at various points in a map
@@ -118,7 +118,7 @@
 
 - updated and expanded Wolfire/Kaufman 2020 models covering many more spectral lines
 
-- large set of KOSMA-Tau models now available 
+- large set of KOSMA-Tau models now available
 
 
 #### _Plotting_
@@ -139,7 +139,7 @@
 
 #### _Notebooks_ ###
 
-- existing example notebooks updated 
+- existing example notebooks updated
 
 ### Release 2.1.1
 

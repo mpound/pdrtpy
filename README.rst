@@ -2,7 +2,7 @@
 PhotoDissociation Region Toolbox --- Python
 *******************************************
 
-*Reliable astrophysics at everyday low, low prices!* |reg| 
+*Reliable astrophysics at everyday low, low prices!* |reg|
 
 ------------------------------------------------------------
 
@@ -21,14 +21,14 @@ PhotoDissociation Region Toolbox --- Python
 .. image:: https://img.shields.io/badge/License-GPLv3-blue.svg?style=plastic
  :target: https://www.gnu.org/licenses/gpl-3.0
  :alt: GNU GPL v3 License
- 
+
 .. image:: https://readthedocs.org/projects/pdrtpy/badge/?version=latest&style=plastic
  :target: https://pdrtpy.readthedocs.io/en/latest/?badge=latest
  :alt: Documentation status
- 
+
 .. image:: https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg?style=plastic
  :target: https://github.com/mpound/pdrtpy/blob/master/CODE_OF_CONDUCT.md
- :alt: Contributor Covenant Code of Conduct  
+ :alt: Contributor Covenant Code of Conduct
 
 .. image:: https://github.com/mpound/pdrtpy/actions/workflows/run-integration-tests.yml/badge.svg
  :alt: Integration test status
@@ -39,7 +39,7 @@ PhotoDissociation Region Toolbox --- Python
 .. image:: https://app.codacy.com/project/badge/Grade/dfa0433c8679423ca57cc75a84dc9083
  :alt: Codacy quality grade
 
-``pdrtpy`` is the new and improved version of the formerly web-based `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/>`_, rewritten in Python with new capabilities and giving more flexibility to end users.  (The web-based /CGI version of PDRT is deprecated and no longer supported). 
+``pdrtpy`` is the new and improved version of the formerly web-based `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/>`_, rewritten in Python with new capabilities and giving more flexibility to end users.  (The web-based /CGI version of PDRT is deprecated and no longer supported).
 
 The PDR Toolbox is a science-enabling tool for the community, designed to
 help astronomers determine the physical parameters of photodissociation
@@ -56,12 +56,12 @@ images of density and radiation field from map data.  We provide Jupyter
 `Example Notebooks`_ for data analysis.  It also can support models from
 other PDR codes enabling comparison of derived properties between codes.
 
-The underlying PDR model code has improved physics and chemistry. Critical updates include those discussed in 
-`Neufeld & Wolfire 2016 <https://ui.adsabs.harvard.edu/abs/2016ApJ...826..183N/abstract>`_, plus photo rates from 
-`Heays et al. 2017 <https://ui.adsabs.harvard.edu/abs/2017A%26A...602A.105H/abstract>`_, oxygen chemistry rates from 
-`Kovalenko et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018ApJ...856..100K/abstract>`_ and 
-`Tran et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018ApJ...854...25T/abstract>`_, 
-and carbon chemistry rates from 
+The underlying PDR model code has improved physics and chemistry. Critical updates include those discussed in
+`Neufeld & Wolfire 2016 <https://ui.adsabs.harvard.edu/abs/2016ApJ...826..183N/abstract>`_, plus photo rates from
+`Heays et al. 2017 <https://ui.adsabs.harvard.edu/abs/2017A%26A...602A.105H/abstract>`_, oxygen chemistry rates from
+`Kovalenko et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018ApJ...856..100K/abstract>`_ and
+`Tran et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018ApJ...854...25T/abstract>`_,
+and carbon chemistry rates from
 `Dagdigian 2019 <https://ui.adsabs.harvard.edu/abs/2019MNRAS.487.3427D/abstract>`_. We have also implemented new collisional
 excitation rates for |OI| from
 `Lique et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018MNRAS.474.2313L/abstract>`_ (and Lique private
@@ -72,7 +72,7 @@ We also support fitting of temperatures and column densities to |H2| excitation 
 
 Up to date documentation can be found at `pdrtpy.readthedocs.io <http://pdrtpy.readthedocs.io/>`_.
 
-What is a PDR? 
+What is a PDR?
 ==============
 Photodissociation regions (PDRs) include all of the neutral gas in the
 ISM where far-ultraviolet (FUV) photons dominate the chemistry and/or
@@ -102,7 +102,7 @@ First make sure you are using Python 3:
 
    python --version
 
-should show e.g., *3.7.6*. 
+should show e.g., *3.7.6*.
 
 
 .. Also, make sure *setuptools* is up to date:
@@ -116,7 +116,7 @@ Install the package
 
 With pip
 --------
-Python has numerous ways to install packages; the easiest is with *pip*. 
+Python has numerous ways to install packages; the easiest is with *pip*.
 The code is hosted at the `Python Packaging Index <https://pypi.org/project/pdrtpy/>`_, so you can type:
 
 .. code-block:: sh
@@ -144,7 +144,7 @@ We have prepared Jupyter iPython notebooks with examples of how to use ``pdrtpy`
 
     git clone https://github.com/mpound/pdrtpy-nb.git
 
-If you don't have git, you can 
+If you don't have git, you can
 `download a zip file of the repository <https://github.com/mpound/pdrtpy-nb/archive/master.zip>`_.
 
 To familiarize yourself with the capabilities of ``pdrtpy``, we suggest you do the notebooks in this order:
@@ -164,7 +164,7 @@ If you have a question or wish to give feedback about using PDR Toolbox or about
 Reporting Issues
 ================
 If you find a bug or something you think is in error, please report it on
-the `github issue tracker <https://github.com/mpound/pdrtpy/issues>`_. 
+the `github issue tracker <https://github.com/mpound/pdrtpy/issues>`_.
 (You must have a `Github account <https://github.com/>`_ to submit an issue).
 If you aren't sure if something is a bug or not, or if you don't wish to
 create a Github account, you can post to the `PDR Toolbox forum
@@ -172,23 +172,23 @@ create a Github account, you can post to the `PDR Toolbox forum
 
 Contribute Code or Documentation
 =================================
-We welcome contributions and ideas to improve the PDR Toolbox!  **All contributors agree to follow our** `Code of Conduct <https://github.com/mpound/pdrtpy/blob/master/CODE_OF_CONDUCT.md>`_ .  Please look at our 
-`Roadmap of Functionality <https://github.com/mpound/pdrtpy/blob/master/roadmap.md>`_ 
-to see the main new features we want to build.  You can help out with those or suggest new features. 
+We welcome contributions and ideas to improve the PDR Toolbox!  **All contributors agree to follow our** `Code of Conduct <https://github.com/mpound/pdrtpy/blob/master/CODE_OF_CONDUCT.md>`_ .  Please look at our
+`Roadmap of Functionality <https://github.com/mpound/pdrtpy/blob/master/roadmap.md>`_
+to see the main new features we want to build.  You can help out with those or suggest new features.
 
 For Developers
 --------------
-If you plan to tinker with the code, you should fork the repo and work on your own fork.  Point your browser to 
+If you plan to tinker with the code, you should fork the repo and work on your own fork.  Point your browser to
 `https://github.com/mpound/pdrtpy <https://github.com/mpound/pdrtpy>`_
 and click on *fork* in the upper right corner.   After you have made your changes, create a pull request to merge them into the master branch.
 
 You may want to use a virtual environment to protect from polluting your daily working environment (especially if you have a stable version of `pdrtpy` installed).
 
 .. code-block:: sh
-  
+
    sudo apt-get install python3-venv
    python -m venv ~/pdrtpy_venv
-   source ~/pdrtpy_venv/bin/activate[.csh] 
+   source ~/pdrtpy_venv/bin/activate[.csh]
    cd pdrtpy
    pip install -r requirements.txt
    pip install -e .
