@@ -54,7 +54,7 @@ nb = [
   "jupyter",
   "jupyterlab",
 ]
-all = ["pdrtpy[dev,nb,toml]"]
+all = ["pdrtpy[dev,nb]"]
 
 [project.urls]
 Documentation = "https://pdrtpy.readthedocs.io"
