@@ -438,10 +438,9 @@ class ExcitationPlot(PlotBase):
                     self._logfile = open("/tmp/test.log", "a")
                 if debug:
                     self._logfile.write(
-                    f"event.inaxes = {event.inaxes} x,y={event.xdata,event.ydata}\n"
+                        f"event.inaxes = {event.inaxes} x,y={event.xdata,event.ydata}\n"
                     )
                     self._logfile.write(f"event dict: {event.__dict__}")
-   
                 if (
                     event.inaxes == self._axis[0]
                 ):  # the click must be on the left panel (map)
