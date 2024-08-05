@@ -58,6 +58,7 @@ extensions = [
     "sphinx_inline_tabs",
 ]
 numpydoc_show_class_members = True
+numpydoc_class_members_toctree = False
 autosummary_generate = True
 
 autodoc_docstring_signature = True
@@ -71,15 +72,21 @@ mermaid_init_js = "mermaid.initialize({startOnLoad:true, useMaxWidth:false});"
 # TODO: These appear to have no effect
 mermaid_verbose = True
 
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3/", None),
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "scipy": ("https://docs.scipy.org/doc/scipy/", None),
+    "astropy": ("https://docs.astropy.org/en/stable/", None),
+    "matplotib": ("https://matplotlib.org/stable", None),
+    'lmfit': ('https://lmfit.github.io/lmfit-py/',None),
+    "pandas": ("https://pandas.pydata.org/docs/", None),
+    "specutils": ("https://specutils.readthedocs.io/en/stable/", None),
+}
 
-#intersphinx_mapping = { 
-#    'python': ('https://docs.python.org/3', None),
-#    'numpy': ('https://numpy.org/doc/stable/', None),
-#    'scipy': ('https://docs.scipy.org/doc/scipy/', None),
-#    'astropy': ('https://docs.astropy.org/en/stable/', None),
-#    'matplotib': ('https://matplotlib.org/',None),
-#    'lmfit': ('https://lmfit.github.io/lmfit-py/',None)
-#}
+# The reST default role (used for this markup: `text`) to use for all
+# documents. Set to the "smart" one.
+# This lets e.g, `~astropy.Foo` link without using :class:
+default_role = "obj"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -117,3 +124,9 @@ html_theme_options = {
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 #html_static_path = ['_static']
+
+# Cache notebooks to only re-run when cells change
+##nb_execution_mode = "cache"
+
+# Where to store the notebook cache
+#nb_execution_cache_path = "jupyter_cache"
