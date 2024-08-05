@@ -1,7 +1,7 @@
 ---
 # See https://pre-commit.com for more information
 default_language_version:
-  python: python3.9
+  python: python3.10
 
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
@@ -30,7 +30,7 @@ repos:
       - id: isort
         exclude: '(notebooks|testdata|examples)/.*'
   - repo: 'https://github.com/psf/black'
-    rev: 24.4.2
+    rev: 24.8.0
     hooks:
       - id: black
         exclude: '(notebooks|testdata|examples)/.*'
