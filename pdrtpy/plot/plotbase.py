@@ -356,7 +356,8 @@ class PlotBase:
                 for c in a.coords:
                     c.display_minor_ticks(True)
         if kwargs_opts['image']:
-            current_cmap = copy(mcm.get_cmap(kwargs_imshow['cmap']))
+            #current_cmap = copy(mcm.get_cmap(kwargs_imshow['cmap']))
+            current_cmap = copy(self._plt.get_cmap(kwargs_imshow['cmap']))
             current_cmap.set_bad(color='white',alpha=1)
             # suppress errors and warnings about unused keywords
             #@todo need a better solution for this, it is not scalable.
