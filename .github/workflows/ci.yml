@@ -47,7 +47,6 @@ jobs:
           pip install -e .
       - name: Test with pytest
         run: |
-          pip install coverage
           # Write coverage data files, namespaced using matrix info
           coverage run --data-file=".coverage.${{ matrix.os }}.${{ matrix.python-version }}" -m pytest
       - name: Upload coverage data
