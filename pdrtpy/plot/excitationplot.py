@@ -77,9 +77,7 @@ class ExcitationPlot(PlotBase):
         if isinstance(position, SkyCoord):
             position = self._tool.fitresult.get_pixel_from_coord(position)
             print(f"AFTER norm={norm} pos={position} size={size}")
-        cdavg = self._tool.average_column_density(
-            norm=norm, position=position, size=size, line=True
-        )
+        cdavg = self._tool.average_column_density(norm=norm, position=position, size=size, line=True)
         # print("CDAVG ",cdavg)
         energies = self._tool.energies(line=True)
         energy = np.array(list(energies.values()))
@@ -89,9 +87,7 @@ class ExcitationPlot(PlotBase):
         # print("COLDEN",colden)
         sigma = LOGE * error / colden
         if kwargs_opts["axis"] is None:
-            self._figure, self._axis = self._plt.subplots(
-                figsize=kwargs_opts["figsize"]
-            )
+            self._figure, self._axis = self._plt.subplots(figsize=kwargs_opts["figsize"])
             _axis = self._axis
         else:
             _axis = kwargs_opts["axis"]
@@ -146,9 +142,7 @@ class ExcitationPlot(PlotBase):
                 opr_v = tt.opr[position]
                 opr_e = tt.opr.error[position]
                 # a Measurement.get_as_measurement() would be nice
-                opr_p = Measurement(
-                    opr_v, uncertainty=StdDevUncertainty(opr_e), unit=""
-                )
+                opr_p = Measurement(opr_v, uncertainty=StdDevUncertainty(opr_e), unit="")
             else:
                 opr_p = tt.opr
             cddn = colden * self._tool._canonical_opr / opr_p
@@ -197,17 +191,13 @@ class ExcitationPlot(PlotBase):
         print(f"show_fit is {show_fit}")
         if show_fit:
             if tt.fit_result is None:
-                raise ValueError(
-                    "No fit to show. Have you run the fit in your H2ExcitationFit?"
-                )
+                raise ValueError("No fit to show. Have you run the fit in your H2ExcitationFit?")
             if np.shape(tt.fit_result.data) == (1,):
                 position = 0
             elif position is None:
                 raise ValueError("position must be provided for map fit results")
             if tt.fit_result[position] is None:
-                raise ValueError(
-                    f"The Excitation Tool was unable to fit pixel {position}. Try show_fit=False"
-                )
+                raise ValueError(f"The Excitation Tool was unable to fit pixel {position}. Try show_fit=False")
             x_fit = np.linspace(0, max(energy), 30)
             # @TODO This now depends on tool._numcomponents
             outpar = tt.fit_result[position].params.valuesdict()
@@ -235,21 +225,13 @@ class ExcitationPlot(PlotBase):
                     + f"{tt.tcold.error[position]:.1f} {tt.tcold.unit}"
                 )
             if position == 0:
-                labnh = (
-                    r"$N("
-                    + self._label
-                    + ")="
-                    + float_formatter(tt.total_colden, 2)
-                    + "$"
-                )
+                labnh = r"$N(" + self._label + ")=" + float_formatter(tt.total_colden, 2) + "$"
             else:
                 labnh = (
                     r"$N("
                     + self._label
                     + ")="
-                    + float_formatter(
-                        u.Quantity(tt.total_colden[position], tt.total_colden.unit), 2
-                    )
+                    + float_formatter(u.Quantity(tt.total_colden[position], tt.total_colden.unit), 2)
                     + "$"
                 )
             _axis.plot(
@@ -267,9 +249,7 @@ class ExcitationPlot(PlotBase):
                     label=labhot,
                     lw=kwargs_opts["linewidth"],
                 )
-            _axis.plot(
-                x_fit, tt.fit_result[position].eval(x=x_fit, fit_opr=False), label="fit"
-            )
+            _axis.plot(x_fit, tt.fit_result[position].eval(x=x_fit, fit_opr=False), label="fit")
             handles, labels = _axis.get_legend_handles_labels()
             # kluge to ensure N(H2) label is last
             phantom = _axis.plot([], marker="", markersize=0, ls="", lw=0)
@@ -296,9 +276,7 @@ class ExcitationPlot(PlotBase):
         _axis.yaxis.set_major_locator(MultipleLocator(1))
         _axis.yaxis.set_minor_locator(MultipleLocator(0.2))
         _axis.tick_params(axis="both", direction="in", which="both")
-        _axis.tick_params(
-            axis="both", bottom=True, top=True, left=True, right=True, which="both"
-        )
+        _axis.tick_params(axis="both", bottom=True, top=True, left=True, right=True, which="both")
         if kwargs_opts["grid"]:
             _axis.grid(
                 visible=True,
@@ -332,9 +310,7 @@ class ExcitationPlot(PlotBase):
         :type component: str
         """
         if component not in self._tool.temperature:
-            raise KeyError(
-                f"{component} not a valid component. Must be one of {list(self._tool.temperature.keys())}"
-            )
+            raise KeyError(f"{component} not a valid component. Must be one of {list(self._tool.temperature.keys())}")
         self._plot(self._tool.temperature[component], **kwargs)
 
     def column_density(self, component, log=True, **kwargs):
@@ -381,7 +357,7 @@ class ExcitationPlot(PlotBase):
             "figsize": (5, 3),
             "markersize": 20,
             "fmt": "r+",
-            "debug": False
+            "debug": False,
         }
         # starting position is middle pixel of image. note // for integer arithmetic
         kwargs_opts.update(kwargs)
@@ -395,9 +371,9 @@ class ExcitationPlot(PlotBase):
         if self._tool.fit_result[position] is None:
             # find another position where the fit succeeded
             ok = np.where(self._tool.fit_result._data is not None)
-            #position = (ok[0][0], ok[1][0])
+            # position = (ok[0][0], ok[1][0])
             position = (ok[1][0], ok[0][0])
-        if debug: 
+        if debug:
             self._logfile.write(f"Trying to get world coordinates at position {position}\n")
         coord = self._tool.fit_result.get_skycoord(position[0], position[1])
         if debug:
@@ -405,13 +381,9 @@ class ExcitationPlot(PlotBase):
 
         self._figure = self._plt.figure(figsize=kwargs_opts["figsize"], clear=True)
         self._axis = np.empty([2], dtype=object)
-        self._axis[0] = self._figure.add_subplot(
-            121, projection=data.wcs, aspect="auto"
-        )
+        self._axis[0] = self._figure.add_subplot(121, projection=data.wcs, aspect="auto")
         self._axis[1] = self._figure.add_subplot(122, projection=None, aspect="auto")
-        self._axis[1].tick_params(
-            "y", labelright=True, labelleft=False
-        )  # avoid overlap with colorbar
+        self._axis[1].tick_params("y", labelright=True, labelleft=False)  # avoid overlap with colorbar
         self._axis[1].get_yaxis().set_label_position("right")
         fmt = kwargs_opts.pop("fmt", "r+")
         show_fit = kwargs_opts.pop("show_fit")
@@ -427,9 +399,7 @@ class ExcitationPlot(PlotBase):
             ymax=30,
         )
 
-        self._marker = self.axis[0].plot(
-            position[0], position[1], fmt, markersize=kwargs_opts["markersize"]
-        )
+        self._marker = self.axis[0].plot(position[0], position[1], fmt, markersize=kwargs_opts["markersize"])
 
         def update_lines(event):
             self._logfile = None
@@ -437,13 +407,9 @@ class ExcitationPlot(PlotBase):
                 if debug:
                     self._logfile = open("/tmp/test.log", "a")
                 if debug:
-                    self._logfile.write(
-                        f"event.inaxes = {event.inaxes} x,y={event.xdata,event.ydata}\n"
-                    )
+                    self._logfile.write(f"event.inaxes = {event.inaxes} x,y={event.xdata,event.ydata}\n")
                     self._logfile.write(f"event dict: {event.__dict__}")
-                if (
-                    event.inaxes == self._axis[0]
-                ):  # the click must be on the left panel (map)
+                if event.inaxes == self._axis[0]:  # the click must be on the left panel (map)
                     position = (int(round(event.ydata)), int(round(event.xdata)))
                     self._marker[0].set_marker("None")
                     self._marker = self.axis[0].plot(
@@ -454,9 +420,7 @@ class ExcitationPlot(PlotBase):
                     )
                     self._axis[1].clear()
                     self._axis[1].remove()
-                    self._axis[1] = self._figure.add_subplot(
-                        122, projection=None, aspect="auto"
-                    )
+                    self._axis[1] = self._figure.add_subplot(122, projection=None, aspect="auto")
                     self._axis[1].tick_params("y", labelright=True, labelleft=False)
                     self._axis[1].get_yaxis().set_label_position("right")
                     if debug:

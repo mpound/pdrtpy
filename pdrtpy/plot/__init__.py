@@ -1,1 +1,1 @@
-__all__ = [ "plotbase", "modelplot", "lineratioplot", "excitationplot"]
+__all__ = ["plotbase", "modelplot", "lineratioplot", "excitationplot"]
