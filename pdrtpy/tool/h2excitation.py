@@ -189,6 +189,8 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
            :return: Sum of lines in log space:log10(10**(x*m1+n1) + 10**(x*m2+n2)) + log10(opr/3.0)
            :rtype: :class:`numpy.ndarray`
         '''
+        # why are these coming in as floats?
+        idx = [int(i) for i in idx]
         y1 = 10**(x*m1+n1)
         y2 = 10**(x*m2+n2)
 
@@ -217,7 +219,7 @@ Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view t
         #@todo make a separate class that subclasses Model.
         # potentially allow users to change it.
         #print(f'initializing model with nc = {self._numcomponents}')
-        self._model=Model(self._model_functions[self._numcomponents],oaram_names=list(self._params.keys()))
+        self._model=Model(self._model_functions[self._numcomponents],param_names=list(self._params.keys()))
         for p,q in self._params.items():
             self._model.set_param_hint(p, value=q.value,
                                        min=q.min, max=q.max,
