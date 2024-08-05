@@ -8,7 +8,7 @@ Module Descriptions and APIs
 
    pdrtpy.measurement
    pdrtpy.modelset
-   pdrtpy.plot  
+   pdrtpy.plot
    pdrtpy.tool
    pdrtpy.pdrutils
 
@@ -27,5 +27,3 @@ This project is supported by `NASA Astrophysics Data Analysis Program
 grant 80NSSC19K0573; from JWST-ERS program ID 1288 provided through
 grants from the STScI under NASA contract NAS5-03127; and from the `SOFIA C+ Legacy Project <https://feedback.astro.umd.edu>`_ through a grant
 from NASA through award #208378 issued by USRA.
-
-

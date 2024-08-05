@@ -1,16 +1,14 @@
-import numpy as np
-
-from matplotlib.ticker import MultipleLocator
-
-# from cycler import cycler
-
 import astropy.units as u
+import numpy as np
 from astropy.coordinates import SkyCoord
 from astropy.nddata import StdDevUncertainty
+from matplotlib.ticker import MultipleLocator
 
 from ..measurement import Measurement
+from ..pdrutils import LOGE, float_formatter
 from .plotbase import PlotBase
-from ..pdrutils import float_formatter, LOGE
+
+# from cycler import cycler
 
 
 class ExcitationPlot(PlotBase):

@@ -4,14 +4,14 @@ Plot Keywords
 
 To manage the plots, the methods in ``Plot`` classes take keywords (\*\*kwargs) that turn on or off various options, specify plot units, or map to matplotlib's :meth:`~matplotlib.axes.Axes.plot`, :meth:`~matplotlib.axes.Axes.imshow`, :meth:`~matplotlib.axes.Axes.contour` keywords.  The methods have reasonable defaults, so try them with no keywords to see what they do before modifying keywords.
 
-     * *units* (``str`` or :class:`astropy.units.Unit`) image data units to use in the plot. This can be either a string such as, 'cm^-3' or 'Habing', or it can be an :class:`astropy.units.Unit`.  Data will be converted to the desired unit.   Note these are **not** the axis units, but the image data units.  Modifying axis units is implemented via the `xaxis_unit` and `yaxis_unit` keywords. 
+     * *units* (``str`` or :class:`astropy.units.Unit`) image data units to use in the plot. This can be either a string such as, 'cm^-3' or 'Habing', or it can be an :class:`astropy.units.Unit`.  Data will be converted to the desired unit.   Note these are **not** the axis units, but the image data units.  Modifying axis units is implemented via the `xaxis_unit` and `yaxis_unit` keywords.
 
-     * *image* (``bool``) whether or not to display the image map (imshow). 
+     * *image* (``bool``) whether or not to display the image map (imshow).
 
      * *show* (``str``) which quantity to display in the Measurement, one of 'data', 'error', 'mask'.  For example, this can be used to plot the errors in observed ratios. Default: 'data'
- 
 
-     * *cmap* (``str``) colormap name, Default: 'plasma' 
+
+     * *cmap* (``str``) colormap name, Default: 'plasma'
 
      * *colorbar* (``str``) whether or not to display colorbar
 
@@ -19,7 +19,7 @@ To manage the plots, the methods in ``Plot`` classes take keywords (\*\*kwargs) 
 
      * *contours* (``bool``), whether or not to plot contours
 
-     * *label* (``bool``), whether or not to label contours 
+     * *label* (``bool``), whether or not to label contours
 
      * *linewidths* (``float or sequence of float``), the line width in points, Default: 1.0
 
@@ -29,7 +29,7 @@ To manage the plots, the methods in ``Plot`` classes take keywords (\*\*kwargs) 
 
      * *loc* (``str``)  The `matplotlib` legend keyword for controlling the location of the legend. See :meth:`~matplotlib.axes.Axes.legend`.
 
-     * *levels* (``int`` or array-like) Determines the number and positions of the contour lines / regions.  If an int n, use n data intervals; i.e. draw n+1 contour lines. The level heights are automatically chosen.  If array-like, draw contour lines at the specified levels. The values must be in increasing order.  
+     * *levels* (``int`` or array-like) Determines the number and positions of the contour lines / regions.  If an int n, use n data intervals; i.e. draw n+1 contour lines. The level heights are automatically chosen.  If array-like, draw contour lines at the specified levels. The values must be in increasing order.
 
      * *measurements* (array-like) A list of single pixel Measurements that can be contoured over a model ratio or intensity map.
 
@@ -48,7 +48,7 @@ To manage the plots, the methods in ``Plot`` classes take keywords (\*\*kwargs) 
      * *vmin*  (``float``) Minimum value for colormap normalization
 
      * *vmax*  (``float``) Maximum value for colormap normalization
-    
+
      * *xaxis_unit* (``str`` or :class:`astropy.units.Unit`) X axis (density) units to use when plotting models, such as in :meth:`~pdrtpy.plot.lineratioplot.LineRatioPlot.overlay_all_ratios` or :meth:`~pdrtpy.plot.lineratioplot.LineRatioPlot.modelratio`.  If None, the native model axis units are used.
 
      * *yaxis_unit* (``str`` or :class:`astropy.units.Unit`) Y axis (density) units to use when plotting models, such as in :meth:`~pdrtpy.plot.lineratioplot.LineRatioPlot.overlay_all_ratios` or :meth:`~pdrtpy.plot.lineratioplot.LineRatioPlot.modelratio`.  If None, the native model axis units are used.

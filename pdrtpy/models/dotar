@@ -1,4 +1,4 @@
-  /bin/rm -rf *.tgz 
+  /bin/rm -rf *.tgz
   tar cvfz kt2013_models.tgz kosmatau
   tar cvfz wk2020_models.tgz wolfirekaufman/version2020
   tar cvfz wk2006_models.tgz wolfirekaufman/version2006

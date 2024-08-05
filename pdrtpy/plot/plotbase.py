@@ -1,16 +1,22 @@
-from copy import deepcopy, copy
-import numpy as np
-import numpy.ma as ma
+from copy import copy, deepcopy
 
 import matplotlib.axes as maxes
+import numpy as np
+import numpy.ma as ma
+from astropy.visualization import ImageNormalize, ZScaleInterval, simple_norm
+from astropy.visualization.stretch import (
+    AsinhStretch,
+    LinearStretch,
+    LogStretch,
+    PowerStretch,
+    SqrtStretch,
+)
+from cycler import cycler
+from matplotlib.colors import LogNorm
 
 # import matplotlib.cm as mcm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from astropy.visualization import simple_norm, ZScaleInterval, ImageNormalize
-from astropy.visualization.stretch import LinearStretch, PowerStretch, AsinhStretch, LogStretch, SqrtStretch
-from matplotlib.colors import LogNorm
-from cycler import cycler
 from .. import pdrutils as utils
 
 

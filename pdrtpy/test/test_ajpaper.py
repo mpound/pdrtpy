@@ -1,20 +1,21 @@
-import unittest
 import os
-
-from pdrtpy.modelset import ModelSet
-from pdrtpy.plot.modelplot import ModelPlot
-from pdrtpy.measurement import Measurement
-from pdrtpy.tool.lineratiofit import LineRatioFit
-from pdrtpy.plot.lineratioplot import LineRatioPlot
-from pdrtpy.tool.h2excitation import H2ExcitationFit
-from pdrtpy.plot.excitationplot import ExcitationPlot
-import pdrtpy.pdrutils as utils
-import astropy.units as u
-from astropy.nddata import StdDevUncertainty
-from lmfit import fit_report
+import unittest
 from copy import deepcopy
+
+import astropy.units as u
 import corner
 import numpy as np
+from astropy.nddata import StdDevUncertainty
+from lmfit import fit_report
+
+import pdrtpy.pdrutils as utils
+from pdrtpy.measurement import Measurement
+from pdrtpy.modelset import ModelSet
+from pdrtpy.plot.excitationplot import ExcitationPlot
+from pdrtpy.plot.lineratioplot import LineRatioPlot
+from pdrtpy.plot.modelplot import ModelPlot
+from pdrtpy.tool.h2excitation import H2ExcitationFit
+from pdrtpy.tool.lineratiofit import LineRatioFit
 
 
 class TestAJPaperListings(unittest.TestCase):

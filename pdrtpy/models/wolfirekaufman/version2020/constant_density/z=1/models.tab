@@ -5,10 +5,10 @@
           OI_63           CII_158              OI_63/CII_158       OI63_CII158sm              1   [O I] 63 $\mu$m / [C II] 158 $\mu$m
   OI_63+CII_158               FIR          OI_63+CII_158/FIR       OI63+CII158_FIRsm          1   ([O I] 63 $\mu$m + [C II] 158 $\mu$m) / I$_{FIR}$
  OI_145+CII_158               FIR         OI_145+CII_158/FIR       OI145+CII158_FIRsm         1   ([O I] 145 $\mu$m + [C II] 158 $\mu$m) / I$_{FIR}$
-         OI_145             OI_63               OI_145/OI_63       OI145_OI63sm               1   [O I] 145 $\mu$m / [O I] 63 $\mu$m          
+         OI_145             OI_63               OI_145/OI_63       OI145_OI63sm               1   [O I] 145 $\mu$m / [O I] 63 $\mu$m
          CI_370            CI_609              CI_370/CI_609       CI370_CI609sm              1   [C I] 370 $\mu$m / [C I] 609 $\mu$m
         CII_158            CI_609             CII_158/CI_609       CII158_CI609sm             1   [C II] 158 $\mu$m / [C I] 609 $\mu$m
-        CII_158            OI_145             CII_158/OI_145       CII158_OI145sm             1   [C II] 158 $\mu$m / [O I] 145 $\mu$m 
+        CII_158            OI_145             CII_158/OI_145       CII158_OI145sm             1   [C II] 158 $\mu$m / [O I] 145 $\mu$m
         CII_158               FIR                CII_158/FIR       CII158_FIRsm               1   [C II] 158 $\mu$m / I$_{FIR}$
         CII_158             CO_10              CII_158/CO_10       CII158_CO10sm              1   [C II] 158 $\mu$m / CO(J=1-0)
         CII_158             CO_21              CII_158/CO_21       CII158_CO21sm              1   [C II] 158 $\mu$m / CO(J=2-1)
@@ -84,10 +84,10 @@
         13CO_10                 1                   13CO_10          13CO10sm                 1   $^{13}$CO(J=1-0)
         13CO_21                 1                   13CO_21          13CO21sm                 1   $^{13}$CO(J=2-1)
         13CO_32                 1                   13CO_32          13CO32sm                 1   $^{13}$CO(J=3-2)
-         H200S3                 1               H200S3                 H200S3sm               1   H$_2$0-0S(3) 9.7 $\mu$m 
-         H200S2                 1               H200S2                 H200S2sm               1   H$_2$0-0S(2) 12.3 $\mu$m 
-         H200S1                 1               H200S1                 H200S1sm               1   H$_2$0-0S(1) 17 $\mu$m 
-         H200S0                 1               H200S0                 H200S0sm               1   H$_2$0-0S(0) 28.2 $\mu$m 
+         H200S3                 1               H200S3                 H200S3sm               1   H$_2$0-0S(3) 9.7 $\mu$m
+         H200S2                 1               H200S2                 H200S2sm               1   H$_2$0-0S(2) 12.3 $\mu$m
+         H200S1                 1               H200S1                 H200S1sm               1   H$_2$0-0S(1) 17 $\mu$m
+         H200S0                 1               H200S0                 H200S0sm               1   H$_2$0-0S(0) 28.2 $\mu$m
          TS                     1               TS                     TSAV0p01sm             1   Temperature at $A_V=0.01$
       FEII_1.60         FEII_1.64       FEII_1.60/FEII_1.64       FEII1p60_FEII1p64           1   [Fe II] 1.60 $\mu$m/[Fe II] 1.64 $\mu$m
       FEII_1.64         FEII_5.34       FEII_1.64/FEII_5.34       FEII1p64_FEII5p34           1   [Fe II] 1.64 $\mu$m/[Fe II] 5.34 $\mu$m

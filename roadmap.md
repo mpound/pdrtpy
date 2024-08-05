@@ -32,7 +32,7 @@ These are the big-picture things we want to add before the money runs out!
  :heavy_check_mark: Add full set of Wolfire-Kaufman 2020-1 models
 
  :heavy_check_mark: Allow user-added models
- 
+
  - Add functionality to compare models from different ModelSets
 
 #### _Plotting_

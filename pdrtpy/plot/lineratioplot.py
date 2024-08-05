@@ -7,21 +7,19 @@
 # Also https://docs.bokeh.org/en
 # especially for coloring and style
 
-from copy import deepcopy
 import warnings
+from copy import deepcopy
 
+import astropy.units as u
+import astropy.wcs as wcs
 import numpy as np
 import scipy.stats as stats
-
+from astropy.units import UnitsWarning
 from matplotlib.lines import Line2D
 
-import astropy.wcs as wcs
-import astropy.units as u
-from astropy.units import UnitsWarning
-
-from .plotbase import PlotBase
-from .modelplot import ModelPlot
 from .. import pdrutils as utils
+from .modelplot import ModelPlot
+from .plotbase import PlotBase
 
 
 class LineRatioPlot(PlotBase):

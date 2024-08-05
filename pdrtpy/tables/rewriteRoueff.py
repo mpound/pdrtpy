@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # change Roueff et al H2 data table to IPAC format
+from astropy.constants import c, h, k_B
 from astropy.io import ascii
-from astropy.constants import h, k_B, c
 
 f = open("RoueffEtAltable2.dat", "r")
 header = f.readline().split("|")
