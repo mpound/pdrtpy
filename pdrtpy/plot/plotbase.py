@@ -3,7 +3,7 @@ import numpy as np
 import numpy.ma as ma
 
 import matplotlib.axes as maxes
-import matplotlib.cm as mcm
+#import matplotlib.cm as mcm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from astropy.visualization import simple_norm, ZScaleInterval , ImageNormalize
