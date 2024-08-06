@@ -1,16 +1,16 @@
 import warnings
 from copy import deepcopy
+
+import astropy.units as u
+import astropy.wcs as wcs
 import numpy as np
 import numpy.ma as ma
 from matplotlib import ticker
 from matplotlib.lines import Line2D
 
-import astropy.wcs as wcs
-import astropy.units as u
-
-from .plotbase import PlotBase
-from ..measurement import Measurement
 from .. import pdrutils as utils
+from ..measurement import Measurement
+from .plotbase import PlotBase
 
 
 class ModelPlot(PlotBase):

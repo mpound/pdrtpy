@@ -1,13 +1,15 @@
-### Utility code for PDR Toolbox.
+"""
+Utility code for PDR Toolbox.
+"""
 
 import datetime
 import os.path
 import warnings
 from copy import deepcopy
 from pathlib import Path
-import numpy as np
 
 import astropy.units as u
+import numpy as np
 from astropy.constants import k_B
 from astropy.table import Table
 from astropy.units.format.latex import Latex

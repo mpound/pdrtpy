@@ -55,7 +55,7 @@ The BibTex entries are:
            adsurl = {https://ui.adsabs.harvard.edu/abs/2006ApJ...644..283K},
           adsnote = {Provided by the SAO/NASA Astrophysics Data System}
     }
-    
+
     @MISC{2011ascl.soft02022P,
            author = {{Pound}, M.~W. and {Wolfire}, M.~G.},
             title = "{PDRT: Photo Dissociation Region Toolbox}",

@@ -1,29 +1,29 @@
+import cProfile
+import io
+import pstats
+import warnings
 from copy import deepcopy
 
+import astropy.stats as astats
+
+# import astropy.wcs as wcs
+import astropy.units as u
 import numpy as np
 import numpy.ma as ma
 
 # from astropy.io import fits
 from astropy.io.fits.header import Header
-
-# import astropy.wcs as wcs
-import astropy.units as u
-import astropy.stats as astats
-from astropy.table import Table, Column
 from astropy.nddata import CCDData
-import warnings
-from lmfit import Parameters, Minimizer  # , fit_report
+from astropy.table import Column, Table
+from lmfit import Minimizer, Parameters  # , fit_report
 from scipy.interpolate import interpn
+
 from pdrtpy.pbar import get_progress_bar
 
-import cProfile
-import pstats
-import io
-
-from .toolbase import ToolBase
-from .fitmap import FitMap
 from .. import pdrutils as utils
 from ..modelset import ModelSet
+from .fitmap import FitMap
+from .toolbase import ToolBase
 
 # from ..measurement import Measurement
 
@@ -303,8 +303,7 @@ class LineRatioFit(ToolBase):
                 except KeyError:
                     raise Exception(
                         "Keyword CUNIT2 is required in file %s FITS header to describe units of interstellar radiation"
-                        " field"
-                        % self._model_files_used[k]
+                        " field" % self._model_files_used[k]
                     )
         if not self._check_model_shapes():
             warnings.warn("Trimming all model grids to match H2 grid: log(n) = 1-5, log(G0) = 1-5")

@@ -1,10 +1,12 @@
+import os
 import unittest
-from pdrtpy.measurement import Measurement
-import pdrtpy.pdrutils as utils
-from astropy.nddata import StdDevUncertainty
+
 import astropy.units as u
 import numpy as np
-import os
+from astropy.nddata import StdDevUncertainty
+
+import pdrtpy.pdrutils as utils
+from pdrtpy.measurement import Measurement
 
 
 class TestMeasurement(unittest.TestCase):

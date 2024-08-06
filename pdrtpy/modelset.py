@@ -1,13 +1,15 @@
 """Manage pre-computed PDR models"""
 
-import itertools
 import collections
+import itertools
 from copy import deepcopy
-import numpy as np
-from astropy.table import Table, Column, unique, vstack
+
 import astropy.units as u
-from .pdrutils import get_table, model_dir, _OBS_UNIT_
+import numpy as np
+from astropy.table import Column, Table, unique, vstack
+
 from .measurement import Measurement
+from .pdrutils import _OBS_UNIT_, get_table, model_dir
 
 
 class ModelSet(object):

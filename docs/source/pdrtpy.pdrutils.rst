@@ -5,4 +5,3 @@ Utilities: Various constants and methods used by the Toolbox
    :members:
    :undoc-members:
    :show-inheritance:
-

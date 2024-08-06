@@ -3,20 +3,21 @@
 # @Todo it would be nice to be able to get Measurment[index] as a Measurement instead of
 # a float. This is the behavior for CCDData, somehow lost in Measurement  See NDUncertainty __getitem__
 # this will have ripple effects if implemented.
+import warnings
 from copy import deepcopy
 from os import remove
 from os.path import exists
 
-from astropy import log
 import astropy.units as u
-from astropy.io import fits, registry
-from astropy.table import Table
-from astropy.nddata import CCDData, StdDevUncertainty
 import numpy as np
 import numpy.ma as ma
+from astropy import log
+from astropy.io import fits, registry
+from astropy.nddata import CCDData, StdDevUncertainty
+from astropy.table import Table
 from scipy.interpolate import interp2d
+
 from . import pdrutils as utils
-import warnings
 
 
 class Measurement(CCDData):
