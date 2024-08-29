@@ -566,7 +566,7 @@ uvicorn==0.30.5
     # via sphinx-autobuild
 virtualenv==20.26.3
     # via pre-commit
-watchfiles==0.22.0
+watchfiles==0.24.0
     # via sphinx-autobuild
 wcwidth==0.2.13
     # via prompt-toolkit
