@@ -1,3 +1,4 @@
+import math
 import os
 import unittest
 
@@ -10,6 +11,21 @@ from pdrtpy.measurement import Measurement
 
 
 class TestMeasurement(unittest.TestCase):
+    def setUp(self):
+        self.q = []
+        self.intensity = dict()
+        self.intensity["H200S0"] = 3.003e-05
+        self.intensity["H200S1"] = 3.143e-04
+        self.intensity["H200S2"] = 3.706e-04
+        self.intensity["H200S3"] = 1.060e-03
+        # Add a point for J=6 so that the fit is not overconstrained.
+        self.intensity["H200S4"] = 5.282e-04
+        self.intensity["H200S5"] = 5.795e-04
+        for j in self.intensity:
+            infile = utils.get_testdata(f"{j:s}_test_data.fits")
+            m = Measurement.read(infile, identifier=j)
+            self.q.append(m)
+
     def test_arithmetic(self):
         print("Measurement Unit Test")
         _data = np.array([np.array([30, 20]), 10, 10, 100], dtype=object)
@@ -52,6 +68,18 @@ class TestMeasurement(unittest.TestCase):
             self.assertTrue(m[q].unit == u.adu)
 
     # @todo add operations with numerics (e.g. m*3.14)
+
+    def test_interpolation(self):
+        shape = self.q[1].data.shape
+        x1 = self.q[1]._world_axis_lin[0][shape[0] // 2]
+        y1 = self.q[1]._world_axis_lin[1][shape[1] // 2]
+        # make sure inperlation on an existing point returns that point
+        z1 = np.float64(0.00028160451797954307)
+        self.assertTrue(self.q[1]._interp_lin((x1, y1)) == z1)
+        x1 = x1 + self.q[1].wcs.wcs.cdelt[0] * np.cos(math.radians(y1))
+        y1 = y1 - 3 * self.q[1].wcs.wcs.cdelt[1]
+        z2 = np.float64(0.0003121150896071409)
+        self.assertTrue(self.q[1]._interp_lin((x1, y1)) == z2)
 
     def test_read_write(self):
         # Get the input filenames of the FITS files in the testdata directory
