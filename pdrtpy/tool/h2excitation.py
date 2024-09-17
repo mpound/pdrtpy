@@ -1,18 +1,18 @@
-from astropy.nddata import Cutout2D
-import astropy.units as u
-import astropy.constants as constants
-from astropy.nddata import StdDevUncertainty
+import cProfile
+import io
 import math
+import pstats
+import warnings
+from copy import deepcopy
+
+import astropy.constants as constants
+import astropy.units as u
 import numpy as np
+from astropy.nddata import Cutout2D, StdDevUncertainty
+from emcee.pbar import get_progress_bar
 from lmfit import Parameters  # , fit_report
 from lmfit.model import Model  # , ModelResult
-from emcee.pbar import get_progress_bar
 from scipy.interpolate import interp1d
-import cProfile
-import pstats
-import io
-from copy import deepcopy
-import warnings
 
 from .. import pdrutils as utils
 from ..measurement import Measurement
