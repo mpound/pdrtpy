@@ -46,7 +46,7 @@ bleach==6.1.0
     # via nbconvert
 build==1.2.1
     # via pip-tools
-certifi==2024.7.4
+certifi==2024.8.30
     # via
     #   httpcore
     #   httpx
