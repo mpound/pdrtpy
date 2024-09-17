@@ -15,7 +15,7 @@ from astropy import log
 from astropy.io import fits, registry
 from astropy.nddata import CCDData, StdDevUncertainty
 from astropy.table import Table
-from scipy.interpolate import interp2d
+from scipy.interpolate import RegularGridInterpolator
 
 from . import pdrutils as utils
 
@@ -339,9 +339,15 @@ class Measurement(CCDData):
         """
         self._world_axis = utils.get_xy_from_wcs(self, quantity=False, linear=False)
         self._world_axis_lin = utils.get_xy_from_wcs(self, quantity=False, linear=True)
-        self._interp_log = interp2d(self._world_axis[0], self._world_axis[1], z=self.data, kind=kind, bounds_error=True)
-        self._interp_lin = interp2d(
-            self._world_axis_lin[0], self._world_axis_lin[1], z=self.data, kind=kind, bounds_error=True
+        # self._interp_log_old = interp2d(
+        #    self._world_axis[0], self._world_axis[1], z=self.data, kind=kind, bounds_error=True
+        # )
+        # self._interp_lin_old = interp2d(
+        #    self._world_axis_lin[0], self._world_axis_lin[1], z=self.data, kind=kind, bounds_error=True
+        # )
+        self._interp_log = RegularGridInterpolator(self._world_axis, values=self.data.T, method=kind, bounds_error=True)
+        self._interp_lin = RegularGridInterpolator(
+            self._world_axis_lin, values=self.data.T, method=kind, bounds_error=True
         )
 
     def get_pixel(self, world_x, world_y):
@@ -369,9 +375,9 @@ class Measurement(CCDData):
         :rtype: float
         """
         if log:
-            return self._interp_log(world_x, world_y)
+            return float(self._interp_log((world_x, world_y)))
         else:
-            return self._interp_lin(world_x, world_y)
+            return float(self._interp_lin((world_x, world_y)))
 
     @property
     def levels(self):

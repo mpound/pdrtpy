@@ -23,9 +23,9 @@ classifiers = [
     "Intended Audience :: Science/Research",
 ]
 dependencies = [
-    'astropy',
-    'numpy',
-    'scipy<=1.13',
+    'astropy<6.1.0',
+    'numpy<2.0',
+    'scipy',
     'matplotlib',
     'lmfit',
     'numdifftools',
