@@ -1,0 +1,36 @@
+---
+# See https://pre-commit.com for more information
+default_language_version:
+  python: python3.10
+
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: 'https://github.com/pre-commit/pre-commit-hooks'
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '(notebooks|testdata|examples)/.*'
+      - id: end-of-file-fixer
+        exclude: LICENSE
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args:
+          - '--maxkb=1024000'
+      - id: debug-statements
+      - id: detect-private-key
+      - id: mixed-line-ending
+        args:
+          - '--fix=lf'
+            #      - id: check-docstring-first
+      - id: check-case-conflict # Check for files with names that would conflict on a case-insensitive filesystem
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        exclude: '(notebooks|testdata|examples)/.*'
+  - repo: 'https://github.com/psf/black'
+    rev: 24.8.0
+    hooks:
+      - id: black
+        exclude: '(notebooks|testdata|examples)/.*'

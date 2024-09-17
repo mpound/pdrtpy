@@ -13,11 +13,10 @@ import pstats
 import io
 from copy import deepcopy
 
-from .toolbase import ToolBase
-from .fitmap import FitMap
 from .. import pdrutils as utils
 from ..measurement import Measurement
-import warnings
+from .fitmap import FitMap
+from .toolbase import ToolBase
 
 
 class ExcitationFit(ToolBase):
@@ -59,7 +58,8 @@ class ExcitationFit(ToolBase):
         for mm in m:
             if not utils.check_units(mm.unit, self._intensity_units):
                 raise TypeError(
-                    f"Measurement {mm.id} units {mm.unit.to_string()} are not in intensity units equivalent to {self._intensity_units}"
+                    f"Measurement {mm.id} units {mm.unit.to_string()} are not in intensity units equivalent to"
+                    f" {self._intensity_units}"
                 )
             self._measurements[mm.id] = mm
 
@@ -72,10 +72,7 @@ class ExcitationFit(ToolBase):
         """
         if not utils.check_units(m.unit, self._intensity_units):
             raise TypeError(
-                "Measurement "
-                + m.id
-                + " must be in intensity units equivalent to "
-                + self._intensity_units
+                "Measurement " + m.id + " must be in intensity units equivalent to " + self._intensity_units
             )
 
         if self._measurements:
@@ -92,9 +89,7 @@ class ExcitationFit(ToolBase):
         :type identifier: str
         :raises KeyError: if identifier not in existing Measurements
         """
-        del self._measurements[
-            identifier
-        ]  # we want this to raise a KeyError if id not found
+        del self._measurements[identifier]  # we want this to raise a KeyError if id not found
         self._column_density.pop(identifier, None)  # but not this.
 
     def replace_measurement(self, m):
@@ -180,7 +175,6 @@ class H2ExcitationFit(ExcitationFit):
         return (model - data) / error
 
     def _one_component_residual(self, params, x, data, error, idx):
-        # @TODO add extinction correction. however this method is not currently used.
         p = params.valuesdict()
         model = x * p["m1"] + p["n1"]
         if params["opr"].vary:
@@ -227,6 +221,8 @@ class H2ExcitationFit(ExcitationFit):
         :return: Sum of lines in log space:log10(10**(x*m1+n1) + 10**(x*m2+n2)) + log10(opr/3.0)  0.4*extinction_ratio*av
         :rtype: :class:`numpy.ndarray`
         """
+        # why are these coming in as floats?
+        idx = [int(i) for i in idx]
         y1 = 10 ** (x * m1 + n1)
         y2 = 10 ** (x * m2 + n2)
 
@@ -352,7 +348,9 @@ class H2ExcitationFit(ExcitationFit):
                         print("AT pixel i [mask]", i, ffmask[i])
                         params.pretty_print()
                         raise Exception(
-                            "Something went wrong with the fit and it was unable to calculate errors on the fitted parameters. It's likely that a two-temperature model is not appropriate for your data. Check the fit_result report and plot."
+                            "Something went wrong with the fit and it was unable to calculate errors on the fitted"
+                            " parameters. It's likely that a two-temperature model is not appropriate for your data."
+                            " Check the fit_result report and plot."
                         )
 
                 if params["m2"] < params["m1"]:
@@ -406,21 +404,13 @@ class H2ExcitationFit(ExcitationFit):
             # cold and hot total column density
             ucn = StdDevUncertainty(np.abs(unc))
             mask = fitmap.mask | np.logical_not(np.isfinite(nc))
-            self._j0_colden["cold"] = Measurement(
-                nc, unit=self._cd_units, uncertainty=ucn, wcs=fitmap.wcs, mask=mask
-            )
+            self._j0_colden["cold"] = Measurement(nc, unit=self._cd_units, uncertainty=ucn, wcs=fitmap.wcs, mask=mask)
             mask = fitmap.mask | np.logical_not(np.isfinite(nh))
             uhn = StdDevUncertainty(np.abs(unh))
-            self._j0_colden["hot"] = Measurement(
-                nh, unit=self._cd_units, uncertainty=uhn, wcs=fitmap.wcs, mask=mask
-            )
+            self._j0_colden["hot"] = Measurement(nh, unit=self._cd_units, uncertainty=uhn, wcs=fitmap.wcs, mask=mask)
             #
-            self._total_colden["cold"] = self._j0_colden[
-                "cold"
-            ] * self._partition_function(self.tcold)
-            self._total_colden["hot"] = self._j0_colden[
-                "hot"
-            ] * self._partition_function(self.thot)
+            self._total_colden["cold"] = self._j0_colden["cold"] * self._partition_function(self.tcold)
+            self._total_colden["hot"] = self._j0_colden["hot"] * self._partition_function(self.thot)
             mask = fitmap.mask | np.logical_not(np.isfinite(opr))
             self._opr = Measurement(
                 opr,
@@ -452,11 +442,13 @@ class H2ExcitationFit(ExcitationFit):
                     continue
                 params = ff[i].params
                 for p in params:
-                    if params[p].vary and params[p].stderr is None:
+                    if params[p].stderr is None:
                         print("AT pixel i [mask]", i, ffmask[i])
                         params.pretty_print()
                         raise Exception(
-                            "Something went wrong with the fit and it was unable to calculate errors on the fitted parameters. Check the fit_result report and plot."
+                            "Something went wrong with the fit and it was unable to calculate errors on the fitted"
+                            " parameters. It's likely that a two-temperature model is not appropriate for your data."
+                            " Check the fit_result report and plot."
                         )
                 mcold = "m1"
                 ncold = "n1"
@@ -490,13 +482,9 @@ class H2ExcitationFit(ExcitationFit):
             # cold = hot total column density
             ucn = StdDevUncertainty(np.abs(unc))
             mask = fitmap.mask | np.logical_not(np.isfinite(nc))
-            self._j0_colden["cold"] = Measurement(
-                nc, unit=self._cd_units, uncertainty=ucn, wcs=fitmap.wcs, mask=mask
-            )
+            self._j0_colden["cold"] = Measurement(nc, unit=self._cd_units, uncertainty=ucn, wcs=fitmap.wcs, mask=mask)
             self._j0_colden["hot"] = self._j0_colden["cold"]
-            self._total_colden["cold"] = self._j0_colden[
-                "cold"
-            ] * self._partition_function(self.tcold)
+            self._total_colden["cold"] = self._j0_colden["cold"] * self._partition_function(self.tcold)
             self._total_colden["hot"] = self._total_colden["cold"]
             mask = fitmap.mask | np.logical_not(np.isfinite(opr))
             self._opr = Measurement(
@@ -598,9 +586,7 @@ class H2ExcitationFit(ExcitationFit):
         #:param log: take the log10 of the column density
         cl = component.lower()
         if cl not in self._valid_components:
-            raise KeyError(
-                f"{cl} not a valid component. Must be one of {self._valid_components}"
-            )
+            raise KeyError(f"{cl} not a valid component. Must be one of {self._valid_components}")
         # print(f'returning {cl}')
         if cl == "total":
             return self.total_colden
@@ -688,9 +674,7 @@ class H2ExcitationFit(ExcitationFit):
                 else:
                     denom = self._ac.loc["Ju", cd]["gu"]
                     if len(denom) > 0:
-                        denom = denom[
-                            0
-                        ]  # ARGH kluge.  Need to get rid of f option as Ju is no longer unique
+                        denom = denom[0]  # ARGH kluge.  Need to get rid of f option as Ju is no longer unique
                 # print("CD ",cd,"DENOM ",denom)
                 # This fails with complaints about units:
                 # self._column_density[cd] /= self._ac.loc[cd]["gu"]
@@ -799,9 +783,7 @@ class H2ExcitationFit(ExcitationFit):
         :type aratio:  numpy array of float
         """
         if len(wavelength) != len(aratio):
-            raise ValueError(
-                f"Wavelength and Aratio array lengths differ {len(wavelength)} != {len(aratio)}"
-            )
+            raise ValueError(f"Wavelength and Aratio array lengths differ {len(wavelength)} != {len(aratio)}")
         self._av_wave = wavelength
         self._av_aratio = aratio
         self._av_interp = interp1d(wavelength, aratio)
@@ -945,15 +927,11 @@ class H2ExcitationFit(ExcitationFit):
             ca = cdnorm[cd]
             if size is not None:
                 if len(size) != len(ca.shape):
-                    raise Exception(
-                        f"Size dimensions [{len(size)}] don't match measurements [{len(ca.shape)}]"
-                    )
+                    raise Exception(f"Size dimensions [{len(size)}] don't match measurements [{len(ca.shape)}]")
 
                 # if size[0] > ca.shape[0] or size[1] > ca.shape[1]:
                 #    raise Exception(f"Requested cutout size {size} exceeds measurement size {ca.shape}")
-                cutout = Cutout2D(
-                    ca.data, position, size, ca.wcs, mode="trim", fill_value=np.nan
-                )
+                cutout = Cutout2D(ca.data, position, size, ca.wcs, mode="trim", fill_value=np.nan)
                 w = Cutout2D(
                     ca.uncertainty.array,
                     position,
@@ -1080,12 +1058,8 @@ class H2ExcitationFit(ExcitationFit):
             self._opr = Measurement(data=[self._canonical_opr], uncertainty=None)
         if fit_av:
             min_points = self._numcomponents * 2 + 1
-            wavelengths = np.array(
-                list(self.wavelengths(line=True).values())
-            )  # assume micron for now
-            extinction_ratios = self._av_interp(
-                wavelengths
-            )  # A_lambda/A_v at the wavelengths of the transitions
+            wavelengths = np.array(list(self.wavelengths(line=True).values()))  # assume micron for now
+            extinction_ratios = self._av_interp(wavelengths)  # A_lambda/A_v at the wavelengths of the transitions
         else:
             min_points = self._numcomponents * 2
             self._av = Measurement(data=[0.0], uncertainty=None)
@@ -1106,7 +1080,8 @@ class H2ExcitationFit(ExcitationFit):
             )
         if len(_ee) == min_points:
             warnings.warn(
-                f"Number of data points is equal to number of free parameters ({min_points:d}). Fit will be over-constrained"
+                f"Number of data points is equal to number of free parameters ({min_points:d}). Fit will be"
+                " over-constrained"
             )
         _energy = Measurement(_ee, unit="K")
         _ids = list(energy.keys())
@@ -1115,9 +1090,7 @@ class H2ExcitationFit(ExcitationFit):
         if position is None or size is None:
             colden = self.column_densities(norm=True, line=True)
         else:
-            colden = self.average_column_density(
-                norm=True, position=position, size=size, line=True
-            )
+            colden = self.average_column_density(norm=True, position=position, size=size, line=True)
 
         # Need to stuff the data into a single vector
         _cd = np.squeeze(np.array([c.data for c in colden.values()]))
@@ -1171,7 +1144,6 @@ class H2ExcitationFit(ExcitationFit):
         # update whether opr is allowed to vary or not.
         self._model.set_param_hint("opr", vary=fit_opr)
         self._model.set_param_hint("av", vary=fit_av)
-        # self._params.add('av',value=0.0,min=0.0,max=100,vary=fit_av)
         # use progress bar if more than one pixel
         if total > 1:
             progress = kwargs.pop("progress", True)
@@ -1201,11 +1173,7 @@ class H2ExcitationFit(ExcitationFit):
                         # print("Y=",yr[:i])
                         # print(f"fitting with fit_av={fit_av}")
                         if kwargs["method"] == "emcee":
-                            emcee_kwargs = {
-                                k: kwargs[k]
-                                for k in ("burn", "steps", "nwalkers")
-                                if k in kwargs
-                            }
+                            emcee_kwargs = {k: kwargs[k] for k in ("burn", "steps", "nwalkers") if k in kwargs}
                         else:
                             emcee_kwargs = None
                         fmdata[i] = self._model.fit(
@@ -1226,7 +1194,8 @@ class H2ExcitationFit(ExcitationFit):
                             count = count + 1
                         else:
                             print(
-                                f"Bad fit because success {fmdata[i].success} or errorbars {fmdata[i].errorbars} was bad"
+                                f"Bad fit because success {fmdata[i].success} or errorbars"
+                                f" {fmdata[i].errorbars} was bad"
                             )
                             fmdata[i] = None
                             fm_mask[i] = True
@@ -1244,9 +1213,7 @@ class H2ExcitationFit(ExcitationFit):
         warnings.resetwarnings()
         fmdata = fmdata.reshape(saveshape)
         fm_mask = fm_mask.reshape(saveshape)
-        self._fitresult = FitMap(
-            fmdata, wcs=colden[fk].wcs, mask=fm_mask, name="result"
-        )
+        self._fitresult = FitMap(fmdata, wcs=colden[fk].wcs, mask=fm_mask, name="result")
         # this will raise an exception if the fit was bad (fit errors == None)
         self._compute_quantities(self._fitresult)
         if verbose:
@@ -1308,9 +1275,7 @@ class H2ExcitationFit(ExcitationFit):
         # Z(T) =  = 0.0247T * [1 - exp(-6000/T)]^-1
 
         # This is just being defensive.  I know the temperatures used internally are in K.
-        t = np.ma.masked_invalid(
-            (tex.value * u.Unit(tex.unit)).to("K", equivalencies=u.temperature()).value
-        )
+        t = np.ma.masked_invalid((tex.value * u.Unit(tex.unit)).to("K", equivalencies=u.temperature()).value)
         t.mask = np.logical_or(t.mask, np.logical_not(np.isfinite(t)))
         z = 0.0247 * t / (1.0 - np.exp(-6000.0 / t))
         return z
