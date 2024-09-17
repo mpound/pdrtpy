@@ -22,6 +22,7 @@ class ExcitationPlot(PlotBase):
         self._ylim = []
         self._label = label
         self._logfile = None
+        self._fit_color = self._CB_color_cycle[3]
 
     def _sorted_by_vibrational_level(self, measurements):
         # d is a dict of measurements
@@ -71,10 +72,10 @@ class ExcitationPlot(PlotBase):
         }
         kwargs_opts.update(kwargs)
 
-        print(f"norm={norm} pos={position} size={size}")
+        # print(f"norm={norm} pos={position} size={size}")
         if isinstance(position, SkyCoord):
             position = self._tool.fitresult.get_pixel_from_coord(position)
-            print(f"AFTER norm={norm} pos={position} size={size}")
+            # print(f"AFTER norm={norm} pos={position} size={size}")
         cdavg = self._tool.average_column_density(norm=norm, position=position, size=size, line=True)
         # print("CDAVG ",cdavg)
         energies = self._tool.energies(line=True)
@@ -186,7 +187,6 @@ class ExcitationPlot(PlotBase):
                 ss = str(self._tool._ac.loc[lab]["Ju"])
                 _axis.text(x=energies[lab] + 100, y=np.log10(cdavg[lab]), s=ss)
         handles, labels = _axis.get_legend_handles_labels()
-        print(f"show_fit is {show_fit}")
         if show_fit:
             if tt.fit_result is None:
                 raise ValueError("No fit to show. Have you run the fit in your H2ExcitationFit?")
@@ -247,7 +247,23 @@ class ExcitationPlot(PlotBase):
                     label=labhot,
                     lw=kwargs_opts["linewidth"],
                 )
-            _axis.plot(x_fit, tt.fit_result[position].eval(x=x_fit, fit_opr=False), label="fit")
+            if tt.av_fitted:
+                # need to evaluate Av at x_fit energies. so need wavelenghts
+                x_wave = tt._ac.loc[list(tt._measurements.keys())]["lambda"].data
+                ext_ratio = tt._av_interp(x_wave)
+                x_fit = np.array(list(tt.energies(line=True).values()))
+                flabel = f"Fitted $A_v$ = {tt._av:.1f}"
+                # print(flabel)
+            else:
+                ext_ratio = None
+                flabel = "fit"
+
+            _axis.plot(
+                x_fit,
+                tt.fit_result[position].eval(x=x_fit, fit_opr=False, fit_av=tt.av_fitted, extinction_ratio=ext_ratio),
+                label=flabel,
+                color=self._fit_color,
+            )
             handles, labels = _axis.get_legend_handles_labels()
             # kluge to ensure N(H2) label is last
             phantom = _axis.plot([], marker="", markersize=0, ls="", lw=0)
@@ -257,7 +273,7 @@ class ExcitationPlot(PlotBase):
         if kwargs_opts["xmax"] is None:
             kwargs_opts["xmax"] = np.round(500.0 + energy.max(), -3)
         _axis.set_xlim(kwargs_opts["xmin"], kwargs_opts["xmax"])
-        print(f"setting ylim [{kwargs_opts['ymin']},{kwargs_opts['ymax']}]")
+        # print(f"setting ylim [{kwargs_opts['ymin']},{kwargs_opts['ymax']}]")
         _axis.set_ylim(kwargs_opts["ymin"], kwargs_opts["ymax"])
         # try to make reasonably-spaced xaxis tickmarks.
         # if I were clever, I'd do this with a function
@@ -386,16 +402,12 @@ class ExcitationPlot(PlotBase):
         fmt = kwargs_opts.pop("fmt", "r+")
         show_fit = kwargs_opts.pop("show_fit")
         self._plot(data, axis=self._axis, index=1, **kwargs_opts)
+        # print("inital ex_diagram")
         self.ex_diagram(
-            axis=self._axis[1],
-            reset=False,
-            position=position,
-            size=1,
-            norm=True,
-            show_fit=show_fit,
-            ymin=0,
-            ymax=30,
+            axis=self._axis[1], reset=False, position=position, size=1, norm=True, show_fit=show_fit, ymin=0, ymax=30
         )
+
+        self._marker = self.axis[0].plot(position[0], position[1], fmt, markersize=kwargs_opts["markersize"])
 
         self._marker = self.axis[0].plot(position[0], position[1], fmt, markersize=kwargs_opts["markersize"])
 
@@ -434,6 +446,7 @@ class ExcitationPlot(PlotBase):
                         ymin=0,
                         ymax=30,
                     )
+                    self._logfile.write(f"pos={position}")
                     if debug:
                         self._logfile.write(f"pos={position}")
             except Exception as err:
