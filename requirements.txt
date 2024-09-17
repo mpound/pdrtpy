@@ -187,7 +187,7 @@ jsonschema[format-nongpl]==4.23.0
     #   nbformat
 jsonschema-specifications==2023.12.1
     # via jsonschema
-jupyter==1.0.0
+jupyter==1.1.1
     # via pdrtpy (pyproject.toml)
 jupyter-cache==1.0.0
     # via myst-nb
