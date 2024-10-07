@@ -149,7 +149,7 @@ ipykernel==6.29.5
     #   qtconsole
 ipympl==0.9.4
     # via mpl-interactions
-ipython==8.18.1
+ipython==8.28.0
     # via
     #   ipdb
     #   ipykernel
