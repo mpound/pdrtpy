@@ -212,6 +212,7 @@ class H2ExcitationFit(ExcitationFit):
         return model
 
     def _one_component_model(self, x, m1, n1, opr, idx=[], fit_opr=False):
+        idx = [int(i) for i in idx]
         model = x * m1 + n1
         if fit_opr:
             model[idx] *= opr / self._canonical_opr
