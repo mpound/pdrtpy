@@ -23,7 +23,7 @@ classifiers = [
     "Intended Audience :: Science/Research",
 ]
 dependencies = [
-    'astropy<6.1.0',
+    'astropy<6.2.0',
     'numpy<2.0',
     'scipy',
     'matplotlib',
