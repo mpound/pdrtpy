@@ -12,6 +12,7 @@ import cProfile
 import pstats
 import io
 from copy import deepcopy
+import warnings
 
 from .. import pdrutils as utils
 from ..measurement import Measurement
