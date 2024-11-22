@@ -72,7 +72,7 @@ class ExcitationPlot(PlotBase):
             "debug": True,
         }
         kwargs_opts.update(kwargs)
-        debug = kwargs.get("debug",False)
+        debug = kwargs.get("debug", False)
 
         if debug:
             self._logfile = open("/tmp/test.log", "a")
@@ -84,7 +84,7 @@ class ExcitationPlot(PlotBase):
         if position is None:
             data_position = position
         else:
-            data_position = (position[1],position[0])
+            data_position = (position[1], position[0])
         # average_column_density takes (x,y)
         cdavg = self._tool.average_column_density(norm=norm, position=position, size=size, line=True)
         # print("CDAVG ",cdavg)
@@ -207,14 +207,14 @@ class ExcitationPlot(PlotBase):
                 data_position = 0
             elif position is None:
                 raise ValueError("position must be provided for map fit results")
-            #fit_result has shape same as data array, thus is indexed as y,x.
+            # fit_result has shape same as data array, thus is indexed as y,x.
             if tt.fit_result[data_position] is None:
                 raise ValueError(f"The Excitation Tool was unable to fit pixel {position}. Try show_fit=False")
             x_fit = np.linspace(0, max(energy), 30)
             # @TODO This now depends on tool._numcomponents
             if debug:
                 self._logfile.write(f"EXD: {type(tt._fitresult)=}\n")
-                
+
                 self._logfile.write(f"EXD: {type(tt._fitresult[data_position])=} at {position=}\n")
             outpar = tt.fit_result[data_position].params.valuesdict()
             if tt.numcomponents == 2:
@@ -278,7 +278,9 @@ class ExcitationPlot(PlotBase):
 
             _axis.plot(
                 x_fit,
-                tt.fit_result[data_position].eval(x=x_fit, fit_opr=False, fit_av=tt.av_fitted, extinction_ratio=ext_ratio),
+                tt.fit_result[data_position].eval(
+                    x=x_fit, fit_opr=False, fit_av=tt.av_fitted, extinction_ratio=ext_ratio
+                ),
                 label=flabel,
                 color=self._fit_color,
             )
@@ -391,8 +393,8 @@ class ExcitationPlot(PlotBase):
             "fmt": "r+",
             "debug": False,
             "nowcs": False,
-            "ymin" : 15,
-            "ymax" : 22,
+            "ymin": 15,
+            "ymax": 22,
         }
         # starting position is middle pixel of image. note // for integer arithmetic
         kwargs_opts.update(kwargs)
@@ -401,14 +403,14 @@ class ExcitationPlot(PlotBase):
         if debug:
             self._logfile = open("/tmp/test.log", "a")
         data_position = tuple(np.array(np.shape(data)) // 2)
-        position = (data_position[1],data_position[0])
+        position = (data_position[1], data_position[0])
         # print(position)
-        #print(f"fit result at {position} is {self._tool.fit_result[position]}")
+        # print(f"fit result at {position} is {self._tool.fit_result[position]}")
         # print(f"NONE? {self._tool.fit_result[position] is None}")
         if self._tool.fit_result[data_position] is None:
             # find another position where the fit succeeded
             ok = np.where(self._tool.fit_result._data is not None)
-            #position = (ok[0][0], ok[1][0])
+            # position = (ok[0][0], ok[1][0])
             position = (ok[1][0], ok[0][0])
             if debug:
                 self._logfile.write(f"New position is {position}")
@@ -421,9 +423,9 @@ class ExcitationPlot(PlotBase):
             self._logfile.flush()
         self._figure = self._plt.figure(figsize=kwargs_opts["figsize"], clear=True)
         self._axis = np.empty([2], dtype=object)
-        #self._axis[0] = self._figure.add_subplot(121, projection=data.wcs, aspect="auto")
+        # self._axis[0] = self._figure.add_subplot(121, projection=data.wcs, aspect="auto")
         if nowcs:
-            self._axis[0] = self._figure.add_subplot(121, projection=None,aspect="auto")
+            self._axis[0] = self._figure.add_subplot(121, projection=None, aspect="auto")
         else:
             self._axis[0] = self._figure.add_subplot(121, projection=data.wcs, aspect="auto")
         self._axis[1] = self._figure.add_subplot(122, projection=None, aspect="auto")
@@ -431,11 +433,18 @@ class ExcitationPlot(PlotBase):
         self._axis[1].get_yaxis().set_label_position("right")
         fmt = kwargs_opts.pop("fmt", "r+")
         show_fit = kwargs_opts.pop("show_fit")
-        ymin = kwargs_opts.pop('ymin')
-        ymax = kwargs_opts.pop('ymax')
+        ymin = kwargs_opts.pop("ymin")
+        ymax = kwargs_opts.pop("ymax")
         self._plot(data, axis=self._axis, index=1, **kwargs_opts)
         self.ex_diagram(
-            axis=self._axis[1], reset=False, position=position, size=(1,1), norm=True, show_fit=show_fit, ymin=ymin, ymax = ymax
+            axis=self._axis[1],
+            reset=False,
+            position=position,
+            size=(1, 1),
+            norm=True,
+            show_fit=show_fit,
+            ymin=ymin,
+            ymax=ymax,
         )
 
         self._marker = self.axis[0].plot(position[0], position[1], fmt, markersize=kwargs_opts["markersize"])
@@ -468,12 +477,12 @@ class ExcitationPlot(PlotBase):
                         axis=self._axis[1],
                         reset=False,
                         position=position,
-                        size=(1,1),
-                        figsize=kwargs_opts['figsize'],
+                        size=(1, 1),
+                        figsize=kwargs_opts["figsize"],
                         norm=True,
                         show_fit=show_fit,
-                        ymin = ymin,
-                        ymax = ymax,
+                        ymin=ymin,
+                        ymax=ymax,
                         debug=debug,
                     )
                     if debug:

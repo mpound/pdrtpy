@@ -1,18 +1,18 @@
-from astropy.nddata import Cutout2D
-import astropy.units as u
-import astropy.constants as constants
-from astropy.nddata import StdDevUncertainty
+import cProfile
+import io
 import math
+import pstats
+import warnings
+from copy import deepcopy
+
+import astropy.constants as constants
+import astropy.units as u
 import numpy as np
+from astropy.nddata import Cutout2D, StdDevUncertainty
+from emcee.pbar import get_progress_bar
 from lmfit import Parameters  # , fit_report
 from lmfit.model import Model  # , ModelResult
-from emcee.pbar import get_progress_bar
 from scipy.interpolate import interp1d
-import cProfile
-import pstats
-import io
-from copy import deepcopy
-import warnings
 
 from .. import pdrutils as utils
 from ..measurement import Measurement
@@ -1211,20 +1211,20 @@ class H2ExcitationFit(ExcitationFit):
                 pbar.update(1)
         # cleanup weird fits
         for ii in range(len(fmdata)):
-            badstderr=False
+            badstderr = False
             fmd = fmdata[ii]
             if fmd is None:
                 continue
             for p in fmd.params:
                 if fmd.params[p].stderr is None and fmd.params[p].vary:
-                    #print(f"Fit succeeded at pixel {ii} but stderr for parameter {p} is None. Setting mask")
-                    #fmdata[i].success = False
+                    # print(f"Fit succeeded at pixel {ii} but stderr for parameter {p} is None. Setting mask")
+                    # fmdata[i].success = False
                     fm_mask[ii] = True
                     self._badfit = self._badfit + 1
-                    badstderr=True
+                    badstderr = True
                     fmdata[ii] = None
             if badstderr:
-                count = count - 1               
+                count = count - 1
         warnings.resetwarnings()
         fmdata = fmdata.reshape(saveshape)
         fm_mask = fm_mask.reshape(saveshape)
