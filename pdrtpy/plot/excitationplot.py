@@ -69,21 +69,32 @@ class ExcitationPlot(PlotBase):
             "bbox_to_anchor": None,
             "loc": "best",
             "test": False,
+            "debug": True,
         }
         kwargs_opts.update(kwargs)
+        debug = kwargs.get("debug",False)
 
-        # print(f"norm={norm} pos={position} size={size}")
+        if debug:
+            self._logfile = open("/tmp/test.log", "a")
+            self._logfile.write(f"EXD: norm={norm} pos={position} size={size}")
         if isinstance(position, SkyCoord):
             position = self._tool.fitresult.get_pixel_from_coord(position)
             # print(f"AFTER norm={norm} pos={position} size={size}")
+        # data arrays are indexed as (y,x) so need a swapped version of the (x,y) input position
+        if position is None:
+            data_position = position
+        else:
+            data_position = (position[1],position[0])
+        # average_column_density takes (x,y)
         cdavg = self._tool.average_column_density(norm=norm, position=position, size=size, line=True)
         # print("CDAVG ",cdavg)
         energies = self._tool.energies(line=True)
         energy = np.array(list(energies.values()))
         colden = np.squeeze(np.array([c.data for c in cdavg.values()]))
         error = np.squeeze(np.array([c.error for c in cdavg.values()]))
-        # print("ERROR ",error)
-        # print("COLDEN",colden)
+        if debug:
+            self._logfile.write(f"{error=}")
+            self._logfile.write(f"{colden=}\n")
         sigma = LOGE * error / colden
         if kwargs_opts["axis"] is None:
             self._figure, self._axis = self._plt.subplots(figsize=kwargs_opts["figsize"])
@@ -137,9 +148,9 @@ class ExcitationPlot(PlotBase):
                 # fmtb = not fmtb
         tt = self._tool
         if self._tool.opr_fitted and show_fit:
-            if position is not None and len(np.shape(tt.opr)) > 1:
-                opr_v = tt.opr[position]
-                opr_e = tt.opr.error[position]
+            if data_position is not None and len(np.shape(tt.opr)) > 1:
+                opr_v = tt.opr[data_position]
+                opr_e = tt.opr.error[data_position]
                 # a Measurement.get_as_measurement() would be nice
                 opr_p = Measurement(opr_v, uncertainty=StdDevUncertainty(opr_e), unit="")
             else:
@@ -188,48 +199,55 @@ class ExcitationPlot(PlotBase):
                 _axis.text(x=energies[lab] + 100, y=np.log10(cdavg[lab]), s=ss)
         handles, labels = _axis.get_legend_handles_labels()
         if show_fit:
+            if debug:
+                self._logfile.write(f"EXD: showing fit {tt.numcomponents=}\n")
             if tt.fit_result is None:
                 raise ValueError("No fit to show. Have you run the fit in your H2ExcitationFit?")
             if np.shape(tt.fit_result.data) == (1,):
-                position = 0
+                data_position = 0
             elif position is None:
                 raise ValueError("position must be provided for map fit results")
-            if tt.fit_result[position] is None:
+            #fit_result has shape same as data array, thus is indexed as y,x.
+            if tt.fit_result[data_position] is None:
                 raise ValueError(f"The Excitation Tool was unable to fit pixel {position}. Try show_fit=False")
             x_fit = np.linspace(0, max(energy), 30)
             # @TODO This now depends on tool._numcomponents
-            outpar = tt.fit_result[position].params.valuesdict()
+            if debug:
+                self._logfile.write(f"EXD: {type(tt._fitresult)=}\n")
+                
+                self._logfile.write(f"EXD: {type(tt._fitresult[data_position])=} at {position=}\n")
+            outpar = tt.fit_result[data_position].params.valuesdict()
             if tt.numcomponents == 2:
                 labcold = (
                     r"$T_{cold}=$"
-                    + f"{tt.tcold[position]:3.0f}"
+                    + f"{tt.tcold[data_position]:3.0f}"
                     + r"$\pm$"
-                    + f"{tt.tcold.error[position]:.1f} {tt.tcold.unit}"
+                    + f"{tt.tcold.error[data_position]:.1f} {tt.tcold.unit}"
                 )
-                # labcold = r"$T_{cold}=$" + f"{tt.tcold[position]:3.1f}"
+                # labcold = r"$T_{cold}=$" + f"{tt.tcold[data_position]:3.1f}"
                 # labhot= r"$T_{hot}=$" + f"{tt.thot.value:3.0f}"+ r"$\pm$" + f"{tt.thot.error:.1f} {tt.thot.unit}"
-                # labhot= r"$T_{hot}=$" + f"{tt.thot[position]:3.1f}"
+                # labhot= r"$T_{hot}=$" + f"{tt.thot[data_position]:3.1f}"
                 labhot = (
                     r"$T_{hot}=$"
-                    + f"{tt.thot[position]:3.0f}"
+                    + f"{tt.thot[data_position]:3.0f}"
                     + r"$\pm$"
-                    + f"{tt.thot.error[position]:.1f} {tt.thot.unit}"
+                    + f"{tt.thot.error[data_position]:.1f} {tt.thot.unit}"
                 )
             elif tt.numcomponents == 1:
                 labcold = (
                     r"$T=$"
-                    + f"{tt.tcold[position]:3.0f}"
+                    + f"{tt.tcold[data_position]:3.0f}"
                     + r"$\pm$"
-                    + f"{tt.tcold.error[position]:.1f} {tt.tcold.unit}"
+                    + f"{tt.tcold.error[data_position]:.1f} {tt.tcold.unit}"
                 )
-            if position == 0:
+            if data_position == 0:
                 labnh = r"$N(" + self._label + ")=" + float_formatter(tt.total_colden, 2) + "$"
             else:
                 labnh = (
                     r"$N("
                     + self._label
                     + ")="
-                    + float_formatter(u.Quantity(tt.total_colden[position], tt.total_colden.unit), 2)
+                    + float_formatter(u.Quantity(tt.total_colden[data_position], tt.total_colden.unit), 2)
                     + "$"
                 )
             _axis.plot(
@@ -260,7 +278,7 @@ class ExcitationPlot(PlotBase):
 
             _axis.plot(
                 x_fit,
-                tt.fit_result[position].eval(x=x_fit, fit_opr=False, fit_av=tt.av_fitted, extinction_ratio=ext_ratio),
+                tt.fit_result[data_position].eval(x=x_fit, fit_opr=False, fit_av=tt.av_fitted, extinction_ratio=ext_ratio),
                 label=flabel,
                 color=self._fit_color,
             )
@@ -372,10 +390,12 @@ class ExcitationPlot(PlotBase):
             "markersize": 20,
             "fmt": "r+",
             "debug": False,
+            "nowcs": False,
         }
         # starting position is middle pixel of image. note // for integer arithmetic
         kwargs_opts.update(kwargs)
         debug = kwargs_opts.pop("debug")
+        nowcs = kwargs_opts.pop("nowcs")
         if debug:
             self._logfile = open("/tmp/test.log", "a")
         position = tuple(np.array(np.shape(data)) // 2)
@@ -395,7 +415,11 @@ class ExcitationPlot(PlotBase):
 
         self._figure = self._plt.figure(figsize=kwargs_opts["figsize"], clear=True)
         self._axis = np.empty([2], dtype=object)
-        self._axis[0] = self._figure.add_subplot(121, projection=data.wcs, aspect="auto")
+        #self._axis[0] = self._figure.add_subplot(121, projection=data.wcs, aspect="auto")
+        if nowcs:
+            self._axis[0] = self._figure.add_subplot(121, projection=None,aspect="auto")
+        else:
+            self._axis[0] = self._figure.add_subplot(121, projection=data.wcs, aspect="auto")
         self._axis[1] = self._figure.add_subplot(122, projection=None, aspect="auto")
         self._axis[1].tick_params("y", labelright=True, labelleft=False)  # avoid overlap with colorbar
         self._axis[1].get_yaxis().set_label_position("right")
@@ -404,10 +428,8 @@ class ExcitationPlot(PlotBase):
         self._plot(data, axis=self._axis, index=1, **kwargs_opts)
         # print("inital ex_diagram")
         self.ex_diagram(
-            axis=self._axis[1], reset=False, position=position, size=1, norm=True, show_fit=show_fit, ymin=0, ymax=30
+            axis=self._axis[1], reset=False, position=position, size=(1,1), norm=True, show_fit=show_fit, ymin=0, ymax=30
         )
-
-        self._marker = self.axis[0].plot(position[0], position[1], fmt, markersize=kwargs_opts["markersize"])
 
         self._marker = self.axis[0].plot(position[0], position[1], fmt, markersize=kwargs_opts["markersize"])
 
@@ -439,14 +461,14 @@ class ExcitationPlot(PlotBase):
                         axis=self._axis[1],
                         reset=False,
                         position=position,
-                        size=1,
+                        size=(1,1),
                         figsize=(5, 3),
                         norm=True,
                         show_fit=True,
                         ymin=0,
                         ymax=30,
+                        debug=True,
                     )
-                    self._logfile.write(f"pos={position}")
                     if debug:
                         self._logfile.write(f"pos={position}")
             except Exception as err:

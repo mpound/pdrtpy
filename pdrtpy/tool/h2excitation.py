@@ -852,7 +852,7 @@ class H2ExcitationFit(ExcitationFit):
 
          # should we reutrn something here or just compute them and never store.
          # I'm beginning to think there is no reason to store them.
-        #:returns: dictionary of column densities as:class:`~pdrtpy.measurement.Measurement  indexed by upper state :math:`J` number or Line name. Default: False means return indexed by :math:`J`.
+        #:700returns: dictionary of column densities as:class:`~pdrtpy.measurement.Measurement  indexed by upper state :math:`J` number or Line name. Default: False means return indexed by :math:`J`.
         #:returns: a :class:`~pdrtpy.measurement.Measurement` of the column density.
         """
         self._column_density = dict()
@@ -957,7 +957,7 @@ class H2ExcitationFit(ExcitationFit):
                     weights = np.array([ca.uncertainty.array])
                 else:
                     weights = ca.uncertainty.array
-            # print(f"weights {weights} avg,sum:{np.average(weights)},{np.sum(weights)}")
+            print(f"weights {weights} avg,sum:{np.average(weights)},{np.sum(weights)}")
             if np.sum(weights) == 0:
                 cdavg = np.average(cddata)
             else:
@@ -1207,7 +1207,7 @@ class H2ExcitationFit(ExcitationFit):
                         fm_mask[i] = True
                         self._excount = self._excount + 1
                 else:
-                    print("Bad fit because NaNs in data")
+                    #print("Bad fit because NaNs in data")
                     fmdata[i] = None
                     fm_mask[i] = True
                 pbar.update(1)
