@@ -398,21 +398,25 @@ class ExcitationPlot(PlotBase):
         nowcs = kwargs_opts.pop("nowcs")
         if debug:
             self._logfile = open("/tmp/test.log", "a")
-        position = tuple(np.array(np.shape(data)) // 2)
+        data_position = tuple(np.array(np.shape(data)) // 2)
+        position = (data_position[1],data_position[0])
         # print(position)
-        # print(f"fit result at {position} is {self._tool.fit_result[position]}")
+        #print(f"fit result at {position} is {self._tool.fit_result[position]}")
         # print(f"NONE? {self._tool.fit_result[position] is None}")
-        if self._tool.fit_result[position] is None:
+        if self._tool.fit_result[data_position] is None:
             # find another position where the fit succeeded
             ok = np.where(self._tool.fit_result._data is not None)
-            # position = (ok[0][0], ok[1][0])
+            #position = (ok[0][0], ok[1][0])
             position = (ok[1][0], ok[0][0])
+            if debug:
+                self._logfile.write(f"New position is {position}")
         if debug:
             self._logfile.write(f"Trying to get world coordinates at position {position}\n")
+            self._logfile.flush()
         coord = self._tool.fit_result.get_skycoord(position[0], position[1])
         if debug:
             self._logfile.write(f"Explore using position: {position} world {coord.to_string('hmsdms')} size=1\n")
-
+            self._logfile.flush()
         self._figure = self._plt.figure(figsize=kwargs_opts["figsize"], clear=True)
         self._axis = np.empty([2], dtype=object)
         #self._axis[0] = self._figure.add_subplot(121, projection=data.wcs, aspect="auto")
@@ -439,14 +443,14 @@ class ExcitationPlot(PlotBase):
                 if debug:
                     self._logfile = open("/tmp/test.log", "a")
                 if debug:
-                    self._logfile.write(f"event.inaxes = {event.inaxes} x,y={event.xdata,event.ydata}\n")
-                    self._logfile.write(f"event dict: {event.__dict__}")
+                    self._logfile.write(f"\n### event.inaxes = {event.inaxes} x,y={event.xdata,event.ydata}\n")
+                    self._logfile.write(f"event dict: {event.__dict__}\n")
                 if event.inaxes == self._axis[0]:  # the click must be on the left panel (map)
-                    position = (int(round(event.ydata)), int(round(event.xdata)))
+                    position = (int(round(event.xdata)), int(round(event.ydata)))
                     self._marker[0].set_marker("None")
                     self._marker = self.axis[0].plot(
-                        position[1],
                         position[0],
+                        position[1],
                         fmt,
                         markersize=kwargs_opts["markersize"],
                     )
@@ -456,7 +460,7 @@ class ExcitationPlot(PlotBase):
                     self._axis[1].tick_params("y", labelright=True, labelleft=False)
                     self._axis[1].get_yaxis().set_label_position("right")
                     if debug:
-                        self._logfile.write("in update calling ex_diagram")
+                        self._logfile.write(f"in update calling ex_diagram {position=} \n")
                     self.ex_diagram(
                         axis=self._axis[1],
                         reset=False,

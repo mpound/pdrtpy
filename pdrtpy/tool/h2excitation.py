@@ -347,14 +347,12 @@ class H2ExcitationFit(ExcitationFit):
                 params = ff[i].params
                 for p in params:
                     if params[p].stderr is None and params[p].vary:
-                        print("AT pixel i [mask]", i, ffmask[i])
                         params.pretty_print()
                         raise Exception(
-                            "Something went wrong with the fit and it was unable to calculate errors on the fitted"
-                            " parameters. It's likely that a two-temperature model is not appropriate for your data."
-                            " Check the fit_result report and plot."
+                            f"Something went wrong with the fit and it was unable to calculate errors on the fitted"
+                            f" parameter {p}. It's likely that a two-temperature model is not appropriate for your data."
+                            f"Check the fit_result report and plot. At pixel {i} with mask {ffmask[i]}"
                         )
-
                 if params["m2"] < params["m1"]:
                     cold = "2"
                     hot = "1"
@@ -445,12 +443,11 @@ class H2ExcitationFit(ExcitationFit):
                 params = ff[i].params
                 for p in params:
                     if params[p].stderr is None:
-                        print("AT pixel i [mask]", i, ffmask[i])
                         params.pretty_print()
                         raise Exception(
-                            "Something went wrong with the fit and it was unable to calculate errors on the fitted"
-                            " parameters. It's likely that a two-temperature model is not appropriate for your data."
-                            " Check the fit_result report and plot."
+                            f"Something went wrong with the fit and it was unable to calculate errors on the fitted"
+                            f" parameter {p}. It's likely that a two-temperature model is not appropriate for your data."
+                            f" Check the fit_result report and plot. At pixel {i} with mask {ffmask[i]}."
                         )
                 mcold = "m1"
                 ncold = "n1"
@@ -958,7 +955,7 @@ class H2ExcitationFit(ExcitationFit):
                     weights = np.array([ca.uncertainty.array])
                 else:
                     weights = ca.uncertainty.array
-            print(f"weights {weights} avg,sum:{np.average(weights)},{np.sum(weights)}")
+            # print(f"weights {weights} avg,sum:{np.average(weights)},{np.sum(weights)}")
             if np.sum(weights) == 0:
                 cdavg = np.average(cddata)
             else:
@@ -1212,6 +1209,22 @@ class H2ExcitationFit(ExcitationFit):
                     fmdata[i] = None
                     fm_mask[i] = True
                 pbar.update(1)
+        # cleanup weird fits
+        for ii in range(len(fmdata)):
+            badstderr=False
+            fmd = fmdata[ii]
+            if fmd is None:
+                continue
+            for p in fmd.params:
+                if fmd.params[p].stderr is None and fmd.params[p].vary:
+                    print(f"Fit succeeded at pixel {ii} but stderr for parameter {p} is None. Setting mask")
+                    #fmdata[i].success = False
+                    fm_mask[ii] = True
+                    self._badfit = self._badfit + 1
+                    badstderr=True
+                    fmdata[ii] = None
+            if badstderr:
+                count = count - 1               
         warnings.resetwarnings()
         fmdata = fmdata.reshape(saveshape)
         fm_mask = fm_mask.reshape(saveshape)
