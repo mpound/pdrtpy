@@ -391,6 +391,8 @@ class ExcitationPlot(PlotBase):
             "fmt": "r+",
             "debug": False,
             "nowcs": False,
+            "ymin" : 15,
+            "ymax" : 22,
         }
         # starting position is middle pixel of image. note // for integer arithmetic
         kwargs_opts.update(kwargs)
@@ -429,10 +431,11 @@ class ExcitationPlot(PlotBase):
         self._axis[1].get_yaxis().set_label_position("right")
         fmt = kwargs_opts.pop("fmt", "r+")
         show_fit = kwargs_opts.pop("show_fit")
+        ymin = kwargs_opts.pop('ymin')
+        ymax = kwargs_opts.pop('ymax')
         self._plot(data, axis=self._axis, index=1, **kwargs_opts)
-        # print("inital ex_diagram")
         self.ex_diagram(
-            axis=self._axis[1], reset=False, position=position, size=(1,1), norm=True, show_fit=show_fit, ymin=0, ymax=30
+            axis=self._axis[1], reset=False, position=position, size=(1,1), norm=True, show_fit=show_fit, ymin=ymin, ymax = ymax
         )
 
         self._marker = self.axis[0].plot(position[0], position[1], fmt, markersize=kwargs_opts["markersize"])
@@ -466,12 +469,12 @@ class ExcitationPlot(PlotBase):
                         reset=False,
                         position=position,
                         size=(1,1),
-                        figsize=(5, 3),
+                        figsize=kwargs_opts['figsize'],
                         norm=True,
-                        show_fit=True,
-                        ymin=0,
-                        ymax=30,
-                        debug=True,
+                        show_fit=show_fit,
+                        ymin = ymin,
+                        ymax = ymax,
+                        debug=debug,
                     )
                     if debug:
                         self._logfile.write(f"pos={position}")
