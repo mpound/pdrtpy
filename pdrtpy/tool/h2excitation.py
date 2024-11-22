@@ -279,6 +279,7 @@ class H2ExcitationFit(ExcitationFit):
 
         :rtype: :class:`numpy.ndarray`
         """
+        idx = [int(i) for i in idx]
         # model is already in log space
         model = x * m1 + n1
         if fit_opr:
@@ -1207,7 +1208,7 @@ class H2ExcitationFit(ExcitationFit):
                         fm_mask[i] = True
                         self._excount = self._excount + 1
                 else:
-                    #print("Bad fit because NaNs in data")
+                    # print("Bad fit because NaNs in data")
                     fmdata[i] = None
                     fm_mask[i] = True
                 pbar.update(1)
