@@ -52,9 +52,6 @@ r"""The Mathis radiation field unit
 """
 u.add_enabled_units(mathis_unit)
 
-ion_unit = u.def_unit("ion")  # number of ions
-u.add_enabled_units(ion_unit)
-
 _rad_title = dict()
 _rad_title["Habing"] = "$G_0$"
 _rad_title["Draine"] = "$\chi$"
