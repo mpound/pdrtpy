@@ -1217,7 +1217,7 @@ class H2ExcitationFit(ExcitationFit):
                 continue
             for p in fmd.params:
                 if fmd.params[p].stderr is None and fmd.params[p].vary:
-                    print(f"Fit succeeded at pixel {ii} but stderr for parameter {p} is None. Setting mask")
+                    #print(f"Fit succeeded at pixel {ii} but stderr for parameter {p} is None. Setting mask")
                     #fmdata[i].success = False
                     fm_mask[ii] = True
                     self._badfit = self._badfit + 1
