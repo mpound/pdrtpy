@@ -349,9 +349,9 @@ class H2ExcitationFit(ExcitationFit):
                     if params[p].stderr is None and params[p].vary:
                         params.pretty_print()
                         raise Exception(
-                            f"Something went wrong with the fit and it was unable to calculate errors on the fitted"
-                            f" parameter {p}. It's likely that a two-temperature model is not appropriate for your data."
-                            f"Check the fit_result report and plot. At pixel {i} with mask {ffmask[i]}"
+                            "Something went wrong with the fit and it was unable to calculate errors on the fitted"
+                            f" parameter {p}. It's likely that a two-temperature model is not appropriate for your"
+                            f" data.Check the fit_result report and plot. At pixel {i} with mask {ffmask[i]}"
                         )
                 if params["m2"] < params["m1"]:
                     cold = "2"
@@ -445,9 +445,9 @@ class H2ExcitationFit(ExcitationFit):
                     if params[p].stderr is None:
                         params.pretty_print()
                         raise Exception(
-                            f"Something went wrong with the fit and it was unable to calculate errors on the fitted"
-                            f" parameter {p}. It's likely that a two-temperature model is not appropriate for your data."
-                            f" Check the fit_result report and plot. At pixel {i} with mask {ffmask[i]}."
+                            "Something went wrong with the fit and it was unable to calculate errors on the fitted"
+                            f" parameter {p}. It's likely that a two-temperature model is not appropriate for your"
+                            f" data. Check the fit_result report and plot. At pixel {i} with mask {ffmask[i]}."
                         )
                 mcold = "m1"
                 ncold = "n1"
@@ -1192,15 +1192,15 @@ class H2ExcitationFit(ExcitationFit):
                         if fmdata[i].success:
                             count = count + 1
                         else:
-                            print(
-                                f"Bad fit because success {fmdata[i].success} or errorbars"
-                                f" {fmdata[i].errorbars} was bad"
-                            )
+                            # print(
+                            #    f"Bad fit because success {fmdata[i].success} or errorbars"
+                            #    f" {fmdata[i].errorbars} was bad"
+                            # )
                             fmdata[i] = None
                             fm_mask[i] = True
                             self._badfit = self._badfit + 1
                     except ValueError as v:
-                        print(f"Bad fit because {v}")
+                        # print(f"Bad fit because {v}")
                         fmdata[i] = None
                         fm_mask[i] = True
                         self._excount = self._excount + 1
