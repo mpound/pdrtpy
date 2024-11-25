@@ -727,7 +727,7 @@ class H2ExcitationFit(ExcitationFit):
                 t[self._ac.loc[m]["Ju"]] = self._ac.loc[m]["lambda"] * x
         return t
 
-    def run(self, position=None, size=None, fit_opr=False, **kwargs):
+    def run(self, position=None, size=None, fit_opr=False, fit_av=False, **kwargs):
         r"""Fit the :math:`log N_u-E` diagram with two excitation temperatures,
         a ``hot`` :math:`T_{ex}` and a ``cold`` :math:`T_{ex}`.
 
