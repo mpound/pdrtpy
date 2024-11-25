@@ -279,6 +279,7 @@ class H2ExcitationFit(ExcitationFit):
 
         :rtype: :class:`numpy.ndarray`
         """
+        idx = [int(i) for i in idx]
         # model is already in log space
         model = x * m1 + n1
         if fit_opr:
@@ -346,14 +347,12 @@ class H2ExcitationFit(ExcitationFit):
                 params = ff[i].params
                 for p in params:
                     if params[p].stderr is None and params[p].vary:
-                        print("AT pixel i [mask]", i, ffmask[i])
                         params.pretty_print()
                         raise Exception(
                             "Something went wrong with the fit and it was unable to calculate errors on the fitted"
-                            " parameters. It's likely that a two-temperature model is not appropriate for your data."
-                            " Check the fit_result report and plot."
+                            f" parameter {p}. It's likely that a two-temperature model is not appropriate for your"
+                            f" data.Check the fit_result report and plot. At pixel {i} with mask {ffmask[i]}"
                         )
-
                 if params["m2"] < params["m1"]:
                     cold = "2"
                     hot = "1"
@@ -444,12 +443,11 @@ class H2ExcitationFit(ExcitationFit):
                 params = ff[i].params
                 for p in params:
                     if params[p].stderr is None:
-                        print("AT pixel i [mask]", i, ffmask[i])
                         params.pretty_print()
                         raise Exception(
                             "Something went wrong with the fit and it was unable to calculate errors on the fitted"
-                            " parameters. It's likely that a two-temperature model is not appropriate for your data."
-                            " Check the fit_result report and plot."
+                            f" parameter {p}. It's likely that a two-temperature model is not appropriate for your"
+                            f" data. Check the fit_result report and plot. At pixel {i} with mask {ffmask[i]}."
                         )
                 mcold = "m1"
                 ncold = "n1"
@@ -852,7 +850,7 @@ class H2ExcitationFit(ExcitationFit):
 
          # should we reutrn something here or just compute them and never store.
          # I'm beginning to think there is no reason to store them.
-        #:returns: dictionary of column densities as:class:`~pdrtpy.measurement.Measurement  indexed by upper state :math:`J` number or Line name. Default: False means return indexed by :math:`J`.
+        #:700returns: dictionary of column densities as:class:`~pdrtpy.measurement.Measurement  indexed by upper state :math:`J` number or Line name. Default: False means return indexed by :math:`J`.
         #:returns: a :class:`~pdrtpy.measurement.Measurement` of the column density.
         """
         self._column_density = dict()
@@ -1194,23 +1192,39 @@ class H2ExcitationFit(ExcitationFit):
                         if fmdata[i].success:
                             count = count + 1
                         else:
-                            print(
-                                f"Bad fit because success {fmdata[i].success} or errorbars"
-                                f" {fmdata[i].errorbars} was bad"
-                            )
+                            # print(
+                            #    f"Bad fit because success {fmdata[i].success} or errorbars"
+                            #    f" {fmdata[i].errorbars} was bad"
+                            # )
                             fmdata[i] = None
                             fm_mask[i] = True
                             self._badfit = self._badfit + 1
                     except ValueError as v:
-                        print(f"Bad fit because {v}")
+                        # print(f"Bad fit because {v}")
                         fmdata[i] = None
                         fm_mask[i] = True
                         self._excount = self._excount + 1
                 else:
-                    print("Bad fit because NaNs in data")
+                    # print("Bad fit because NaNs in data")
                     fmdata[i] = None
                     fm_mask[i] = True
                 pbar.update(1)
+        # cleanup weird fits
+        for ii in range(len(fmdata)):
+            badstderr = False
+            fmd = fmdata[ii]
+            if fmd is None:
+                continue
+            for p in fmd.params:
+                if fmd.params[p].stderr is None and fmd.params[p].vary:
+                    # print(f"Fit succeeded at pixel {ii} but stderr for parameter {p} is None. Setting mask")
+                    # fmdata[i].success = False
+                    fm_mask[ii] = True
+                    self._badfit = self._badfit + 1
+                    badstderr = True
+                    fmdata[ii] = None
+            if badstderr:
+                count = count - 1
         warnings.resetwarnings()
         fmdata = fmdata.reshape(saveshape)
         fm_mask = fm_mask.reshape(saveshape)
