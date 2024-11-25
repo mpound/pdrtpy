@@ -16,7 +16,6 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: Implementation :: CPython",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Topic :: Scientific/Engineering :: Astronomy",
@@ -95,7 +94,7 @@ cov = "pytest --cov-report=xml --cov-config=pyproject.toml --cov=pdrtpy --cov=te
 
 # Run tests across all supported version of Python
 [[tool.hatch.envs.test.matrix]]
-python = ["39", "310", "311", "312"]
+python = ["39", "310", "311"]
 
 [tool.hatch.build.targets.sdist]
 include = ["/pdrtpy", "/tests", "/bin"]
