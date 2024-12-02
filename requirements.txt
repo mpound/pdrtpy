@@ -191,7 +191,7 @@ jupyter==1.0.0
     # via pdrtpy (pyproject.toml)
 jupyter-cache==1.0.0
     # via myst-nb
-jupyter-client==8.6.2
+jupyter-client==8.6.3
     # via
     #   ipykernel
     #   jupyter-console
