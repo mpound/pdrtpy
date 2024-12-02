@@ -372,7 +372,7 @@ pycodestyle==2.12.1
     # via flake8
 pycparser==2.22
     # via cffi
-pydata-sphinx-theme==0.15.4
+pydata-sphinx-theme==0.16.0
     # via sphinx-book-theme
 pyerfa==2.0.1.4
     # via astropy
