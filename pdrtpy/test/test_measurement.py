@@ -114,6 +114,13 @@ class TestMeasurement(unittest.TestCase):
         self.assertTrue(np.all(oi_meas.wcs.wcs.crval == np.array([12.10878606, -73.33488267])))
         self.assertTrue((np.round(1e7 * np.nanmax(oi_meas.data), 3)) == 2.481)
 
+    def test_2DWCS(self):
+        """regression test for issue #90.
+        Read a file that has 2 Naxis and 3 WCS coordinate axis
+        """
+        file = utils.get_testdata("ConvP_S1.fits")
+        m = Measurement.read(file, error="10%", unit="Jy")
+
     def tearDown(self):
         print("cleaning up " + utils.testdata_dir())
         files = ["n22_cii_flux_error.fits", "n22_oi_flux_error.fits", "n22_FIR_flux_error.fits"]
