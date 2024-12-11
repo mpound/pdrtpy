@@ -119,7 +119,7 @@ class TestMeasurement(unittest.TestCase):
         Read a file that has 2 Naxis and 3 WCS coordinate axis
         """
         file = utils.get_testdata("ConvP_S1.fits")
-        m = Measurement.read(file, error="10%", unit="Jy")
+        m = Measurement.read(file, error="10%", unit="MJy/sr")
 
     def tearDown(self):
         print("cleaning up " + utils.testdata_dir())
