@@ -84,8 +84,13 @@ class ModelPlot(PlotBase):
                 lines.append(Line2D([0], [0], color=kwargs_opts["colors"][0], linewidth=3, linestyle="-"))
                 labels.append(f"{self._modelset.name} model")
             if kwargs_opts["measurements"] is not None:
-                lines.append(Line2D([0], [0], color=kwargs_opts["meas_color"][0], linewidth=3, linestyle="-"))
-                labels.append("observed")
+                lencol = len(kwargs_opts["meas_color"])
+                if lencol > 1:
+                    for i in range(lencol):
+                        lines.append(Line2D([0], [0], color=kwargs_opts["meas_color"][i], linewidth=3, linestyle="-"))
+                        labels.append(f"observed #{i}")
+                else:
+                    lines.append(Line2D([0], [0], color=kwargs_opts["meas_color"][0], linewidth=3, linestyle="-"))
             self._axis[0].legend(
                 lines,
                 labels,
@@ -943,7 +948,7 @@ class ModelPlot(PlotBase):
             for m in measurements:
                 # for the case of colorcounter kluge len(m) will always be 1, so we don't
                 # run into issues with incrementing of jj interfering with colorcounter.
-                colors = kwargs_opts["meas_color"][jj] * mlen
+                colors = [kwargs_opts["meas_color"][jj]] * mlen
                 if kwargs_opts["shading"] != 0:
                     cset = self._axis[axidx].contourf(
                         x.value, y.value, k.data, levels=m.levels, colors=colors, alpha=kwargs_opts["shading"]
