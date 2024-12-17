@@ -734,13 +734,21 @@ def get_xy_from_wcs(data, quantity=False, linear=False):
         raise Exception("No WCS in the input image")
     xind = np.arange(w._naxis[0])
     yind = np.arange(w._naxis[1])
+    x_pixel_arrays = [xind, xind]
+    y_pixel_arrays = [yind, yind]
+    for i in range(2, w.pixel_n_dim):
+        x_pixel_arrays.append([0])
+        y_pixel_arrays.append([0])
+
     # print("GETXY xind,yind ",xind,yind)
     # wcs methods want broadcastable arrays, but in our
     # case naxis1 != naxis2, so make two
     # calls and take x from the one and y from the other.
     if quantity:
-        x = w.array_index_to_world(xind, xind)[0]
-        y = w.array_index_to_world(yind, yind)[1]
+        # x = w.array_index_to_world(xind, xind)[0]
+        # y = w.array_index_to_world(yind, yind)[1]
+        x = w.array_index_to_world(*x_pixel_arrays)[0]
+        y = w.array_index_to_world(*y_pixel_arrays)[1]
         # Need to handle Habing or Draine units which are non-standard FITS.
         # Can't apply them to a WCS because it will raise an Exception.
         # See ModelSet.get_model
@@ -758,8 +766,10 @@ def get_xy_from_wcs(data, quantity=False, linear=False):
             if "log" in w.wcs.ctype[1].lower():
                 y = np.power(k, y.value) * y.unit
     else:
-        x = w.array_index_to_world_values(xind, xind)[0]
-        y = w.array_index_to_world_values(yind, yind)[1]
+        # x = w.array_index_to_world_values(xind, xind)[0]
+        # y = w.array_index_to_world_values(yind, yind)[1]
+        x = w.array_index_to_world_values(*x_pixel_arrays)[0]
+        y = w.array_index_to_world_values(*y_pixel_arrays)[1]
         if linear:
             j = 10 * np.ones(len(x))
             k = 10 * np.ones(len(y))
