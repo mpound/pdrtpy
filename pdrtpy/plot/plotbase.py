@@ -423,6 +423,8 @@ class PlotBase:
             im = self._axis[axidx].imshow(km, **kwargs_imshow)
             if kwargs_opts["colorbar"]:
                 self._wcs_colorbar(im, self._axis[axidx])
+                # reset the axis so that users can call plot._plt.whatever()
+                self._plt.sca(self._axis[axidx])
 
         if kwargs_opts["contours"]:
             if kwargs_contour["levels"] is None:

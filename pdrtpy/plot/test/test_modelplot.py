@@ -1,10 +1,11 @@
 # test modelset.ModelSet
 import unittest
 
-from pdrtpy.plot.modelplot import ModelPlot
-from pdrtpy.modelset import ModelSet
-from pdrtpy.measurement import Measurement
 from astropy.nddata import StdDevUncertainty
+
+from pdrtpy.measurement import Measurement
+from pdrtpy.modelset import ModelSet
+from pdrtpy.plot.modelplot import ModelPlot
 
 
 class TestModelSet(unittest.TestCase):
