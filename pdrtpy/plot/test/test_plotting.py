@@ -1,9 +1,10 @@
 import unittest
+
+import pdrtpy.pdrutils as utils
 from pdrtpy.measurement import Measurement
 from pdrtpy.modelset import ModelSet
-import pdrtpy.pdrutils as utils
-from pdrtpy.tool.lineratiofit import LineRatioFit
 from pdrtpy.plot.lineratioplot import LineRatioPlot
+from pdrtpy.tool.lineratiofit import LineRatioFit
 
 
 class TestPlotBase(unittest.TestCase):
