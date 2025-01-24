@@ -26,6 +26,9 @@ class TestMeasurement(unittest.TestCase):
             m = Measurement.read(infile, identifier=j)
             self.q.append(m)
 
+    def _check_title_card(self, a, b, op, c):
+        return c.header["TITLE"] == f'{a.header["TITLE"]}{op}{b.header["TITLE"]}'
+
     def test_arithmetic(self):
         print("Measurement Unit Test")
         _data = np.array([np.array([30, 20]), 10, 10, 100], dtype=object)
@@ -33,7 +36,10 @@ class TestMeasurement(unittest.TestCase):
         _id = ["OI_145", "CI_609", "CO_21", "CII_158"]
         m = list()
         for i in range(len(_data)):
-            x = Measurement(data=_data[i], uncertainty=StdDevUncertainty(_error[i]), identifier=_id[i], unit="adu")
+            hdr = {"TITLE": _id[i]}
+            x = Measurement(
+                data=_data[i], uncertainty=StdDevUncertainty(_error[i]), identifier=_id[i], unit="adu", meta=hdr
+            )
             m.append(x)
 
         for q in range(len(m)):
@@ -43,6 +49,7 @@ class TestMeasurement(unittest.TestCase):
             # print(q,a,d,e)
             self.assertTrue(np.all(a.data == d))
             self.assertTrue(np.all(np.round(a.error, 3) == np.round(e, 3)))
+            self.assertTrue(self._check_title_card(m[0], m[q], "/", a))
 
             a = m[0] * m[q]
             d = _data[0] * _data[q]
@@ -50,6 +57,7 @@ class TestMeasurement(unittest.TestCase):
             # print(q,a,d,e)
             self.assertTrue(np.all(a.data == d))
             self.assertTrue(np.all(np.round(a.error, 3) == np.round(e, 3)))
+            self.assertTrue(self._check_title_card(m[0], m[q], "*", a))
 
             a = m[0] + m[q]
             d = _data[0] + _data[q]
@@ -57,6 +65,7 @@ class TestMeasurement(unittest.TestCase):
             # print(q,a,d,e)
             self.assertTrue(np.all(a.data == d))
             self.assertTrue(np.all(np.round(a.error, 3) == np.round(e, 3)))
+            self.assertTrue(self._check_title_card(m[0], m[q], "+", a))
 
             a = m[0] - m[q]
             d = _data[0] - _data[q]
@@ -64,6 +73,7 @@ class TestMeasurement(unittest.TestCase):
             # print(q,a,d,e)
             self.assertTrue(np.all(a.data == d))
             self.assertTrue(np.all(np.round(a.error, 3) == np.round(e, 3)))
+            self.assertTrue(self._check_title_card(m[0], m[q], "-", a))
 
             self.assertTrue(m[q].unit == u.adu)
 
