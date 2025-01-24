@@ -397,6 +397,33 @@ class Measurement(CCDData):
         else:
             return self.id
 
+    def _modify_title_card(self, other, op) -> str:
+        """
+        Make a TITLE header card for a `Measurement` created from arithmetic
+        operation on two other measurements.  The operation is assumed to be
+        ``self op other``.
+        Note: this modifies the header (meta) entry, not the `title` attribute (LaTeX string)
+
+        Parameters
+        ----------
+        m1 : str
+            The TITLE card or identifer string from the first measurement
+        m2 : `Measurement` or number
+            The `Measurement or number
+        op : str
+            The string description of the operand.  One of '+', '-', '/', '*'
+
+        Returns
+        -------
+        str
+            The new TITLE card or an empty string if a new TITLE could not be constructed
+
+        """
+        if getattr(other, "header", None) is not None:
+            if "TITLE" in self.header and "TITLE" in other.header:
+                return f"{self.header['TITLE']}{op}{other.header['TITLE']}"
+        return ""
+
     def add(self, other):
         """Add this Measurement to another, propagating errors, units,  and updating identifiers.  Masks are logically or'd.
 
@@ -408,9 +435,10 @@ class Measurement(CCDData):
         # with the default unit "adu" and then units for the operation are
         # not conformable.  I blame astropy CCDData authors for making that
         # class so hard to subclass.
-        z = CCDData.add(self, other, handle_mask=np.logical_or)
+        z = CCDData.add(self, other, handle_mask=np.logical_or, handle_meta="first_found")
         z = Measurement(z, unit=z._unit)
         z._identifier = self._modify_id(other, "+")
+        z.header["TITLE"] = self._modify_title_card(other, "+")
         z._unit = self.unit
         return z
 
@@ -420,9 +448,10 @@ class Measurement(CCDData):
         :param other: a Measurement or number to subtract
         :type other: :class:`Measurement` or number
         """
-        z = CCDData.subtract(self, other, handle_mask=np.logical_or)
+        z = CCDData.subtract(self, other, handle_mask=np.logical_or, handle_meta="first_found")
         z = Measurement(z, unit=z._unit)
         z._identifier = self._modify_id(other, "-")
+        z.header["TITLE"] = self._modify_title_card(other, "-")
         return z
 
     def multiply(self, other):
@@ -431,9 +460,10 @@ class Measurement(CCDData):
         :param other: a Measurement or number to multiply
         :type other: :class:`Measurement` or number
         """
-        z = CCDData.multiply(self, other, handle_mask=np.logical_or)
+        z = CCDData.multiply(self, other, handle_mask=np.logical_or, handle_meta="first_found")
         z = Measurement(z, unit=z._unit)
         z._identifier = self._modify_id(other, "*")
+        z.header["TITLE"] = self._modify_title_card(other, "*")
         return z
 
     def divide(self, other):
@@ -442,9 +472,10 @@ class Measurement(CCDData):
         :param other: a Measurement or number to divide by
         :type other: :class:`Measurement` or number
         """
-        z = CCDData.divide(self, other, handle_mask=np.logical_or)
+        z = CCDData.divide(self, other, handle_mask=np.logical_or, handle_meta="first_found")
         z = Measurement(z, unit=z._unit)
         z._identifier = self._modify_id(other, "/")
+        z.header["TITLE"] = self._modify_title_card(other, "/")
         return z
 
     def is_single_pixel(self):
