@@ -147,7 +147,7 @@ ipykernel==6.29.5
     #   jupyterlab
     #   myst-nb
     #   qtconsole
-ipympl==0.9.4
+ipympl==0.9.6
     # via mpl-interactions
 ipython==8.18.1
     # via
