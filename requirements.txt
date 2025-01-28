@@ -42,7 +42,7 @@ beautifulsoup4==4.12.3
     # via
     #   nbconvert
     #   pydata-sphinx-theme
-bleach==6.1.0
+bleach==6.2.0
     # via nbconvert
 build==1.2.1
     # via pip-tools
