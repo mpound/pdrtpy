@@ -765,7 +765,8 @@ class H2ExcitationFit(ExcitationFit):
         if kwargs_opts["fit_av"]:
             if self._av_interp is None:
                 raise Exception(
-                    "You must set an excition law before fitting for Av. See H2ExcitationFit.set_extinction_law()"
+                    "You must set an excition law before fitting for Av. See H2ExcitationFit.
+                    ction_law()"
                 )
         self._numcomponents = kwargs_opts.pop("components")
         self._init_params()
@@ -786,7 +787,32 @@ class H2ExcitationFit(ExcitationFit):
         self._av_wave = wavelength
         self._av_aratio = aratio
         self._av_interp = interp1d(wavelength, aratio)
+        
+    def set_extinction_model(self, model):
+        r"""
+        Set the extinction law to use when fitting for $A_v$. This is typically
+        a model from the `~dust_extinction` package.
 
+        Parameters
+        ----------
+        model : ~dust_extinction.baselcasses.BaseExtModel or ~astropy.modeling.Model.
+            A dust extinction model that can evaluate the extinction as a function of wavelength.
+
+        Returns
+        -------
+        None.
+
+        """
+        self._extinction_model = model
+        
+    @property 
+    def extinction_model(self):
+        r"""
+        The extinction law to use when fitting for $A_v$. This is typically
+        a model from the `~dust_extinction` package.
+        """
+        return self._extinction_model
+    
     def intensity(self, colden):
         """Given an upper state column density :math:`N_u`, compute the intensity :math:`I`.
 
