@@ -787,7 +787,7 @@ class H2ExcitationFit(ExcitationFit):
         self._av_wave = wavelength
         self._av_aratio = aratio
         self._av_interp = interp1d(wavelength, aratio)
-        
+
     def set_extinction_model(self, model):
         r"""
         Set the extinction law to use when fitting for $A_v$. This is typically
@@ -804,15 +804,15 @@ class H2ExcitationFit(ExcitationFit):
 
         """
         self._extinction_model = model
-        
-    @property 
+
+    @property
     def extinction_model(self):
         r"""
         The extinction law to use when fitting for $A_v$. This is typically
         a model from the `~dust_extinction` package.
         """
         return self._extinction_model
-    
+
     def intensity(self, colden):
         """Given an upper state column density :math:`N_u`, compute the intensity :math:`I`.
 
