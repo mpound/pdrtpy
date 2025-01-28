@@ -277,7 +277,7 @@ nbclient==0.10.0
     #   jupyter-cache
     #   myst-nb
     #   nbconvert
-nbconvert==7.16.4
+nbconvert==7.16.5
     # via
     #   jupyter
     #   jupyter-server
