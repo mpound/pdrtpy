@@ -34,6 +34,7 @@ dependencies = [
     'mpl-interactions[jupyter]',
     'pandas',
     'tqdm',
+    'dust_extinction'
  ]
 
 [project.optional-dependencies]
