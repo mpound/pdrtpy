@@ -772,6 +772,7 @@ class H2ExcitationFit(ExcitationFit):
         self._init_model()
         return self._fit_excitation(position, size, fit_opr, **kwargs_opts)
 
+    @warnings.deprecated("Use set_extinction_model instead.")
     def set_extinction_law(self, wavelength, aratio):
         """Set the extinction law to use when fitting for Av. It should
             be of the form A_lambda/A_v as a function of lambda in microns.
@@ -786,6 +787,36 @@ class H2ExcitationFit(ExcitationFit):
         self._av_wave = wavelength
         self._av_aratio = aratio
         self._av_interp = interp1d(wavelength, aratio)
+
+    def set_extinction_model(self, model):
+        r"""
+        Set the model to be used for fitting visual extinction, $A_v$.  This is typically a model
+        from the `~dust_extinction` package.
+
+        Parameters
+        ----------
+        model : `~dust_extinction.baseclasses.BaseExtModel` or `astropy.modeling.Model`
+            The model to be used to calculate dust extinction.
+
+        Returns
+        -------
+        None.
+
+        """
+        self._extinction_model = model
+
+    @property
+    def extinction_model(self):
+        r"""
+        The extinction law used when fitting for visual extinction, $A_v$.
+
+        Returns
+        -------
+        model : `~dust_extinction.baseclasses.BaseExtModel` or `astropy.modeling.Model`
+            The model to be used to calculate dust extinction.
+
+        """
+        return self._extinction_model
 
     def intensity(self, colden):
         """Given an upper state column density :math:`N_u`, compute the intensity :math:`I`.
