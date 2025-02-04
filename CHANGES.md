@@ -10,15 +10,14 @@
 
 #### _H2 Excitation Tool_
 
-- single temperature fit supported
 
-- fitting of visual extinction Av supported (experimental)
+- fitting of visual extinction Av supported (experimental, API likely to change)
  
 - bug in `explore()` method fixed, where clicking brought up the wrong excitation plot
 
 #### _Issues_
 
-- issues 55, 58, 69, 60, 65, 80, 84, 90, 93, 94, 95, 96,99, 101, 117, 157, 158 closed
+- issues 55, 58, 80, 84, 90, 93, 94, 95, 96,99, 101, 117, 157, 158 closed
 
 #### _Documentation_
 
