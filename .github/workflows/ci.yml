@@ -32,6 +32,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
+        uses: actions/cache@v4
         with:
           python-version: ${{ matrix.python-version }}
           # Enable caching of pip packages between workflow jobs. This can speed things up dramatically, _if_
