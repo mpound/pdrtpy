@@ -3,6 +3,7 @@ from copy import deepcopy
 
 import astropy.units as u
 import astropy.wcs as wcs
+from astropy import log
 import numpy as np
 import numpy.ma as ma
 from matplotlib import ticker
@@ -11,6 +12,8 @@ from matplotlib.lines import Line2D
 from .. import pdrutils as utils
 from ..measurement import Measurement
 from .plotbase import PlotBase
+
+log.setLevel("WARNING")  # see issue 163
 
 
 class ModelPlot(PlotBase):

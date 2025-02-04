@@ -19,6 +19,8 @@ from scipy.interpolate import RegularGridInterpolator
 
 from . import pdrutils as utils
 
+log.setLevel("WARNING")  # see issue 163
+
 
 class Measurement(CCDData):
     r"""Measurement represents one or more observations of a given spectral
@@ -383,7 +385,9 @@ class Measurement(CCDData):
     def levels(self):
         if self.value.size != 1:
             raise Exception("This only works for Measurements with a single pixel")
-        return np.array([float(self.value - self.error), float(self.value), float(self.value + self.error)])
+        return np.array(
+            [float(self.value[0] - self.error[0]), float(self.value[0]), float(self.value[0] + self.error[0])]
+        )
 
     def _modify_id(self, other, op):
         """Handle ID string for arithmetic operations with Measurements or numbers
@@ -700,7 +704,7 @@ def fits_measurement_reader(
     # astropy.io.registry.read creates a FileIO object before calling the registered
     # reader (this method), so the filename is FileIO.name.
     z._filename = filename.name
-    log.setLevel("INFO")  # set back to default
+    # log.setLevel("INFO")  # set back to default
     return z
 
 

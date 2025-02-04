@@ -8,6 +8,7 @@ import astropy.stats as astats
 
 # import astropy.wcs as wcs
 import astropy.units as u
+from astropy import log
 import numpy as np
 import numpy.ma as ma
 
@@ -25,7 +26,7 @@ from ..modelset import ModelSet
 from .fitmap import FitMap
 from .toolbase import ToolBase
 
-# from ..measurement import Measurement
+log.setLevel("WARNING")  # see issue 163
 
 
 class LineRatioFit(ToolBase):
