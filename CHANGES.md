@@ -1,5 +1,29 @@
 ## Change Log
 
+### Release 2.4.1
+
+#### _Models_
+
+- LMC metallicity surface temperature models added
+
+- Guidance for interpretation of [O I] 1.316 micron line added https://dustem.astro.umd.edu/oidiagnostic/index.html
+
+#### _H2 Excitation Tool_
+
+- single temperature fit supported
+
+- fitting of visual extinction Av supported (experimental)
+ 
+- bug in `explore()` method fixed, where clicking brought up the wrong excitation plot
+
+#### _Issues_
+
+issues 55, 58, 69, 60, 65, 80, 84, 90, 93, 94, 95, 96,99, 101, 117, 157, 158 closed
+
+#### _Documentation_
+
+- updated
+
 ### Release 2.3.1
 #### _Models_
 
