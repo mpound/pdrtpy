@@ -238,7 +238,7 @@ class Measurement(CCDData):
             # Convert boolean mask to uint since io.fits cannot handle bool.
             hduMask = fits.ImageHDU(final_mask.astype(np.uint8), name="MASK")
             _out.append(hduMask)
-        _out.writeto(outfile, overwrite=overwrite)
+        _out.writeto(outfile, overwrite=overwrite, output_verify="silentfix")
         _data.close()
         _out.close()
         if needsclose:
