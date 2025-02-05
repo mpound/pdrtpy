@@ -651,8 +651,8 @@ class LineRatioFit(ToolBase):
         :param rchi: FITS file to write the reduced chisq map to.
         :type rchi: str
         """
-        self._chisq.write(chi, overwrite=overwrite, hdu_mask="MASK")
-        self._reduced_chisq.write(rchi, overwrite=overwrite, hdu_mask="MASK")
+        self._chisq.write(chi, overwrite=overwrite, hdu_mask="MASK", output_verify="silentfix")
+        self._reduced_chisq.write(rchi, overwrite=overwrite, hdu_mask="MASK", output_verify="silentfix")
 
     def _refine_density_radiation_field2(self, **kwargs):
         if kwargs["method"] != "emcee":
