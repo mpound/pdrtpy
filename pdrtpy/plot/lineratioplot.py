@@ -224,7 +224,7 @@ class LineRatioPlot(PlotBase):
 
             if kwargs_opts["title"] is None:
                 kwargs_opts["title"] = r"$\chi^2$ (dof=%d)" % self._tool._dof
-            label = r"$\chi_{min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)" % (self._tool._chisq_min.value, x, y)
+            label = r"$\chi_{min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)" % (self._tool._chisq_min.value[0], x, y)
             self._modelplot._axis[0].scatter(x, y, c="r", marker="+", s=200, linewidth=2, label=label)
             # handle legend locally
             if kwargs_opts["legend"]:
