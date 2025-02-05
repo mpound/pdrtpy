@@ -17,7 +17,7 @@
 
 #### _Issues_
 
-- issues 55, 58, 80, 84, 90, 93, 94, 95, 96,99, 101, 117, 157, 158 closed
+- issues 55, 58, 80, 84, 90, 93, 94, 95, 96,99, 101, 117, 157, 158, 163 closed
 
 #### _Documentation_
 
@@ -25,7 +25,10 @@
 
 #### _Other_
 
+- drop support for Python 3.9
+
 - completely updated build system (setup.py &rarr; pyproject.toml) and continuous integration workflow
+
 
 ### Release 2.3.1
 #### _Models_
