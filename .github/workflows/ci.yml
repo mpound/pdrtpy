@@ -14,7 +14,7 @@ on:
 env:
   FORCE_COLOR: "1" # Make tools pretty.
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
-  PIP_NO_PYTHON_VERSION_WARNING: "1"
+#  PIP_NO_PYTHON_VERSION_WARNING: "1"
 
 jobs:
   tests:
@@ -25,9 +25,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
-        #os: [ubuntu-latest]
-        #python-version: ["3.9"]
+        python-version: [ "3.10", "3.11", "3.12"]
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
@@ -37,8 +35,8 @@ jobs:
           # Enable caching of pip packages between workflow jobs. This can speed things up dramatically, _if_
           # jobs are executed fairly close together in time
           # See: https://github.com/actions/setup-python/blob/main/docs/advanced-usage.md#caching-packages
-          cache: 'pip'
-          cache-dependency-path: 'requirements.txt'
+          #cache: 'pip'
+          #cache-dependency-path: 'requirements.txt'
       - name: Install dependencies
         run: |
           # Install requirements, as compiled by pip-compile
