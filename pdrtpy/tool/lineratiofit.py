@@ -10,6 +10,7 @@ import astropy.stats as astats
 import astropy.units as u
 import numpy as np
 import numpy.ma as ma
+from astropy import log
 
 # from astropy.io import fits
 from astropy.io.fits.header import Header
@@ -25,7 +26,7 @@ from ..modelset import ModelSet
 from .fitmap import FitMap
 from .toolbase import ToolBase
 
-# from ..measurement import Measurement
+log.setLevel("WARNING")  # see issue 163
 
 
 class LineRatioFit(ToolBase):
@@ -650,8 +651,8 @@ class LineRatioFit(ToolBase):
         :param rchi: FITS file to write the reduced chisq map to.
         :type rchi: str
         """
-        self._chisq.write(chi, overwrite=overwrite, hdu_mask="MASK")
-        self._reduced_chisq.write(rchi, overwrite=overwrite, hdu_mask="MASK")
+        self._chisq.write(chi, overwrite=overwrite, hdu_mask="MASK", output_verify="silentfix")
+        self._reduced_chisq.write(rchi, overwrite=overwrite, hdu_mask="MASK", output_verify="silentfix")
 
     def _refine_density_radiation_field2(self, **kwargs):
         if kwargs["method"] != "emcee":

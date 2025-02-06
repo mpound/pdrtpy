@@ -1,5 +1,6 @@
 import astropy.units as u
 import numpy as np
+from astropy import log
 from astropy.coordinates import SkyCoord
 from astropy.nddata import StdDevUncertainty
 from matplotlib.ticker import MultipleLocator
@@ -9,6 +10,8 @@ from ..pdrutils import LOGE, float_formatter
 from .plotbase import PlotBase
 
 # from cycler import cycler
+
+log.setLevel("WARNING")
 
 
 class ExcitationPlot(PlotBase):
@@ -50,6 +53,8 @@ class ExcitationPlot(PlotBase):
         :param show_fit: Show the most recent fit done the the associated H2ExcitationFit tool.
         :type show_fit: bool
         """
+        # suppress ridiculous NDDATA warning about units. See issue #163
+        log.setLevel("WARNING")
         kwargs_opts = {
             "xmin": 0.0,
             "xmax": None,  #  we use np.max() later if user does not specify
@@ -69,7 +74,7 @@ class ExcitationPlot(PlotBase):
             "bbox_to_anchor": None,
             "loc": "best",
             "test": False,
-            "debug": True,
+            "debug": False,
         }
         kwargs_opts.update(kwargs)
         debug = kwargs.get("debug", False)
@@ -336,6 +341,7 @@ class ExcitationPlot(PlotBase):
             bbox_to_anchor=kwargs_opts["bbox_to_anchor"],
             loc=kwargs_opts["loc"],
         )
+        # log.setLevel("INFO")
 
     def temperature(self, component, **kwargs):
         """Plot the temperature of hot or cold gas component.

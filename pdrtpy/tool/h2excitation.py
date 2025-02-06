@@ -8,6 +8,7 @@ from copy import deepcopy
 import astropy.constants as constants
 import astropy.units as u
 import numpy as np
+from astropy import log
 from astropy.nddata import Cutout2D, StdDevUncertainty
 from emcee.pbar import get_progress_bar
 from lmfit import Parameters  # , fit_report
@@ -18,6 +19,8 @@ from .. import pdrutils as utils
 from ..measurement import Measurement
 from .fitmap import FitMap
 from .toolbase import ToolBase
+
+log.setLevel("WARNING")
 
 
 class ExcitationFit(ToolBase):
@@ -664,6 +667,8 @@ class H2ExcitationFit(ExcitationFit):
         # if not self._column_density or (len(self._column_density) != len(self._measurements)):
 
         # screw it. just always compute them.  Note to self: change this if it becomes computationally intensive
+        # suppress ridiculous NDDATA warning about units. See issue #163
+        log.setLevel("WARNING")
         self._compute_column_densities(unit=unit, line=line)
         if norm:
             cdnorm = dict()
@@ -830,7 +835,8 @@ class H2ExcitationFit(ExcitationFit):
         :returns: a :class:`~pdrtpy.measurement.Measurement` of the column density.
         :rtype: :class:`~pdrtpy.measurement.Measurement`
         """
-
+        # suppress ridiculous NDDATA warning about units. See issue #163
+        log.setLevel("WARNING")
         dE = self._ac.loc[intensity.id]["dE"] * constants.k_B.cgs * self._ac["dE"].unit
         A = self._ac.loc[intensity.id]["A"] * self._ac["A"].unit
         v = 4.0 * math.pi * u.sr / (A * dE)
@@ -838,6 +844,7 @@ class H2ExcitationFit(ExcitationFit):
         N_upper = intensity * val  # error will get propagated
         N_upper = N_upper.convert_unit_to(unit)
         N_upper._identifier = intensity.id
+        # log.setLevel("INFO")
         return N_upper
 
     def _compute_column_densities(self, unit=utils._CM2, line=True):
@@ -906,7 +913,8 @@ class H2ExcitationFit(ExcitationFit):
         """
         # @todo
         # - should default clip = None?
-
+        # suppress ridiculous NDDATA warning about units. See issue #163
+        log.setLevel("WARNING")
         # Set norm=False because we normalize below if necessary.
         if position is not None and size is None:
             print("WARNING: ignoring position keyword since no size given")
@@ -967,6 +975,7 @@ class H2ExcitationFit(ExcitationFit):
                 unit=ca.unit,
                 identifier=cd,
             )
+        # log.setLevel("INFO")
         return cdmeas
 
     def _get_ortho_indices(self, ids):

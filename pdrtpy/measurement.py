@@ -19,6 +19,8 @@ from scipy.interpolate import RegularGridInterpolator
 
 from . import pdrutils as utils
 
+log.setLevel("WARNING")  # see issue 163
+
 
 class Measurement(CCDData):
     r"""Measurement represents one or more observations of a given spectral
@@ -236,7 +238,7 @@ class Measurement(CCDData):
             # Convert boolean mask to uint since io.fits cannot handle bool.
             hduMask = fits.ImageHDU(final_mask.astype(np.uint8), name="MASK")
             _out.append(hduMask)
-        _out.writeto(outfile, overwrite=overwrite)
+        _out.writeto(outfile, overwrite=overwrite, output_verify="silentfix")
         _data.close()
         _out.close()
         if needsclose:
@@ -383,7 +385,9 @@ class Measurement(CCDData):
     def levels(self):
         if self.value.size != 1:
             raise Exception("This only works for Measurements with a single pixel")
-        return np.array([float(self.value - self.error), float(self.value), float(self.value + self.error)])
+        return np.array(
+            [float(self.value[0] - self.error[0]), float(self.value[0]), float(self.value[0] + self.error[0])]
+        )
 
     def _modify_id(self, other, op):
         """Handle ID string for arithmetic operations with Measurements or numbers
@@ -558,7 +562,7 @@ class Measurement(CCDData):
 
         :param filename: Name of table file.
         :type filename: str
-        :param format: `Astropy Table format  format. <https://docs.astropy.org/en/stable/io/unified.html#built-in-readers-writers>`_ e.g., ascii, ipac, votable. Default is `IPAC format <https://docs.astropy.org/en/stable/api/astropy.io.ascii.Ipac.html#astropy.io.ascii.Ipac>`_
+        :param format: `Astropy Table format. <https://docs.astropy.org/en/stable/io/unified.html#built-in-readers-writers>`_ e.g., ascii, ipac, votable. Default is `IPAC format <https://docs.astropy.org/en/stable/api/astropy.io.ascii.Ipac.html#astropy.io.ascii.Ipac>`_
         :param array: Controls whether a list of Measurements or a single Measurement is returned. If `array` is True,  one Measurement instance will be created for each row in the table and a Python list of Measurements will be returned.  If `array` is False,  one Measurement containing all the points in the `data` member will be returned. If `array` is False, the *identifier* and beam parameters of the first row will be used. If feeding the return value to a plot method such as :meth:`~pdrtpy.plot.modelplot.ModelPlot.phasespace`, choose `array=False`. Default:False.
         :type array: bool
 
@@ -700,7 +704,7 @@ def fits_measurement_reader(
     # astropy.io.registry.read creates a FileIO object before calling the registered
     # reader (this method), so the filename is FileIO.name.
     z._filename = filename.name
-    log.setLevel("INFO")  # set back to default
+    # log.setLevel("INFO")  # set back to default
     return z
 
 
