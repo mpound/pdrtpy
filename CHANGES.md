@@ -1,6 +1,6 @@
 ## Change Log
 
-### Release 2.4.1
+### Release 2.4.2
 
 #### _Models_
 
@@ -21,13 +21,15 @@
 
 #### _Documentation_
 
-- updated
+- updated to new style, with easier searching and navigation
 
 #### _Other_
 
 - drop support for Python 3.9
 
 - completely updated build system (setup.py &rarr; pyproject.toml) and continuous integration workflow
+
+- new release workflow
 
 
 ### Release 2.3.1
