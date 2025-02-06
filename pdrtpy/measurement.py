@@ -562,7 +562,7 @@ class Measurement(CCDData):
 
         :param filename: Name of table file.
         :type filename: str
-        :param format: `Astropy Table format  format. <https://docs.astropy.org/en/stable/io/unified.html#built-in-readers-writers>`_ e.g., ascii, ipac, votable. Default is `IPAC format <https://docs.astropy.org/en/stable/api/astropy.io.ascii.Ipac.html#astropy.io.ascii.Ipac>`_
+        :param format: `Astropy Table format. <https://docs.astropy.org/en/stable/io/unified.html#built-in-readers-writers>`_ e.g., ascii, ipac, votable. Default is `IPAC format <https://docs.astropy.org/en/stable/api/astropy.io.ascii.Ipac.html#astropy.io.ascii.Ipac>`_
         :param array: Controls whether a list of Measurements or a single Measurement is returned. If `array` is True,  one Measurement instance will be created for each row in the table and a Python list of Measurements will be returned.  If `array` is False,  one Measurement containing all the points in the `data` member will be returned. If `array` is False, the *identifier* and beam parameters of the first row will be used. If feeding the return value to a plot method such as :meth:`~pdrtpy.plot.modelplot.ModelPlot.phasespace`, choose `array=False`. Default:False.
         :type array: bool
 

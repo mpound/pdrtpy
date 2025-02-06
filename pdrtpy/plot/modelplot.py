@@ -398,11 +398,24 @@ class ModelPlot(PlotBase):
 
         :param identifiers: list of two identifier tags for the model to plot, e.g., ["OI_63/CO_21", "CII_158"]
         :type identifiers: list of str
-        :param nax1_clip: The range of model densities on NAXIS1 to show in the plot. For most model NAXIS1 is hydrogen number density $n_H$ in cm$^{-3}$.  For ionized gas models, it is electron temperature $T_e$ in K.  Must be given as a range of astropy quanitities.  Default: [10,1E7]*Unit("cm-3")
+
+        :param nax1_clip: The range of model densities on NAXIS1 to show
+            in the plot. For most models, NAXIS1 is hydrogen number density
+            :math:`n_H` in :math:`{\rm cm}^{-3}`.  For ionized gas models, it is
+            electron temperature :math:`T_e` in K.  Must be given as a range
+            of astropy quanitities.  Default: [10,1E7]*Unit("cm-3")
         :type nax1_clip: array-like, must contain :class:`~astropy.units.Quantity`
-        :param nax2_clip: The range of model parameters on NAXIS2 to show in the plot.  For most models NAXIS2 is radiation field intensities in Habing or cgs units.  For ionized gas models, it is electron volume density $n_e$.  Must be given as a range of astropy quantities.  Default: nax1_clip=[10,1E6]*utils.habing_unit.
+        :param nax2_clip: The range of model parameters on NAXIS2 to
+            show in the plot.  For most models, NAXIS2 is radiation field
+            intensities in Habing or cgs units.  For ionized gas models, it is
+            electron volume density :math:`n_e`.  Must be given as a range of
+            astropy quantities.  Default: nax1_clip=[10,1E6]*utils.habing_unit.
         :type nax2_clip: array-like, must contain :class:`~astropy.units.Quantity`
-        :param reciprocal: Whether or not the plot the reciprocal of the model on each axis.  Given as a pair of booleans.  e.g. [False,True] means don't flip the quantity X axis, but flip quantity the Y axis.  i.e. if the model is "CII/OI", and reciprocal=True then the axis will be "OI/CII".  Default: [False, False]
+        :param reciprocal: Whether or not the plot the reciprocal of the
+            model on each axis.  Given as a pair of booleans.  e.g. [False,True]
+            means don't flip the quantity X axis, but flip quantity the Y axis.
+            i.e. if the model is "CII/OI", and reciprocal=True then the axis
+            will be "OI/CII".  Default: [False, False]
         :type reciprocal: array-like bool
 
         The following keywords are supported as \*\*kwargs:

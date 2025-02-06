@@ -245,7 +245,7 @@ class PlotBase:
 
         :Keyword Arguments:
 
-        Additional arguments (\*\*kwargs) are passed to :meth:`matplotlib.pyplot.savefig`. e.g. bbox_inches='tight' for a tight layout.
+        Additional arguments (\*\*kwargs) are passed to :meth:`matplotlib.pyplot.savefig`. e.g., **bbox_inches='tight'** for a tight layout.
 
         """
         kwargs_opts = {"bbox_inches": "tight", "transparent": False, "facecolor": "white"}

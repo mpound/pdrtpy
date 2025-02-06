@@ -95,13 +95,13 @@ Requirements
 
 ``pdrtpy`` requires Python 3 and recent versions of  `astropy <https://astropy.org>`_, `numpy <https://numpy.org>`_, `scipy <https://scipy.org>`_, `lmfit <https://lmfit.github.io/lmfit-py/>`_, and `matplotlib <https://matplotlib.org/>`_. If you want to run the `Example Notebooks`_, you also need `jupyter <https://jupyter.org>`_.
 
-First make sure you are using Python 3:
+First make sure you are using Python 3.10 or higher:
 
 .. code-block:: sh
 
    python --version
 
-should show e.g., *3.7.6*.
+should show e.g., *3.11.7*.
 
 
 .. Also, make sure *setuptools* is up to date:
