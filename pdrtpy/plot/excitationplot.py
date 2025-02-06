@@ -1,8 +1,8 @@
 import astropy.units as u
 import numpy as np
+from astropy import log
 from astropy.coordinates import SkyCoord
 from astropy.nddata import StdDevUncertainty
-from astropy import log
 from matplotlib.ticker import MultipleLocator
 
 from ..measurement import Measurement

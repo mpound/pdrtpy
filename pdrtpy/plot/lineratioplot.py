@@ -14,8 +14,8 @@ import astropy.units as u
 import astropy.wcs as wcs
 import numpy as np
 import scipy.stats as stats
-from astropy.units import UnitsWarning
 from astropy import log
+from astropy.units import UnitsWarning
 from matplotlib.lines import Line2D
 
 from .. import pdrutils as utils

@@ -8,8 +8,8 @@ from copy import deepcopy
 import astropy.constants as constants
 import astropy.units as u
 import numpy as np
-from astropy.nddata import Cutout2D, StdDevUncertainty
 from astropy import log
+from astropy.nddata import Cutout2D, StdDevUncertainty
 from emcee.pbar import get_progress_bar
 from lmfit import Parameters  # , fit_report
 from lmfit.model import Model  # , ModelResult

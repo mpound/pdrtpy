@@ -12,7 +12,7 @@
 
 
 - fitting of visual extinction Av supported (experimental, API likely to change)
- 
+
 - bug in `explore()` method fixed, where clicking brought up the wrong excitation plot
 
 #### _Issues_

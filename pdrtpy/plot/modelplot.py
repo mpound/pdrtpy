@@ -3,9 +3,9 @@ from copy import deepcopy
 
 import astropy.units as u
 import astropy.wcs as wcs
-from astropy import log
 import numpy as np
 import numpy.ma as ma
+from astropy import log
 from matplotlib import ticker
 from matplotlib.lines import Line2D
 
