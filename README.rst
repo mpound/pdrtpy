@@ -38,7 +38,7 @@ PhotoDissociation Region Toolbox --- Python
    :target: https://results.pre-commit.ci/latest/github/mpound/pdrtpy/master
    :alt: pre-commit.ci status
 
-``pdrtpy`` is the Python `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/>`_.  The current stable version is 2.4.3.
+``pdrtpy`` is the Python `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/>`_.  The current stable version is 2.4.4.
 
 The PDR Toolbox is a science-enabling tool for the community, designed to
 help astronomers determine the physical parameters of photodissociation
