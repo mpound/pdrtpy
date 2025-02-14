@@ -1,6 +1,6 @@
 ## Change Log
 
-### Release 2.4.2
+### Release 2.4.4
 
 #### _Models_
 
