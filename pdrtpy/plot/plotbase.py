@@ -197,7 +197,7 @@ class PlotBase:
             raise ValueError("Unrecognized stretch %s. Valid values are %s" % (stretch, self._valid_stretch))
         # print("norm cut at %.1e %.1e"%(vmin,vmax))
         if norm == "simple":
-            return simple_norm(km, min_cut=vmin, max_cut=vmax, stretch=stretch, clip=False)
+            return simple_norm(km, vmin=vmin, vmax=vmax, stretch=stretch, clip=False)
         elif norm == "zscale":
             return self._zscale(km, vmin, vmax, stretch)
         elif norm == "log":
