@@ -7,7 +7,7 @@ __all__ = ["get_progress_bar"]
 logger = logging.getLogger(__name__)
 
 try:
-    import tqdm.autonotebook as tqdm
+    import tqdm.notebook as tqdm
 except ImportError:
     tqdm = None
 

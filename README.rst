@@ -38,7 +38,7 @@ PhotoDissociation Region Toolbox --- Python
    :target: https://results.pre-commit.ci/latest/github/mpound/pdrtpy/master
    :alt: pre-commit.ci status
 
-``pdrtpy`` is the new and improved version of the formerly web-based `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/>`_, rewritten in Python with new capabilities and giving more flexibility to end users.  (The web-based /CGI version of PDRT is deprecated and no longer supported).
+``pdrtpy`` is the Python `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/>`_.  The current stable version is 2.4.4.
 
 The PDR Toolbox is a science-enabling tool for the community, designed to
 help astronomers determine the physical parameters of photodissociation
@@ -95,13 +95,13 @@ Requirements
 
 ``pdrtpy`` requires Python 3 and recent versions of  `astropy <https://astropy.org>`_, `numpy <https://numpy.org>`_, `scipy <https://scipy.org>`_, `lmfit <https://lmfit.github.io/lmfit-py/>`_, and `matplotlib <https://matplotlib.org/>`_. If you want to run the `Example Notebooks`_, you also need `jupyter <https://jupyter.org>`_.
 
-First make sure you are using Python 3:
+First make sure you are using Python 3.10 or higher:
 
 .. code-block:: sh
 
    python --version
 
-should show e.g., *3.7.6*.
+should show e.g., *3.11.7*.
 
 
 .. Also, make sure *setuptools* is up to date:

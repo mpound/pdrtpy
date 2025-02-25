@@ -17,21 +17,45 @@ class ModelSet(object):
 
     :param name: identifying name, e.g., 'wk2006'
     :type name: str
+
     :param z:  metallicity in solar units.
     :type z: float
+
     :param medium:  medium type, e.g. 'constant density', 'clumpy', 'non-clumpy'
     :type medium: str
+
     :param mass: maximum clump mass (for KosmaTau models).  Default:None (appropriate for Wolfire/Kaufman models)
-    :type float:
-    :params modelsetinfo: For adding user specified ModelSet, this parameter specifies the file with information about the ModelSet. It can be a pathname to an externalt tabular file in an astropy-recognized or an astropy Table object.  If an external tabular file, its format should be give by the `format` keyword. The columns are:
+    :type mass: float
 
-    ['PDR code','name', 'version','path','filename','medium','z','mass','description']
+    :param modelsetinfo: For adding user specified ModelSet, this parameter
+        specifies the file with information about the ModelSet. It can be a
+        pathname to an externalt tabular file in an astropy-recognized or an
+        astropy Table object.  If an external tabular file, its format should
+        be give by the `format` keyword. The columns are:
 
-    `z` and `mass` should be floats, the rest should be strings.
-    The 'name`, `version`, `medium`, `z`, and `mass` columns contain the values available in the input ModelSet as described above. `PDR code` is the originator of the code e.g., "KOSMA-tau", `version` is the code version, `path` is the full-qualified pathname to the FITS files, `filename` is the tabular file which contains descriptions of individual FITS files.  This must also be in the format specified by the `format` keyword.  `description` is a description of the input ModelSet.
-    :type modelsetinfo: str or :class:~astropy.Table
-    :format: If `modelsetinfo` is a file, give the format of file. Must be `an astropy recognized Table format. <https://docs.astropy.org/en/stable/io/unified.html#built-in-readers-writers>`_ e.g., ascii, ipac, votable. Default is `IPAC format  <https://docs.astropy.org/en/stable/api/astropy.io.ascii.Ipac.html#astropy.io.ascii.Ipac>`_
+        .. code-block:: python
+
+           ['PDR code','name', 'version','path','filename','medium','z','mass','description']
+
+        `z` and `mass` should be floats, the rest should be strings.
+        The `name`, `version`, `medium`, `z`, and `mass` columns contain
+        the values available in the input ModelSet as described above. `PDR
+        code` is the originator of the code e.g., "KOSMA-tau", `version`
+        is the code version, `path` is the full-qualified pathname to
+        the FITS files, `filename` is the tabular file which contains
+        descriptions of individual FITS files.  This must also be in
+        the format specified by the `format` keyword.  `description`
+        is a description of the input ModelSet.
+
+    :type modelsetinfo: str or :class:`~astropy.table.Table`
+
+    :param format: If `modelsetinfo` is a file, give the
+        format of file. Must be `an astropy recognized Table format.
+        <https://docs.astropy.org/en/stable/io/unified.html#built-in-readers-writers>`_
+        e.g., ascii, ipac, votable. Default is `IPAC format
+        <https://docs.astropy.org/en/stable/api/astropy.io.ascii.Ipac.html#astropy.io.ascii.Ipac>`_
     :type format: str
+
     :raises ValueError: If model set not recognized/found.
     """
 
@@ -283,7 +307,7 @@ class ModelSet(object):
         :type identifier: str
         :returns: The model matching the identifier
         :rtype: :class:`~pdrtpy.measurement.Measurement`
-        :raises: KeyError if identifier not found in this ModelSet
+        :raises KeyError: if identifier not found in this ModelSet
         """
 
         if identifier in self._user_added_models:
@@ -362,7 +386,7 @@ class ModelSet(object):
         :type model_type: str
         :returns: The matching models as a list of :class:`~pdrtpy.measurement.Measurement`.
         :rtype: list
-        :raises: KeyError if identifiers not found in this ModelSet
+        :raises KeyError: if identifiers not found in this ModelSet
         """
 
         # if identifier not in self._identifiers["ID"]:
@@ -394,11 +418,11 @@ class ModelSet(object):
     def add_model(self, identifier, model, title, overwrite=False):
         r"""Add your own model to this ModelSet.
 
-            :param identifier: a :class:`~pdrtpy.measurement.Measurement` ID. It can be an intensity or a ratio, e.g., "CII_158","CI_609/FIR".
-            :type identifier: str
-            :param model:  the model to add.  If a string, this must be the fully-qualified path of a FITS file.  If a :class:`~pdrtpy.measurement.Measurement` it must have the same CTYPEs and CUNITs as the models in the ModelSet(?).
-            :type model: str or :class:`~pdrtpy.measurement.Measurement`
-            :param title: A formatted string (e.g., LaTeX) describing this observation that can be used for plotting. Python r-strings are accepted, e.g., r'$^{13}$CO(3-2)'  would give :math:`^{13}{\rm CO(3-2)}`.
+        :param identifier: a :class:`~pdrtpy.measurement.Measurement` ID. It can be an intensity or a ratio, e.g., "CII_158","CI_609/FIR".
+        :type identifier: str
+        :param model:  the model to add.  If a string, this must be the fully-qualified path of a FITS file.  If a :class:`~pdrtpy.measurement.Measurement` it must have the same CTYPEs and CUNITs as the models in the ModelSet(?).
+        :type model: str or :class:`~pdrtpy.measurement.Measurement`
+        :param title: A formatted string (e.g., LaTeX) describing this observation that can be used for plotting. Python r-strings are accepted, e.g., r'$^{13}$CO(3-2)'  would give :math:`^{13}{\rm CO(3-2)}`.
         :type title: str
             :param overwrite:  Whether to overwrite the model if the identifier already exists in the ModelSet or has been previously added.  Default: False
             :type overwrite: bool

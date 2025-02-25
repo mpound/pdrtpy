@@ -197,7 +197,7 @@ class PlotBase:
             raise ValueError("Unrecognized stretch %s. Valid values are %s" % (stretch, self._valid_stretch))
         # print("norm cut at %.1e %.1e"%(vmin,vmax))
         if norm == "simple":
-            return simple_norm(km, min_cut=vmin, max_cut=vmax, stretch=stretch, clip=False)
+            return simple_norm(km, vmin=vmin, vmax=vmax, stretch=stretch, clip=False)
         elif norm == "zscale":
             return self._zscale(km, vmin, vmax, stretch)
         elif norm == "log":
@@ -245,7 +245,7 @@ class PlotBase:
 
         :Keyword Arguments:
 
-        Additional arguments (\*\*kwargs) are passed to :meth:`matplotlib.pyplot.savefig`. e.g. bbox_inches='tight' for a tight layout.
+        Additional arguments (\*\*kwargs) are passed to :meth:`matplotlib.pyplot.savefig`. e.g., **bbox_inches='tight'** for a tight layout.
 
         """
         kwargs_opts = {"bbox_inches": "tight", "transparent": False, "facecolor": "white"}

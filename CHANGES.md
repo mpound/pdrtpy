@@ -1,5 +1,37 @@
 ## Change Log
 
+### Release 2.4.4
+
+#### _Models_
+
+- LMC metallicity surface temperature models added
+
+- Guidance for interpretation of [O I] 1.316 micron line added https://dustem.astro.umd.edu/oidiagnostic/index.html
+
+#### _H2 Excitation Tool_
+
+
+- fitting of visual extinction Av supported (experimental, API likely to change)
+
+- bug in `explore()` method fixed, where clicking brought up the wrong excitation plot
+
+#### _Issues_
+
+- issues 55, 58, 80, 84, 90, 93, 94, 95, 96,99, 101, 117, 157, 158, 163 closed
+
+#### _Documentation_
+
+- updated to new style, with easier searching and navigation
+
+#### _Other_
+
+- drop support for Python 3.9
+
+- completely updated build system (setup.py &rarr; pyproject.toml) and continuous integration workflow
+
+- new release workflow
+
+
 ### Release 2.3.1
 #### _Models_
 
