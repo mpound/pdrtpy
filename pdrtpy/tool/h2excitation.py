@@ -772,7 +772,6 @@ class H2ExcitationFit(ExcitationFit):
         self._init_model()
         return self._fit_excitation(position, size, fit_opr, **kwargs_opts)
 
-    @warnings.deprecated("Use set_extinction_model instead.")
     def set_extinction_law(self, wavelength, aratio):
         """Set the extinction law to use when fitting for Av. It should
             be of the form A_lambda/A_v as a function of lambda in microns.
