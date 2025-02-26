@@ -222,7 +222,7 @@ class H2ExcitationFit(ExcitationFit):
         :type fit_av: bool
         :param extinction_ratio: The ratio of spectral line wavelength extinction to visual extinction. See set_extinction_law()
         :type extinction_ratio: float
-        :return: Sum of lines in log space:log10(10**(x*m1+n1) + 10**(x*m2+n2)) + log10(opr/3.0)  0.4*extinction_ratio*av
+        :return: Sum of lines in log space:log10(10**(x*m1+n1) + 10**(x*m2+n2)) + log10(opr/3.0) - 0.4*extinction_ratio*av*log10(e)
         :rtype: :class:`numpy.ndarray`
         """
         # why are these coming in as floats?
@@ -244,7 +244,7 @@ class H2ExcitationFit(ExcitationFit):
         if fit_opr:
             model[idx] += np.log10(opr / self._canonical_opr)
         if fit_av:
-            model = model - 0.4 * extinction_ratio * av
+            model = model - 0.4 * extinction_ratio * av * utils.LOGE
         return model
 
     def _one_component_model(
@@ -278,7 +278,7 @@ class H2ExcitationFit(ExcitationFit):
         :type fit_av: bool
         :param extinction_ratio: The ratio of spectral line wavelength extinction to visual extinction. See set_extinction_law()
         :type extinction_ratio: float
-        :return: line in log space: x*m1 + n1 + log10(opr/3.0) -  0.4*extinction_ratio*av
+        :return: line in log space: x*m1 + n1 + log10(opr/3.0) -  0.4*extinction_ratio*av*log10(e)
 
         :rtype: :class:`numpy.ndarray`
         """
@@ -290,7 +290,7 @@ class H2ExcitationFit(ExcitationFit):
             # print("Adding")
             model[idx] += np.log10(opr / self._canonical_opr)
         if fit_av:
-            model = model - 0.4 * extinction_ratio * av
+            model = model - 0.4 * extinction_ratio * av * utils.LOGE
         return model
 
     def _init_model(self):
@@ -768,10 +768,14 @@ class H2ExcitationFit(ExcitationFit):
         if fit_opr and kwargs_opts["fit_av"]:
             raise ValueError("You can't fit OPR and Av simultaneously. Pick one.")
         if kwargs_opts["fit_av"]:
-            if self._av_interp is None:
+            if self.extinction_model is None:
                 raise Exception(
-                    "You must set an excition law before fitting for Av. See H2ExcitationFit.set_extinction_law()"
+                    "You must set an excition model before fitting for Av. See H2ExcitationFit.set_extinction_model()"
                 )
+            # if self._av_interp is None:
+            #   raise Exception(
+            #       "You must set an excition law before fitting for Av. See H2ExcitationFit.set_extinction_law()"
+            #  )
         self._numcomponents = kwargs_opts.pop("components")
         self._init_params()
         self._init_model()
@@ -1089,17 +1093,16 @@ class H2ExcitationFit(ExcitationFit):
         if profile:
             pr = cProfile.Profile()
             pr.enable()
+        min_points = self._numcomponents * 2
         if fit_opr:
-            min_points = self._numcomponents * 2 + 1
+            min_points += 1
         else:
-            min_points = self._numcomponents * 2
             self._opr = Measurement(data=[self._canonical_opr], uncertainty=None)
         if fit_av:
-            min_points = self._numcomponents * 2 + 1
-            wavelengths = np.array(list(self.wavelengths(line=True).values()))  # assume micron for now
-            extinction_ratios = self._av_interp(wavelengths)  # A_lambda/A_v at the wavelengths of the transitions
+            min_points += 1
+            wavelengths = list(self.wavelengths(line=True).values()) * u.micron  # assume micron for now
+            extinction_ratios = self.extinction_model(wavelengths)  # A_lambda/A_v at the wavelengths of the transitions
         else:
-            min_points = self._numcomponents * 2
             self._av = Measurement(data=[0.0], uncertainty=None)
             extinction_ratios = None
 

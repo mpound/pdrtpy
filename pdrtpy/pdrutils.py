@@ -824,3 +824,13 @@ def rescale_axis_units(x, from_unit, from_ctype, to_unit, loglabel=True):
     xlabel = r"{0} [{1:latex_inline}]".format(xtype, xax_unit)
 
     return (x, xlabel)
+
+
+def extinct(intensity, wavelength, av, extinction_model):
+    """Return the extincted intensity"""
+    pass
+
+
+def deextinct(intensity, wavelength, av, extinction_model):
+    """Return the de-extincted intensity"""
+    pass
