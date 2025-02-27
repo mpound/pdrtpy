@@ -33,7 +33,7 @@ class TestH2Excitation:
         for i in self._intensity:
             # For this example, set a largish uncertainty on the intensity.
             m = Measurement(
-                data=self._intensity[i], uncertainty=StdDevUncertainty(0.5 * self._intensity[i]), identifier=i, unit="erg cm-2 s-1 sr-1"
+                data=self._intensity[i], uncertainty=StdDevUncertainty(0.25 * self._intensity[i]), identifier=i, unit="erg cm-2 s-1 sr-1"
             )
             # print(m)
             a.append(m)
