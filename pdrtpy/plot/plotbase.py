@@ -1,5 +1,6 @@
 from copy import copy, deepcopy
 
+import astropy.version
 import matplotlib.axes as maxes
 import numpy as np
 import numpy.ma as ma
@@ -13,7 +14,6 @@ from astropy.visualization.stretch import (
 )
 from cycler import cycler
 from matplotlib.colors import LogNorm
-import astropy.version
 
 # import matplotlib.cm as mcm
 from mpl_toolkits.axes_grid1 import make_axes_locatable

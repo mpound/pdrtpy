@@ -7,18 +7,20 @@ Created on Wed Feb 26 16:01:56 2025
 """
 # h2excitation test code
 
-from pdrtpy.measurement import Measurement
-from pdrtpy.tool.h2excitation import H2ExcitationFit
+import pytest
 from astropy.nddata import StdDevUncertainty
 from dust_extinction.parameter_averages import G23
-import pytest
+
+from pdrtpy.measurement import Measurement
+from pdrtpy.tool.h2excitation import H2ExcitationFit
+
 
 class TestH2Excitation:
-    """ test the H2Excitation tool"""
+    """test the H2Excitation tool"""
 
     def setup_method(self):
         self._intensity = {}
- 
+
     def test_fit_av(self):
         # Previous data attenuated by Av=30 using Gordon 2023 extinction curve
         self._intensity = {
@@ -33,7 +35,10 @@ class TestH2Excitation:
         for i in self._intensity:
             # For this example, set a largish uncertainty on the intensity.
             m = Measurement(
-                data=self._intensity[i], uncertainty=StdDevUncertainty(0.25 * self._intensity[i]), identifier=i, unit="erg cm-2 s-1 sr-1"
+                data=self._intensity[i],
+                uncertainty=StdDevUncertainty(0.25 * self._intensity[i]),
+                identifier=i,
+                unit="erg cm-2 s-1 sr-1",
             )
             # print(m)
             a.append(m)
@@ -41,4 +46,4 @@ class TestH2Excitation:
         g23 = G23(Rv=5.5)
         h.set_extinction_model(g23)
         h.run(fit_av=True)
-        assert h.av.data == pytest.approx(28.16196941,2e-8)
+        assert h.av.data == pytest.approx(28.16196941, 2e-8)
