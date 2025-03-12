@@ -3,6 +3,7 @@ import numpy as np
 from astropy import log
 from astropy.coordinates import SkyCoord
 from astropy.nddata import StdDevUncertainty
+from astropy.units.quantity import Quantity
 from matplotlib.ticker import MultipleLocator
 
 from ..measurement import Measurement
@@ -187,7 +188,7 @@ class ExcitationPlot(PlotBase):
                 _axis.set_ylabel("log $(N_u) ~({\\rm cm}^{-2})$")
         else:
             _axis.set_ylabel(kwargs_opts["ylabel"])
-        first = True
+        # first = True
         if kwargs_opts["label"] == "id":
             for lab in sorted(cdavg):
                 _axis.text(x=energies[lab] + 100, y=np.log10(cdavg[lab]), s=str(lab))
@@ -216,7 +217,6 @@ class ExcitationPlot(PlotBase):
             if tt.fit_result[data_position] is None:
                 raise ValueError(f"The Excitation Tool was unable to fit pixel {position}. Try show_fit=False")
             x_fit = np.linspace(0, max(energy), 30)
-            # @TODO This now depends on tool._numcomponents
             if debug:
                 self._logfile.write(f"EXD: {type(tt._fitresult)=}\n")
 
@@ -270,22 +270,34 @@ class ExcitationPlot(PlotBase):
                     label=labhot,
                     lw=kwargs_opts["linewidth"],
                 )
+            flabel = "fit"
             if tt.av_fitted:
-                # need to evaluate Av at x_fit energies. so need wavelenghts
-                x_wave = tt._ac.loc[list(tt._measurements.keys())]["lambda"].data
-                ext_ratio = tt._av_interp(x_wave)
-                x_fit = np.array(list(tt.energies(line=True).values()))
-                flabel = f"Fitted $A_v$ = {tt._av:.1f}"
-                # print(flabel)
-            else:
-                ext_ratio = None
-                flabel = "fit"
+                if data_position is not None and len(np.shape(tt.av)) > 1:
+                    av_v = tt.av[data_position]
+                    av_e = tt.av.error[data_position]
+                    # a Measurement.get_as_measurement() would be nice
+                    av_p = Measurement(av_v, uncertainty=StdDevUncertainty(av_e), unit="")
+                else:
+                    av_p = tt.av
+                x_wave = Quantity(tt._ac.loc[list(tt._measurements.keys())]["lambda"])
+                ext_ratio = tt.extinction_model(x_wave)
+                corrected_cd = colden * np.exp(0.4 * ext_ratio * av_p)
+                _axis.errorbar(
+                    x=energy,
+                    y=np.log10(corrected_cd),
+                    marker="^",
+                    label=f"$A_v$ = {av_p:.2f}",
+                    yerr=sigma,
+                    capsize=2 * kwargs_opts["capsize"],
+                    linestyle="none",
+                    color="k",
+                    lw=kwargs_opts["linewidth"],
+                    ms=kwargs_opts["markersize"],
+                )
 
             _axis.plot(
                 x_fit,
-                tt.fit_result[data_position].eval(
-                    x=x_fit, fit_opr=False, fit_av=tt.av_fitted, extinction_ratio=ext_ratio
-                ),
+                tt.fit_result[data_position].eval(x=x_fit, fit_opr=False, fit_av=False, extinction_ratio=None),
                 label=flabel,
                 color=self._fit_color,
             )
@@ -298,7 +310,6 @@ class ExcitationPlot(PlotBase):
         if kwargs_opts["xmax"] is None:
             kwargs_opts["xmax"] = np.round(500.0 + energy.max(), -3)
         _axis.set_xlim(kwargs_opts["xmin"], kwargs_opts["xmax"])
-        # print(f"setting ylim [{kwargs_opts['ymin']},{kwargs_opts['ymax']}]")
         _axis.set_ylim(kwargs_opts["ymin"], kwargs_opts["ymax"])
         # try to make reasonably-spaced xaxis tickmarks.
         # if I were clever, I'd do this with a function
