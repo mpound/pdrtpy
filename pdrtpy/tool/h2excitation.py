@@ -3,17 +3,21 @@ import io
 import math
 import pstats
 import warnings
+from abc import abstractmethod
 from copy import deepcopy
 
 import astropy.constants as constants
 import astropy.units as u
+from astropy.units.quantity import Quantity
 import numpy as np
 from astropy import log
 from astropy.nddata import Cutout2D, StdDevUncertainty
 from emcee.pbar import get_progress_bar
 from lmfit import Parameters  # , fit_report
 from lmfit.model import Model  # , ModelResult
+from pathlib import Path
 from scipy.interpolate import interp1d
+from typing import Union
 
 from .. import pdrutils as utils
 from ..measurement import Measurement
@@ -23,21 +27,21 @@ from .toolbase import ToolBase
 log.setLevel("WARNING")
 
 
-class ExcitationFit(ToolBase):
+class BaseExcitationFit(ToolBase):
     """Base class for creating excitation fitting tools for various species.
 
     :param measurements: Input measurements to be fit.
     :type measurements: list of :class:`~pdrtpy.measurement.Measurement`.
     """
 
-    def __init__(self, measurements=None, constantsfile=None):
+    def __init__(self, measurements: Measurement = None, constantsfile: Union[Path, str] = None):
         super().__init__()
         # must be set before call to init_measurements
         self._intensity_units = "erg cm^-2 s^-1 sr^-1"
         self._cd_units = "cm^-2"
         self._t_units = "K"
         self._numcomponents = 0  # number of components to fit. user-settable
-        self._valid_components = ["hot", "cold", "total"]
+        self._valid_components = ["hot", "cold", "total"]  # NB: this only allows for 2-component fit
         self._av_interp = None
         if isinstance(measurements, dict) or measurements is None:
             self._measurements = measurements
@@ -52,7 +56,7 @@ class ExcitationFit(ToolBase):
         # @todo we don't really even use this.  CD's are computed on the fly in average_column_density()
         self._column_density = dict()
 
-    def _init_measurements(self, m):
+    def _init_measurements(self, m: Measurement):
         """Initialize measurements dictionary given a list.
 
         :param m: list of intensity :class:`~pdrtpy.measurement.Measurement`s in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
@@ -67,7 +71,7 @@ class ExcitationFit(ToolBase):
                 )
             self._measurements[mm.id] = mm
 
-    def add_measurement(self, m):
+    def add_measurement(self, m: Measurement):
         """Add an intensity Measurement to internal dictionary used to
         compute the excitation diagram.   This method can also be used
         to safely replace an existing intensity Measurement.
@@ -86,7 +90,7 @@ class ExcitationFit(ToolBase):
         else:
             self._init_measurements(m)
 
-    def remove_measurement(self, identifier):
+    def remove_measurement(self, identifier: str):
         """Delete a measurement from the internal dictionary used to compute column densities. Any associated column density will also be removed.
 
         :param identifier: the measurement identifier
@@ -96,7 +100,7 @@ class ExcitationFit(ToolBase):
         del self._measurements[identifier]  # we want this to raise a KeyError if id not found
         self._column_density.pop(identifier, None)  # but not this.
 
-    def replace_measurement(self, m):
+    def replace_measurement(self, m: Measurement):
         """Safely replace an existing intensity Measurement.  Do not
         change a Measurement in place, use this method.
         Otherwise, the column densities will be inconsistent.
@@ -105,12 +109,13 @@ class ExcitationFit(ToolBase):
         """
         self.add_measurement(m)
 
-    def _partition_function(self):
+    @abstractmethod
+    def _partition_function(self, temperature: Quantity):
         """The partition function for this molecule. Subclasses should implement this function."""
         pass
 
 
-class H2ExcitationFit(ExcitationFit):
+class H2ExcitationFit(BaseExcitationFit):
     r"""Tool for fitting temperatures, column densities, and ortho-to-para ratio(`OPR`) from an :math:`H_2` excitation diagram. It takes as input a set of :math:`H_2` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
 
     Often, excitation diagrams show evidence of both "hot" and "cold" gas components, where the cold gas dominates the intensity in the low `J` transitions and the hot gas dominates in the high `J` transitions. Given data over several transitions, one can fit for :math:`T_{cold}, T_{hot}, N_{total} = N_{cold}+ N_{hot}`, and optionally `OPR`. One needs at least 5 points to fit the temperatures and column densities (slope and intercept :math:`\times 2`), though one could compute (not fit) them with only 4 points. To additionally fit `OPR`, one should have 6 points (5 degrees of freedom).
