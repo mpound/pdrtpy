@@ -29,7 +29,7 @@ from .toolbase import ToolBase
 log.setLevel("WARNING")
 
 
-class NewBaseExcitationFit(ToolBase):
+class BaseExcitationFit(ToolBase):
     """Base class for creating excitation fitting tools for various species.
     Parameters
     ----------
@@ -1349,7 +1349,7 @@ class NewBaseExcitationFit(ToolBase):
 # ========================== END BASEEXCITATION FIT ###################################################
 
 
-class NewH2ExcitationFit(NewBaseExcitationFit):
+class H2ExcitationFit(BaseExcitationFit):
     def __init__(self, measurements: Measurement = None):
         r"""Tool for fitting temperatures, column densities, and ortho-to-para ratio(`OPR`) from an :math:`H_2` excitation diagram. It takes as input a set of :math:`H_2` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
 
