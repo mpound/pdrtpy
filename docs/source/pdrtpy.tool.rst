@@ -33,9 +33,11 @@ The base class of all tools.  Tools have a :meth:`~pdrtpy.tool.toolbase.ToolBase
 Excitation Diagram Fitting
 --------------------------
 
-:class:`~pdrtpy.tool.h2excitation.H2ExcitationFit` is a tool for fitting temperature, column density, and ortho-to-para ratio in :math:`H_2` excitation diagrams.  A two temperature model is assumed, and the fit will find :math:`T_{hot}, T_{cold}, N_{hot}(H_2), N_{cold}(H_2),` and optionally `OPR`.  The base class :class:`~pdrtpy.tool.h2excitation.ExcitationFit` can be used to create a tool to fit a different molecule.
+:class:`~pdrtpy.tool.excitation.H2ExcitationFit` is a tool for fitting temperature, column density, and ortho-to-para ratio in :math:`H_2` excitation diagrams.  A two temperature model is assumed, and the fit will find :math:`T_{hot}, T_{cold}, N_{hot}(H_2), N_{cold}(H_2),` and optionally `A_v` or `OPR`.  The base class :class:`~pdrtpy.tool.excitation.ExcitationFit` can be used to create a tool to fit a different molecule.
 
-.. automodule:: pdrtpy.tool.h2excitation
+Similarly, there are tools to fit :math:`CO`, :math:`^{13}CO`, and :math:`CH^{+}` excitation diagrams.
+
+.. automodule:: pdrtpy.tool.excitation
    :members:
    :undoc-members:
    :show-inheritance:
@@ -53,7 +55,7 @@ LineRatioFit
 FitMap
 ------
 When fitting either single pixels or spatial maps, the fit results are stored per pixel in an :class:`~astropy.nddata.NDData` object that contains :class:`~lmfit.model.ModelResult`
-objects for :class:`~pdrtpy.tool.h2excitation.H2ExcitationFit` or :class:`~lmfit.minimizer.MinimizerResult` objects for :class:`~pdrtpy.tool.lineratiofit.LineRatioFit`.  The user can thus examine in detail the fit at any pixel.
+objects for :class:`~pdrtpy.tool.excitation.H2ExcitationFit` or :class:`~lmfit.minimizer.MinimizerResult` objects for :class:`~pdrtpy.tool.lineratiofit.LineRatioFit`.  The user can thus examine in detail the fit at any pixel.
 
 .. automodule:: pdrtpy.tool.fitmap
    :members:
