@@ -62,7 +62,6 @@ class BaseExcitationFit(ToolBase):
         # @todo we don't really even use this.  CD's are computed on the fly in average_column_density()
         self._column_density = dict()
         self._canonical_opr = molecule.canonical_opr
-        print(f"{self._canonical_opr=}")
         self._opr = Measurement(data=[self._canonical_opr], uncertainty=None)
         self._residual_functions = {
             1: self._one_component_residual,

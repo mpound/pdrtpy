@@ -132,13 +132,14 @@ class TestMeasurement(unittest.TestCase):
         m = Measurement.read(file, error="10%", unit="MJy/sr")
 
     def tearDown(self):
-        print("cleaning up " + utils.testdata_dir())
-        files = ["n22_cii_flux_error.fits", "n22_oi_flux_error.fits", "n22_FIR_flux_error.fits"]
-        for f in files:
-            try:
-                os.remove(utils.testdata_dir() + f)
-            except OSError:
-                pass
+        if False:
+            print("cleaning up " + utils.testdata_dir())
+            files = ["n22_cii_flux_error.fits", "n22_oi_flux_error.fits", "n22_FIR_flux_error.fits"]
+            for f in files:
+                try:
+                    os.remove(utils.testdata_dir() + f)
+                except OSError:
+                    pass
 
 
 if __name__ == "__main__":
