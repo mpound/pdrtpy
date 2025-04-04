@@ -12,7 +12,7 @@ from astropy.nddata import StdDevUncertainty
 from dust_extinction.parameter_averages import G23
 
 from pdrtpy.measurement import Measurement
-from pdrtpy.tool.h2excitation import H2ExcitationFit
+from pdrtpy.tool.excitation import H2ExcitationFit
 
 
 class TestH2Excitation:
@@ -20,6 +20,63 @@ class TestH2Excitation:
 
     def setup_method(self):
         self._intensity = {}
+
+    def test_fit_opr(self):
+        self._intensity = {
+                'H200S0': 3.00e-05,
+                'H200S1': 5.16e-04,
+                'H200S2': 3.71e-04,
+                'H200S3': 1.76e-03,
+                'H200S4': 5.28e-04,
+                'H200S5': 9.73e-04,
+        }
+        a = []
+        for i in self._intensity:
+            # For this example, set a largish uncertainty on the intensity.
+            m = Measurement(
+                data=self._intensity[i],
+                uncertainty=StdDevUncertainty(0.25 * self._intensity[i]),
+                identifier=i,
+                unit="erg cm-2 s-1 sr-1",
+            )
+            # print(m)
+            a.append(m)
+        h = H2ExcitationFit(a)
+        #cd = h.column_densities(norm=False)
+
+        # without opr
+        h.run(fit_opr=False)
+        assert h.thot.data == pytest.approx(692.82, rel=1e-3)
+        assert h.tcold.data == pytest.approx(210.233,rel= 1e-3)
+        assert h.cold_colden.data == pytest.approx(1.802324E21, rel=1e-3)
+        assert h.hot_colden.data == pytest.approx(2.0493E20,rel= 1e-3)
+        assert h.opr.data == pytest.approx(3.0, rel=1e-3)
+        # with opr
+        self._intensity = {
+                'H200S0': 3.00e-05,
+                'H200S1': 3.143E-4,
+                'H200S2': 3.706e-04,
+                'H200S3': 1.060e-03,
+                'H200S4': 5.282e-04,
+                'H200S5': 5.795e-04,
+        }
+        a = []
+        for i in self._intensity:
+            m = Measurement(
+                data=self._intensity[i],
+                uncertainty=StdDevUncertainty(0.25 * self._intensity[i]),
+                identifier=i,
+                unit="erg cm-2 s-1 sr-1",
+            )
+            a.append(m)
+        h = H2ExcitationFit(a)
+
+        h.run(fit_opr=True)
+        assert h.thot.data == pytest.approx(687.467, rel=1e-3)
+        assert h.tcold.data == pytest.approx(207.032,rel= 1e-3)
+        assert h.cold_colden.data == pytest.approx(1.835378E+21, rel=1e-3)
+        assert h.hot_colden.data == pytest.approx(2.07123E+20,rel= 1e-3)
+        assert h.opr.data == pytest.approx(1.8615, rel=1e-3)
 
     def test_fit_av(self):
         # Previous data attenuated by Av=30 using Gordon 2023 extinction curve
