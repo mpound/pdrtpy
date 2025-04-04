@@ -3,12 +3,12 @@ Analysis Tools: Fit models to data
 
 The :mod:`~pdrtpy.tool` module contains the analysis tools in the `PDR Toolbox <http://dustem.astro.umd.edu>`_.  All tools are derived from :class:`~pdrtpy.tool.toolbase.ToolBase`.
 
-For examples how to use `LineRatioFit`, see the notebooks
+For examples how to use `~pdrtpy.tool.lineratiofit.LineRatioFit`, see the notebooks
 `PDRT_Example_Find_n_G0_Single_Pixel.ipynb <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Find_n_G0_Single_Pixel.ipynb>`_
 and
 `PDRT_Example_Make_n_G0_maps.ipynb <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Make_n_G0_maps.ipynb>`_.
 
-For an example how to use `H2ExcitationFit` and `ExcitationPlot` see the notebook `PDRT_Example_H2_Excitation.ipynb <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_H2_Excitation.ipynb>`_.
+For an example how to use `~pdrtpy.tool.excitation.H2ExcitationFit` and `~pdrtpy.plot.excitationplot.ExcitationPlot` see the notebook `PDRT_Example_H2_Excitation.ipynb <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_H2_Excitation.ipynb>`_.
 
 --------------
 
