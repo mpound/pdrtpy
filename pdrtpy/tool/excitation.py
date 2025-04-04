@@ -118,7 +118,7 @@ class BaseExcitationFit(ToolBase):
         :rtype: list of int
         """
         if not self.molecule.opr_can_vary:
-            log.warning(f"The molecule {self.molecule.name} does not have a variable OPR.")
+            # log.warning(f"The molecule {self.molecule.name} does not have a variable OPR.")
             return np.where(self._molecule._transition_data.loc[ids]["Ju"])[0]
         return np.where(self._molecule._transition_data.loc[ids]["Ju"] % 2 != 0)[0]
 
@@ -1203,7 +1203,8 @@ class BaseExcitationFit(ToolBase):
         # kwargs_opts.update(kwargs)
         sigma = utils.LOGE * _colden.error / _colden.data
         slopecold, intcold, slopehot, inthot = self._first_guess(x, y)
-        # print(slopecold,slopehot,intcold,inthot)
+
+        print(f"{slopecold=},{slopehot=},{intcold=},{inthot=}")
         tcold = -utils.LOGE / slopecold
         thot = -utils.LOGE / slopehot
         if np.shape(tcold) == ():
@@ -1252,6 +1253,7 @@ class BaseExcitationFit(ToolBase):
         # self._params.pretty_print()
         self._excount = 0
         self._badfit = 0
+        print(f"{total=}")
         with get_progress_bar(progress, total, leave=True, position=0) as pbar:
             for i in range(total):
                 if np.isfinite(yr[:, i]).all() and np.isfinite(sig[:, i]).all():
@@ -1275,6 +1277,9 @@ class BaseExcitationFit(ToolBase):
                             emcee_kwargs = {k: kwargs[k] for k in ("burn", "steps", "nwalkers") if k in kwargs}
                         else:
                             emcee_kwargs = None
+                        print(
+                            f"_model.fit(data={yr[:,i]},weights={wts},x={x},params={p},idx={idx},{fit_opr=},{fit_av=},{extinction_ratios=}"
+                        )
                         fmdata[i] = self._model.fit(
                             data=yr[:, i],
                             weights=wts,
@@ -1288,14 +1293,15 @@ class BaseExcitationFit(ToolBase):
                             nan_policy=kwargs["nan_policy"],
                             fit_kws=emcee_kwargs,
                         )
+                        print(f"{fmdata[i]=}")
                         # if fmdata[i].success and fmdata[i].errorbars:
                         if fmdata[i].success:
                             count = count + 1
                         else:
-                            # print(
-                            #    f"Bad fit because success {fmdata[i].success} or errorbars"
-                            #    f" {fmdata[i].errorbars} was bad"
-                            # )
+                            print(
+                                f"Bad fit because success {fmdata[i].success} or errorbars"
+                                f" {fmdata[i].errorbars} was bad"
+                            )
                             fmdata[i] = None
                             fm_mask[i] = True
                             self._badfit = self._badfit + 1
@@ -1314,10 +1320,11 @@ class BaseExcitationFit(ToolBase):
             badstderr = False
             fmd = fmdata[ii]
             if fmd is None:
+                print(f"fmd {ii} is None")
                 continue
             for p in fmd.params:
                 if fmd.params[p].stderr is None and fmd.params[p].vary:
-                    # print(f"Fit succeeded at pixel {ii} but stderr for parameter {p} is None. Setting mask")
+                    print(f"Fit succeeded at pixel {ii} but stderr for parameter {p} is None. Setting mask")
                     # fmdata[i].success = False
                     fm_mask[ii] = True
                     self._badfit = self._badfit + 1
