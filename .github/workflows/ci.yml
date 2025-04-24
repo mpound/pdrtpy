@@ -31,6 +31,7 @@ jobs:
       - if: ${{ runner.os != 'Windows' }}
         name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v4
+        name: Cache something
         uses: actions/cache@v4
         with:
           python-version: ${{ matrix.python-version }}
