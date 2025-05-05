@@ -1,0 +1,15 @@
+@1@O@K@El#J
+#5            # Number of levels
+#K            # Energy Unit
+#2            # Number of quantum number
+#El           # Electronic state
+#J            # Fine structure
+# n      g       E(K)                  OP    El    J
+#---data read without format ----------#------ READ WITH FORMAT -----------
+  1    5.0      0.000000               n     3P    2                      !
+  2    3.0    227.717                  n     3P    1                      !
+  3    1.0    326.582                  n     3P    0                      !
+  4    5.0  22831.226                  n     1D    2                      !
+  5    1.0  48621.932                  n     1S    0                      !
+#---data read without format ----------#------ READ WITH FORMAT -----------
+

@@ -1,0 +1,34 @@
+#@1@HCO+@K@J
+#22           # Number of levels
+#K            # Energy Unit
+#1            # Number of quantum number
+#J            # Quantum number : rotation
+# n      g       E(K)                  OP     J
+#---data read without format ----------#------ READ WITH FORMAT -----------
+  1    1.0      0.000000               n      0                           !
+  2    3.0      4.280374               n      1                           !
+  3    5.0     12.841028               n      2                           !
+  4    7.0     25.681767               n      3                           !
+  5    9.0     42.802310               n      4                           !
+  6   11.0     64.202273               n      5                           !
+  7   13.0     89.881179               n      6                           !
+  8   15.0    119.838455               n      7                           !
+  9   17.0    154.073435               n      8                           !
+ 10   19.0    192.585354               n      9                           !
+ 11   21.0    235.373355               n     10                           !
+ 12   23.0    282.436485               n     11                           !
+ 13   25.0    333.773693               n     12                           !
+ 14   27.0    389.383835               n     13                           !
+ 15   29.0    449.265672               n     14                           !
+ 16   31.0    513.417872               n     15                           !
+ 17   33.0    581.839001               n     16                           !
+ 18   35.0    654.527535               n     17                           !
+ 19   37.0    731.481856               n     18                           !
+ 20   39.0    812.700247               n     19                           !
+ 21   41.0    898.180899               n     20                           !
+ 22   43.0    987.921906               n     21                           !
+#---data read without format ----------#------ READ WITH FORMAT -----------
+# Data retrieved from EMAA database on 24/I/2024 by J. Le Bourlot
+# Energy converted from cm-1 to K with hcsurk = 1.43877687750393
+# Ref: CDMS (Oct 2007) Müller et al. J. Mol. Struct. 742 215 (2005) https://doi.org/10.1016/j.molstruc.2005.01.027
+

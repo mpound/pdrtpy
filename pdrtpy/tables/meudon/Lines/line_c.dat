@@ -1,0 +1,13 @@
+#9        # Number of transitions
+#K        # Unit energy transitions
+#   n     nu     nl                E(K)          Aij(s-1)             quant:  IDu      IDl     info:      Description
+#---data--------------------------------------------------------------------------------------------------------------
+    1      2      1         23.59690000     7.9300000E-08             quant:  3P_J=1;  3P_J=0; info:    609.73 micron
+    2      3      2         38.84850000     2.6500000E-07             quant:  3P_J=2;  3P_J=1; info:    370.41 micron
+    3      3      1         62.44540000     1.7100000E-14             quant:  3P_J=2;  3P_J=0; info:    230.41 micron
+    4      4      3      14603.06160000     2.4400000E-04             quant:  1D_J=2;  3P_J=2; info: 9850.25 Angstrom
+    5      4      2      14641.91010000     8.2100000E-05             quant:  1D_J=2;  3P_J=1; info: 9824.13 Angstrom
+    6      4      1      14665.50700000     7.7700000E-08             quant:  1D_J=2;  3P_J=0; info: 9808.32 Angstrom
+    7      5      4      16482.39500000     5.2800000E-01             quant:  1S_J=0;  1D_J=2; info: 8727.13 Angstrom
+    8      5      3      31085.45660000     2.0000000E-05             quant:  1S_J=0;  3P_J=2; info: 4627.35 Angstrom
+    9      5      2      31124.30510000     2.7100000E-03             quant:  1S_J=0;  3P_J=1; info: 4621.57 Angstrom

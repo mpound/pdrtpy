@@ -1,0 +1,21 @@
+@1@CH+@K@J
+#11           # Number of levels
+#K            # Energy Unit
+#1            # Number of quantum number
+#J            # Quantum number : rotation
+# n      g       E(K)                  OP     J
+#---data read without format ----------#------ READ WITH FORMAT -----------
+  1    1.0      0.000000               n      0                           !
+  2    3.0     40.080249               n      1                           !
+  3    5.0    120.192980               n      2                           !
+  4    7.0    240.243089               n      3                           !
+  5    9.0    400.087851               n      4                           !
+  6   11.0    599.538066               n      5                           !
+  7   13.0    838.357775               n      6                           !
+  8   15.0   1116.265554               n      7                           !
+  9   17.0   1432.935088               n      8                           !
+ 10   19.0   1787.995894               n      9                           !
+ 11   21.0   2181.034466               n     10                           !
+#---data read without format ----------#------ READ WITH FORMAT -----------
+# Ref : CDMS
+

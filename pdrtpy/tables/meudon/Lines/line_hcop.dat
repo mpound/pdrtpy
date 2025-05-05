@@ -1,0 +1,30 @@
+#21        # Number of transitions
+#K         # Unit energy transitions
+#   n     nu     nl                E(K)          Aij(s-1)             quant:  Ju    Jl  info:  Description
+#---data------------------------------------------------------------------------------------------------
+    1      2      1          4.28037409     4.1867157E-05             quant:   1;    0; info:     89188.5247 MHz
+    2      3      2          8.56065253     4.0191428E-04             quant:   2;    1; info:    178375.0563 MHz
+    3      4      3         12.84074083     1.4533196E-03             quant:   3;    2; info:    267557.6259 MHz
+    4      5      4         17.12054249     3.5719458E-03             quant:   4;    3; info:    356734.2230 MHz
+    5      6      5         21.39996270     7.1350850E-03             quant:   5;    4; info:    445902.8721 MHz
+    6      7      6         25.67890586     1.2515501E-02             quant:   6;    5; info:    535061.5810 MHz
+    7      8      7         29.95727651     2.0093195E-02             quant:   7;    6; info:    624208.3606 MHz
+    8      9      8         34.23497946     3.0239030E-02             quant:   8;    7; info:    713341.2278 MHz
+    9     10      9         38.51191956     4.3329298E-02             quant:   9;    8; info:    802458.1995 MHz
+   10     11     10         42.78800150     5.9747491E-02             quant:  10;    9; info:    891557.2903 MHz
+   11     12     11         47.06312900     7.9841594E-02             quant:  11;   10; info:    980636.4937 MHz
+   12     13     12         51.33720997     1.0401798E-01             quant:  12;   11; info:   1069693.8910 MHz
+   13     14     13         55.61013616     1.3262502E-01             quant:  13;   12; info:   1158727.2266 MHz
+   14     15     14         59.88183781     1.6600804E-01             quant:  14;   13; info:   1247735.0469 MHz
+   15     16     15         64.15219839     2.0462292E-01             quant:  15;   14; info:   1336714.9237 MHz
+   16     17     16         68.42112914     2.4872917E-01             quant:  16;   15; info:   1425665.0079 MHz
+   17     18     17         72.68853495     2.9878990E-01             quant:  17;   16; info:   1514583.3173 MHz
+   18     19     18         76.95432071     3.5504715E-01             quant:  18;   17; info:   1603467.8706 MHz
+   19     20     19         81.21839139     4.1802105E-01             quant:  19;   18; info:   1692316.6872 MHz
+   20     21     20         85.48065196     4.8798961E-01             quant:  20;   19; info:   1781127.7873 MHz
+   21     22     21         89.74100746     5.6520000E-01             quant:  21;   20; info:   1869899.1921 MHz
+#---end------------------------------------------------------
+# Data taken from EMAA data base.
+# Ref: CDMS (Oct 2007) Müller et al. J. Mol. Struct. 742 215 (2005) https://doi.org/10.1016/j.molstruc.2005.01.027
+# Transition energies computed from frequencies (using exact values of h/k)
+# Aij kept with all digits from previous version. Probably from CDMS - 18-01-07 - file=c029507.cat

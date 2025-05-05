@@ -1,0 +1,21 @@
+#9         # Number of transitions
+#K         # Unit energy transitions
+#n        nu     nl                E(K)          Aij(s-1)             quant:  IDu       IDl     info:  Description
+#---data-------------------------------------------------------------------
+    1      3      2        255.50519179     3.0200000E-04             quant:  3P_J=0;   3P_J=1; info:   56.3111 micron
+    2      2      1        569.83477622     1.4000000E-03             quant:  3P_J=1;   3P_J=2; info:   25.2490 micron
+    3      3      1        825.33996801     7.0500000E-08             quant:  3P_J=0;   3P_J=2; info:   17.4325 micron
+    4      4      3      12466.95704149     2.7800000E-06             quant:  1D_J=2;   3P_J=0; info:   1.15407 micron
+    5      4      2      12722.46223328     6.2200000E-03             quant:  1D_J=2;   3P_J=1; info:   1.13089 micron
+    6      4      1      13292.29700950     2.1340000E-02             quant:  1D_J=2;   3P_J=2; info:   1.08241 micron
+    7      5      4      18619.70794980     1.3800000E+00             quant:  1S_J=0;   1D_J=2; info:   7727.172 Angstrom
+    8      5      2      31342.17018308     2.9800000E-01             quant:  1S_J=0;   3P_J=1; info:   4590.546 Angstrom
+    9      5      1      31912.00495930     4.8700000E-03             quant:  1S_J=0;   3P_J=2; info:   4508.576 Angstrom
+#---end--------------------------------------------------------------------
+# Data retrieved from Podobedova et al. (2009), J. Phys. Chem. Ref. Data 38, 171
+#      by J. Le Bourlot on 23 V 2023
+# Consistent with NIST
+# Conversion from cm-1 to K with hcsurk = 1.43877687750393
+# Note: transition Num 9 (5 -> 1) is not in the NIST data base but is in the original paper.
+# All vavelength in vacuum, including in the visible.
+

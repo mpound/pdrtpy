@@ -1,0 +1,26 @@
+@1@ArH+@K@J
+#11           # Number of levels
+#K            # Energy Unit
+#1            # Number of quantum number
+#J            # Quantum number : rotation
+# n      g       E(K)                  OP     J
+#---data read without format ----------#------ READ WITH FORMAT -----------
+  1    1.0      0.000000               n      0                           !
+  2    3.0     29.637115               n      1                           !
+  3    5.0     88.889905               n      2                           !
+  4    7.0    177.715496               n      3                           !
+  5    9.0    296.049284               n      4                           !
+  6   11.0    443.805661               n      5                           !
+  7   13.0    620.877435               n      6                           !
+  8   15.0    827.136265               n      7                           !
+  9   17.0   1062.432802               n      8                           !
+ 10   19.0   1326.596405               n      9                           !
+ 11   21.0   1619.435568               n     10                           !
+#---data read without format ----------#------ READ WITH FORMAT -----------
+# Ref : CDMS - 36Ar
+# Be Careful: on Earth, 40Ar is the dominant Argon isotope (99.6%; Berglund & Wieser
+#             2011). This isotope however originates almost exclusively from the
+#             radioactive decay of 40K. Solar and interstellar Argon is dominated
+#             by 36Ar (∼84.6%), followed by 38Ar (∼15.4%), with only traces of 40Ar
+#             (∼0.025%) (Wieler 2002).
+

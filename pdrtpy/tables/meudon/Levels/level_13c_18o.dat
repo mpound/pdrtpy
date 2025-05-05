@@ -1,0 +1,43 @@
+@1@CO#3@K@J
+#31           # Number of levels
+#K            # Energy Unit
+#1            # Number of quantum number
+#J            # Quantum number : rotation
+# n      g       E(K)                  OP     J
+#---data read without format ----------#------ READ WITH FORMAT -----------
+  1    1.0      0.000000               n      0                           !
+  2    3.0      5.025                  n      1                           !
+  3    5.0     15.076                  n      2                           !
+  4    7.0     30.151                  n      3                           !
+  5    9.0     50.251                  n      4                           !
+  6   11.0     75.374                  n      5                           !
+  7   13.0    105.520                  n      6                           !
+  8   15.0    140.687                  n      7                           !
+  9   17.0    180.875                  n      8                           !
+ 10   19.0    226.082                  n      9                           !
+ 11   21.0    276.307                  n     10                           !
+ 12   23.0    331.547                  n     11                           !
+ 13   25.0    391.801                  n     12                           !
+ 14   27.0    457.067                  n     13                           !
+ 15   29.0    527.342                  n     14                           !
+ 16   31.0    602.624                  n     15                           !
+ 17   33.0    682.911                  n     16                           !
+ 18   35.0    768.199                  n     17                           !
+ 19   37.0    858.486                  n     18                           !
+ 20   39.0    953.769                  n     19                           !
+ 21   41.0   1054.044                  n     20                           !
+ 22   43.0   1159.307                  n     21                           !
+ 23   45.0   1269.556                  n     22                           !
+ 24   47.0   1384.786                  n     23                           !
+ 25   49.0   1504.993                  n     24                           !
+ 26   51.0   1630.173                  n     25                           !
+ 27   53.0   1760.322                  n     26                           !
+ 28   55.0   1895.436                  n     27                           !
+ 29   57.0   2035.509                  n     28                           !
+ 30   59.0   2180.536                  n     29                           !
+ 31   61.0   2330.513                  n     30                           !
+#---data read without format ----------#------ READ WITH FORMAT -----------
+# Donnees du 28 septembre 2000 avec le moment dipol de CO
+# Energies du 28 septembre 2000 a partir des coeff de Dunham
+# ref: Guelachvili, J Molecular Spect, 98, 64 (1983)
+
