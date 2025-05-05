@@ -260,16 +260,17 @@ class BaseExcitationFit(ToolBase):
             "opr", value=self.molecule.canonical_opr, min=1.0, max=self.molecule.canonical_opr * 1.2, vary=False
         )
         self._params.add("av", value=0.0, min=0.0, max=100, vary=False)
-        self._params.add("m1", value=0, min=-1, max=0)
-        self._params.add("n1", value=15, min=10, max=30)
+        self._params.add("m1", value=-1, max=0)
+        self._params.add("n1", value=7, min=0, max=30)
         if self._numcomponents == 2:
-            self._params.add("m2", value=0, min=-1, max=0)
-            self._params.add("n2", value=15, min=10, max=30)
+            self._params.add("m2", value=-1, max=0)
+            self._params.add("n2", value=75, min=0, max=30)
         # self._params.pretty_print()
 
     def _init_model(self):
         """Initialize the lmfit Model class to be used in fitting."""
         # @todo make a separate class that subclasses Model.
+
         # potentially allow users to change it.
         # print(f'initializing model with nc = {self._numcomponents}')
         self._model = Model(
@@ -811,7 +812,7 @@ class BaseExcitationFit(ToolBase):
         :rtype: float
         """
         if not self.molecule.opr_can_vary:
-            log.warning(f"The molecule {self.molecule,name} does not have a variable OPR.")
+            log.warning(f"The molecule {self.molecule.name} does not have a variable OPR.")
             return self._molecule._transition_data.loc[id]["gu"]
         if utils.is_even(self._molecule._transition_data.loc[id]["Ju"]):
             return self._molecule._transition_data.loc[id]["gu"]
