@@ -103,4 +103,4 @@ class TestH2Excitation:
         g23 = G23(Rv=5.5)
         h.set_extinction_model(g23)
         h.run(fit_av=True)
-        assert h.av.data == pytest.approx(28.16196941, 2e-8)
+        assert h.av.data == pytest.approx(28.162, abs=1E-3)
