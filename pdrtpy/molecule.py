@@ -242,6 +242,8 @@ class C13O(BaseMolecule):  # 13CO16O
         return np.interp(t, self._partfun_data["T"], self._partfun_data["Q"])
 
 
-class CHplus(BaseMolecule):  # CH+
-    def __init__(self, name="CH^+", path="CHp_transition.tab", opr=3.0, opr_can_vary=True):
-        super().__init__(name, path, opr, opr_can_vary)
+# class CHplus(BaseMolecule):  # CH+
+#    def __init__(self, name="CH^+", path="CHp_transition.tab", opr=3.0, opr_can_vary=True):
+#        super().__init__(name, path, opr, opr_can_vary)
+#       self._partfun_data = utils.get_table("PartFun_CH+.tab", format="ascii.ecsv")
+#       self._maxQtemp = np.max(self._partfun_data["T"])
