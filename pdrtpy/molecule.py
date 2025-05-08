@@ -182,12 +182,14 @@ class H2(BaseMolecule):
 
 class CO(BaseMolecule):  # 12C16O
     def __init__(self, name="^{12}CO", path="12co_transition.tab.gz", opr=1.0, opr_can_vary=False):
+        r"""Carbon Monoxide  isotopologue :math:`^{12}C^{16}O`. This uses the molecular Lines and Levels data from the Meudon PDR7 code."""
         super().__init__(name, path, opr, opr_can_vary, format="ascii.ecsv")
         self._partfun_data = utils.get_table("PartFun_12C16O.tab", format="ascii.ecsv")
         self._maxQtemp = np.max(self._partfun_data["T"])
 
     def partition_function(self, temperature: Quantity) -> np.ndarray:
-        """Calculate the partition function for CO at the given temperature usin the HITRAN partition function.
+        """
+        Calculate the partition function for CO at the given temperature usin the HITRAN partition function.
         https://hitran.org/data/Q/q26.txt
         The HITRAN function is evaluated at 1K intervals; this function performas a linear interpolation on those data.
 
@@ -211,13 +213,14 @@ class CO(BaseMolecule):  # 12C16O
 
 class C13O(BaseMolecule):  # 13CO16O
     def __init__(self, name="^{13}CO", path="13co_transition.tab", opr=1.0, opr_can_vary=False):
+        """Carbon Monoxide isotopologue  :math:`^{13}C^{16}O`. This uses the molecular Lines and Levels data from the Meudon PDR7 code."""
         super().__init__(name, path, opr, opr_can_vary, format="ascii.ecsv")
         self._partfun_data = utils.get_table("PartFun_13C16O.tab", format="ascii.ecsv")
         self._maxQtemp = np.max(self._partfun_data["T"])
 
     # @todo refactor partition_function since we use same table format for all
     def partition_function(self, temperature: Quantity) -> np.ndarray:
-        """Calculate the partition function for CO at the given temperature usin the HITRAN partition function.
+        """Calculate the partition function for 13CO at the given temperature usin the HITRAN partition function.
         https://hitran.org/data/Q/q27.txt
         The HITRAN function is evaluated at 1K intervals; this function performas a linear interpolation on those data.
 

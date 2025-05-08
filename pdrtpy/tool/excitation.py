@@ -1381,7 +1381,7 @@ class H2ExcitationFit(BaseExcitationFit):
 
 class COExcitationFit(BaseExcitationFit):
     def __init__(self, measurements: Measurement = None):
-        r"""Tool for fitting temperatures, column densities, `A_v` from an :math:`^{12}CO` excitation diagram. It takes as input a set of :math:`H_2` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
+        r"""Tool for fitting temperatures, column densities, `A_v` from an :math:`^{12}C^{16}O` excitation diagram. It takes as input a set of :math:`H_2` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
 
 
         Often, excitation diagrams show evidence of both "hot" and "cold" gas components, where the cold gas
@@ -1401,7 +1401,7 @@ class COExcitationFit(BaseExcitationFit):
 
 class C13OExcitationFit(BaseExcitationFit):
     def __init__(self, measurements: Measurement = None):
-        r"""Tool for fitting temperatures, column densities, `A_v` from an :math:`^{13}CO` excitation diagram. It takes as input a set of :math:`H_2` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
+        r"""Tool for fitting temperatures, column densities, `A_v` from an :math:`^{13}C^{16}O` excitation diagram. It takes as input a set of :math:`H_2` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
 
         Often, excitation diagrams show evidence of both "hot" and "cold" gas components, where the cold gas
         dominates the intensity in the low `J` transitions and the hot gas dominates in the high `J` transitions.
