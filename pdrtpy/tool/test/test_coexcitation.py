@@ -68,11 +68,10 @@ class TestCOExcitation:
         h = COExcitationFit(list(intensity.values()))
 
         h.run(components=1)
-        assert h.thot.data == pytest.approx(692.82, rel=1e-3)
-        assert h.tcold.data == pytest.approx(210.233, rel=1e-3)
-        assert h.cold_colden.data == pytest.approx(1.802324e21, rel=1e-3)
-        assert h.hot_colden.data == pytest.approx(2.0493e20, rel=1e-3)
-        assert h.opr.data == pytest.approx(3.0, rel=1e-3)
+        assert h.thot.data == pytest.approx(116.4179, rel=1e-3)
+        assert h.tcold == h.thot
+        assert h.cold_colden.data == pytest.approx(1.423889e17, rel=1e-3)
+        assert h.hot_colden == h.cold_colden
 
     def test_13co_fit(self):
         # joblin et al NGC7023 data
