@@ -18,4 +18,3 @@
 # Conversion from cm-1 to K with hcsurk = 1.43877687750393
 # Note: transition Num 9 (5 -> 1) is not in the NIST data base but is in the original paper.
 # All vavelength in vacuum, including in the visible.
-

@@ -6,23 +6,21 @@ import warnings
 from abc import abstractmethod
 from copy import deepcopy
 
+# from scipy.interpolate import interp1d
+from typing import Union
+
 import astropy.constants as constants
 import astropy.units as u
-
-from astropy.units.quantity import Quantity
 import numpy as np
 from astropy import log
 from astropy.nddata import Cutout2D, StdDevUncertainty
+from astropy.units.quantity import Quantity
 from emcee.pbar import get_progress_bar
 from lmfit import Parameters  # , fit_report
 from lmfit.model import Model  # , ModelResult
 
-# from scipy.interpolate import interp1d
-from typing import Union
-
-from .. import pdrutils as utils
+from .. import molecule as mol, pdrutils as utils
 from ..measurement import Measurement
-from .. import molecule as mol
 from .fitmap import FitMap
 from .toolbase import ToolBase
 

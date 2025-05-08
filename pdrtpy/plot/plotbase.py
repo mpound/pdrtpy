@@ -1,6 +1,5 @@
-from copy import copy, deepcopy
-
 from abc import ABC
+from copy import copy, deepcopy
 
 # import astropy.version
 import matplotlib.axes as maxes

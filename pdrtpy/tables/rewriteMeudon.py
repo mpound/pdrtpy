@@ -7,10 +7,11 @@ Convert Meudon line transition data files to pdrtpy format
 @author: mpound
 """
 
-import pdrtpy.pdrutils as util
 import astropy.units as u
-from astropy.table import vstack, Column
 import numpy as np
+from astropy.table import Column, vstack
+
+import pdrtpy.pdrutils as util
 
 # from astropy.table import Table
 

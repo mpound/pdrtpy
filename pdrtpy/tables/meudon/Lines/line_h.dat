@@ -24,4 +24,3 @@
 # We replace this transition by the two photons continuum process at lambda_max = 1400.000000 Angstrom
 #     9      3      1     102950.00000000     8.2000000E-00             quant:  2s_J=1/2;    1s_J=1/2;  info: 2 photons continuum emission at lambda_max = 1400.000000 Angstrom
 # (Nussbaumer & Schmutz AA138, 495, 1984)
-
