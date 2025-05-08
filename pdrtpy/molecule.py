@@ -1,10 +1,12 @@
 import warnings
 from pathlib import Path
 from typing import Union
+
 import astropy.units as u
-from astropy.units.quantity import Quantity
-from astropy.table import Table  # , QTable
 import numpy as np
+from astropy.table import Table  # , QTable
+from astropy.units.quantity import Quantity
+
 from . import pdrutils as utils
 
 

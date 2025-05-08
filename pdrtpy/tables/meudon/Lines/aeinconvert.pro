@@ -2,7 +2,7 @@ pro aeinconvert
 ; program to convert A data from Roueff Abgrail et al. 2019 to format
 ; to run in pdrbourlot/pdr_hh
 ; line_h2.dat Roeuff data from PDR7_240919_r2131/data
-;aquadh2.dat is from pdrbourlot/hh/data new file is aquadh2.dat_roueff 
+;aquadh2.dat is from pdrbourlot/hh/data new file is aquadh2.dat_roueff
   readcol,'line_h2.dat',ndum,nudum,nldum,e,aij,quant,vu,ju,vl,jl,format='I,I,I,F,F,A,I,I,I,I'
  print,aij[0],vu[0],ju[0],vl[0],jl[0]
 ;   n     nu     nl                E(K)          Aij(s-1)             quant:     vu      Ju      vl      Jl  info:      Description  Lambda (micrometres)
