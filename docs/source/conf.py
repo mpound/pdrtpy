@@ -83,6 +83,7 @@ intersphinx_mapping = {
     "lmfit": ("https://lmfit.github.io/lmfit-py/", None),
     "pandas": ("https://pandas.pydata.org/docs/", None),
     "specutils": ("https://specutils.readthedocs.io/en/stable/", None),
+    "dust_extinction": ("https://dust-extinction.readthedocs.io/en/stable/", None),
 }
 
 # The reST default role (used for this markup: `text`) to use for all
