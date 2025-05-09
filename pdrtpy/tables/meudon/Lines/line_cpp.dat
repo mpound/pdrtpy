@@ -1,0 +1,15 @@
+#9        # Number of transitions
+#K        # Unit energy transitions
+#   n     nu     nl                E(K)          Aij(s-1)             quant:  IDu      IDl     info:      Description
+#---data-------------------------------------------------------------------------------------------------------------
+    1      3      2         34.08442956     2.3900000E-07             quant:  3P_J=1;  3P_J=0; info:  422.1100 micron
+    2      4      3         81.08900170     2.4100000E-06             quant:  3P_J=2;  3P_J=1; info:  177.4318 micron
+    3      4      2        115.17343126     1.5000000E-13             quant:  3P_J=2;  3P_J=0; info:  124.9210 micron
+    4      3      1      75378.16919136     1.1400000E+02             quant:  3P_J=1;  1S_J=0; info: 1908.73 Angstrom
+    5      4      1      75459.25819306     5.1900000E-03             quant:  3P_J=2;  1S_J=0; info: 1906.67 Angstrom
+    6      5      1     147261.74851736     1.7670000E+09             quant:  1P_J=1;  1S_J=0; info:  977.02 Angstrom
+    7      5      2      71917.23344650     2.3300000E-03             quant:  1P_J=1;  3P_J=0; info: 2000.60 Angstrom
+    8      5      3      71883.14882227     1.8700000E-03             quant:  1P_J=1;  3P_J=1; info: 2001.55 Angstrom
+    9      5      4      71802.05935745     2.9900000E-03             quant:  1P_J=1;  3P_J=2; info: 2003.81 Angstrom
+#--------------------------------------------------------------------------------------------------------------------
+Reference: NIST data base: transitions 4, 5, 6. LFM14 for Aij transitions 7, 8, 9

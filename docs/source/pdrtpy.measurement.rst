@@ -1,7 +1,7 @@
 Measurements: How you put observations to the Toolbox
 ========================================================
 
-To use PDR Toolbox, you need to create `Measurements` from your
+To use PDR Toolbox, you need to create a `~pdrtpy.measurement.Measurement` for each of your
 observations. A Measurement consists of a value and an error.
 These can be single-valued or an array of values.  In the typical
 case of an image, the Measurement is a representation of a FITS file

@@ -1,0 +1,5 @@
+#1        # Number of transitions
+#K        # Unit energy transitions
+#   n     nu     nl                E(K)          Aij(s-1)             quant:  Lev_up       Lev_lo     info:  Description
+#---data-------------------------------------------------------------------------------------------------------------
+    1      2      1        250.92125436     4.7900000E-05             quant:  2P_J=3/2;    2P_J=1/2;  info:    57.3300 micron

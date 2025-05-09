@@ -1,0 +1,13 @@
+@1@N++@K@El#J
+#2            # Number of levels
+#K            # Energy Unit
+#2            # Number of quantum number
+#El           # Electronic state
+#J            # Fine structure
+# n      g       E(K)                  OP    El    J
+#---data read without format ----------#------ READ WITH FORMAT -----------
+  1    2.0      0.0000                 n     2P0  1/2                     !
+  2    4.0    250.9213                 n     2P0  3/2                     !
+#---data read without format ----------#------ READ WITH FORMAT -----------
+Reference: NIST data base
+No transition with electronic levels above 2P0 (selection rules)

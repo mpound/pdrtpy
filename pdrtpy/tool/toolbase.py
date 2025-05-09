@@ -1,7 +1,9 @@
+from abc import ABC, abstractmethod
+
 import pdrtpy.pdrutils as utils
 
 
-class ToolBase(object):
+class ToolBase(ABC):
     """Base class object for PDR Toolbox tools.  This class implements a simple
     interface with a run method.  Tools will generally do some set up
     such as reading in observational data before run() can be invoked.
@@ -12,6 +14,7 @@ class ToolBase(object):
         self._measurementnaxis = -1
         self._modelnaxis = -1
 
+    @abstractmethod
     def run(self):
         """Runs the tool. Each subclass Tool must implement its own run() method."""
         pass

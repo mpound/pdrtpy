@@ -1,6 +1,7 @@
+from abc import ABC
 from copy import copy, deepcopy
 
-import astropy.version
+# import astropy.version
 import matplotlib.axes as maxes
 import numpy as np
 import numpy.ma as ma
@@ -21,7 +22,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from .. import pdrutils as utils
 
 
-class PlotBase:
+class PlotBase(ABC):
     """Base class for plotting.
 
     :param tool:  Reference to a :mod:`~pdrtpy.tool` object or `None`.  This is used for classes that inherit from PlotBase and are coupled to a specific tool, e.g. :class:`~pdrtpy.plot.LineRatioPlot` and :class:`~pdrtpy.tool.LineRatioFit`.

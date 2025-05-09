@@ -1,0 +1,26 @@
+#15       # Number of transitions
+#K        # Unit energy transitions
+#   n     nu     nl                E(K)          Aij(s-1)             quant:  Lev_up       Lev_lo     info: Description
+#---data-------------------------------------------------------------------------------------------------------------
+    1      6      4      21916.79835628     4.2097000E+06             quant:  3s_J=1/2;    2p_J=3/2;  info: 6562.909442 Angstrom
+    2      7      4      21916.93897083     1.0775000E+07             quant:  3d_J=3/2;    2p_J=3/2;  info: 6562.867336 Angstrom
+    3      9      4      21916.99095815     6.4651000E+07             quant:  3d_J=5/2;    2p_J=3/2;  info: 6562.851769 Angstrom
+    4      5      3      21917.25891039     2.2449000E+07             quant:  3p_J=1/2;    2s_J=1/2;  info: 6562.771533 Angstrom
+    5      6      2      21917.32478764     2.1046000E+06             quant:  3s_J=1/2;    2p_J=1/2;  info: 6562.751807 Angstrom
+    6      8      3      21917.41488964     2.2448000E+07             quant:  3p_J=3/2;    2s_J=1/2;  info: 6562.724827 Angstrom
+    7      7      2      21917.46540219     5.3877000E+07             quant:  3d_J=3/2;    2p_J=1/2;  info: 6562.709702 Angstrom
+    8      2      1     118352.23757339     6.2649000E+08             quant:  2p_J=1/2;    1s_J=1/2;  info: 1215.673645 Angstrom
+    9      3      1     102950.00000000     8.2000000E-00             quant:  2s_J=1/2;    1s_J=1/2;  info: 1400.000000 Angstrom
+   10      4      1     118352.76400476     6.2648000E+08             quant:  2p_J=3/2;    1s_J=1/2;  info: 1215.668237 Angstrom
+   11      5      1     140269.54725244     1.6725000E+08             quant:  3p_J=1/2;    1s_J=1/2;  info: 1025.722966 Angstrom
+   12      6      1     140269.56236103     1.1090000E-06             quant:  3s_J=1/2;    1s_J=1/2;  info: 1025.722855 Angstrom
+   13      7      1     140269.70297558     5.9380000E+02             quant:  3d_J=3/2;    1s_J=1/2;  info: 1025.721827 Angstrom
+   14      8      1     140269.70323169     1.6725000E+08             quant:  3p_J=3/2;    1s_J=1/2;  info: 1025.721825 Angstrom
+   15      9      1     140269.75496291     5.9370000E+02             quant:  3d_J=5/2;    1s_J=1/2;  info: 1025.721447 Angstrom
+# --- Comments ------------------------------------------------------------------------------------------------------
+# TODO: need to implement a better treatment of the 2 photons transition from 2S1/2 towards 1S1/2
+# NIST gives a transition with low deexcitation probability
+#     9      3      1     118352.28834205     2.4950000E-06             quant:  2s_J=1/2;    1s_J=1/2;  info: 1215.673123 Angstrom
+# We replace this transition by the two photons continuum process at lambda_max = 1400.000000 Angstrom
+#     9      3      1     102950.00000000     8.2000000E-00             quant:  2s_J=1/2;    1s_J=1/2;  info: 2 photons continuum emission at lambda_max = 1400.000000 Angstrom
+# (Nussbaumer & Schmutz AA138, 495, 1984)

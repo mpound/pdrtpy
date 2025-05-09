@@ -203,7 +203,7 @@ def _tablename(filename):
     return table_dir() + filename
 
 
-def get_table(filename, format="ipac", path=None):
+def get_table(filename, format="ipac", path=None, **kwargs):
     """Return an astropy Table read from the input filename.
 
     :param filename: input filename, no path
@@ -212,12 +212,15 @@ def get_table(filename, format="ipac", path=None):
     :type format: str
     :param  path: path to filename relative to models directory.  Default of None means look in "tables" directory
     :type path: str
+    :param kwargs: additional arguments to pass to Table.read, e.g. `header_start`, `data_start`
+    :type kwargs: dict
     :rtype: :class:`astropy.table.Table`
+
     """
     if path is None:
-        return Table.read(_tablename(filename), format=format)
+        return Table.read(_tablename(filename), format=format, **kwargs)
     else:
-        return Table.read(model_dir() + path + filename, format=format)
+        return Table.read(model_dir() + path + filename, format=format, **kwargs)
 
 
 #########################

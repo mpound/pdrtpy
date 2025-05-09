@@ -1,0 +1,14 @@
+@1@Si+@K@El#J
+#5            # Number of levels
+#K            # Energy Unit
+#2            # Number of quantum number
+#El           # Electronic state
+#J            # Fine structure
+# n      g       E(K)                  OP    El   J
+#---data read without format ----------#------ READ WITH FORMAT -----------
+  1    2.0      0.000000               n     2P  1/2                      !
+  2    4.0    413.290                  n     2P  3/2                      !
+  3    2.0  61617.060                  n     4P  1/2                      !
+  4    4.0  61772.930                  n     4P  3/2                      !
+  5    6.0  62025.140                  n     4P  5/2                      !
+#---data read without format ----------#------ READ WITH FORMAT -----------

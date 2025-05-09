@@ -8,6 +8,7 @@ Module Descriptions and APIs
 
    pdrtpy.measurement
    pdrtpy.modelset
+   pdrtpy.molecule
    pdrtpy.plot
    pdrtpy.tool
    pdrtpy.pdrutils
