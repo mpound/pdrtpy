@@ -320,8 +320,6 @@ class BaseExcitationFit(ToolBase):
         # model is already in log space
         model = x * m1 + n1
         if fit_opr:
-            # model[idx] *= opr/self._canonical_opr
-            # print("Adding")
             model[idx] += np.log10(opr / self._canonical_opr)
         if fit_av:
             model = model - 0.4 * extinction_ratio * av * utils.LOGE
@@ -609,7 +607,6 @@ class BaseExcitationFit(ToolBase):
         cl = component.lower()
         if cl not in self._valid_components:
             raise KeyError(f"{cl} not a valid component. Must be one of {self._valid_components}")
-        # print(f'returning {cl}')
         if cl == "total":
             return self.total_colden
         else:
@@ -650,7 +647,6 @@ class BaseExcitationFit(ToolBase):
                     denom = self._molecule._transition_data.loc["Ju", cd]["gu"]
                     if len(denom) > 0:
                         denom = denom[0]  # ARGH kluge.  Need to get rid of f option as Ju is no longer unique
-                # print("CD ",cd,"DENOM ",denom)
                 # This fails with complaints about units:
                 # self._column_density[cd] /= self._molecule._transition_data.loc[cd]["gu"]
                 # gu = Measurement(self._molecule._transition_data.loc[cd]["gu"],unit=u.dimensionless_unscaled)
@@ -740,7 +736,6 @@ class BaseExcitationFit(ToolBase):
                     weights = np.array([ca.uncertainty.array])
                 else:
                     weights = ca.uncertainty.array
-            # print(f"weights {weights} avg,sum:{np.average(weights)},{np.sum(weights)}")
             if np.sum(weights) == 0:
                 cdavg = np.average(cddata)
             else:
@@ -1121,7 +1116,6 @@ class BaseExcitationFit(ToolBase):
         else:
             slopehot = slopecold
             inthot = intcold
-        # print("FG ",type(slopecold),type(slopehot),type(intcold),type(inthot))
         return np.array([slopecold, intcold, slopehot, inthot])
 
     def _fit_excitation(self, position, size, fit_opr=False, fit_av=False, **kwargs):
@@ -1203,18 +1197,14 @@ class BaseExcitationFit(ToolBase):
         sigma = utils.LOGE * _colden.error / _colden.data
         slopecold, intcold, slopehot, inthot = self._first_guess(x, y)
 
-        print(f"{slopecold=},{slopehot=},{intcold=},{inthot=}")
         tcold = -utils.LOGE / slopecold
         thot = -utils.LOGE / slopehot
         if np.shape(tcold) == ():
             tcold = np.array([tcold])
             thot = np.array([thot])
         saveshape = tcold.shape
-        # print("TYPE COLD SIT",type(slopecold),type(intcold),type(tcold))
-        # print("SHAPES: colden/sigma/slope/int/temp/cd: ",np.shape(_colden),np.shape(sigma),np.shape(slopecold),np.shape(intcold),np.shape(tcold),np.shape(_cd))
         # print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K"%(tcold,thot))
         fmdata = np.empty(tcold.shape, dtype=object).flatten()
-        # fm = FitMap(data=fmdata,wcs=colden[fk].wcs,uncertainty=None,unit=None)
         tcold = tcold.flatten()
         thot = thot.flatten()
         slopecold = slopecold.flatten()
@@ -1224,16 +1214,12 @@ class BaseExcitationFit(ToolBase):
         # sigma = sigma.flatten()
         # flatten any dimensions past 0
         shp = y.shape
-        # print("NS ",shp[0],shp[1:])
         if len(shp) == 1:
-            # print("adding new axis")
             y = y[:, np.newaxis]
             shp = y.shape
         yr = y.reshape((shp[0], np.prod(shp[1:])))
         sig = sigma.reshape((shp[0], np.prod(shp[1:])))
-        # print("YR, SIG SHAPE",yr.shape,sig.shape)
         count = 0
-        # print("LEN(TCOLD)",len(tcold))
         total = len(tcold)
         fm_mask = np.full(shape=tcold.shape, fill_value=False)
         # Suppress the incorrect warning about model parameters
@@ -1248,11 +1234,9 @@ class BaseExcitationFit(ToolBase):
             progress = kwargs.pop("progress", True)
         else:
             progress = False
-        # print("PARAMS")
         # self._params.pretty_print()
         self._excount = 0
         self._badfit = 0
-        print(f"{total=}")
         with get_progress_bar(progress, total, leave=True, position=0) as pbar:
             for i in range(total):
                 if np.isfinite(yr[:, i]).all() and np.isfinite(sig[:, i]).all():
@@ -1269,16 +1253,13 @@ class BaseExcitationFit(ToolBase):
                         p["m2"].value = slopehot[i]
                     wts = 1.0 / (sig[:, i] * sig[:, i])
                     try:
-                        # print("X=",x)
-                        # print("Y=",yr[:i])
-                        # print(f"fitting with fit_av={fit_av}")
                         if kwargs["method"] == "emcee":
                             emcee_kwargs = {k: kwargs[k] for k in ("burn", "steps", "nwalkers") if k in kwargs}
                         else:
                             emcee_kwargs = None
-                        print(
-                            f"_model.fit(data={yr[:,i]},weights={wts},x={x},params={p},idx={idx},{fit_opr=},{fit_av=},{extinction_ratios=}"
-                        )
+                        #print(
+                        #    f"_model.fit(data={yr[:,i]},weights={wts},x={x},params={p},idx={idx},{fit_opr=},{fit_av=},{extinction_ratios=}"
+                        #)
                         fmdata[i] = self._model.fit(
                             data=yr[:, i],
                             weights=wts,
@@ -1292,7 +1273,7 @@ class BaseExcitationFit(ToolBase):
                             nan_policy=kwargs["nan_policy"],
                             fit_kws=emcee_kwargs,
                         )
-                        print(f"{fmdata[i]=}")
+                        #print(f"{fmdata[i]=}")
                         # if fmdata[i].success and fmdata[i].errorbars:
                         if fmdata[i].success:
                             count = count + 1
@@ -1319,7 +1300,6 @@ class BaseExcitationFit(ToolBase):
             badstderr = False
             fmd = fmdata[ii]
             if fmd is None:
-                print(f"fmd {ii} is None")
                 continue
             for p in fmd.params:
                 if fmd.params[p].stderr is None and fmd.params[p].vary:
