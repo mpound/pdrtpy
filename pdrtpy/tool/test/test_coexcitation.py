@@ -2,13 +2,12 @@
 # -*- coding: utf-8 -*-
 # coexcitation test code
 
-import pytest
 import astropy.units as u
+import pytest
 from astropy.nddata import StdDevUncertainty
 
-
 from pdrtpy.measurement import Measurement
-from pdrtpy.tool.excitation import COExcitationFit, C13OExcitationFit
+from pdrtpy.tool.excitation import C13OExcitationFit, COExcitationFit
 
 
 class TestCOExcitation:
