@@ -334,6 +334,9 @@ class ExcitationPlot(PlotBase):
         # try to make reasonably-spaced xaxis tickmarks.
         # if I were clever, I'd do this with a function
         temperature_range = kwargs_opts["xmax"] - kwargs_opts["xmin"]
+        if temperature_range <= 2000:
+            _axis.xaxis.set_major_locator(MultipleLocator(500))
+            _axis.xaxis.set_minor_locator(MultipleLocator(100))
         if temperature_range <= 10000:
             _axis.xaxis.set_major_locator(MultipleLocator(1000))
             _axis.xaxis.set_minor_locator(MultipleLocator(200))
