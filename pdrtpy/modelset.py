@@ -24,11 +24,11 @@ class ModelSet(object):
     :param medium:  medium type, e.g. 'constant density', 'clumpy', 'non-clumpy'
     :type medium: str
 
-    :param i: inclination (viewing) angle, i=0 is face-on, i=90 is edge-on.  Valid values are 0, 30, 45, 60, 90
-    :type  i: float
+    :param inc: inclination (viewing) angle, i=0 is face-on, inc=90 is edge-on.  Valid values are 0, 30, 45, 60, 90
+    :type  inc: float
 
-    :param avperp: The thickness of the PDR, for non-zero viewing angle. It is expressed as a visual extinction perpendicular to the PDR surface.  Valid values are 1, 3, 5.
-                   This parameter is ignore for face-on (i=0) angles.
+    :param avperp: The thickness of the PDR, for non-zero viewing angle. It is expressed as a visual extinction perpendicular to the PDR surface, in magnitudes.  Valid values are 1, 3, 5.
+                   This parameter is ignore for face-on (inc=0) angles.
     :type  avperp: float
 
     :param mass: maximum clump mass (for KosmaTau models).  Default:None (appropriate for Wolfire/Kaufman models)
@@ -42,10 +42,10 @@ class ModelSet(object):
 
         .. code-block:: python
 
-           ['PDRcode','name', 'version','path','filename','medium','z','i', 'avperp', 'mass','description']
+           ['PDRcode','name', 'version','path','filename','medium','z','inc', 'avperp', 'mass','description']
 
-        `z`, 'i', 'avperp', and `mass` should be numbers, the rest should be strings.
-        The `name`, `version`, `medium`, `z`, 'i', 'avperp', and `mass` columns contain
+        `z`, 'inc', 'avperp', and `mass` should be numbers, the rest should be strings.
+        The `name`, `version`, `medium`, `z`, 'inc', 'avperp', and `mass` columns contain
         the values available in the input ModelSet as described above. `PDR
         code` is the originator of the code e.g., "KOSMA-tau", `version`
         is the code version, `path` is the full-qualified pathname to
@@ -66,8 +66,9 @@ class ModelSet(object):
     :raises ValueError: If model set not recognized/found.
     """
 
-    # @ToDo replace with kwargs?
-    def __init__(self, name, z, medium="constant density", i=0, avperp=0, mass=None, modelsetinfo=None, format="ipac"):
+    def __init__(
+        self, name, z, medium="constant density", inc=0, avperp=0, mass=None, modelsetinfo=None, format="ipac"
+    ):
         if modelsetinfo is None:
             # get the package default
             # self._all_models = get_table("all_models.tab")
@@ -79,12 +80,12 @@ class ModelSet(object):
         self._all_models.add_index("name")
         possible = dict()
         if name not in self._all_models["name"]:
-            raise ValueError(f'Unrecognized model {name:s}. Choices  are: {list(self._all_models["name"])}')
+            raise ValueError(f'Unrecognized model set {name:s}. Choices  are: {set(list(self._all_models["name"]))}')
         if np.all(self._all_models.loc[name]["mass"].mask):
             matching_rows = np.where(
                 (self._all_models["z"] == z)
                 & (self._all_models["medium"] == medium)
-                & (self._all_models["i"] == i)
+                & (self._all_models["inc"] == inc)
                 & (self._all_models["avperp"] == avperp)
             )
             possible["mass"] = None
@@ -95,7 +96,7 @@ class ModelSet(object):
                 & (self._all_models["mass"] == mass)
             )
             possible["mass"] = self._all_models.loc[name]["mass"]
-        for key in ["z", "medium", "i", "avperp"]:
+        for key in ["z", "medium", "inc", "avperp"]:
             possible[key] = self._all_models.loc[name][key]
         # ugh, possible[] resulting from above can be a Python native or a Column.
         # If only one row matches it will be a native, otherwise it will be a Column,
@@ -117,16 +118,19 @@ class ModelSet(object):
         if matching_rows[0].size == 0:
             msg = (
                 f"Requested ModelSet not found in {name:s}. Check your input values.  Allowed z are {possible['z']}. "
-                f" Allowed medium are {possible['medium']}. Allowed i are {possible['i']}. Allowed avperp are {possible['avperp']}."
+                f" Allowed medium are {possible['medium']}. Allowed inc are {possible['inc']}. Allowed avperp are {possible['avperp']}."
             )
             if possible["mass"] is not None:
                 msg = msg + f" Allowed mass are {possible['mass']}."
             raise ValueError(msg)
 
         self._tabrow = self._all_models[matching_rows].loc[name]
-        ii = int(i)
+        ii = int(inc)
         ia = int(avperp)
-        tpath = f"{self._tabrow['path']}i={ii}/avperp={ia}/"
+        if name == "wk2020":
+            tpath = f"{self._tabrow['path']}inc={ii}/avperp={ia}/"
+        else:
+            tpath = self._tabrow["path"]
         print(f"{tpath=}")
         self._table = get_table(path=tpath, filename=self._tabrow["filename"], format=format)
         self._table.add_index("ratio")
@@ -137,6 +141,7 @@ class ModelSet(object):
         self._default_unit["intensity"] = _OBS_UNIT_
         self._default_unit["emissivity"] = "erg / (cm3 ion s)"
         self._user_added_models = dict()
+        self._avlos = None
 
     @property
     def description(self):
@@ -193,6 +198,34 @@ class ModelSet(object):
         :rtype: float
         """
         return self._tabrow["z"]
+
+    @property
+    def inc(self):
+        """The inclination (viewing) angle, in degrees. A value of 0 means face-on.
+        :rtype: float
+        """
+        return self._tabrow["inc"]
+
+    @property
+    def viewangle(self):
+        """The viewing angle (inclination), in degrees. A value of 0 means face-on.
+        :rtype: float
+        """
+        return self._tabrow["inc"]
+
+    @property
+    def avperp(self):
+        """The PDR thickness for inclined viewing angle models, expressed in visual magnitudes. A value of 0 indicates a face-on model, for which `avperp` is undefined.
+        :rtype: float
+        """
+        return self._tabrow["avperp"]
+
+    @property
+    def avlos(self):  # @todo this might be model specific
+        """The visual extinction along the line of sight, express in magnitudes.
+        :rtype: float
+        """
+        return self._avlos
 
     @property
     def table(self):
