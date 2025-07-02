@@ -24,6 +24,13 @@ class ModelSet(object):
     :param medium:  medium type, e.g. 'constant density', 'clumpy', 'non-clumpy'
     :type medium: str
 
+    :param i: inclination (viewing) angle, i=0 is face-on, i=90 is edge-on.  Valid values are 0, 30, 45, 60, 90
+    :type  i: float
+
+    :param avperp: The thickness of the PDR, for non-zero viewing angle. It is expressed as a visual extinction perpendicular to the PDR surface.  Valid values are 1, 3, 5.
+                   This parameter is ignore for face-on (i=0) angles.
+    :type  avperp: float
+
     :param mass: maximum clump mass (for KosmaTau models).  Default:None (appropriate for Wolfire/Kaufman models)
     :type mass: float
 
@@ -35,10 +42,10 @@ class ModelSet(object):
 
         .. code-block:: python
 
-           ['PDR code','name', 'version','path','filename','medium','z','mass','description']
+           ['PDRcode','name', 'version','path','filename','medium','z','i', 'avperp', 'mass','description']
 
-        `z` and `mass` should be floats, the rest should be strings.
-        The `name`, `version`, `medium`, `z`, and `mass` columns contain
+        `z`, 'i', 'avperp', and `mass` should be numbers, the rest should be strings.
+        The `name`, `version`, `medium`, `z`, 'i', 'avperp', and `mass` columns contain
         the values available in the input ModelSet as described above. `PDR
         code` is the originator of the code e.g., "KOSMA-tau", `version`
         is the code version, `path` is the full-qualified pathname to
@@ -60,10 +67,11 @@ class ModelSet(object):
     """
 
     # @ToDo replace with kwargs?
-    def __init__(self, name, z, medium="constant density", mass=None, modelsetinfo=None, format="ipac"):
+    def __init__(self, name, z, medium="constant density", i=0, avperp=0, mass=None, modelsetinfo=None, format="ipac"):
         if modelsetinfo is None:
             # get the package default
-            self._all_models = get_table("all_models.tab")
+            # self._all_models = get_table("all_models.tab")
+            self._all_models = get_table("new.tab")
         elif type(modelsetinfo) is str:
             self._all_models = Table.read(modelsetinfo, format=format)
         else:  # must be an Astropy Table
@@ -73,30 +81,35 @@ class ModelSet(object):
         if name not in self._all_models["name"]:
             raise ValueError(f'Unrecognized model {name:s}. Choices  are: {list(self._all_models["name"])}')
         if np.all(self._all_models.loc[name]["mass"].mask):
-            matching_rows = np.where((self._all_models["z"] == z) & (self._all_models["medium"] == medium))
+            matching_rows = np.where(
+                (self._all_models["z"] == z)
+                & (self._all_models["medium"] == medium)
+                & (self._all_models["i"] == i)
+                & (self._all_models["avperp"] == avperp)
+            )
             possible["mass"] = None
-        else:
+        else:  # Kosma-tau
             matching_rows = np.where(
                 (self._all_models["z"] == z)
                 & (self._all_models["medium"] == medium)
                 & (self._all_models["mass"] == mass)
             )
             possible["mass"] = self._all_models.loc[name]["mass"]
-        for key in ["z", "medium"]:
+        for key in ["z", "medium", "i", "avperp"]:
             possible[key] = self._all_models.loc[name][key]
         # ugh, possible[] resulting from above can be a Python native or a Column.
         # If only one row matches it will be a native, otherwise it will be a Column,
         # so we have to check if it is a Column or not, so that we can successfully
         # import numberscreate a numpy array.
-        for i in possible:
-            if possible[i] is None:
+        for j in possible:
+            if possible[j] is None:
                 continue
-            if isinstance(possible[i], Column):
+            if isinstance(possible[j], Column):
                 # convert Column to np.array
-                possible[i] = sorted(set(np.array(possible[i])))
+                possible[j] = sorted(set(np.array(possible[j])))
             else:
                 # convert native to np.array
-                possible[i] = sorted(set(np.array([possible[i]])))
+                possible[j] = sorted(set(np.array([possible[j]])))
 
         # print("possible:",possible)
         if mass is None and possible["mass"] is not None:
@@ -104,14 +117,18 @@ class ModelSet(object):
         if matching_rows[0].size == 0:
             msg = (
                 f"Requested ModelSet not found in {name:s}. Check your input values.  Allowed z are {possible['z']}. "
-                f" Allowed medium are {possible['medium']}."
+                f" Allowed medium are {possible['medium']}. Allowed i are {possible['i']}. Allowed avperp are {possible['avperp']}."
             )
             if possible["mass"] is not None:
                 msg = msg + f" Allowed mass are {possible['mass']}."
             raise ValueError(msg)
 
         self._tabrow = self._all_models[matching_rows].loc[name]
-        self._table = get_table(path=self._tabrow["path"], filename=self._tabrow["filename"], format=format)
+        ii = int(i)
+        ia = int(avperp)
+        tpath = f"{self._tabrow['path']}i={ii}/avperp={ia}/"
+        print(f"{tpath=}")
+        self._table = get_table(path=tpath, filename=self._tabrow["filename"], format=format)
         self._table.add_index("ratio")
         self._set_identifiers()
         self._set_ratios()
@@ -135,7 +152,7 @@ class ModelSet(object):
 
         :rtype: str
         """
-        return self._tabrow["PDR code"]
+        return self._tabrow["PDRcode"]
 
     @property
     def name(self):
