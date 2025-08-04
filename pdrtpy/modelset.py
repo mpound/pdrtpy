@@ -24,11 +24,11 @@ class ModelSet(object):
     :param medium:  medium type, e.g. 'constant density', 'clumpy', 'non-clumpy'
     :type medium: str
 
-    :param inc: inclination (viewing) angle, i=0 is face-on, inc=90 is edge-on.  Valid values are 0, 30, 45, 60, 90
-    :type  inc: float
+    :param losangle: the line-of-sight inclination angle (aka viewing angle), losangle=0 is face-on, losangle=90 is edge-on.  Valid values are 0, 30, 45, 60, 75, 90.
+    :type  losangle: float
 
     :param avperp: The thickness of the PDR, for non-zero viewing angle. It is expressed as a visual extinction perpendicular to the PDR surface, in magnitudes.  Valid values are 1, 3, 5.
-                   This parameter is ignore for face-on (inc=0) angles.
+                   This parameter is ignore for face-on (losangle=0) angles.
     :type  avperp: float
 
     :param mass: maximum clump mass (for KosmaTau models).  Default:None (appropriate for Wolfire/Kaufman models)
@@ -67,12 +67,25 @@ class ModelSet(object):
     """
 
     def __init__(
-        self, name, z, medium="constant density", inc=0, avperp=0, mass=None, modelsetinfo=None, format="ipac"
+        self,
+        name,
+        z,
+        medium="constant density",
+        losangle=0,
+        avperp=0,
+        mass=None,
+        modelsetinfo=None,
+        format="ipac",
+        debug=False,
     ):
         if modelsetinfo is None:
             # get the package default
-            # self._all_models = get_table("all_models.tab")
-            self._all_models = get_table("new.tab")
+
+            if debug:
+                # print("DEBUG TABLE")
+                self._all_models = Table.read("/tmp/a.tab", format="ipac")
+            else:
+                self._all_models = get_table("all_models.tab")
         elif type(modelsetinfo) is str:
             self._all_models = Table.read(modelsetinfo, format=format)
         else:  # must be an Astropy Table
@@ -80,12 +93,14 @@ class ModelSet(object):
         self._all_models.add_index("name")
         possible = dict()
         if name not in self._all_models["name"]:
-            raise ValueError(f'Unrecognized model set {name:s}. Choices  are: {set(list(self._all_models["name"]))}')
+            raise ValueError(
+                f'Unrecognized PDR model code {name:s}. Choices  are: {set(list(self._all_models["name"]))}'
+            )
         if np.all(self._all_models.loc[name]["mass"].mask):
             matching_rows = np.where(
                 (self._all_models["z"] == z)
                 & (self._all_models["medium"] == medium)
-                & (self._all_models["inc"] == inc)
+                & (self._all_models["losangle"] == losangle)
                 & (self._all_models["avperp"] == avperp)
             )
             possible["mass"] = None
@@ -96,7 +111,7 @@ class ModelSet(object):
                 & (self._all_models["mass"] == mass)
             )
             possible["mass"] = self._all_models.loc[name]["mass"]
-        for key in ["z", "medium", "inc", "avperp"]:
+        for key in ["z", "medium", "losangle", "avperp"]:
             possible[key] = self._all_models.loc[name][key]
         # ugh, possible[] resulting from above can be a Python native or a Column.
         # If only one row matches it will be a native, otherwise it will be a Column,
@@ -118,20 +133,20 @@ class ModelSet(object):
         if matching_rows[0].size == 0:
             msg = (
                 f"Requested ModelSet not found in {name:s}. Check your input values.  Allowed z are {possible['z']}. "
-                f" Allowed medium are {possible['medium']}. Allowed inc are {possible['inc']}. Allowed avperp are {possible['avperp']}."
+                f" Allowed medium are {possible['medium']}. Allowed inc are {possible['losangle']}. Allowed avperp are {possible['avperp']}."
             )
             if possible["mass"] is not None:
                 msg = msg + f" Allowed mass are {possible['mass']}."
             raise ValueError(msg)
 
         self._tabrow = self._all_models[matching_rows].loc[name]
-        ii = int(inc)
+        ii = int(losangle)
         ia = int(avperp)
-        if name == "wk2020":
-            tpath = f"{self._tabrow['path']}inc={ii}/avperp={ia}/"
+        if self.is_wk2020:
+            tpath = f"{self._tabrow['path']}losangle={ii}/avperp={ia}/"
         else:
             tpath = self._tabrow["path"]
-        print(f"{tpath=}")
+        # print(f"{tpath=}")
         self._table = get_table(path=tpath, filename=self._tabrow["filename"], format=format)
         self._table.add_index("ratio")
         self._set_identifiers()
@@ -141,7 +156,6 @@ class ModelSet(object):
         self._default_unit["intensity"] = _OBS_UNIT_
         self._default_unit["emissivity"] = "erg / (cm3 ion s)"
         self._user_added_models = dict()
-        self._avlos = None
 
     @property
     def description(self):
@@ -149,7 +163,8 @@ class ModelSet(object):
 
         :rtype: str
         """
-        return self._tabrow["description"] + ", Z=%2.1f" % self.z
+        s = f", Z={self.z:2.1f}, losangle={self.losangle:d}, avperp={self.avperp:d}, avlos={self.avlos:d}"
+        return self._tabrow["description"] + s
 
     @property
     def code(self):
@@ -200,18 +215,18 @@ class ModelSet(object):
         return self._tabrow["z"]
 
     @property
-    def inc(self):
-        """The inclination (viewing) angle, in degrees. A value of 0 means face-on.
+    def losangle(self):
+        """The inclination (viewing) angle with respect to the line of sight, in degrees. A value of 0 means face-on.
         :rtype: float
         """
-        return self._tabrow["inc"]
+        return self._tabrow["losangle"]
 
     @property
     def viewangle(self):
-        """The viewing angle (inclination), in degrees. A value of 0 means face-on.
+        """The viewing angle (inclination) with respect to the line of sight, in degrees. A value of 0 means face-on.
         :rtype: float
         """
-        return self._tabrow["inc"]
+        return self.losangle
 
     @property
     def avperp(self):
@@ -225,7 +240,7 @@ class ModelSet(object):
         """The visual extinction along the line of sight, express in magnitudes.
         :rtype: float
         """
-        return self._avlos
+        return self._tabrow["avlos"]
 
     @property
     def table(self):
@@ -631,6 +646,15 @@ class ModelSet(object):
         """
         return self.name == "wk2006"
 
+    @property
+    def is_wk2020(self):
+        """method to indicate this is a wk2020 model, to deal with quirks
+        of that modelset
+
+        :returns: True if it is.
+        """
+        return self.name == "wk2020"
+
     # ============= Static Methods =============
     @staticmethod
     def list():
@@ -638,12 +662,15 @@ class ModelSet(object):
         ModelSet.all_sets().pprint_all(align="<")
 
     @staticmethod
-    def all_sets():
+    def all_sets(debug=False):
         """Return a table of the names and descriptions of available ModelSets (not just this one)
 
         :rtype: :class:`~astropy.table.Table`
         """
-        t = get_table("all_models.tab")
+        if debug:
+            t = Table.read("/tmp/a.tab", format="ipac")
+        else:
+            t = get_table("all_models.tab")
         t.remove_column("path")
         t.remove_column("filename")
         return t
