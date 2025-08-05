@@ -131,6 +131,7 @@ class Measurement(CCDData):
         if self._restfreq is not None:
             rf = u.Unit(self._restfreq).to("Hz")
             self.header["RESTFREQ"] = rf
+            print("set header restfreq ", rf)
         # Set unit to header BUNIT or put BUNIT into header if it
         # wasn't present AND if unit wasn't given in the constructor
         if not unitpresent and "BUNIT" in self.header:
@@ -697,7 +698,7 @@ def fits_measurement_reader(
     # @TODO if uncertainty plane not present, look for RMS keyword
     # @TODO header values get stuffed into WCS, others may be dropped by CCDData._generate_wcs_and_update_header
     try:
-        z = Measurement(z, unit=z._unit, title=_title)
+        z = Measurement(z, unit=z._unit, title=_title, **kwd)
     except Exception:
         raise TypeError("could not convert fits_measurement_reader output to Measurement")
     z.identifier(_id)
