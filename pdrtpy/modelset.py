@@ -83,7 +83,7 @@ class ModelSet(object):
 
             if debug:
                 # print("DEBUG TABLE")
-                self._all_models = Table.read("/tmp/a.tab", format="ipac")
+                self._all_models = get_table("all_models_new.tab", format="ipac")
             else:
                 self._all_models = get_table("all_models.tab")
         elif type(modelsetinfo) is str:
@@ -133,20 +133,18 @@ class ModelSet(object):
         if matching_rows[0].size == 0:
             msg = (
                 f"Requested ModelSet not found in {name:s}. Check your input values.  Allowed z are {possible['z']}. "
-                f" Allowed medium are {possible['medium']}. Allowed inc are {possible['losangle']}. Allowed avperp are {possible['avperp']}."
+                f" Allowed medium are {possible['medium']}. Allowed losangle are {possible['losangle']}. Allowed avperp are {possible['avperp']}."
             )
             if possible["mass"] is not None:
                 msg = msg + f" Allowed mass are {possible['mass']}."
             raise ValueError(msg)
 
         self._tabrow = self._all_models[matching_rows].loc[name]
-        ii = int(losangle)
-        ia = int(avperp)
-        if self.is_wk2020:
-            tpath = f"{self._tabrow['path']}losangle={ii}/avperp={ia}/"
-        else:
-            tpath = self._tabrow["path"]
-        # print(f"{tpath=}")
+        # if self.is_wk2020:
+        #    tpath = f"{self._tabrow['path']}losangle={ii}/avperp={ia}/"
+        # else:
+        tpath = self._tabrow["path"]
+        print(f"{tpath=}")
         self._table = get_table(path=tpath, filename=self._tabrow["filename"], format=format)
         self._table.add_index("ratio")
         self._set_identifiers()
@@ -383,6 +381,7 @@ class ModelSet(object):
         _filename = self.table.loc[identifier]["filename"] + "." + ext
         d = model_dir()
         _thefile = d + self._tabrow["path"] + _filename
+        print("Attempting to read ", _filename)
         _title = self._table.loc[identifier]["title"]
         # @TODO Fix this: see issues 66 & 67
         if unit is None or unit == "":
