@@ -22,7 +22,6 @@ from scipy.interpolate import interpn
 from pdrtpy.pbar import get_progress_bar
 
 from .. import pdrutils as utils
-from ..modelset import ModelSet
 from .fitmap import FitMap
 from .toolbase import ToolBase
 
@@ -44,7 +43,7 @@ class LineRatioFit(ToolBase):
     :type measurements: list or dict of :class:`~pdrtpy.measurement.Measurement`. If dict, the keys should be the Measurement *identifiers*.
     """
 
-    def __init__(self, modelset=ModelSet("wk2006", z=1), measurements=None):
+    def __init__(self, modelset, measurements=None):
         super().__init__()  # needed?
         if isinstance(modelset, str):
             # may need to disable this
