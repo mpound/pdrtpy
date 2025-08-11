@@ -203,7 +203,7 @@ def _tablename(filename):
     return table_dir() + filename
 
 
-def get_table(filename, format="ipac", path=None):
+def get_table(filename, format="ipac", path=None, **kwargs):
     """Return an astropy Table read from the input filename.
 
     :param filename: input filename, no path
@@ -212,12 +212,15 @@ def get_table(filename, format="ipac", path=None):
     :type format: str
     :param  path: path to filename relative to models directory.  Default of None means look in "tables" directory
     :type path: str
+    :param kwargs: additional arguments to pass to Table.read, e.g. `header_start`, `data_start`
+    :type kwargs: dict
     :rtype: :class:`astropy.table.Table`
+
     """
     if path is None:
-        return Table.read(_tablename(filename), format=format)
+        return Table.read(_tablename(filename), format=format, **kwargs)
     else:
-        return Table.read(model_dir() + path + filename, format=format)
+        return Table.read(model_dir() + path + filename, format=format, **kwargs)
 
 
 #########################
@@ -481,11 +484,16 @@ def convert_integrated_intensity(image, wavelength=None):
     :return: an image with converted values and units
     """
     f = image.header.get("RESTFREQ", None)
-    if f is None and wavelength is None:
-        raise Exception("Image header has no RESTFREQ. You must supply wavelength")
+    rf = getattr(image, "_restfreq", None)
+    if f is None and wavelength is None and rf is None:
+        raise Exception(
+            "Image header has no RESTFREQ and image has no '_restfreq' attribute. You must supply wavelength"
+        )
     if f is not None and wavelength is None:
         # FITS restfreq's are in Hz
         wavelength = u.Quantity(f, "Hz").to(_CM, equivalencies=u.spectral())
+    elif rf is not None and wavelength is None:
+        wavelength = rf.to(_CM, equivalencies=u.spectral())
     if image.header.get("BUNIT", None) is None:
         raise Exception("Image BUNIT must be present and equal to 'K km/s'")
     if u.Unit(image.header.get("BUNIT")) != _KKMS:
@@ -824,3 +832,13 @@ def rescale_axis_units(x, from_unit, from_ctype, to_unit, loglabel=True):
     xlabel = r"{0} [{1:latex_inline}]".format(xtype, xax_unit)
 
     return (x, xlabel)
+
+
+def extinct(intensity, wavelength, av, extinction_model):
+    """Return the extincted intensity"""
+    pass
+
+
+def deextinct(intensity, wavelength, av, extinction_model):
+    """Return the de-extincted intensity"""
+    pass
