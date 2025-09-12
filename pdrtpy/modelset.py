@@ -80,12 +80,7 @@ class ModelSet(object):
     ):
         if modelsetinfo is None:
             # get the package default
-
-            if debug:
-                # print("DEBUG TABLE")
-                self._all_models = get_table("all_models_new.tab", format="ipac")
-            else:
-                self._all_models = get_table("all_models.tab")
+            self._all_models = get_table("all_models.tab")
         elif type(modelsetinfo) is str:
             self._all_models = Table.read(modelsetinfo, format=format)
         else:  # must be an Astropy Table
@@ -666,10 +661,7 @@ class ModelSet(object):
 
         :rtype: :class:`~astropy.table.Table`
         """
-        if debug:
-            t = Table.read("/tmp/a.tab", format="ipac")
-        else:
-            t = get_table("all_models.tab")
+        t = get_table("all_models.tab")
         t.remove_column("path")
         t.remove_column("filename")
         return t
