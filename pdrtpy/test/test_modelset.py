@@ -9,7 +9,7 @@ class TestModelSet(unittest.TestCase):
         print("ModelSet Unit Test")
         success = True
         # check all models.tab files and existence of all therein
-        t = ModelSet.all_sets(debug=True)
+        t = ModelSet.all_sets()
         failed = list()
         global_success = []
         for n, z, md, m, losangle, avperp in zip(
@@ -19,7 +19,7 @@ class TestModelSet(unittest.TestCase):
             nodir = None
             try:
                 fnf = True
-                ms = ModelSet(name=n, z=z, medium=md, mass=m, inc=losangle, avperp=avperp, debug=True)
+                ms = ModelSet(name=n, z=z, medium=md, mass=m, losangle=losangle, avperp=avperp, debug=True)
             except FileNotFoundError as zz:
                 success = False
                 nodir = zz.filename
