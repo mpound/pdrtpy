@@ -386,10 +386,10 @@ class BaseExcitationFit(ToolBase):
         """
         # why are these coming in as floats?
         idx = [int(i) for i in idx]
-        print(x, m1, n1, m2, m2)
+        print(f"{x=}, {m1=}, {n1=}, {m2=}, {n2=}")
         y1 = 10 ** (x * m1 + n1)
         y2 = 10 ** (x * m2 + n2)
-        print(y1, y2)
+        print(f"{y1=}, {y2=}")
         model = np.log10(y1 + y2)
         # We assume that the column densities passed in have been normalized
         # using the canonical OPR=3. Therefore what we are actually fitting is
@@ -1124,7 +1124,7 @@ class BaseExcitationFit(ToolBase):
             slopehot = slopecold
             inthot = intcold
         if slopecold >= 0:
-            # print(f"Bad first guess, resetting from {slopecold=} to -0.5")
+            print(f"Bad first guess, resetting from {slopecold=} to -0.5")
             slopecold = -0.5
         # print("FG ",type(slopecold),type(slopehot),type(intcold),type(inthot))
         return np.array([slopecold, intcold, slopehot, inthot])
@@ -1202,20 +1202,20 @@ class BaseExcitationFit(ToolBase):
         fk = utils.firstkey(colden)
         x = _energy.data
         y = np.log10(_colden.data)
-        print(f"{x=}\n{y=}")
+        print(f"energy {x=}\nlog coldeb {y=}")
         # print("SHAPE Y LEN(SHAPE(Y) ",y.shape,len(y.shape))
         # kwargs_opts = {"guess": self._first_guess(x,y)}
         # kwargs_opts.update(kwargs)
         sigma = utils.LOGE * _colden.error / _colden.data
         slopecold, intcold, slopehot, inthot = self._first_guess(x, y)
-
+        print(f"{slopecold=}, {intcold=}, {slopehot=}, {inthot=}")
         tcold = -utils.LOGE / slopecold
         thot = -utils.LOGE / slopehot
         if np.shape(tcold) == ():
             tcold = np.array([tcold])
             thot = np.array([thot])
         saveshape = tcold.shape
-        # print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K" % (tcold, thot))
+        print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K" % (tcold, thot))
         fmdata = np.empty(tcold.shape, dtype=object).flatten()
         tcold = tcold.flatten()
         thot = thot.flatten()
@@ -1254,15 +1254,15 @@ class BaseExcitationFit(ToolBase):
                 if np.isfinite(yr[:, i]).all() and np.isfinite(sig[:, i]).all():
                     # update Parameter hints based on first guess.
                     p = deepcopy(self._params)
-                    # p["n1"].value = intcold[i]
-                    # p["m1"].value = slopecold[i]
+                    p["n1"].value = intcold[i]
+                    p["m1"].value = slopecold[i]
                     # self._model.set_param_hint("m1", value=slopecold[i], vary=True)
                     # self._model.set_param_hint("n1", value=intcold[i], vary=True)
-                    # if self._numcomponents == 2:
-                    #    self._model.set_param_hint("m2", value=slopehot[i], vary=True)
-                    #    self._model.set_param_hint("n2", value=inthot[i], vary=True)
-                    # p["n2"].value = inthot[i]
-                    # p["m2"].value = slopehot[i]
+                    if self._numcomponents == 2:
+                        #    self._model.set_param_hint("m2", value=slopehot[i], vary=True)
+                        #    self._model.set_param_hint("n2", value=inthot[i], vary=True)
+                        p["n2"].value = inthot[i]
+                        p["m2"].value = slopehot[i]
                     wts = 1.0 / (sig[:, i] * sig[:, i])
                     try:
                         if kwargs["method"] == "emcee":

@@ -115,7 +115,9 @@ class TestMeasurement(unittest.TestCase):
 
         # Read in the FITS files to Measurements
         cii_meas = Measurement.read(cii_combined, identifier="CII_158")
+        assert cii_meas.id == "CII_158"
         FIR_meas = Measurement.read(FIR_combined, identifier="FIR")
+        assert FIR_meas.id == "FIR"
         oi_meas = Measurement.read(oi_combined, identifier="OI_63")
 
         self.assertTrue(oi_meas.unit == u.Unit("W / (m2 sr)"))
@@ -129,7 +131,8 @@ class TestMeasurement(unittest.TestCase):
         Read a file that has 2 Naxis and 3 WCS coordinate axis
         """
         file = utils.get_testdata("ConvP_S1.fits")
-        m = Measurement.read(file, error="10%", unit="MJy/sr")
+        m = Measurement.read(file, uncertainty=StdDevUncertainty([0.1]), unit="MJy/sr")
+        assert np.all(m.uncertainty._array==0.1)
 
     def tearDown(self):
         if False:

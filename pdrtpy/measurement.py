@@ -699,8 +699,8 @@ def fits_measurement_reader(
     # @TODO header values get stuffed into WCS, others may be dropped by CCDData._generate_wcs_and_update_header
     try:
         z = Measurement(z, unit=z._unit, title=_title, **kwd)
-    except Exception:
-        raise TypeError("could not convert fits_measurement_reader output to Measurement")
+    except Exception as exc:
+        raise TypeError(f"could not convert fits_measurement_reader output to Measurement: {exc}")
     z.identifier(_id)
     # astropy.io.registry.read creates a FileIO object before calling the registered
     # reader (this method), so the filename is FileIO.name.
