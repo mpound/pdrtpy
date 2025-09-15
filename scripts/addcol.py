@@ -34,7 +34,7 @@ for a in dirs:
             t = Table.read(args.template,format='ascii.ipac')
     if 'losangle' not in t.colnames: 
         z=len(t)
-        t.add_columns(names=['losangle','avperp'],cols=[[losangle]*z,[avperp]*z])
+        t.add_columns(names=['losangle','avperp'],cols=[[int(losangle)]*z,[int(avperp)]*z])
         t.write(path,format='ascii.ipac',overwrite=True)
     else:
         print(f"{path} already has columns [losangle, avperp]; skipping.")

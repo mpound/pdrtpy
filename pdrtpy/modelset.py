@@ -135,11 +135,7 @@ class ModelSet(object):
             raise ValueError(msg)
 
         self._tabrow = self._all_models[matching_rows].loc[name]
-        # if self.is_wk2020:
-        #    tpath = f"{self._tabrow['path']}losangle={ii}/avperp={ia}/"
-        # else:
         tpath = self._tabrow["path"]
-        print(f"{tpath=}")
         self._table = get_table(path=tpath, filename=self._tabrow["filename"], format=format)
         self._table.add_index("ratio")
         self._set_identifiers()
@@ -525,7 +521,7 @@ class ModelSet(object):
             denominator = 1
             fakefilename = "user-" + numerator.replace("_", "")
         # numerator denominator ratio filename z title
-        self.table.add_row([numerator, denominator, identifier, fakefilename, self.z, title])
+        self.table.add_row([numerator, denominator, identifier, fakefilename, self.z, title, str(self.losangle), str(self.avperp)])
 
     def _find_ratio_elements(self, m):
         # TODO handle case of OI+CII/FIR so it is not special cased in lineratiofit.py
