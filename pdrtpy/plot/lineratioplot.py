@@ -128,7 +128,8 @@ class LineRatioPlot(PlotBase):
             return utils.to(kwargs_opts["units"], self._tool._density)
 
         tunit = u.Unit(kwargs_opts["units"])
-        kwargs_opts["title"] = r"n [{0:latex_inline}]".format(tunit)
+        if kwargs_opts["title"] is None:
+            kwargs_opts["title"] = r"n [{0:latex_inline}]".format(tunit)
         self._plot(self._tool._density, **kwargs_opts)
 
     def radiation_field(self, **kwargs):
@@ -471,6 +472,9 @@ class LineRatioPlot(PlotBase):
                 title = "Observed Ratios"
             labels.extend([self._tool._modelratios[k].title for k in self._tool._modelratios])
             # print("LABELS ",labels)
+            _title = kwargs.get("title",None)
+            if _title is not None:
+                title += " "+_title
             self._plt.legend(
                 lines, labels, loc=kwargs_opts["loc"], bbox_to_anchor=kwargs_opts["bbox_to_anchor"], title=title
             )
