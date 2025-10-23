@@ -1257,9 +1257,9 @@ class BaseExcitationFit(ToolBase):
                             emcee_kwargs = {k: kwargs[k] for k in ("burn", "steps", "nwalkers") if k in kwargs}
                         else:
                             emcee_kwargs = None
-                        #print(
+                        # print(
                         #    f"_model.fit(data={yr[:,i]},weights={wts},x={x},params={p},idx={idx},{fit_opr=},{fit_av=},{extinction_ratios=}"
-                        #)
+                        # )
                         fmdata[i] = self._model.fit(
                             data=yr[:, i],
                             weights=wts,
@@ -1273,7 +1273,7 @@ class BaseExcitationFit(ToolBase):
                             nan_policy=kwargs["nan_policy"],
                             fit_kws=emcee_kwargs,
                         )
-                        #print(f"{fmdata[i]=}")
+                        # print(f"{fmdata[i]=}")
                         # if fmdata[i].success and fmdata[i].errorbars:
                         if fmdata[i].success:
                             count = count + 1
