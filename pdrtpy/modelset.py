@@ -27,10 +27,6 @@ class ModelSet(object):
     :param losangle: the line-of-sight inclination angle (aka viewing angle), losangle=0 is face-on, losangle=90 is edge-on.  Valid values are 0, 30, 45, 60, 75, 90.
     :type  losangle: float
 
-    :param avperp: The thickness of the PDR, for non-zero viewing angle. It is expressed as a visual extinction perpendicular to the PDR surface, in magnitudes.  Valid values are 1, 3, 5.
-                   This parameter is ignore for face-on (losangle=0) angles.
-    :type  avperp: float
-
     :param mass: maximum clump mass (for KosmaTau models).  Default:None (appropriate for Wolfire/Kaufman models)
     :type mass: float
 
@@ -42,10 +38,10 @@ class ModelSet(object):
 
         .. code-block:: python
 
-           ['PDRcode','name', 'version','path','filename','medium','z','inc', 'avperp', 'mass','description']
+           ['PDRcode','name', 'version','path','filename','medium','z','inc', 'mass','description']
 
-        `z`, 'inc', 'avperp', and `mass` should be numbers, the rest should be strings.
-        The `name`, `version`, `medium`, `z`, 'inc', 'avperp', and `mass` columns contain
+        `z`, 'inc', and `mass` should be numbers, the rest should be strings.
+        The `name`, `version`, `medium`, `z`, 'inc',  and `mass` columns contain
         the values available in the input ModelSet as described above. `PDR
         code` is the originator of the code e.g., "KOSMA-tau", `version`
         is the code version, `path` is the full-qualified pathname to
@@ -72,7 +68,6 @@ class ModelSet(object):
         z,
         medium="constant density",
         losangle=0,
-        avperp=0,
         mass=None,
         modelsetinfo=None,
         format="ipac",
@@ -96,7 +91,6 @@ class ModelSet(object):
                 (self._all_models["z"] == z)
                 & (self._all_models["medium"] == medium)
                 & (self._all_models["losangle"] == losangle)
-                & (self._all_models["avperp"] == avperp)
             )
             possible["mass"] = None
         else:  # Kosma-tau
@@ -106,7 +100,7 @@ class ModelSet(object):
                 & (self._all_models["mass"] == mass)
             )
             possible["mass"] = self._all_models.loc[name]["mass"]
-        for key in ["z", "medium", "losangle", "avperp"]:
+        for key in ["z", "medium", "losangle"]:
             possible[key] = self._all_models.loc[name][key]
         # ugh, possible[] resulting from above can be a Python native or a Column.
         # If only one row matches it will be a native, otherwise it will be a Column,
@@ -128,14 +122,16 @@ class ModelSet(object):
         if matching_rows[0].size == 0:
             msg = (
                 f"Requested ModelSet not found in {name:s}. Check your input values.  Allowed z are {possible['z']}. "
-                f" Allowed medium are {possible['medium']}. Allowed losangle are {possible['losangle']}. Allowed avperp are {possible['avperp']}."
+                f" Allowed medium are {possible['medium']}. Allowed losangle are {possible['losangle']}."
             )
             if possible["mass"] is not None:
                 msg = msg + f" Allowed mass are {possible['mass']}."
             raise ValueError(msg)
 
         self._tabrow = self._all_models[matching_rows].loc[name]
+        print(f"tabrow={self._tabrow}")
         tpath = self._tabrow["path"]
+        print(f"{tpath=} {self._tabrow['filename']=}")
         self._table = get_table(path=tpath, filename=self._tabrow["filename"], format=format)
         self._table.add_index("ratio")
         self._set_identifiers()
@@ -152,7 +148,7 @@ class ModelSet(object):
 
         :rtype: str
         """
-        s = f", Z={self.z:2.1f}, losangle={self.losangle:d}, avperp={self.avperp:d}, avlos={self.avlos:d}"
+        s = f", Z={self.z:2.1f}, losangle={self.losangle:d}, avlos={self.avlos:d}"
         return self._tabrow["description"] + s
 
     @property
@@ -222,14 +218,14 @@ class ModelSet(object):
         """The PDR thickness for inclined viewing angle models, expressed in visual magnitudes. A value of 0 indicates a face-on model, for which `avperp` is undefined.
         :rtype: float
         """
-        return self._tabrow["avperp"]
+        pass
 
     @property
     def avlos(self):  # @todo this might be model specific
         """The visual extinction along the line of sight, express in magnitudes.
         :rtype: float
         """
-        return self._tabrow["avlos"]
+        pass
 
     @property
     def table(self):
@@ -521,7 +517,7 @@ class ModelSet(object):
             denominator = 1
             fakefilename = "user-" + numerator.replace("_", "")
         # numerator denominator ratio filename z title
-        self.table.add_row([numerator, denominator, identifier, fakefilename, self.z, title, str(self.losangle), str(self.avperp)])
+        self.table.add_row([numerator, denominator, identifier, fakefilename, self.z, title, str(self.losangle)])
 
     def _find_ratio_elements(self, m):
         # TODO handle case of OI+CII/FIR so it is not special cased in lineratiofit.py
