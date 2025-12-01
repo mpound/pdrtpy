@@ -5,6 +5,7 @@
 import astropy.units as u
 import pytest
 from astropy.nddata import StdDevUncertainty
+import numpy as np
 
 from pdrtpy.measurement import Measurement
 from pdrtpy.tool.excitation import C13OExcitationFit, COExcitationFit
@@ -15,6 +16,8 @@ class TestCOExcitation:
 
     def test_co_fit(self):
         # joblin et al NGC7023 data
+        # https://ui.adsabs.harvard.edu/abs/2018A%26A...615A.129J/abstract
+        # from Table 4
         # 12CO
         intensity = {}
         unit = u.Unit("W m-2 sr-1")
@@ -67,9 +70,10 @@ class TestCOExcitation:
         h = COExcitationFit(list(intensity.values()))
 
         h.run(components=1)
-        assert h.thot.data == pytest.approx(116.4179, rel=1e-3)
+        # Joblin T=112+/-6K, N12CO = 1.7+/-0.7 E17 cm-2
+        assert h.thot.data == pytest.approx(116.59194784, rel=1e-3)
         assert h.tcold == h.thot
-        assert h.cold_colden.data == pytest.approx(1.423889e17, rel=1e-3)
+        assert h.cold_colden.data == pytest.approx(1.37329791e+17, rel=1e-3)
         assert h.hot_colden == h.cold_colden
 
     def test_13co_fit(self):
@@ -77,7 +81,7 @@ class TestCOExcitation:
         # 13CO
         intensity = {}
         unit = u.Unit("W m-2 sr-1")
-
+        # have to fudge their assymetric error bars
         intensity["13COv0-0J5-4"] = Measurement(
             data=[2.6e-8], uncertainty=StdDevUncertainty(((1 + 0.7) / 2) * 1e-8), identifier="13COv0-0J5-4", unit=unit
         )
@@ -98,9 +102,9 @@ class TestCOExcitation:
         )
 
         h = C13OExcitationFit(list(intensity.values()))
-
+        # Joblin T=78+/-9 K, N13CO= 4.6+/-1.3E16 cm^-2 
         h.run(components=1)
-        assert h.thot.data == pytest.approx(80.1933388, rel=1e-3)
+        assert h.thot.data == pytest.approx(78.92093319, rel=1e-3)
         assert h.tcold == h.thot
-        assert h.cold_colden.data == pytest.approx(8.75495e16, rel=1e-3)
+        assert h.cold_colden.data == pytest.approx(8.966e16, rel=1e-3)
         assert h.hot_colden == h.cold_colden
