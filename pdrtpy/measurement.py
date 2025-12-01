@@ -687,6 +687,7 @@ def fits_measurement_reader(
     _id = kwd.pop("identifier", "unknown")
     _title = kwd.pop("title", None)
     _squeeze = kwd.pop("squeeze", True)
+    _restfreq= kwd.pop("restfreq", None)
     # suppress INFO messages about units in FITS file. e.g. useless ones like:
     # "INFO: using the unit erg / (cm2 s sr) passed to the FITS reader instead of the unit erg s-1 cm-2 sr-1 in the FITS file."
     log.setLevel("WARNING")
@@ -697,7 +698,7 @@ def fits_measurement_reader(
     # @TODO if uncertainty plane not present, look for RMS keyword
     # @TODO header values get stuffed into WCS, others may be dropped by CCDData._generate_wcs_and_update_header
     try:
-        z = Measurement(z, unit=z._unit, title=_title)
+        z = Measurement(z, unit=z._unit, title=_title,restfreq=_restfreq)
     except Exception:
         raise TypeError("could not convert fits_measurement_reader output to Measurement")
     z.identifier(_id)

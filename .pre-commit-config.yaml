@@ -6,7 +6,7 @@ default_language_version:
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
   - repo: 'https://github.com/pre-commit/pre-commit-hooks'
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: trailing-whitespace
         exclude: '(notebooks|testdata|examples)/.*'
@@ -25,12 +25,12 @@ repos:
             #      - id: check-docstring-first
       - id: check-case-conflict # Check for files with names that would conflict on a case-insensitive filesystem
   - repo: https://github.com/pycqa/isort
-    rev: 6.0.0
+    rev: 7.0.0
     hooks:
       - id: isort
         exclude: '(notebooks|testdata|examples)/.*'
   - repo: 'https://github.com/psf/black'
-    rev: 25.1.0
+    rev: 25.9.0
     hooks:
       - id: black
         exclude: '(notebooks|testdata|examples)/.*'

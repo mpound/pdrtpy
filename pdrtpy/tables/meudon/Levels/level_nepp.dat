@@ -1,0 +1,15 @@
+@1@Ne++@K@El#J
+#5            # Number of levels
+#K            # Energy Unit
+#2            # Number of quantum number
+#El           # Electronic state
+#J            # Fine structure
+# n      g       E(K)                  OP    El    J
+#---data read without format ----------#------ READ WITH FORMAT -----------
+  1    5.0      0.0000                 n     3P    2                      !
+  2    3.0    924.9498                 n     3P    1                      !
+  3    1.0   1324.4585                 n     3P    0                      !
+  4    5.0  37178.8181                 n     1D    2                      !
+  5    1.0  80215.2375                 n     1S    0                      !
+#---data read without format ----------#------ READ WITH FORMAT -----------
+Reference: NIST data base

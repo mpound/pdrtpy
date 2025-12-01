@@ -1,0 +1,5 @@
+#1        # Number of transitions
+#K        # Unit energy transitions
+#   n     nu     nl                E(K)          Aij(s-1)             quant:  IDu         IDl        info:      Description
+#---data-------------------------------------------------------------------------------------------------------------------
+    1      2      1       1122.85602706     8.5900000E-03             quant:  2P0_J=1/2;  2P0_J=3/2; info:   12.8135 micron

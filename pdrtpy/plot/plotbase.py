@@ -1,5 +1,7 @@
+from abc import ABC
 from copy import copy, deepcopy
 
+# import astropy.version
 import matplotlib.axes as maxes
 import numpy as np
 import numpy.ma as ma
@@ -20,7 +22,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from .. import pdrutils as utils
 
 
-class PlotBase:
+class PlotBase(ABC):
     """Base class for plotting.
 
     :param tool:  Reference to a :mod:`~pdrtpy.tool` object or `None`.  This is used for classes that inherit from PlotBase and are coupled to a specific tool, e.g. :class:`~pdrtpy.plot.LineRatioPlot` and :class:`~pdrtpy.tool.LineRatioFit`.
@@ -197,6 +199,11 @@ class PlotBase:
             raise ValueError("Unrecognized stretch %s. Valid values are %s" % (stretch, self._valid_stretch))
         # print("norm cut at %.1e %.1e"%(vmin,vmax))
         if norm == "simple":
+            # astropy made a non-backwards compatible argument name change.
+            # if astropy.version.major > 6 or astropy.version.version[0:3] == "6.1":
+            #    return simple_norm(km, vmin=vmin, vmax=vmax, stretch=stretch, clip=False)
+            # else:
+            # @deprecated_renamed_argument should fix this in astropy 6.1+
             return simple_norm(km, min_cut=vmin, max_cut=vmax, stretch=stretch, clip=False)
         elif norm == "zscale":
             return self._zscale(km, vmin, vmax, stretch)

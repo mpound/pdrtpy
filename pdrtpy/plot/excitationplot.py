@@ -3,6 +3,7 @@ import numpy as np
 from astropy import log
 from astropy.coordinates import SkyCoord
 from astropy.nddata import StdDevUncertainty
+from astropy.units.quantity import Quantity
 from matplotlib.ticker import MultipleLocator
 
 from ..measurement import Measurement
@@ -19,11 +20,14 @@ class ExcitationPlot(PlotBase):
     ExcitationPlot creates excitation diagrams using the results of :class:`~pdrtpy.tool.h2excitationfit.H2ExcitationFit`. It can plot the observed excitation diagram with or without fit results, and allows averaging over user-given spatial areas.
     """
 
-    def __init__(self, tool, label):
+    def __init__(self, tool, label=None):
         super().__init__(tool)
         self._xlim = []
         self._ylim = []
-        self._label = label
+        if label is None:
+            self._label = tool.molecule.name
+        else:
+            self._label = label
         self._logfile = None
         self._fit_color = self._CB_color_cycle[3]
 
@@ -31,11 +35,22 @@ class ExcitationPlot(PlotBase):
         # d is a dict of measurements
         ret = dict()
         for m in measurements:
-            _key = f'v={self._tool._ac.loc[m]["vu"]}'
+            _key = f'v={self._tool.molecule._transition_data.loc[m]["vu"]}'
             if _key not in ret:
                 ret[_key] = []
             ret[_key].append(measurements[m])
         return ret
+
+    def _autoscale(self, energy, colden, norm=True, position=None, size=None):
+        """choose optimimum x and y ranges for plots based on input data"""
+        limits = {}
+        xmin = np.round((energy.min() - 500), -3)
+        limits["xmin"] = np.max([0, xmin])
+        limits["xmax"] = np.round(500.0 + energy.max(), -3)
+        limits["ymin"] = np.round(np.log10(colden.min()) - 1)
+        limits["ymax"] = np.round(np.log10(colden.max()) + 1)
+
+        return limits
 
     def ex_diagram(self, position=None, size=None, norm=True, show_fit=False, **kwargs):
         # @todo position and size might not necessarily match how the fit was done.
@@ -56,10 +71,10 @@ class ExcitationPlot(PlotBase):
         # suppress ridiculous NDDATA warning about units. See issue #163
         log.setLevel("WARNING")
         kwargs_opts = {
-            "xmin": 0.0,
-            "xmax": None,  #  we use np.max() later if user does not specify
-            "ymax": 22,
-            "ymin": 15,
+            "xmin": None,
+            "xmax": None,
+            "ymax": None,
+            "ymin": None,
             "xlabel": None,
             "ylabel": None,
             "grid": False,
@@ -77,6 +92,7 @@ class ExcitationPlot(PlotBase):
             "debug": False,
         }
         kwargs_opts.update(kwargs)
+
         debug = kwargs.get("debug", False)
 
         if debug:
@@ -97,6 +113,11 @@ class ExcitationPlot(PlotBase):
         energy = np.array(list(energies.values()))
         colden = np.squeeze(np.array([c.data for c in cdavg.values()]))
         error = np.squeeze(np.array([c.error for c in cdavg.values()]))
+        plot_limits = self._autoscale(energy, colden, norm=norm, position=position, size=size)
+        for kw in plot_limits:
+            if kwargs_opts[kw] is None:
+                kwargs_opts[kw] = plot_limits[kw]
+
         if debug:
             self._logfile.write(f"{error=}")
             self._logfile.write(f"{colden=}\n")
@@ -187,10 +208,6 @@ class ExcitationPlot(PlotBase):
                 _axis.set_ylabel("log $(N_u) ~({\\rm cm}^{-2})$")
         else:
             _axis.set_ylabel(kwargs_opts["ylabel"])
-        if kwargs_opts["label"] == "id":
-            for lab in sorted(cdavg):
-                _axis.text(x=energies[lab] + 100, y=np.log10(cdavg[lab]), s=str(lab))
-        elif kwargs_opts["label"] == "j":  # label the points with e.g. J=2,3,4...
             for lab in sorted(cdavg):
                 # this fails because the lowest J may not be the first data point.
                 # we'd have to sort on Ju of the data. Which isn't even unique
@@ -199,7 +216,7 @@ class ExcitationPlot(PlotBase):
                 #    ss="J="+str(self._tool._ac.loc[lab]["Ju"])
                 #    first=False
                 # else:
-                ss = str(self._tool._ac.loc[lab]["Ju"])
+                ss = str(self._tool.molecule.transition_data.loc[lab]["Ju"])
                 _axis.text(x=energies[lab] + 100, y=np.log10(cdavg[lab]), s=ss)
         handles, labels = _axis.get_legend_handles_labels()
         if show_fit:
@@ -217,7 +234,6 @@ class ExcitationPlot(PlotBase):
                     f"The Excitation Tool was unable to fit pixel {data_position} so a fit cannot be displayed. Examine the {self._tool.__class__.__name__}.fit_result[{data_position}] attribute to see details of the fit."
                 )
             x_fit = np.linspace(0, max(energy), 30)
-            # @TODO This now depends on tool._numcomponents
             if debug:
                 self._logfile.write(f"EXD: {type(tt._fitresult)=}\n")
 
@@ -271,22 +287,34 @@ class ExcitationPlot(PlotBase):
                     label=labhot,
                     lw=kwargs_opts["linewidth"],
                 )
+            flabel = "fit"
             if tt.av_fitted:
-                # need to evaluate Av at x_fit energies. so need wavelenghts
-                x_wave = tt._ac.loc[list(tt._measurements.keys())]["lambda"].data
-                ext_ratio = tt._av_interp(x_wave)
-                x_fit = np.array(list(tt.energies(line=True).values()))
-                flabel = f"Fitted $A_v$ = {tt._av:.1f}"
-                # print(flabel)
-            else:
-                ext_ratio = None
-                flabel = "fit"
+                if data_position is not None and len(np.shape(tt.av)) > 1:
+                    av_v = tt.av[data_position]
+                    av_e = tt.av.error[data_position]
+                    # a Measurement.get_as_measurement() would be nice
+                    av_p = Measurement(av_v, uncertainty=StdDevUncertainty(av_e), unit="")
+                else:
+                    av_p = tt.av
+                x_wave = Quantity(tt.molecule.transition_data.loc[list(tt._measurements.keys())]["lambda"])
+                ext_ratio = tt.extinction_model(x_wave)
+                corrected_cd = colden * np.exp(0.4 * ext_ratio * av_p)
+                _axis.errorbar(
+                    x=energy,
+                    y=np.log10(corrected_cd),
+                    marker="^",
+                    label=f"$A_v$ = {av_p:.2f}",
+                    yerr=sigma,
+                    capsize=2 * kwargs_opts["capsize"],
+                    linestyle="none",
+                    color="k",
+                    lw=kwargs_opts["linewidth"],
+                    ms=kwargs_opts["markersize"],
+                )
 
             _axis.plot(
                 x_fit,
-                tt.fit_result[data_position].eval(
-                    x=x_fit, fit_opr=False, fit_av=tt.av_fitted, extinction_ratio=ext_ratio
-                ),
+                tt.fit_result[data_position].eval(x=x_fit, fit_opr=False, fit_av=False, extinction_ratio=None),
                 label=flabel,
                 color=self._fit_color,
             )
@@ -296,14 +324,16 @@ class ExcitationPlot(PlotBase):
             handles.append(phantom[0])
             labels.append(labnh)
         # Scale xaxis with max(energy). Round up to nearest 1000
-        if kwargs_opts["xmax"] is None:
-            kwargs_opts["xmax"] = np.round(500.0 + energy.max(), -3)
+        # if kwargs_opts["xmax"] is None:
+        #   kwargs_opts["xmax"] = np.round(500.0 + energy.max(), -3)
         _axis.set_xlim(kwargs_opts["xmin"], kwargs_opts["xmax"])
-        # print(f"setting ylim [{kwargs_opts['ymin']},{kwargs_opts['ymax']}]")
         _axis.set_ylim(kwargs_opts["ymin"], kwargs_opts["ymax"])
         # try to make reasonably-spaced xaxis tickmarks.
         # if I were clever, I'd do this with a function
         temperature_range = kwargs_opts["xmax"] - kwargs_opts["xmin"]
+        if temperature_range <= 2000:
+            _axis.xaxis.set_major_locator(MultipleLocator(500))
+            _axis.xaxis.set_minor_locator(MultipleLocator(100))
         if temperature_range <= 10000:
             _axis.xaxis.set_major_locator(MultipleLocator(1000))
             _axis.xaxis.set_minor_locator(MultipleLocator(200))
@@ -411,7 +441,7 @@ class ExcitationPlot(PlotBase):
             self._logfile = open("/tmp/test.log", "a")
         data_position = tuple(np.array(np.shape(data)) // 2)
         position = (data_position[1], data_position[0])
-        # print(position)
+        # fposition)
         # print(f"fit result at {position} is {self._tool.fit_result[position]}")
         # print(f"NONE? {self._tool.fit_result[position] is None}")
         if self._tool.fit_result[data_position] is None:

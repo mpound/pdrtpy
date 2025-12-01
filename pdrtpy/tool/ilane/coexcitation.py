@@ -1,26 +1,21 @@
-import cProfile
-import io
-import math
-import pstats
-import warnings
-from copy import deepcopy
-
-import astropy.constants as constants
+from astropy.nddata import Cutout2D
 import astropy.units as u
+import astropy.constants as constants
+from astropy.nddata import StdDevUncertainty
+import math
 import numpy as np
-from astropy import log
-from astropy.nddata import Cutout2D, StdDevUncertainty
-from emcee.pbar import get_progress_bar
 from lmfit import Parameters  # , fit_report
 from lmfit.model import Model  # , ModelResult
-from scipy.interpolate import interp1d
+from emcee.pbar import get_progress_bar
+import cProfile
+import pstats
+import io
 
+from .toolbase import ToolBase
+from .fitmap import FitMap
 from .. import pdrutils as utils
 from ..measurement import Measurement
-from .fitmap import FitMap
-from .toolbase import ToolBase
-
-log.setLevel("WARNING")
+import warnings
 
 
 class ExcitationFit(ToolBase):
@@ -36,10 +31,8 @@ class ExcitationFit(ToolBase):
         self._intensity_units = "erg cm^-2 s^-1 sr^-1"
         self._cd_units = "cm^-2"
         self._t_units = "K"
-        self._numcomponents = 0  # number of components to fit. user-settable
         self._valid_components = ["hot", "cold", "total"]
-        self._av_interp = None
-        if isinstance(measurements, dict) or measurements is None:
+        if type(measurements) == dict or measurements is None:
             self._measurements = measurements
         else:
             self._init_measurements(measurements)
@@ -62,8 +55,7 @@ class ExcitationFit(ToolBase):
         for mm in m:
             if not utils.check_units(mm.unit, self._intensity_units):
                 raise TypeError(
-                    f"Measurement {mm.id} units {mm.unit.to_string()} are not in intensity units equivalent to"
-                    f" {self._intensity_units}"
+                    f"Measurement {mm.id} units {mm.unit.to_string()} are not in intensity units equivalent to {self._intensity_units}"
                 )
             self._measurements[mm.id] = mm
 
@@ -105,12 +97,8 @@ class ExcitationFit(ToolBase):
         """
         self.add_measurement(m)
 
-    def _partition_function(self):
-        """The partition function for this molecule. Subclasses should implement this function."""
-        pass
 
-
-class H2ExcitationFit(ExcitationFit):
+class COExcitationFit(ExcitationFit):
     r"""Tool for fitting temperatures, column densities, and ortho-to-para ratio(`OPR`) from an :math:`H_2` excitation diagram. It takes as input a set of :math:`H_2` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
 
     Often, excitation diagrams show evidence of both "hot" and "cold" gas components, where the cold gas dominates the intensity in the low `J` transitions and the hot gas dominates in the high `J` transitions. Given data over several transitions, one can fit for :math:`T_{cold}, T_{hot}, N_{total} = N_{cold}+ N_{hot}`, and optionally `OPR`. One needs at least 5 points to fit the temperatures and column densities (slope and intercept :math:`\times 2`), though one could compute (not fit) them with only 4 points. To additionally fit `OPR`, one should have 6 points (5 degrees of freedom).
@@ -121,25 +109,19 @@ class H2ExcitationFit(ExcitationFit):
     :type measurements: list of :class:`~pdrtpy.measurement.Measurement`.
     """
 
-    def __init__(self, measurements=None, constantsfile="RoueffEtAl.tab"):
+    def __init__(self, measurements=None, constantsfile="12co_transition_v10.tab"):
         super().__init__(measurements, constantsfile)
         self._canonical_opr = 3.0
+        # self._canonical_opr = 1.0
         self._opr = Measurement(data=[self._canonical_opr], uncertainty=None)
-        self._residual_functions = {
-            1: self._one_component_residual,
-            2: self._two_component_residual,
-        }
-        self._model_functions = {
-            1: self._one_component_model,
-            2: self._two_component_model,
-        }
+        self._init_params()
+        self._init_model()
         self._fitresult = None
         self._temperature = None
         self._total_colden = None
         # position and size that was used for averaging/fit
         self._position = None
         self._size = None
-        self._numcomponents = 2
 
     def _init_params(self):
         # fit input parameters
@@ -147,17 +129,13 @@ class H2ExcitationFit(ExcitationFit):
         # we have to have opr max be greater than 3 so that fitting will work.
         # the fit algorithm does not like when the initial value is pinned at one
         # of the limits
-        # print(f'initializing parameters with nc = {self._numcomponents}')
         self._params.add("opr", value=3.0, min=1.0, max=3.5, vary=False)
-        self._params.add("av", value=0.0, min=0.0, max=100, vary=False)
         self._params.add("m1", value=0, min=-1, max=0)
         self._params.add("n1", value=15, min=10, max=30)
-        if self._numcomponents == 2:
-            self._params.add("m2", value=0, min=-1, max=0)
-            self._params.add("n2", value=15, min=10, max=30)
-        # self._params.pretty_print()
+        self._params.add("m2", value=0, min=-1, max=0)
+        self._params.add("n2", value=15, min=10, max=30)
 
-    def _two_component_residual(self, params, x, data, error, idx):
+    def _residual(self, params, x, data, error, idx):
         # We assume that the column densities passed in have been normalized
         # using the canonical OPR=3. Therefore what we are actually fitting is
         # the ratio of the actual OPR to the canonical OPR.
@@ -168,8 +146,6 @@ class H2ExcitationFit(ExcitationFit):
         # be low by a factor of 3/opr.
         # So we must LOWER model[idx] artificially by dividing it by
         # 3/opr, i.e. multiplying by opr/3.  This is equivalent to addition in log-space.
-        #
-        # @TODO add extinction correction. however this method is not currently used.
         p = params.valuesdict()
         y1 = 10 ** (x * p["m1"] + p["n1"])
         y2 = 10 ** (x * p["m2"] + p["n2"])
@@ -178,27 +154,7 @@ class H2ExcitationFit(ExcitationFit):
             model += np.log10(p["opr"] / self._canonical_opr)
         return (model - data) / error
 
-    def _one_component_residual(self, params, x, data, error, idx):
-        p = params.valuesdict()
-        model = x * p["m1"] + p["n1"]
-        if params["opr"].vary:
-            model *= p["opr"] / self._canonical_opr
-        return (model - data) / error
-
-    def _two_component_model(
-        self,
-        x,
-        m1,
-        n1,
-        m2,
-        n2,
-        opr,
-        av,
-        idx=[],
-        fit_opr=False,
-        fit_av=False,
-        extinction_ratio=None,
-    ):
+    def _modelfunc(self, x, m1, n1, m2, n2, opr, idx=[], fit_opr=False):
         """Function for fitting the excitation curve as sum of two linear functions
         and allowing ortho-to-para ratio to vary.  Para is even J, ortho is odd J.
         :param x: independent axis array
@@ -212,21 +168,13 @@ class H2ExcitationFit(ExcitationFit):
         :type n2: float
         :param opr: ortho-to-para ratio
         :type opr: float
-        :param av: visual extinction in magnitudes
-        :type av: float
         :type idx: np.ndarray
         :param idx: list of indices that may have variable opr (odd J transitions)
-        :param fit_opr: indicate whether opr will be fit, default False (opr fixed = 3)
-        :type fit_opr: bool
-        :param fit_av: indicate whether Av will be fit, default False (Av=0)
-        :type fit_av: bool
-        :param extinction_ratio: The ratio of spectral line wavelength extinction to visual extinction. See set_extinction_law()
-        :type extinction_ratio: float
-        :return: Sum of lines in log space:log10(10**(x*m1+n1) + 10**(x*m2+n2)) + log10(opr/3.0)  0.4*extinction_ratio*av
+        :param fit_opr: indicate whether opr will be fit, default False (opr fixed)
+        :type fit_opr: False
+        :return: Sum of lines in log space:log10(10**(x*m1+n1) + 10**(x*m2+n2)) + log10(opr/3.0)
         :rtype: :class:`numpy.ndarray`
         """
-        # why are these coming in as floats?
-        idx = [int(i) for i in idx]
         y1 = 10 ** (x * m1 + n1)
         y2 = 10 ** (x * m2 + n2)
 
@@ -243,69 +191,15 @@ class H2ExcitationFit(ExcitationFit):
         # 3/opr, i.e. multiplying by opr/3.  This is equivalent to addition in log-space.
         if fit_opr:
             model[idx] += np.log10(opr / self._canonical_opr)
-        if fit_av:
-            model = model - 0.4 * extinction_ratio * av
-        return model
-
-    def _one_component_model(
-        self,
-        x,
-        m1,
-        n1,
-        opr,
-        av,
-        idx=[],
-        fit_opr=False,
-        fit_av=False,
-        extinction_ratio=None,
-    ):
-        """Function for fitting the excitation curve as sum of two linear functions
-        and allowing ortho-to-para ratio to vary.  Para is even J, ortho is odd J.
-        :param x: independent axis array
-        :param m1: slope of line
-        :type m1: float
-        :param n1: intercept of line
-        :type n1: float
-        :param opr: ortho-to-para ratio
-        :type opr: float
-        :param av: visual extinction in magnitudes
-        :type av: float
-        :type idx: np.ndarray
-        :param idx: list of indices that may have variable opr (odd J transitions)
-        :param fit_opr: indicate whether opr will be fit, default False (opr fixed = 3)
-        :type fit_opr: bool
-        :param fit_av: indicate whether Av will be fit, default False (Av=0)
-        :type fit_av: bool
-        :param extinction_ratio: The ratio of spectral line wavelength extinction to visual extinction. See set_extinction_law()
-        :type extinction_ratio: float
-        :return: line in log space: x*m1 + n1 + log10(opr/3.0) -  0.4*extinction_ratio*av
-
-        :rtype: :class:`numpy.ndarray`
-        """
-        idx = [int(i) for i in idx]
-        # model is already in log space
-        model = x * m1 + n1
-        if fit_opr:
-            # model[idx] *= opr/self._canonical_opr
-            # print("Adding")
-            model[idx] += np.log10(opr / self._canonical_opr)
-        if fit_av:
-            model = model - 0.4 * extinction_ratio * av
         return model
 
     def _init_model(self):
         # @todo make a separate class that subclasses Model.
         # potentially allow users to change it.
-        # print(f'initializing model with nc = {self._numcomponents}')
-        self._model = Model(
-            self._model_functions[self._numcomponents],
-            param_names=list(self._params.keys()),
-        )
-        # This may be entirely unnecessary
+        self._model = Model(self._modelfunc)
         for p, q in self._params.items():
-            self._model.set_param_hint(p, min=q.min, max=q.max, vary=q.vary)
-        pp = self._model.make_params()
-        # pp.pretty_print()
+            self._model.set_param_hint(p, value=q.value, min=q.min, max=q.max, vary=q.vary)
+            self._model.make_params()
 
     def _compute_quantities(self, fitmap):
         """Compute the temperatures and column densities for the hot and cold gas components.  This method will set class variables `_temperature` and `_colden`.
@@ -319,199 +213,93 @@ class H2ExcitationFit(ExcitationFit):
         # total column density = N(J=0)*Z(T) where Z(T) is partition function
         self._total_colden = dict()
         size = fitmap.data.size
-        if self._numcomponents == 2:
-            # create default arrays in which calculated values will be stored.
-            # Use nan as fill value because there may be nans in fitmapdata, in which
-            # case nothing need be done to arrays.
-            # tc, th = cold and hot temperatures
-            # utc, utc = uncertainties in cold and hot temperatures
-            # nc, nh = cold and hot column densities
-            # unc, unh = uncertainties in cold and hot temperatures
-            # opr = ortho to para ratio
-            # uopr = uncertainty in OPR
-            tc = np.full(shape=size, fill_value=np.nan, dtype=float)
-            utc = np.full(shape=size, fill_value=np.nan, dtype=float)
-            nc = np.full(shape=size, fill_value=np.nan, dtype=float)
-            unc = np.full(shape=size, fill_value=np.nan, dtype=float)
-            opr = np.full(shape=size, fill_value=np.nan, dtype=float)
-            uopr = np.full(shape=size, fill_value=np.nan, dtype=float)
-            av = np.full(shape=size, fill_value=np.nan, dtype=float)
-            uav = np.full(shape=size, fill_value=np.nan, dtype=float)
+        # create default arrays in which calculated values will be stored.
+        # Use nan as fill value because there may be nans in fitmapdata, in which
+        # case nothing need be done to arrays.
+        # tc, th = cold and hot temperatures
+        # utc, utc = uncertainties in cold and hot temperatures
+        # nc, nh = cold and hot column densities
+        # unc, unh = uncertainties in cold and hot temperatures
+        # opr = ortho to para ratio
+        # uopr = uncertainty in OPR
+        tc = np.full(shape=size, fill_value=np.nan, dtype=float)
+        th = np.full(shape=size, fill_value=np.nan, dtype=float)
+        utc = np.full(shape=size, fill_value=np.nan, dtype=float)
+        uth = np.full(shape=size, fill_value=np.nan, dtype=float)
+        nc = np.full(shape=size, fill_value=np.nan, dtype=float)
+        nh = np.full(shape=size, fill_value=np.nan, dtype=float)
+        unh = np.full(shape=size, fill_value=np.nan, dtype=float)
+        unc = np.full(shape=size, fill_value=np.nan, dtype=float)
+        opr = np.full(shape=size, fill_value=np.nan, dtype=float)
+        uopr = np.full(shape=size, fill_value=np.nan, dtype=float)
+        ff = fitmap.data.flatten()
+        ffmask = fitmap.mask.flatten()
+        for i in range(size):
+            if ffmask[i]:
+                continue
+            params = ff[i].params
+            for p in params:
+                if params[p].stderr is None:
+                    print("AT pixel i [mask]", i, ffmask[i])
+                    params.pretty_print()
+                    raise Exception(
+                        "Something went wrong with the fit and it was unable to calculate errors on the fitted parameters. It's likely that a two-temperature model is not appropriate for your data. Check the fit_result report and plot."
+                    )
 
-            th = np.full(shape=size, fill_value=np.nan, dtype=float)
-            uth = np.full(shape=size, fill_value=np.nan, dtype=float)
-            unh = np.full(shape=size, fill_value=np.nan, dtype=float)
-            nh = np.full(shape=size, fill_value=np.nan, dtype=float)
-            ff = fitmap.data.flatten()
-            ffmask = fitmap.mask.flatten()
-            for i in range(size):
-                if ffmask[i]:
-                    continue
-                params = ff[i].params
-                for p in params:
-                    if params[p].stderr is None and params[p].vary:
-                        params.pretty_print()
-                        raise Exception(
-                            "Something went wrong with the fit and it was unable to calculate errors on the fitted"
-                            f" parameter {p}. It's likely that a two-temperature model is not appropriate for your"
-                            f" data.Check the fit_result report and plot. At pixel {i} with mask {ffmask[i]}"
-                        )
-                if params["m2"] < params["m1"]:
-                    cold = "2"
-                    hot = "1"
-                else:
-                    cold = "1"
-                    hot = "2"
-                mcold = "m" + cold
-                mhot = "m" + hot
-                ncold = "n" + cold
-                nhot = "n" + hot
-                # cold and hot temperatures
-                utc[i] = params[mcold].stderr / params[mcold]
-                tc[i] = -utils.LOGE / params[mcold]
-                uth[i] = params[mhot].stderr / params[mhot]
-                th[i] = -utils.LOGE / params[mhot]
-                nc[i] = 10 ** params[ncold]
-                unc[i] = utils.LN10 * params[ncold].stderr * nc[i]
-                nh[i] = 10 ** params[nhot]
-                unh[i] = utils.LN10 * params[nhot].stderr * nh[i]
-                opr[i] = params["opr"].value
-                uopr[i] = params["opr"].stderr
-                av[i] = params["av"].value
-                uav[i] = params["av"].stderr
+            if params["m2"] < params["m1"]:
+                cold = "2"
+                hot = "1"
+            else:
+                cold = "1"
+                hot = "2"
+            mcold = "m" + cold
+            mhot = "m" + hot
+            ncold = "n" + cold
+            nhot = "n" + hot
+            # cold and hot temperatures
+            utc[i] = params[mcold].stderr / params[mcold]
+            tc[i] = -utils.LOGE / params[mcold]
+            uth[i] = params[mhot].stderr / params[mhot]
+            th[i] = -utils.LOGE / params[mhot]
+            nc[i] = 10 ** params[ncold]
+            unc[i] = utils.LN10 * params[ncold].stderr * nc[i]
+            nh[i] = 10 ** params[nhot]
+            unh[i] = utils.LN10 * params[nhot].stderr * nh[i]
+            opr[i] = params["opr"].value
+            uopr[i] = params["opr"].stderr
 
-            # now reshape them all back to map shape
-            tc = tc.reshape(fitmap.data.shape)
-            th = th.reshape(fitmap.data.shape)
-            utc = utc.reshape(fitmap.data.shape)
-            uth = uth.reshape(fitmap.data.shape)
-            nc = nc.reshape(fitmap.data.shape)
-            nh = nh.reshape(fitmap.data.shape)
-            unh = unh.reshape(fitmap.data.shape)
-            unc = unc.reshape(fitmap.data.shape)
-            opr = opr.reshape(fitmap.data.shape)
-            uopr = uopr.reshape(fitmap.data.shape)
-            av = av.reshape(fitmap.data.shape)
-            uav = uav.reshape(fitmap.data.shape)
+        # now reshape them all back to map shape
+        tc = tc.reshape(fitmap.data.shape)
+        th = th.reshape(fitmap.data.shape)
+        utc = utc.reshape(fitmap.data.shape)
+        uth = uth.reshape(fitmap.data.shape)
+        nc = nc.reshape(fitmap.data.shape)
+        nh = nh.reshape(fitmap.data.shape)
+        unh = unh.reshape(fitmap.data.shape)
+        unc = unc.reshape(fitmap.data.shape)
+        opr = opr.reshape(fitmap.data.shape)
+        uopr = uopr.reshape(fitmap.data.shape)
 
-            mask = fitmap.mask | np.logical_not(np.isfinite(tc))
-            ucc = StdDevUncertainty(np.abs(tc * utc))
-            self._temperature["cold"] = Measurement(
-                data=tc, unit=self._t_units, uncertainty=ucc, wcs=fitmap.wcs, mask=mask
-            )
-            mask = fitmap.mask | np.logical_not(np.isfinite(th))
-            uch = StdDevUncertainty(np.abs(th * uth))
-            self._temperature["hot"] = Measurement(
-                data=th, unit=self._t_units, uncertainty=uch, wcs=fitmap.wcs, mask=mask
-            )
-            # cold and hot total column density
-            ucn = StdDevUncertainty(np.abs(unc))
-            mask = fitmap.mask | np.logical_not(np.isfinite(nc))
-            self._j0_colden["cold"] = Measurement(nc, unit=self._cd_units, uncertainty=ucn, wcs=fitmap.wcs, mask=mask)
-            mask = fitmap.mask | np.logical_not(np.isfinite(nh))
-            uhn = StdDevUncertainty(np.abs(unh))
-            self._j0_colden["hot"] = Measurement(nh, unit=self._cd_units, uncertainty=uhn, wcs=fitmap.wcs, mask=mask)
-            #
-            self._total_colden["cold"] = self._j0_colden["cold"] * self._partition_function(self.tcold)
-            self._total_colden["hot"] = self._j0_colden["hot"] * self._partition_function(self.thot)
-            mask = fitmap.mask | np.logical_not(np.isfinite(opr))
-            self._opr = Measurement(
-                opr,
-                unit=u.dimensionless_unscaled,
-                uncertainty=StdDevUncertainty(uopr),
-                wcs=fitmap.wcs,
-                mask=mask,
-            )
-            self._av = Measurement(
-                av,
-                unit=u.dimensionless_unscaled,
-                uncertainty=StdDevUncertainty(uav),
-                wcs=fitmap.wcs,
-                mask=mask,
-            )
-        elif self._numcomponents == 1:
-            tc = np.full(shape=size, fill_value=np.nan, dtype=float)
-            utc = np.full(shape=size, fill_value=np.nan, dtype=float)
-            nc = np.full(shape=size, fill_value=np.nan, dtype=float)
-            unc = np.full(shape=size, fill_value=np.nan, dtype=float)
-            opr = np.full(shape=size, fill_value=np.nan, dtype=float)
-            uopr = np.full(shape=size, fill_value=np.nan, dtype=float)
-            av = np.full(shape=size, fill_value=np.nan, dtype=float)
-            uav = np.full(shape=size, fill_value=np.nan, dtype=float)
-            ff = fitmap.data.flatten()
-            ffmask = fitmap.mask.flatten()
-            for i in range(size):
-                if ffmask[i]:
-                    continue
-                params = ff[i].params
-                for p in params:
-                    if params[p].stderr is None:
-                        params.pretty_print()
-                        raise Exception(
-                            "Something went wrong with the fit and it was unable to calculate errors on the fitted"
-                            f" parameter {p}. It's possible that a one-temperature model is not appropriate for your"
-                            f" data. Check the fit_result report and plot. At pixel {i} with mask {ffmask[i]}."
-                        )
-                mcold = "m1"
-                ncold = "n1"
-                # cold and hot temperatures
-                utc[i] = params[mcold].stderr / params[mcold]
-                tc[i] = -utils.LOGE / params[mcold]
-
-                nc[i] = 10 ** params[ncold]
-                unc[i] = utils.LN10 * params[ncold].stderr * nc[i]
-                opr[i] = params["opr"].value
-                uopr[i] = params["opr"].stderr
-                av[i] = params["av"].value
-                uav[i] = params["av"].stderr
-
-            # now reshape them all back to map shape
-            tc = tc.reshape(fitmap.data.shape)
-            utc = utc.reshape(fitmap.data.shape)
-            nc = nc.reshape(fitmap.data.shape)
-            unc = unc.reshape(fitmap.data.shape)
-            opr = opr.reshape(fitmap.data.shape)
-            uopr = uopr.reshape(fitmap.data.shape)
-            av = av.reshape(fitmap.data.shape)
-            uav = uav.reshape(fitmap.data.shape)
-
-            mask = fitmap.mask | np.logical_not(np.isfinite(tc))
-            ucc = StdDevUncertainty(np.abs(tc * utc))
-            self._temperature["cold"] = Measurement(
-                data=tc, unit=self._t_units, uncertainty=ucc, wcs=fitmap.wcs, mask=mask
-            )
-            self._temperature["hot"] = self._temperature["cold"]
-            # cold = hot total column density
-            ucn = StdDevUncertainty(np.abs(unc))
-            mask = fitmap.mask | np.logical_not(np.isfinite(nc))
-            self._j0_colden["cold"] = Measurement(nc, unit=self._cd_units, uncertainty=ucn, wcs=fitmap.wcs, mask=mask)
-            self._j0_colden["hot"] = self._j0_colden["cold"]
-            self._total_colden["cold"] = self._j0_colden["cold"] * self._partition_function(self.tcold)
-            self._total_colden["hot"] = self._total_colden["cold"]
-            mask = fitmap.mask | np.logical_not(np.isfinite(opr))
-            self._opr = Measurement(
-                opr,
-                unit=u.dimensionless_unscaled,
-                uncertainty=StdDevUncertainty(uopr),
-                wcs=fitmap.wcs,
-                mask=mask,
-            )
-            self._av = Measurement(
-                av,
-                unit=u.dimensionless_unscaled,
-                uncertainty=StdDevUncertainty(uav),
-                wcs=fitmap.wcs,
-                mask=mask,
-            )
-        else:
-            raise Exception(f"Bad numcomponents: {self._numcomponents}")
-
-    def _is_ortho(self, identifier):
-        # identifier is J level
-        if isinstance(identifier, int):
-            return utils.is_odd(identifier)
-        else:  # identifier is e.g., H210S7
-            return self._ac.loc[identifier]["Ju"] % 2 != 0
+        mask = fitmap.mask | np.logical_not(np.isfinite(tc))
+        ucc = StdDevUncertainty(np.abs(tc * utc))
+        self._temperature["cold"] = Measurement(data=tc, unit=self._t_units, uncertainty=ucc, wcs=fitmap.wcs, mask=mask)
+        mask = fitmap.mask | np.logical_not(np.isfinite(th))
+        uch = StdDevUncertainty(np.abs(th * uth))
+        self._temperature["hot"] = Measurement(data=th, unit=self._t_units, uncertainty=uch, wcs=fitmap.wcs, mask=mask)
+        # cold and hot total column density
+        ucn = StdDevUncertainty(np.abs(unc))
+        mask = fitmap.mask | np.logical_not(np.isfinite(nc))
+        self._j0_colden["cold"] = Measurement(nc, unit=self._cd_units, uncertainty=ucn, wcs=fitmap.wcs, mask=mask)
+        mask = fitmap.mask | np.logical_not(np.isfinite(nh))
+        uhn = StdDevUncertainty(np.abs(unh))
+        self._j0_colden["hot"] = Measurement(nh, unit=self._cd_units, uncertainty=uhn, wcs=fitmap.wcs, mask=mask)
+        #
+        self._total_colden["cold"] = self._j0_colden["cold"] * self._partition_function(self.tcold)
+        self._total_colden["hot"] = self._j0_colden["hot"] * self._partition_function(self.thot)
+        mask = fitmap.mask | np.logical_not(np.isfinite(opr))
+        self._opr = Measurement(
+            opr, unit=u.dimensionless_unscaled, uncertainty=StdDevUncertainty(uopr), wcs=fitmap.wcs, mask=mask
+        )
 
     @property
     def fit_result(self):
@@ -520,34 +308,6 @@ class H2ExcitationFit(ExcitationFit):
         :rtype:  :class:`lmfit.model.ModelResult`
         """
         return self._fitresult
-
-    @property
-    def numcomponents(self):
-        """Number of temperature components in the fit
-
-        :rtype: int
-        """
-        return self._numcomponents
-
-    @property
-    def av_fitted(self):
-        """Was the visual extinction fitted?
-
-        :returns: True if Av was fitted, False if not
-        :rtype: bool
-        """
-        if self._fitresult is None:
-            return False
-        return self._params["av"].vary
-
-    @property
-    def av(self):
-        """The visual extinction
-
-        :returns: The fitted Av if it was determined in the fit, otherwise 0
-        :rtype: :class:`~pdrtpy.measurement.Measurement`
-        """
-        return self._av
 
     @property
     def opr_fitted(self):
@@ -564,7 +324,7 @@ class H2ExcitationFit(ExcitationFit):
     def opr(self):
         """The ortho-to-para ratio (OPR)
 
-        :returns: The fitted OPR if it was determined in the fit, otherwise the canonical LTE OPR
+        :returns: The fitted OPR is it was determined in the fit, otherwise the canonical LTE OPR
         :rtype: :class:`~pdrtpy.measurement.Measurement`
         """
         return self._opr
@@ -601,8 +361,6 @@ class H2ExcitationFit(ExcitationFit):
 
         :rtype: :class:`~pdrtpy.measurement.Measurement`
         """
-        if self._numcomponents == 1:
-            return self._total_colden["cold"]
         return self._total_colden["hot"] + self._total_colden["cold"]
 
     @property
@@ -644,7 +402,7 @@ class H2ExcitationFit(ExcitationFit):
         """
         return self._temperature
 
-    def column_densities(self, norm=False, unit=utils._CM2, line=True):
+    def column_densities(self, norm=False, unit=utils._CM2, line=False):
         r"""The computed upper state column densities of stored intensities
 
         :param norm: if True, normalize the column densities by the
@@ -667,8 +425,6 @@ class H2ExcitationFit(ExcitationFit):
         # if not self._column_density or (len(self._column_density) != len(self._measurements)):
 
         # screw it. just always compute them.  Note to self: change this if it becomes computationally intensive
-        # suppress ridiculous NDDATA warning about units. See issue #163
-        log.setLevel("WARNING")
         self._compute_column_densities(unit=unit, line=line)
         if norm:
             cdnorm = dict()
@@ -677,20 +433,19 @@ class H2ExcitationFit(ExcitationFit):
                     denom = self._ac.loc[cd]["gu"]
                 else:
                     denom = self._ac.loc["Ju", cd]["gu"]
-                    if len(denom) > 0:
-                        denom = denom[0]  # ARGH kluge.  Need to get rid of f option as Ju is no longer unique
+                    # if (np.size(denom) > 0):
+                    #     denom = denom[0]  # ARGH kluge.  Need to get rid of line=False option as Ju is no longer unique
                 # print("CD ",cd,"DENOM ",denom)
                 # This fails with complaints about units:
                 # self._column_density[cd] /= self._ac.loc[cd]["gu"]
                 # gu = Measurement(self._ac.loc[cd]["gu"],unit=u.dimensionless_unscaled)
                 cdnorm[cd] = self._column_density[cd] / denom
-                cdnorm[cd]._identifier = cd
             # return #self._column_density
             return cdnorm
         else:
             return self._column_density
 
-    def energies(self, line=True):
+    def energies(self, line=False):
         """Upper state energies of stored intensities, in K.
 
         :param line: if True, the dictionary index is the Line name,
@@ -708,30 +463,6 @@ class H2ExcitationFit(ExcitationFit):
                 t[self._ac.loc[m]["Ju"]] = self._ac.loc[m]["Tu"]
         return t
 
-    def wavelengths(self, line=True, units=False):
-        """Wavelengths of transitions, in micron (assumed unit using Roueff et al table)
-
-        :param line: if True, the dictionary index is the Line name,
-                  otherwise it is the upper state :math:`J` number.  Default: False
-        :type line: bool
-        :param units: if True, values are returned with units as astropy Quantity
-        :type units: bool
-        :returns: dictionary indexed by upper state :math:`J` number or Line name. Default: False means return indexed by :math:`J`.
-        :rtype: dict
-        """
-        t = dict()
-        if units:
-            x = self._ac["lambda"].unit
-        else:
-            x = 1
-        if line:
-            for m in self._measurements:
-                t[m] = self._ac.loc[m]["lambda"] * x
-        else:
-            for m in self._measurements:
-                t[self._ac.loc[m]["Ju"]] = self._ac.loc[m]["lambda"] * x
-        return t
-
     def run(self, position=None, size=None, fit_opr=False, **kwargs):
         r"""Fit the :math:`log N_u-E` diagram with two excitation temperatures,
         a ``hot`` :math:`T_{ex}` and a ``cold`` :math:`T_{ex}`.
@@ -744,53 +475,16 @@ class H2ExcitationFit(ExcitationFit):
         :type size: int, array_like`
         :param fit_opr: Whether to fit the ortho-to-para ratio or not. If True, the OPR will be varied to determine the best value. If False, the OPR is fixed at the canonical LTE value of 3.
         :type fit_opr: bool
-        :param fit_av: Whether to fit the visual extinction. If True, the Av will be varied to determine the best value. If False, the Av is fixed at zero.
-        :type fit_av: bool
         """
-        # @todo what happens if e.g., fit_av=True and init_av !=0 ?
         kwargs_opts = {
             "mask": None,
             "method": "leastsq",
             "nan_policy": "raise",
             "test": False,
             "profile": False,
-            "fit_av": False,
-            "components": 2,
-            "verbose": False,
-            "init_opr": 3.0,
-            "init_av": 0.0,
-            # for emcee
-            "burn": 0,
-            "steps": 1000,
-            "nwalkers": 100,
         }
         kwargs_opts.update(kwargs)
-        if fit_opr and kwargs_opts["fit_av"]:
-            raise ValueError("You can't fit OPR and Av simultaneously. Pick one.")
-        if kwargs_opts["fit_av"]:
-            if self._av_interp is None:
-                raise Exception(
-                    "You must set an excition law before fitting for Av. See H2ExcitationFit.set_extinction_law()"
-                )
-        self._numcomponents = kwargs_opts.pop("components")
-        self._init_params()
-        self._init_model()
         return self._fit_excitation(position, size, fit_opr, **kwargs_opts)
-
-    def set_extinction_law(self, wavelength, aratio):
-        """Set the extinction law to use when fitting for Av. It should
-            be of the form A_lambda/A_v as a function of lambda in microns.
-
-        :param wavelength: The wavelength in microns
-        :type wavelength: numpy array of float
-        :param aratio:  A_lambda/Av ratio
-        :type aratio:  numpy array of float
-        """
-        if len(wavelength) != len(aratio):
-            raise ValueError(f"Wavelength and Aratio array lengths differ {len(wavelength)} != {len(aratio)}")
-        self._av_wave = wavelength
-        self._av_aratio = aratio
-        self._av_interp = interp1d(wavelength, aratio)
 
     def intensity(self, colden):
         """Given an upper state column density :math:`N_u`, compute the intensity :math:`I`.
@@ -835,19 +529,28 @@ class H2ExcitationFit(ExcitationFit):
         :returns: a :class:`~pdrtpy.measurement.Measurement` of the column density.
         :rtype: :class:`~pdrtpy.measurement.Measurement`
         """
-        # suppress ridiculous NDDATA warning about units. See issue #163
-        log.setLevel("WARNING")
-        dE = self._ac.loc[intensity.id]["dE"] * constants.k_B.cgs * self._ac["dE"].unit
-        A = self._ac.loc[intensity.id]["A"] * self._ac["A"].unit
-        v = 4.0 * math.pi * u.sr / (A * dE)
-        val = Measurement(data=v.value, unit=v.unit, identifier=intensity.id)
-        N_upper = intensity * val  # error will get propagated
-        N_upper = N_upper.convert_unit_to(unit)
-        N_upper._identifier = intensity.id
-        # log.setLevel("INFO")
-        return N_upper
 
-    def _compute_column_densities(self, unit=utils._CM2, line=True):
+        dE = self._ac.loc[intensity.id]["dE"] * constants.k_B.cgs * self._ac["dE"].unit  # / u.erg
+        A = self._ac.loc[intensity.id]["A"] * self._ac["A"].unit  # * u.s
+        print(A.value)
+        print(dE.value)
+        v = 4.0 * math.pi * u.sr / (A * dE)
+        print(A.unit)
+        print(dE.unit)
+        print(v.unit)
+        print(v.value)
+
+        val = Measurement(data=v.value, unit=v.unit)
+        N_upper = intensity * val  # error will get propagated
+        print(intensity.unit)
+        print(intensity.value)
+        # N_upper.unit *= u.K
+        # N_upper.unit /= u.erg
+        print(N_upper.value)
+        return N_upper.convert_unit_to(unit)
+        # return N_upper * u.K / u.erg
+
+    def _compute_column_densities(self, unit=utils._CM2, line=False):
         r"""Compute all upper level column densities for stored intensity measurements and puts them in a dictionary
         :param unit: The units in which to return the column density. Default: :math:`{\\rm }cm^{-2}`
         :type unit: str or :class:`astropy.units.Unit`
@@ -857,7 +560,7 @@ class H2ExcitationFit(ExcitationFit):
 
          # should we reutrn something here or just compute them and never store.
          # I'm beginning to think there is no reason to store them.
-        #:700returns: dictionary of column densities as:class:`~pdrtpy.measurement.Measurement  indexed by upper state :math:`J` number or Line name. Default: False means return indexed by :math:`J`.
+        #:returns: dictionary of column densities as:class:`~pdrtpy.measurement.Measurement  indexed by upper state :math:`J` number or Line name. Default: False means return indexed by :math:`J`.
         #:returns: a :class:`~pdrtpy.measurement.Measurement` of the column density.
         """
         self._column_density = dict()
@@ -885,13 +588,7 @@ class H2ExcitationFit(ExcitationFit):
             return self._ac.loc[id]["gu"] * opr / self._canonical_opr
 
     def average_column_density(
-        self,
-        position=None,
-        size=None,
-        norm=True,
-        unit=utils._CM2,
-        line=True,
-        clip=-1e40 * u.Unit("cm-2"),
+        self, position=None, size=None, norm=True, unit=utils._CM2, line=False, clip=-1e40 * u.Unit("cm-2")
     ):
         r"""Compute the average column density over a spatial box.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.
 
@@ -913,8 +610,7 @@ class H2ExcitationFit(ExcitationFit):
         """
         # @todo
         # - should default clip = None?
-        # suppress ridiculous NDDATA warning about units. See issue #163
-        log.setLevel("WARNING")
+
         # Set norm=False because we normalize below if necessary.
         if position is not None and size is None:
             print("WARNING: ignoring position keyword since no size given")
@@ -939,17 +635,9 @@ class H2ExcitationFit(ExcitationFit):
                 # if size[0] > ca.shape[0] or size[1] > ca.shape[1]:
                 #    raise Exception(f"Requested cutout size {size} exceeds measurement size {ca.shape}")
                 cutout = Cutout2D(ca.data, position, size, ca.wcs, mode="trim", fill_value=np.nan)
-                w = Cutout2D(
-                    ca.uncertainty.array,
-                    position,
-                    size,
-                    ca.wcs,
-                    mode="trim",
-                    fill_value=np.nan,
-                )
+                w = Cutout2D(ca.uncertainty.array, position, size, ca.wcs, mode="trim", fill_value=np.nan)
                 cddata = np.ma.masked_array(
-                    cutout.data,
-                    mask=np.ma.mask_or(np.isnan(cutout.data), cutout.data < clip.value),
+                    cutout.data, mask=np.ma.mask_or(np.isnan(cutout.data), cutout.data < clip.value)
                 )
                 weights = np.ma.masked_array(w.data, np.isnan(w.data))
             else:
@@ -963,19 +651,9 @@ class H2ExcitationFit(ExcitationFit):
                     weights = np.array([ca.uncertainty.array])
                 else:
                     weights = ca.uncertainty.array
-            # print(f"weights {weights} avg,sum:{np.average(weights)},{np.sum(weights)}")
-            if np.sum(weights) == 0:
-                cdavg = np.average(cddata)
-            else:
-                cdavg = np.average(cddata, weights=weights)
+            cdavg = np.average(cddata, weights=weights)
             error = np.nanmean(ca.error) / np.sqrt(ca.error.size)  # -1
-            cdmeas[cd] = Measurement(
-                data=cdavg,
-                uncertainty=StdDevUncertainty(error),
-                unit=ca.unit,
-                identifier=cd,
-            )
-        # log.setLevel("INFO")
+            cdmeas[cd] = Measurement(data=cdavg, uncertainty=StdDevUncertainty(error), unit=ca.unit, identifier=cd)
         return cdmeas
 
     def _get_ortho_indices(self, ids):
@@ -990,7 +668,7 @@ class H2ExcitationFit(ExcitationFit):
         return np.where(self._ac.loc[ids]["Ju"] % 2 != 0)[0]
 
     def _get_para_indices(self, ids):
-        """Given a list of J values, return the indices ofcomb those that are para
+        """Given a list of J values, return the indices of those that are para
         transitions (even J)
 
         :param ids:
@@ -1015,30 +693,17 @@ class H2ExcitationFit(ExcitationFit):
         return slope
 
     def _first_guess(self, x, y):
-        r"""The first guess at the fit parameters is done by finding the line between the first
-        two (lowest energy) points to determine $T_{cold}and between the last two (highest energy)
-        points to determine $T_{hot}. The first guess is needed to ensure the final fit converges.
-        The guess doesn't need to be perfect, just in the ballpark.
+        r"""The first guess at the fit parameters is done by finding the line between the first two (lowest energy) points to determine $T_{cold}and between the last two (highest energy) points to determine $T_{hot}. The first guess is needed to ensure the final fit converges.  The guess doesn't need to be perfect, just in the ballpark.
 
         :param x: array of energies, $E/k$
         :type x: numpy array
         :param y: array of normalized column densities $N_u/g_u$
         :type y: numpy array
         """
-
-        if self._numcomponents == 2:
-            slopecold = (y[2] - y[0]) / (x[2] - x[0])
-            intcold = y[1] - slopecold * x[1]
-            slopehot = (y[-1] - y[-2]) / (x[-1] - x[-2])
-            inthot = y[-1] - slopehot * x[-1]
-        else:
-            slopecold = (y[-1] - y[0]) / (x[-1] - x[0])
-            intcold = y[-1] - slopecold * x[-1]
-            slopehot = slopecold
-            inthot = intcold
-        if slopecold >= 0:
-            # print(f"Bad first guess, resetting from {slopecold=} to -0.5")
-            slopecold = -0.5
+        slopecold = (y[1] - y[0]) / (x[1] - x[0])
+        slopehot = (y[-1] - y[-2]) / (x[-1] - x[-2])
+        intcold = y[1] - slopecold * x[1]
+        inthot = y[-1] - slopehot * x[-1]
         # print("FG ",type(slopecold),type(slopehot),type(intcold),type(inthot))
         return np.array([slopecold, intcold, slopehot, inthot])
 
@@ -1060,45 +725,25 @@ class H2ExcitationFit(ExcitationFit):
            :rtype:  :class:`lmfit.model.ModelResult`
         """
         profile = kwargs.pop("profile")
-        fit_av = kwargs.pop("fit_av")
-        init_av = kwargs.pop("init_av", 0.0)
-        init_opr = kwargs.pop("init_opr", 3.0)
-        verbose = kwargs.pop("verbose")
         self._stats = None
         if profile:
             pr = cProfile.Profile()
             pr.enable()
         if fit_opr:
-            min_points = self._numcomponents * 2 + 1
+            min_points = 5
         else:
-            min_points = self._numcomponents * 2
+            min_points = 4
             self._opr = Measurement(data=[self._canonical_opr], uncertainty=None)
-        if fit_av:
-            min_points = self._numcomponents * 2 + 1
-            wavelengths = np.array(list(self.wavelengths(line=True).values()))  # assume micron for now
-            extinction_ratios = self._av_interp(wavelengths)  # A_lambda/A_v at the wavelengths of the transitions
-        else:
-            min_points = self._numcomponents * 2
-            self._av = Measurement(data=[0.0], uncertainty=None)
-            extinction_ratios = None
 
         self._params["opr"].vary = fit_opr
-        if fit_opr:
-            self._params["opr"].value = init_opr
-        self._params["av"].vary = fit_av
-        if fit_av:
-            self._params["av"].value = init_av
         energy = self.energies(line=True)
         _ee = np.array([c for c in energy.values()])
         # @ todo: allow fitting of one-temperature model
         if len(_ee) < min_points:
-            raise Exception(
-                f"You need at least {min_points:d} data points to determine {self._numcomponents}-temperature model"
-            )
+            raise Exception(f"You need at least {min_points:d} data points to determine two-temperature model")
         if len(_ee) == min_points:
             warnings.warn(
-                f"Number of data points is equal to number of free parameters ({min_points:d}). Fit will be"
-                " over-constrained"
+                f"Number of data points is equal to number of free parameters ({min_points:d}). Fit will be over-constrained"
             )
         _energy = Measurement(_ee, unit="K")
         _ids = list(energy.keys())
@@ -1107,6 +752,7 @@ class H2ExcitationFit(ExcitationFit):
         if position is None or size is None:
             colden = self.column_densities(norm=True, line=True)
         else:
+
             colden = self.average_column_density(norm=True, position=position, size=size, line=True)
 
         # Need to stuff the data into a single vector
@@ -1160,104 +806,53 @@ class H2ExcitationFit(ExcitationFit):
         badfit = 0
         # update whether opr is allowed to vary or not.
         self._model.set_param_hint("opr", vary=fit_opr)
-        self._model.set_param_hint("av", vary=fit_av)
         # use progress bar if more than one pixel
         if total > 1:
             progress = kwargs.pop("progress", True)
         else:
             progress = False
-        # print("PARAMS")
-        # self._params.pretty_print()
-        self._excount = 0
-        self._badfit = 0
         with get_progress_bar(progress, total, leave=True, position=0) as pbar:
             for i in range(total):
                 if np.isfinite(yr[:, i]).all() and np.isfinite(sig[:, i]).all():
                     # update Parameter hints based on first guess.
-                    p = deepcopy(self._params)
-                    p["n1"].value = intcold[i]
-                    p["m1"].value = slopecold[i]
-                    # self._model.set_param_hint("m1", value=slopecold[i], vary=True)
-                    # self._model.set_param_hint("n1", value=intcold[i], vary=True)
-                    if self._numcomponents == 2:
-                        #    self._model.set_param_hint("m2", value=slopehot[i], vary=True)
-                        #    self._model.set_param_hint("n2", value=inthot[i], vary=True)
-                        p["n2"].value = inthot[i]
-                        p["m2"].value = slopehot[i]
+                    self._model.set_param_hint("m1", value=slopecold[i], vary=True)
+                    self._model.set_param_hint("n1", value=intcold[i], vary=True)
+                    self._model.set_param_hint("m2", value=slopehot[i], vary=True)
+                    self._model.set_param_hint("n2", value=inthot[i], vary=True)
+                    p = self._model.make_params()
                     wts = 1.0 / (sig[:, i] * sig[:, i])
                     try:
-                        # print("X=",x)
-                        # print("Y=",yr[:i])
-                        # print(f"fitting with fit_av={fit_av}")
-                        if kwargs["method"] == "emcee":
-                            emcee_kwargs = {k: kwargs[k] for k in ("burn", "steps", "nwalkers") if k in kwargs}
-                        else:
-                            emcee_kwargs = None
                         fmdata[i] = self._model.fit(
                             data=yr[:, i],
                             weights=wts,
                             x=x,
-                            params=p,
                             idx=idx,
                             fit_opr=fit_opr,
-                            fit_av=fit_av,
-                            extinction_ratio=extinction_ratios,
                             method=kwargs["method"],
                             nan_policy=kwargs["nan_policy"],
-                            fit_kws=emcee_kwargs,
                         )
-                        # print(f"fitted {fmdata[i]=}")
-                        # if fmdata[i].success and fmdata[i].errorbars:
-                        if fmdata[i].success:
+                        if fmdata[i].success and fmdata[i].errorbars:
                             count = count + 1
                         else:
-                            if verbose:
-                                print(
-                                    f"Bad fit because 'success' value ({fmdata[i].success}) or errorbars"
-                                    f" ({fmdata[i].errorbars}) was bad."
-                                )
-                            # fmdata[i] = None
+                            fmdata[i] = None
                             fm_mask[i] = True
-                            self._badfit = self._badfit + 1
-                    except ValueError as v:
-                        print(f"Bad fit because {v}")
-                        # fmdata[i] = None
+                            badfit = badfit + 1
+                    except ValueError:
+                        fmdata[i] = None
                         fm_mask[i] = True
-                        self._excount = self._excount + 1
+                        excount = excount + 1
                 else:
-                    if verbose:
-                        print("Bad fit because NaNs in data")
-                    # fmdata[i] = None
+                    fmdata[i] = None
                     fm_mask[i] = True
                 pbar.update(1)
-        # cleanup weird fits
-        for ii in range(len(fmdata)):
-            badstderr = False
-            fmd = fmdata[ii]
-            if fmd is None:
-                continue
-            for p in fmd.params:
-                if fmd.params[p].stderr is None and fmd.params[p].vary:
-                    if verbose:
-                        print(f"Fit completed at pixel {ii} but stderr for parameter {p} is None. Setting mask.")
-                        if self._numcomponents == 2:
-                            print("Try fitting a single component instead.")
-                    fmdata[i].success = False
-                    fm_mask[ii] = True
-                    self._badfit = self._badfit + 1
-                    badstderr = True
-                    # fmdata[ii] = None
-            if badstderr:
-                count = count - 1
         warnings.resetwarnings()
         fmdata = fmdata.reshape(saveshape)
         fm_mask = fm_mask.reshape(saveshape)
         self._fitresult = FitMap(fmdata, wcs=colden[fk].wcs, mask=fm_mask, name="result")
         # this will raise an exception if the fit was bad (fit errors == None)
         self._compute_quantities(self._fitresult)
-        if verbose:
-            print(f"fitted {count} of {slopecold.size} pixels")
-            print(f"got {excount} exceptions and {badfit} bad fits")
+        print(f"fitted {count} of {slopecold.size} pixels")
+        print(f"got {excount} exceptions and {badfit} bad fits")
         # if successful, set the used position and size
         self._position = position
         self._size = size
@@ -1311,7 +906,7 @@ class H2ExcitationFit(ExcitationFit):
         """
         # See Herbst et al 1996
         # http://articles.adsabs.harvard.edu/pdf/1996AJ....111.2403H
-        # Z(T) =  = 0.0247T * [1 - exp(-6000/T)]^-1
+        # Z(T) =  = 0.0247T * [1—exp(—6000/T)]^-1
 
         # This is just being defensive.  I know the temperatures used internally are in K.
         t = np.ma.masked_invalid((tex.value * u.Unit(tex.unit)).to("K", equivalencies=u.temperature()).value)

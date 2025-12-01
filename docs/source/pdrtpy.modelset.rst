@@ -2,7 +2,7 @@ ModelSets: The interface to models in the Toolbox
 =================================================
 
 PDRT supports a variety of PDR models to be used to fit your data. These are
-represented in the Python class `ModelSet`.  Broadly three classes are
+represented in the Python class `~pdrtpy.modelset.ModelSet`.  Broadly three classes are
 available:
 
     1. Wolfire/Kaufman 2020 models for constant density media (metallicities Z=0.5,1)

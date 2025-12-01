@@ -1,0 +1,31 @@
+@1@OH@K@J
+#20           # Number of levels
+#K            # Energy Unit
+#3            # Number of quantum number
+#J            # Quantum number
+#p            # parity for Lambda doubling
+#Fi           # Label : F1 corresponds to  J = Lambda-1/2, F2 to J = Lambda+1/2
+# n      g       E(K)                  OP      J     p   Fi
+#---data read without format ----------#------ READ WITH FORMAT -----------
+ 1     4.0     0.00000                 n      3/2    -   F2               !
+ 2     4.0     0.07998                 n      3/2    +   F2               !
+ 3     6.0   120.45858                 n      5/2    +   F2               !
+ 4     6.0   120.74777                 n      5/2    -   F2               !
+ 5     2.0   181.71156                 n      1/2    +   F1               !
+ 6     2.0   181.93744                 n      1/2    -   F1               !
+ 7     4.0   269.76604                 n      3/2    -   F1               !
+ 8     4.0   270.19767                 n      3/2    +   F1               !
+ 9     8.0   290.53332                 n      7/2    -   F2               !
+ 10    8.0   291.17789                 n      7/2    +   F2               !
+ 11    6.0   415.48375                 n      5/2    +   F1               !
+ 12    6.0   415.87510                 n      5/2    -   F1               !
+ 13   10.0   510.93786                 n      9/2    +   F2               !
+ 14   10.0   512.08024                 n      9/2    -   F2               !
+ 15    8.0   617.64174                 n      7/2    -   F1               !
+ 16    8.0   617.90648                 n      7/2    +   F1               !
+ 17   12.0   782.11102                 n     11/2    -   F2               !
+ 18   12.0   783.88646                 n     11/2    +   F2               !
+ 19   10.0   875.06021                 n      9/2    -   F1               !
+ 20   10.0   875.06741                 n      9/2    +   F1               !
+#---data read without format ----------#------ READ WITH FORMAT -----------
+#Ref : Lambda database - data downloaded on the 22nd february 2011
