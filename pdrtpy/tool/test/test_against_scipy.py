@@ -29,8 +29,8 @@ class TestExcitation:
         print("T(hot) = {:>8.3f}".format(he.thot))
 
         # manual fit
-        clight = c.to("cm/s")
-        hplanck = h.to(u.erg*u.s)
+        clight = c.to("cm/s").value
+        hplanck = h.to(u.erg*u.s).value
 
         # Roueff et al. (2019): https://ui.adsabs.harvard.edu/abs/2019A%26A...630A..58R/abstract
         wav_H2 = {0: 28.218843793, 1: 17.034845756, 2: 12.278611991, 3: 9.664910918, 4: 8.025041036, 5: 6.909508549, 6: 6.108563840, 7: 5.511183259, 8: 5.053115155, 9: 4.694613923}
