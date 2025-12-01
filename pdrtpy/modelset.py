@@ -129,9 +129,9 @@ class ModelSet(object):
             raise ValueError(msg)
 
         self._tabrow = self._all_models[matching_rows].loc[name]
-        print(f"tabrow={self._tabrow}")
+        #print(f"tabrow={self._tabrow}")
         tpath = self._tabrow["path"]
-        print(f"{tpath=} {self._tabrow['filename']=}")
+        #print(f"{tpath=} {self._tabrow['filename']=}")
         self._table = get_table(path=tpath, filename=self._tabrow["filename"], format=format)
         self._table.add_index("ratio")
         self._set_identifiers()
