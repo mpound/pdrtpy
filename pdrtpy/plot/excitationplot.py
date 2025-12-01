@@ -276,9 +276,16 @@ class ExcitationPlot(PlotBase):
                     + float_formatter(u.Quantity(tt.total_colden[data_position], tt.total_colden.unit), 2)
                     + "$"
                 )
+            if outpar["m1"]<outpar["m2"]:
+                coldpar=[outpar["m1"],outpar["n1"]]
+                hotpar=[outpar["m2"],outpar["n2"]]
+            else:
+                coldpar=[outpar["m2"],outpar["n2"]]
+                hotpar=[outpar["m1"],outpar["n1"]]
+                
             _axis.plot(
                 x_fit,
-                tt._one_line(x_fit, outpar["m1"], outpar["n1"]),
+                tt._one_line(x_fit, coldpar[0],coldpar[1]),
                 ".",
                 label=labcold,
                 lw=kwargs_opts["linewidth"],
@@ -286,7 +293,7 @@ class ExcitationPlot(PlotBase):
             if tt.numcomponents == 2:
                 _axis.plot(
                     x_fit,
-                    tt._one_line(x_fit, outpar["m2"], outpar["n2"]),
+                    tt._one_line(x_fit, hotpar[0],hotpar[1]),
                     ".",
                     label=labhot,
                     lw=kwargs_opts["linewidth"],
