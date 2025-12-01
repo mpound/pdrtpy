@@ -1261,7 +1261,7 @@ class BaseExcitationFit(ToolBase):
                         #    self._model.set_param_hint("n2", value=inthot[i], vary=True)
                         p["n2"].value = inthot[i]
                         p["m2"].value = slopehot[i]
-                    wts = 1.0 / (sig[:, i] * sig[:, i])
+                    wts = 1.0 / sig[:, i]
                     try:
                         if kwargs["method"] == "emcee":
                             emcee_kwargs = {k: kwargs[k] for k in ("burn", "steps", "nwalkers") if k in kwargs}
