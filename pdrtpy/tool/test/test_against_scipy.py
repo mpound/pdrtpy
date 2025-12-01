@@ -4,10 +4,12 @@ from astropy.nddata import StdDevUncertainty
 import numpy as np
 from scipy.optimize import curve_fit
 import pytest
+from astropy.constants import c,h
+import astropy.units as u
 
+# Regression test for issue 191 
+# https://github.com/mpound/pdrtpy/issues/191
 class TestExcitation:
-    def setup_method(self):
-        pass
     def func2T(self,x, m1, c1, m2, c2):
         return np.log(np.exp(c1 - m1*x) + np.exp(c2 - m2*x))
     def test_fit(self):
@@ -20,17 +22,15 @@ class TestExcitation:
             identifier='H200S{}'.format(J),unit="erg cm-2 s-1 sr-1")
             print("Input for J =",J, m)
             a.append(m)
-        h = H2ExcitationFit(a)
-        h.run(components=2, method='leastsq')
+        he = H2ExcitationFit(a)
+        he.run(components=2, method='leastsq')
         print("\n Results of pdrtpy fit:")
-        print(f'T(cold) = {h.tcold}')
-        print("T(hot) = {:>8.3f}".format(h.thot))
+        print(f'T(cold) = {he.tcold}')
+        print("T(hot) = {:>8.3f}".format(he.thot))
 
         # manual fit
-        erg2ev = 6.24150647996e11 # erg -> eV
-        clight = 2.99792458e10 # cm/s
-        hplanck_eV = 4.135667696e-15 # eVs
-        hplanck = hplanck_eV / erg2ev # ergs
+        clight = c.to("cm/s")
+        hplanck = h.to(u.erg*u.s)
 
         # Roueff et al. (2019): https://ui.adsabs.harvard.edu/abs/2019A%26A...630A..58R/abstract
         wav_H2 = {0: 28.218843793, 1: 17.034845756, 2: 12.278611991, 3: 9.664910918, 4: 8.025041036, 5: 6.909508549, 6: 6.108563840, 7: 5.511183259, 8: 5.053115155, 9: 4.694613923}
@@ -50,9 +50,9 @@ class TestExcitation:
         print("T(cold) = {}+-{}".format(T1fit,T1fit_err))
         print("T(hot) = {}+-{}".format(T2fit,T2fit_err))
         
-        assert T1fit == pytest.approx(h.tcold.value,rel=1E-3)
-        assert T2fit == pytest.approx(h.thot.value,rel=1E-3)
-        assert T1fit_err == pytest.approx(h.tcold.error,rel=1E-3)
-        assert T2fit_err == pytest.approx(h.thot.error,rel=1E-3)
+        assert T1fit == pytest.approx(he.tcold.value,rel=1E-3)
+        assert T2fit == pytest.approx(he.thot.value,rel=1E-3)
+        assert T1fit_err == pytest.approx(he.tcold.error,rel=1E-3)
+        assert T2fit_err == pytest.approx(he.thot.error,rel=1E-3)
 
 
