@@ -319,7 +319,7 @@ class ExcitationPlot(PlotBase):
                         lw=kwargs_opts["linewidth"],
                         ms=kwargs_opts["markersize"],
                     )
-    
+
                 _axis.plot(
                     x_fit,
                     tt.fit_result[data_position].eval(x=x_fit, fit_opr=False, fit_av=False, extinction_ratio=None),
