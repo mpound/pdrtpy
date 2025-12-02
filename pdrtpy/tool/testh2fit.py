@@ -21,22 +21,29 @@ from dust_extinction.parameter_averages import G23
 from astropy.units.quantity import Quantity
 
 intensity = dict()
-intensity['H200S0'] = 3.00e-05
-intensity['H200S1'] = 5.16e-04
-intensity['H200S2'] = 3.71e-04
-intensity['H200S3'] = 1.76e-03
-intensity['H200S4'] = 5.28e-04
-intensity['H200S5'] = 9.73e-04
+intensity_unc = dict()
+intensity['H210Q1'] = 2.6573285650884875e-06
+intensity_unc['H210Q1']=StdDevUncertainty(8.50427181247555e-08)
+intensity['H210Q2'] = 1.4695275488577075e-06
+intensity_unc['H210Q2']=StdDevUncertainty(8.768404267642483e-08)
+intensity['H210Q3'] = 1.7223957895745199e-06
+intensity_unc['H210Q3']=StdDevUncertainty(8.840028773309878e-08)
+intensity['H210Q4'] = 6.113823432536416e-07
+intensity_unc['H210Q4']=StdDevUncertainty(8.045947243103051e-08)
+intensity['H210Q5'] = 7.23797463431074e-07
+intensity_unc['H210Q5']=StdDevUncertainty(7.645048691544922e-08)
+intensity['H210Q7'] = 4.378732107085015e-07
+intensity_unc['H210Q7']=StdDevUncertainty(8.279870926278172e-08)
+
 
 a = []
 for i in intensity:
     # For this example, set a largish uncertainty on the intensity.
-    m = Measurement(data=intensity[i],uncertainty=StdDevUncertainty(intensity[i]),
+    m = Measurement(data=intensity[i],uncertainty=StdDevUncertainty(intensity_unc[i]),
                     identifier=i,unit="erg cm-2 s-1 sr-1")
     print(m)
     a.append(m)
     
-    
 h = H2ExcitationFit(a)
 h.column_densities(line=False, norm=False)
-h.run()
+h.run(components=1)
