@@ -231,7 +231,7 @@ class ExcitationPlot(PlotBase):
             # fit_result has shape same as data array, thus is indexed as y,x.
 
             if tt.fit_result[data_position] is None or tt.fit_result.mask[data_position]:
-                q=tt.fit_result[data_position].params
+                q = tt.fit_result[data_position].params
                 errmsg = f"The Excitation Tool was unable to fit pixel {data_position} so a fit cannot be displayed. "
                 for k in q:
                     noerr = []

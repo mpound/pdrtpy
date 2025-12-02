@@ -1,22 +1,22 @@
 which
-from astropy.nddata import Cutout2D
-import astropy.units as u
-import astropy.constants as constants
-from astropy.nddata import StdDevUncertainty
+import cProfile
+import io
 import math
+import pstats
+import warnings
+
+import astropy.constants as constants
+import astropy.units as u
 import numpy as np
+from astropy.nddata import Cutout2D, StdDevUncertainty
+from emcee.pbar import get_progress_bar
 from lmfit import Parameters  # , fit_report
 from lmfit.model import Model  # , ModelResult
-from emcee.pbar import get_progress_bar
-import cProfile
-import pstats
-import io
 
-from .toolbase import ToolBase
-from .fitmap import FitMap
 from .. import pdrutils as utils
 from ..measurement import Measurement
-import warnings
+from .fitmap import FitMap
+from .toolbase import ToolBase
 
 
 class ExcitationFit(ToolBase):
