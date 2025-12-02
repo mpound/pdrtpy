@@ -229,14 +229,22 @@ class ExcitationPlot(PlotBase):
             elif position is None:
                 raise ValueError("position must be provided for map fit results")
             # fit_result has shape same as data array, thus is indexed as y,x.
+
             if tt.fit_result[data_position] is None or tt.fit_result.mask[data_position]:
-                raise ValueError(
-                    f"The Excitation Tool was unable to fit pixel {data_position} so a fit cannot be displayed. Examine the {self._tool.__class__.__name__}.fit_result[{data_position}] attribute to see details of the fit."
-                )
+                q=tt.fit_result[data_position].params
+                errmsg = f"The Excitation Tool was unable to fit pixel {data_position} so a fit cannot be displayed. "
+                for k in q:
+                    noerr = []
+                    if q[k].vary and q[k].stderr is None:
+                        noerr.append(k)
+                if len(noerr) > 0:
+                    errmsg += f"Fit error(s) could not be determined for the following variables: {noerr}. "
+                errmsg += f"Examine the {self._tool.__class__.__name__}.fit_result[{data_position}] attribute to see details of the fit."
+                raise ValueError(errmsg)
+
             x_fit = np.linspace(0, max(energy), 30)
             if debug:
                 self._logfile.write(f"EXD: {type(tt._fitresult)=}\n")
-
                 self._logfile.write(f"EXD: {type(tt._fitresult[data_position])=} at {position=}\n")
             outpar = tt.fit_result[data_position].params.valuesdict()
             if tt.numcomponents == 2:
