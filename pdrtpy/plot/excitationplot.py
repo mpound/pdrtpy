@@ -232,105 +232,105 @@ class ExcitationPlot(PlotBase):
 
             if tt.fit_result[data_position] is None or tt.fit_result.mask[data_position]:
                 q = tt.fit_result[data_position].params
-                errmsg = f"The Excitation Tool was unable to fit pixel {data_position} so a fit cannot be displayed. "
+                warnmsg = f"The Excitation Tool was unable to fit pixel {data_position} so a fit cannot be displayed. "
                 for k in q:
                     noerr = []
                     if q[k].vary and q[k].stderr is None:
                         noerr.append(k)
                 if len(noerr) > 0:
-                    errmsg += f"Fit error(s) could not be determined for the following variables: {noerr}. "
-                errmsg += f"Examine the {self._tool.__class__.__name__}.fit_result[{data_position}] attribute to see details of the fit."
-                raise ValueError(errmsg)
-
-            x_fit = np.linspace(0, max(energy), 30)
-            if debug:
-                self._logfile.write(f"EXD: {type(tt._fitresult)=}\n")
-                self._logfile.write(f"EXD: {type(tt._fitresult[data_position])=} at {position=}\n")
-            outpar = tt.fit_result[data_position].params.valuesdict()
-            if tt.numcomponents == 2:
-                labcold = (
-                    r"$T_{cold}=$"
-                    + f"{tt.tcold[data_position]:3.0f}"
-                    + r"$\pm$"
-                    + f"{tt.tcold.error[data_position]:.1f} {tt.tcold.unit}"
-                )
-                # labcold = r"$T_{cold}=$" + f"{tt.tcold[data_position]:3.1f}"
-                # labhot= r"$T_{hot}=$" + f"{tt.thot.value:3.0f}"+ r"$\pm$" + f"{tt.thot.error:.1f} {tt.thot.unit}"
-                # labhot= r"$T_{hot}=$" + f"{tt.thot[data_position]:3.1f}"
-                labhot = (
-                    r"$T_{hot}=$"
-                    + f"{tt.thot[data_position]:3.0f}"
-                    + r"$\pm$"
-                    + f"{tt.thot.error[data_position]:.1f} {tt.thot.unit}"
-                )
-            elif tt.numcomponents == 1:
-                labcold = (
-                    r"$T=$"
-                    + f"{tt.tcold[data_position]:3.0f}"
-                    + r"$\pm$"
-                    + f"{tt.tcold.error[data_position]:.1f} {tt.tcold.unit}"
-                )
-            if data_position == 0:
-                labnh = r"$N(" + self._label + ")=" + float_formatter(tt.total_colden, 2) + "$"
+                    warnmsg += f"Fit error(s) could not be determined for the following variables: {noerr}. "
+                warnmsg += f"Examine the {self._tool.__class__.__name__}.fit_result[{data_position}] attribute to see details of the fit."
+                log.warn(warnmsg)
             else:
-                labnh = (
-                    r"$N("
-                    + self._label
-                    + ")="
-                    + float_formatter(u.Quantity(tt.total_colden[data_position], tt.total_colden.unit), 2)
-                    + "$"
-                )
-            _axis.plot(
-                x_fit,
-                tt._one_line(x_fit, outpar["m1"], outpar["n1"]),
-                ".",
-                label=labcold,
-                lw=kwargs_opts["linewidth"],
-            )
-            if tt.numcomponents == 2:
+                x_fit = np.linspace(0, max(energy), 30)
+                if debug:
+                    self._logfile.write(f"EXD: {type(tt._fitresult)=}\n")
+                    self._logfile.write(f"EXD: {type(tt._fitresult[data_position])=} at {position=}\n")
+                outpar = tt.fit_result[data_position].params.valuesdict()
+                if tt.numcomponents == 2:
+                    labcold = (
+                        r"$T_{cold}=$"
+                        + f"{tt.tcold[data_position]:3.0f}"
+                        + r"$\pm$"
+                        + f"{tt.tcold.error[data_position]:.1f} {tt.tcold.unit}"
+                    )
+                    # labcold = r"$T_{cold}=$" + f"{tt.tcold[data_position]:3.1f}"
+                    # labhot= r"$T_{hot}=$" + f"{tt.thot.value:3.0f}"+ r"$\pm$" + f"{tt.thot.error:.1f} {tt.thot.unit}"
+                    # labhot= r"$T_{hot}=$" + f"{tt.thot[data_position]:3.1f}"
+                    labhot = (
+                        r"$T_{hot}=$"
+                        + f"{tt.thot[data_position]:3.0f}"
+                        + r"$\pm$"
+                        + f"{tt.thot.error[data_position]:.1f} {tt.thot.unit}"
+                    )
+                elif tt.numcomponents == 1:
+                    labcold = (
+                        r"$T=$"
+                        + f"{tt.tcold[data_position]:3.0f}"
+                        + r"$\pm$"
+                        + f"{tt.tcold.error[data_position]:.1f} {tt.tcold.unit}"
+                    )
+                if data_position == 0:
+                    labnh = r"$N(" + self._label + ")=" + float_formatter(tt.total_colden, 2) + "$"
+                else:
+                    labnh = (
+                        r"$N("
+                        + self._label
+                        + ")="
+                        + float_formatter(u.Quantity(tt.total_colden[data_position], tt.total_colden.unit), 2)
+                        + "$"
+                    )
                 _axis.plot(
                     x_fit,
-                    tt._one_line(x_fit, outpar["m2"], outpar["n2"]),
+                    tt._one_line(x_fit, outpar["m1"], outpar["n1"]),
                     ".",
-                    label=labhot,
+                    label=labcold,
                     lw=kwargs_opts["linewidth"],
                 )
-            flabel = "fit"
-            if tt.av_fitted:
-                if data_position is not None and len(np.shape(tt.av)) > 1:
-                    av_v = tt.av[data_position]
-                    av_e = tt.av.error[data_position]
-                    # a Measurement.get_as_measurement() would be nice
-                    av_p = Measurement(av_v, uncertainty=StdDevUncertainty(av_e), unit="")
-                else:
-                    av_p = tt.av
-                x_wave = Quantity(tt.molecule.transition_data.loc[list(tt._measurements.keys())]["lambda"])
-                ext_ratio = tt.extinction_model(x_wave)
-                corrected_cd = colden * np.exp(0.4 * ext_ratio * av_p)
-                _axis.errorbar(
-                    x=energy,
-                    y=np.log10(corrected_cd),
-                    marker="^",
-                    label=f"$A_v$ = {av_p:.2f}",
-                    yerr=sigma,
-                    capsize=2 * kwargs_opts["capsize"],
-                    linestyle="none",
-                    color="k",
-                    lw=kwargs_opts["linewidth"],
-                    ms=kwargs_opts["markersize"],
+                if tt.numcomponents == 2:
+                    _axis.plot(
+                        x_fit,
+                        tt._one_line(x_fit, outpar["m2"], outpar["n2"]),
+                        ".",
+                        label=labhot,
+                        lw=kwargs_opts["linewidth"],
+                    )
+                flabel = "fit"
+                if tt.av_fitted:
+                    if data_position is not None and len(np.shape(tt.av)) > 1:
+                        av_v = tt.av[data_position]
+                        av_e = tt.av.error[data_position]
+                        # a Measurement.get_as_measurement() would be nice
+                        av_p = Measurement(av_v, uncertainty=StdDevUncertainty(av_e), unit="")
+                    else:
+                        av_p = tt.av
+                    x_wave = Quantity(tt.molecule.transition_data.loc[list(tt._measurements.keys())]["lambda"])
+                    ext_ratio = tt.extinction_model(x_wave)
+                    corrected_cd = colden * np.exp(0.4 * ext_ratio * av_p)
+                    _axis.errorbar(
+                        x=energy,
+                        y=np.log10(corrected_cd),
+                        marker="^",
+                        label=f"$A_v$ = {av_p:.2f}",
+                        yerr=sigma,
+                        capsize=2 * kwargs_opts["capsize"],
+                        linestyle="none",
+                        color="k",
+                        lw=kwargs_opts["linewidth"],
+                        ms=kwargs_opts["markersize"],
+                    )
+    
+                _axis.plot(
+                    x_fit,
+                    tt.fit_result[data_position].eval(x=x_fit, fit_opr=False, fit_av=False, extinction_ratio=None),
+                    label=flabel,
+                    color=self._fit_color,
                 )
-
-            _axis.plot(
-                x_fit,
-                tt.fit_result[data_position].eval(x=x_fit, fit_opr=False, fit_av=False, extinction_ratio=None),
-                label=flabel,
-                color=self._fit_color,
-            )
-            handles, labels = _axis.get_legend_handles_labels()
-            # kluge to ensure N(H2) label is last
-            phantom = _axis.plot([], marker="", markersize=0, ls="", lw=0)
-            handles.append(phantom[0])
-            labels.append(labnh)
+                handles, labels = _axis.get_legend_handles_labels()
+                # kluge to ensure N(H2) label is last
+                phantom = _axis.plot([], marker="", markersize=0, ls="", lw=0)
+                handles.append(phantom[0])
+                labels.append(labnh)
         # Scale xaxis with max(energy). Round up to nearest 1000
         # if kwargs_opts["xmax"] is None:
         #   kwargs_opts["xmax"] = np.round(500.0 + energy.max(), -3)
