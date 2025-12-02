@@ -1,7 +1,7 @@
 """Top level package for pdrtpy"""
 
 # __all__ = [ "pdrutils", "measurement", "modelset"]
-__version__ = "2.4.4-185"
+__version__ = "2.5.1"
 VERSION = __version__
 AUTHORS = "Marc W. Pound, Mark G. Wolfire"
 DESCRIPTION = "PhotoDissociation Region Toolbox (PDRT), astrophysics analysis tools"
