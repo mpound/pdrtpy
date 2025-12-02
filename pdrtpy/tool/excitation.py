@@ -1291,7 +1291,7 @@ class BaseExcitationFit(ToolBase):
                             if verbose:
                                 print(
                                     f"Bad fit because 'success' value ({fmdata[i].success}) or errorbars"
-                                    f" ({fmdata[i].errorbars}) was bad."
+                                    f" ({fmdata[i].errorbars}) was False."
                                 )
                             # fmdata[i] = None
                             fm_mask[i] = True
