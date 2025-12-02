@@ -5,9 +5,9 @@ Created on Wed Mar 12 10:56:13 2025
 
 @author: mpound
 """
+import matplotlib.pyplot as plt
 import numpy as np
 from astropy.table import Table
-import matplotlib.pyplot as plt
 
 
 # partition funciton
@@ -40,9 +40,9 @@ def plot(temp, file):
 
 """
 excitationfit -> BaseExcitationFit
-    ExcitatioFit(molecule: str) 
+    ExcitatioFit(molecule: str)
         supported types are H2, CO, 13CO, CH+, [H2O]
-        
+
         table
         opr
         partition function
