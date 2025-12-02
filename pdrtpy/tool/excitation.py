@@ -1043,7 +1043,7 @@ class BaseExcitationFit(ToolBase):
                         params.pretty_print()
                         raise Exception(
                             "Something went wrong with the fit and it was unable to calculate errors on the fitted"
-                            f" parameter {p}. It's likely that a two-temperature model is not appropriate for your"
+                            f" parameter {p}. It's possible that a one-temperature model is not appropriate for your"
                             f" data. Check the fit_result report and plot. At pixel {i} with mask {ffmask[i]}."
                         )
                 mcold = "m1"
@@ -1101,21 +1101,31 @@ class BaseExcitationFit(ToolBase):
             raise Exception(f"Bad numcomponents: {self._numcomponents}")
 
     def _first_guess(self, x, y):
-        r"""The first guess at the fit parameters is done by finding the line between the first two (lowest energy) points to determine $T_{cold}and between the last two (highest energy) points to determine $T_{hot}. The first guess is needed to ensure the final fit converges.  The guess doesn't need to be perfect, just in the ballpark.
+        r"""The first guess at the fit parameters is done by finding the line between the first
+        two (lowest energy) points to determine $T_{cold}and between the last two (highest energy)
+        points to determine $T_{hot}. The first guess is needed to ensure the final fit converges.
+        The guess doesn't need to be perfect, just in the ballpark.
 
         :param x: array of energies, $E/k$
         :type x: numpy array
         :param y: array of normalized column densities $N_u/g_u$
         :type y: numpy array
         """
-        slopecold = (y[1] - y[0]) / (x[1] - x[0])
-        intcold = y[1] - slopecold * x[1]
+
         if self._numcomponents == 2:
+            slopecold = (y[2] - y[0]) / (x[2] - x[0])
+            intcold = y[1] - slopecold * x[1]
             slopehot = (y[-1] - y[-2]) / (x[-1] - x[-2])
             inthot = y[-1] - slopehot * x[-1]
         else:
+            slopecold = (y[-1] - y[0]) / (x[-1] - x[0])
+            intcold = y[-1] - slopecold * x[-1]
             slopehot = slopecold
             inthot = intcold
+        if slopecold >= 0:
+            # print(f"Bad first guess, resetting from {slopecold=} to -0.5")
+            slopecold = -0.5
+        # print("FG ",type(slopecold),type(slopehot),type(intcold),type(inthot))
         return np.array([slopecold, intcold, slopehot, inthot])
 
     def _fit_excitation(self, position, size, fit_opr=False, fit_av=False, **kwargs):
@@ -1273,26 +1283,28 @@ class BaseExcitationFit(ToolBase):
                             nan_policy=kwargs["nan_policy"],
                             fit_kws=emcee_kwargs,
                         )
-                        # print(f"{fmdata[i]=}")
+                        # print(f"fitted {fmdata[i]=}")
                         # if fmdata[i].success and fmdata[i].errorbars:
                         if fmdata[i].success:
                             count = count + 1
                         else:
-                            print(
-                                f"Bad fit because success {fmdata[i].success} or errorbars"
-                                f" {fmdata[i].errorbars} was bad"
-                            )
-                            fmdata[i] = None
+                            if verbose:
+                                print(
+                                    f"Bad fit because 'success' value ({fmdata[i].success}) or errorbars"
+                                    f" ({fmdata[i].errorbars}) was False."
+                                )
+                            # fmdata[i] = None
                             fm_mask[i] = True
                             self._badfit = self._badfit + 1
                     except ValueError as v:
-                        # print(f"Bad fit because {v}")
-                        fmdata[i] = None
+                        print(f"Bad fit because {v}")
+                        # fmdata[i] = None
                         fm_mask[i] = True
                         self._excount = self._excount + 1
                 else:
-                    # print("Bad fit because NaNs in data")
-                    fmdata[i] = None
+                    if verbose:
+                        print("Bad fit because NaNs in data")
+                    # fmdata[i] = None
                     fm_mask[i] = True
                 pbar.update(1)
         # cleanup weird fits
@@ -1303,12 +1315,15 @@ class BaseExcitationFit(ToolBase):
                 continue
             for p in fmd.params:
                 if fmd.params[p].stderr is None and fmd.params[p].vary:
-                    print(f"Fit succeeded at pixel {ii} but stderr for parameter {p} is None. Setting mask")
-                    # fmdata[i].success = False
+                    if verbose:
+                        print(f"Fit completed at pixel {ii} but stderr for parameter {p} is None. Setting mask.")
+                        if self._numcomponents == 2:
+                            print("Try fitting a single component instead.")
+                    fmdata[i].success = False
                     fm_mask[ii] = True
                     self._badfit = self._badfit + 1
                     badstderr = True
-                    fmdata[ii] = None
+                    # fmdata[ii] = None
             if badstderr:
                 count = count - 1
         warnings.resetwarnings()

@@ -484,11 +484,16 @@ def convert_integrated_intensity(image, wavelength=None):
     :return: an image with converted values and units
     """
     f = image.header.get("RESTFREQ", None)
-    if f is None and wavelength is None:
-        raise Exception("Image header has no RESTFREQ. You must supply wavelength")
+    rf = getattr(image, "_restfreq", None)
+    if f is None and wavelength is None and rf is None:
+        raise Exception(
+            "Image header has no RESTFREQ and image has no '_restfreq' attribute. You must supply wavelength"
+        )
     if f is not None and wavelength is None:
         # FITS restfreq's are in Hz
         wavelength = u.Quantity(f, "Hz").to(_CM, equivalencies=u.spectral())
+    elif rf is not None and wavelength is None:
+        wavelength = rf.to(_CM, equivalencies=u.spectral())
     if image.header.get("BUNIT", None) is None:
         raise Exception("Image BUNIT must be present and equal to 'K km/s'")
     if u.Unit(image.header.get("BUNIT")) != _KKMS:
