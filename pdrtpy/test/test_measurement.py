@@ -1,10 +1,10 @@
 import math
 import os
 import unittest
-import pytest
 
 import astropy.units as u
 import numpy as np
+import pytest
 from astropy.nddata import StdDevUncertainty
 
 import pdrtpy.pdrutils as utils
