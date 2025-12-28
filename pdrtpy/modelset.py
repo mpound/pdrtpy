@@ -24,6 +24,9 @@ class ModelSet(object):
     :param medium:  medium type, e.g. 'constant density', 'clumpy', 'non-clumpy'
     :type medium: str
 
+    :param losangle: the line-of-sight inclination angle (aka viewing angle), losangle=0 is face-on, losangle=90 is edge-on.  Valid values are 0, 30, 45, 60, 75, 90.
+    :type  losangle: float
+
     :param mass: maximum clump mass (for KosmaTau models).  Default:None (appropriate for Wolfire/Kaufman models)
     :type mass: float
 
@@ -35,10 +38,10 @@ class ModelSet(object):
 
         .. code-block:: python
 
-           ['PDR code','name', 'version','path','filename','medium','z','mass','description']
+           ['PDRcode','name', 'version','path','filename','medium','z','inc', 'mass','description']
 
-        `z` and `mass` should be floats, the rest should be strings.
-        The `name`, `version`, `medium`, `z`, and `mass` columns contain
+        `z`, 'inc', and `mass` should be numbers, the rest should be strings.
+        The `name`, `version`, `medium`, `z`, 'inc',  and `mass` columns contain
         the values available in the input ModelSet as described above. `PDR
         code` is the originator of the code e.g., "KOSMA-tau", `version`
         is the code version, `path` is the full-qualified pathname to
@@ -59,8 +62,17 @@ class ModelSet(object):
     :raises ValueError: If model set not recognized/found.
     """
 
-    # @ToDo replace with kwargs?
-    def __init__(self, name, z, medium="constant density", mass=None, modelsetinfo=None, format="ipac"):
+    def __init__(
+        self,
+        name,
+        z,
+        medium="constant density",
+        losangle=0,
+        mass=None,
+        modelsetinfo=None,
+        format="ipac",
+        debug=False,
+    ):
         if modelsetinfo is None:
             # get the package default
             self._all_models = get_table("all_models.tab")
@@ -71,32 +83,38 @@ class ModelSet(object):
         self._all_models.add_index("name")
         possible = dict()
         if name not in self._all_models["name"]:
-            raise ValueError(f'Unrecognized model {name:s}. Choices  are: {list(self._all_models["name"])}')
+            raise ValueError(
+                f'Unrecognized PDR model code {name:s}. Choices  are: {set(list(self._all_models["name"]))}'
+            )
         if np.all(self._all_models.loc[name]["mass"].mask):
-            matching_rows = np.where((self._all_models["z"] == z) & (self._all_models["medium"] == medium))
+            matching_rows = np.where(
+                (self._all_models["z"] == z)
+                & (self._all_models["medium"] == medium)
+                & (self._all_models["losangle"] == losangle)
+            )
             possible["mass"] = None
-        else:
+        else:  # Kosma-tau
             matching_rows = np.where(
                 (self._all_models["z"] == z)
                 & (self._all_models["medium"] == medium)
                 & (self._all_models["mass"] == mass)
             )
             possible["mass"] = self._all_models.loc[name]["mass"]
-        for key in ["z", "medium"]:
+        for key in ["z", "medium", "losangle"]:
             possible[key] = self._all_models.loc[name][key]
         # ugh, possible[] resulting from above can be a Python native or a Column.
         # If only one row matches it will be a native, otherwise it will be a Column,
         # so we have to check if it is a Column or not, so that we can successfully
         # import numberscreate a numpy array.
-        for i in possible:
-            if possible[i] is None:
+        for j in possible:
+            if possible[j] is None:
                 continue
-            if isinstance(possible[i], Column):
+            if isinstance(possible[j], Column):
                 # convert Column to np.array
-                possible[i] = sorted(set(np.array(possible[i])))
+                possible[j] = sorted(set(np.array(possible[j])))
             else:
                 # convert native to np.array
-                possible[i] = sorted(set(np.array([possible[i]])))
+                possible[j] = sorted(set(np.array([possible[j]])))
 
         # print("possible:",possible)
         if mass is None and possible["mass"] is not None:
@@ -104,14 +122,17 @@ class ModelSet(object):
         if matching_rows[0].size == 0:
             msg = (
                 f"Requested ModelSet not found in {name:s}. Check your input values.  Allowed z are {possible['z']}. "
-                f" Allowed medium are {possible['medium']}."
+                f" Allowed medium are {possible['medium']}. Allowed losangle are {possible['losangle']}."
             )
             if possible["mass"] is not None:
                 msg = msg + f" Allowed mass are {possible['mass']}."
             raise ValueError(msg)
 
         self._tabrow = self._all_models[matching_rows].loc[name]
-        self._table = get_table(path=self._tabrow["path"], filename=self._tabrow["filename"], format=format)
+        # print(f"tabrow={self._tabrow}")
+        tpath = self._tabrow["path"]
+        # print(f"{tpath=} {self._tabrow['filename']=}")
+        self._table = get_table(path=tpath, filename=self._tabrow["filename"], format=format)
         self._table.add_index("ratio")
         self._set_identifiers()
         self._set_ratios()
@@ -127,7 +148,8 @@ class ModelSet(object):
 
         :rtype: str
         """
-        return self._tabrow["description"] + ", Z=%2.1f" % self.z
+        s = f", Z={self.z:2.1f}, losangle={self.losangle:d}, avlos={self.avlos:d}"
+        return self._tabrow["description"] + s
 
     @property
     def code(self):
@@ -135,7 +157,7 @@ class ModelSet(object):
 
         :rtype: str
         """
-        return self._tabrow["PDR code"]
+        return self._tabrow["PDRcode"]
 
     @property
     def name(self):
@@ -176,6 +198,34 @@ class ModelSet(object):
         :rtype: float
         """
         return self._tabrow["z"]
+
+    @property
+    def losangle(self):
+        """The inclination (viewing) angle with respect to the line of sight, in degrees. A value of 0 means face-on.
+        :rtype: float
+        """
+        return self._tabrow["losangle"]
+
+    @property
+    def viewangle(self):
+        """The viewing angle (inclination) with respect to the line of sight, in degrees. A value of 0 means face-on.
+        :rtype: float
+        """
+        return self.losangle
+
+    @property
+    def avperp(self):
+        """The PDR thickness for inclined viewing angle models, expressed in visual magnitudes. A value of 0 indicates a face-on model, for which `avperp` is undefined.
+        :rtype: float
+        """
+        pass
+
+    @property
+    def avlos(self):  # @todo this might be model specific
+        """The visual extinction along the line of sight, express in magnitudes.
+        :rtype: float
+        """
+        pass
 
     @property
     def table(self):
@@ -318,6 +368,7 @@ class ModelSet(object):
         _filename = self.table.loc[identifier]["filename"] + "." + ext
         d = model_dir()
         _thefile = d + self._tabrow["path"] + _filename
+        print("Attempting to read ", _filename)
         _title = self._table.loc[identifier]["title"]
         # @TODO Fix this: see issues 66 & 67
         if unit is None or unit == "":
@@ -466,7 +517,7 @@ class ModelSet(object):
             denominator = 1
             fakefilename = "user-" + numerator.replace("_", "")
         # numerator denominator ratio filename z title
-        self.table.add_row([numerator, denominator, identifier, fakefilename, self.z, title])
+        self.table.add_row([numerator, denominator, identifier, fakefilename, self.z, title, str(self.losangle)])
 
     def _find_ratio_elements(self, m):
         # TODO handle case of OI+CII/FIR so it is not special cased in lineratiofit.py
@@ -581,6 +632,15 @@ class ModelSet(object):
         """
         return self.name == "wk2006"
 
+    @property
+    def is_wk2020(self):
+        """method to indicate this is a wk2020 model, to deal with quirks
+        of that modelset
+
+        :returns: True if it is.
+        """
+        return self.name == "wk2020"
+
     # ============= Static Methods =============
     @staticmethod
     def list():
@@ -588,7 +648,7 @@ class ModelSet(object):
         ModelSet.all_sets().pprint_all(align="<")
 
     @staticmethod
-    def all_sets():
+    def all_sets(debug=False):
         """Return a table of the names and descriptions of available ModelSets (not just this one)
 
         :rtype: :class:`~astropy.table.Table`
