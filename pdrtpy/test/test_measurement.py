@@ -132,7 +132,7 @@ class TestMeasurement(unittest.TestCase):
         """
         file = utils.get_testdata("ConvP_S1.fits")
         m = Measurement.read(file, uncertainty=StdDevUncertainty([0.1]), unit="MJy/sr")
-        assert np.all(m.uncertainty._array==0.1)
+        assert np.all(m.uncertainty._array == 0.1)
 
     def tearDown(self):
         if False:

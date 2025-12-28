@@ -472,9 +472,9 @@ class LineRatioPlot(PlotBase):
                 title = "Observed Ratios"
             labels.extend([self._tool._modelratios[k].title for k in self._tool._modelratios])
             # print("LABELS ",labels)
-            _title = kwargs.get("title",None)
+            _title = kwargs.get("title", None)
             if _title is not None:
-                title += " "+_title
+                title += " " + _title
             self._plt.legend(
                 lines, labels, loc=kwargs_opts["loc"], bbox_to_anchor=kwargs_opts["bbox_to_anchor"], title=title
             )
