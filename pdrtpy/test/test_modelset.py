@@ -13,14 +13,13 @@ class TestModelSet(unittest.TestCase):
         t = ModelSet.all_sets()
         failed = list()
         global_success = []
-        for n, z, md, m, losangle, avperp in zip(
-            list(t["name"]), list(t["z"]), list(t["medium"]), list(t["mass"]), list(t["losangle"]), list(t["avperp"])
-        ):
-            #print(n, z, md, m, losangle, avperp)
+        for n, z, md, m, losangle, in zip(
+            list(t["name"]), list(t["z"]), list(t["medium"]), list(t["mass"]), list(t["losangle"])):
+            print(n, z, md, m, losangle)
             nodir = None
             try:
                 fnf = True
-                ms = ModelSet(name=n, z=z, medium=md, mass=m, losangle=losangle, avperp=avperp, debug=True)
+                ms = ModelSet(name=n, z=z, medium=md, mass=m, losangle=losangle) 
             except FileNotFoundError as zz:
                 success = False
                 nodir = zz.filename
