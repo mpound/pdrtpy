@@ -1124,7 +1124,7 @@ class BaseExcitationFit(ToolBase):
             slopehot = slopecold
             inthot = intcold
         if slopecold >= 0:
-            print(f"Bad first guess, resetting from {slopecold=} to -0.5")
+            # print(f"Bad first guess, resetting from {slopecold=} to -0.5")
             slopecold = -0.5
         # print("FG ",type(slopecold),type(slopehot),type(intcold),type(inthot))
         return np.array([slopecold, intcold, slopehot, inthot])
@@ -1263,7 +1263,7 @@ class BaseExcitationFit(ToolBase):
                         #    self._model.set_param_hint("n2", value=inthot[i], vary=True)
                         p["n2"].value = inthot[i]
                         p["m2"].value = slopehot[i]
-                    wts = 1.0 / (sig[:, i] * sig[:, i])
+                    wts = 1.0 / sig[:, i]
                     try:
                         if kwargs["method"] == "emcee":
                             emcee_kwargs = {k: kwargs[k] for k in ("burn", "steps", "nwalkers") if k in kwargs}
@@ -1292,8 +1292,8 @@ class BaseExcitationFit(ToolBase):
                         else:
                             if verbose:
                                 print(
-                                    f"Bad fit because 'success' value ({fmdata[i].success}) or errorbars"
-                                    f" ({fmdata[i].errorbars}) was bad."
+                                    f"Bad fit because 'success' value ({fmdata[i].success}) or errorbars
+                                    f" ({fmdata[i].errorbars}) was False."
                                 )
                             # fmdata[i] = None
                             fm_mask[i] = True
