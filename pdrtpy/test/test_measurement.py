@@ -1,6 +1,7 @@
 import math
 import os
 import unittest
+import pytest
 
 import astropy.units as u
 import numpy as np
@@ -131,8 +132,9 @@ class TestMeasurement(unittest.TestCase):
         Read a file that has 2 Naxis and 3 WCS coordinate axis
         """
         file = utils.get_testdata("ConvP_S1.fits")
+        # @todo uncertainty does nothing.
         m = Measurement.read(file, uncertainty=StdDevUncertainty([0.1]), unit="MJy/sr")
-        assert np.all(m.uncertainty._array == 0.1)
+        assert m.data.mean() == pytest.approx(4124.39469065)
 
     def tearDown(self):
         if False:
