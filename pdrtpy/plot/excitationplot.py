@@ -208,6 +208,10 @@ class ExcitationPlot(PlotBase):
                 _axis.set_ylabel("log $(N_u) ~({\\rm cm}^{-2})$")
         else:
             _axis.set_ylabel(kwargs_opts["ylabel"])
+        if kwargs_opts["label"] == "id":
+            for lab in sorted(cdavg):
+                _axis.text(x=energies[lab] + 100, y=np.log10(cdavg[lab]), s=str(lab))
+        elif kwargs_opts["label"] == "j":  # label the points with e.g. J=2,3,4...
             for lab in sorted(cdavg):
                 # this fails because the lowest J may not be the first data point.
                 # we'd have to sort on Ju of the data. Which isn't even unique
@@ -229,6 +233,13 @@ class ExcitationPlot(PlotBase):
             elif position is None:
                 raise ValueError("position must be provided for map fit results")
             # fit_result has shape same as data array, thus is indexed as y,x.
+            if tt.fit_result[data_position] is None or tt.fit_result.mask[data_position]:
+                raise ValueError(
+                    f"The Excitation Tool was unable to fit pixel {data_position} so a fit cannot be displayed. Examine the {self._tool.__class__.__name__}.fit_result[{data_position}] attribute to see details of the fit."
+                )
+            x_fit = np.linspace(0, max(energy), 30)
+            if debug:
+                self._logfile.write(f"EXD: {type(tt._fitresult)=}\n")
 
             if tt.fit_result[data_position] is None or tt.fit_result.mask[data_position]:
                 q = tt.fit_result[data_position].params

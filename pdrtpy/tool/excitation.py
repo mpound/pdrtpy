@@ -386,9 +386,10 @@ class BaseExcitationFit(ToolBase):
         """
         # why are these coming in as floats?
         idx = [int(i) for i in idx]
+        # print(f"{x=}, {m1=}, {n1=}, {m2=}, {n2=}")
         y1 = 10 ** (x * m1 + n1)
         y2 = 10 ** (x * m2 + n2)
-
+        # print(f"{y1=}, {y2=}")
         model = np.log10(y1 + y2)
         # We assume that the column densities passed in have been normalized
         # using the canonical OPR=3. Therefore what we are actually fitting is
@@ -1201,19 +1202,20 @@ class BaseExcitationFit(ToolBase):
         fk = utils.firstkey(colden)
         x = _energy.data
         y = np.log10(_colden.data)
+        # print(f"energy {x=}\nlog coldeb {y=}")
         # print("SHAPE Y LEN(SHAPE(Y) ",y.shape,len(y.shape))
         # kwargs_opts = {"guess": self._first_guess(x,y)}
         # kwargs_opts.update(kwargs)
         sigma = utils.LOGE * _colden.error / _colden.data
         slopecold, intcold, slopehot, inthot = self._first_guess(x, y)
-
+        # print(f"{slopecold=}, {intcold=}, {slopehot=}, {inthot=}")
         tcold = -utils.LOGE / slopecold
         thot = -utils.LOGE / slopehot
         if np.shape(tcold) == ():
             tcold = np.array([tcold])
             thot = np.array([thot])
         saveshape = tcold.shape
-        # print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K"%(tcold,thot))
+        print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K" % (tcold, thot))
         fmdata = np.empty(tcold.shape, dtype=object).flatten()
         tcold = tcold.flatten()
         thot = thot.flatten()
@@ -1290,8 +1292,7 @@ class BaseExcitationFit(ToolBase):
                         else:
                             if verbose:
                                 print(
-                                    f"Bad fit because 'success' value ({fmdata[i].success}) or errorbars"
-                                    f" ({fmdata[i].errorbars}) was False."
+                                    f"Bad fit because 'success' value ({fmdata[i].success}) or errorbars ({fmdata[i].errorbars}) was False."
                                 )
                             # fmdata[i] = None
                             fm_mask[i] = True
