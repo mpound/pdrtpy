@@ -54,12 +54,13 @@ dev = [
   "sphinx-inline-tabs",
   "sphinx-book-theme",
   "sphinxcontrib-mermaid",
+  "dysh[all]",
 ]
 nb = [
   "jupyter",
   "jupyterlab",
 ]
-all = ["pdrtpy[dev,nb]"]
+all = ["pdrtpy[nb]"]
 
 [project.urls]
 Documentation = "https://pdrtpy.readthedocs.io"
