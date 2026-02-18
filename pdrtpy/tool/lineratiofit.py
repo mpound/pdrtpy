@@ -138,7 +138,7 @@ class LineRatioFit(ToolBase):
         return self._radiation_field
 
     def chisq(self, min=False):
-        """The computed chisquare value(s).
+        r"""The computed chisquare value(s).
 
         :type min: bool
         :param min: If `True` return the minimum reduced :math:`\chi^2`.  In the case of map inputs this will be a spatial map of mininum :math:`\chi^2`.  If `False` with map inputs the entire :math:`\chi^2` hypercube is returned.  If `True` with single pixel inputs, a single value is returned.  If `False` with single pixel inputs, :math:`\chi^2` as a function of density and radiation field is returned.
@@ -964,7 +964,7 @@ class LineRatioFit(ToolBase):
     @property
     def table(self):
         # @TODO: make this work for map data ?
-        """Construct the table of input Measurements, and if the fit has been run, the density, radiation field, and :math:`\chi^2` values
+        r"""Construct the table of input Measurements, and if the fit has been run, the density, radiation field, and :math:`\chi^2` values
 
         :rtype: :class:`astropy.table.Table`
         """

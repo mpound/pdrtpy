@@ -22,7 +22,11 @@ and the thickness of the PDR increases as 7*tan(theta). The user should
 keep in mind that this assumption may lead to unrealistically large Av
 that should be checked against observations if possible. The different
 angles and Avs are given in the fits headers as follows LOSANGLE angle
-in degrees with respect to illuminated face of PDR
+in degrees with respect to illuminated face of PDR.
+
+Note that the face-on intensity is angle averaged over intensities emitted
+from the PDR face as in Tielens & Hollenbach 1985, but the angle-on
+intensity is the intensity along the ray at the given angle.
 
 Models are stored in FITS format as ratios of intensities as a function
 of radiation field  and hydrogen nucleus volume density.
@@ -38,9 +42,6 @@ perpendicular to Av
 - *AVLOS*:  optical depth in magnitudes of visual extinction of the PDR along
 the line-of-sight. 
 
-Note that the face-on intensity is angle averaged over intensities emitted
-from the PDR face as in Tielens & Hollenbach 1985, but the angle-on
-intensity is the intensity along the ray at the given angle.
 
 For example how to use ModelSets, see the notebook
 `PDRT_Example_ModelSets.ipynb <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_ModelSets.ipynb>`_
