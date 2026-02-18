@@ -116,7 +116,6 @@ class ModelSet(object):
                 # convert native to np.array
                 possible[j] = sorted(set(np.array([possible[j]])))
 
-        # print("possible:",possible)
         if mass is None and possible["mass"] is not None:
             raise ValueError(f'mass value is required for model {name:s}. Allowed values are {possible["mass"]}')
         if matching_rows[0].size == 0:
@@ -129,9 +128,7 @@ class ModelSet(object):
             raise ValueError(msg)
 
         self._tabrow = self._all_models[matching_rows].loc[name]
-        # print(f"tabrow={self._tabrow}")
         tpath = self._tabrow["path"]
-        # print(f"{tpath=} {self._tabrow['filename']=}")
         self._table = get_table(path=tpath, filename=self._tabrow["filename"], format=format)
         self._table.add_index("ratio")
         self._set_identifiers()
@@ -313,10 +310,8 @@ class ModelSet(object):
             # must deal with OI+CII/FIR models. Note we must check for FIR first, since
             # if you check q has OI,CII and m has FIR order you'll miss OI/CII.
             if q[0] == "FIR" and (q[1] == "OI_145" or q[1] == "OI_63") and "CII_158" in m:
-                # print("SPECIAL doing %s %s"%(q[0],q[1]))
                 s = q[1] + "+CII_158/" + q[0]
             else:
-                # print("doing %s %s"%(q[0],q[1]))
                 s = q[0] + "/" + q[1]
             if s in self.table["ratio"]:
                 fullpath = self._tabrow["path"] + self.table.loc[s]["filename"] + "." + ext
@@ -368,12 +363,10 @@ class ModelSet(object):
         _filename = self.table.loc[identifier]["filename"] + "." + ext
         d = model_dir()
         _thefile = d + self._tabrow["path"] + _filename
-        print("Attempting to read ", _filename)
         _title = self._table.loc[identifier]["title"]
         # @TODO Fix this: see issues 66 & 67
         if unit is None or unit == "":
             if identifier == "TS":
-                # print("Setting unit to K")
                 unit = "K"
                 modeltype = "intensity"  # ??'temperature'
             # make a guess at the unit
@@ -388,7 +381,6 @@ class ModelSet(object):
                 modeltype = "ratio"
             else:
                 modeltype = "intensity"
-        # print("Unit = ",unit)
         _model = Measurement.read(_thefile, title=_title, unit=unit, identifier=identifier)
         # if _model.unit=="":
         #    _model.unit = u.Unit("adu")#self._default_unit["ratio"]

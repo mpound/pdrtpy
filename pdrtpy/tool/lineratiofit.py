@@ -585,7 +585,6 @@ class LineRatioFit(ToolBase):
                 newshape = np.hstack((self._modelratios[r].shape))
                 _meta = deepcopy(self._modelratios[r].meta)
                 _wcs = deepcopy(self._modelratios[r].wcs)
-                # print("META",_meta)
                 # clean potential crap
                 _meta.pop("", None)
                 _meta.pop("TITLE", None)
@@ -711,7 +710,6 @@ class LineRatioFit(ToolBase):
         with get_progress_bar(progress, self._observedratios[fk].size, leave=True, position=0) as pbar:
             for j in range(self._observedratios[fk].size):
                 # use previous coarse fit as first guess
-                # print("doing pixel ",j, " of ",self._observedratios[fk].size)
                 self._fitparam["density"].value = dflat[j]
                 self._fitparam["radiation_field"].value = rflat[j]
                 if np.isnan(dflat[j]) or np.isnan(rflat[j]):
@@ -755,19 +753,8 @@ class LineRatioFit(ToolBase):
         fm_mask = fm_mask.reshape(self._observedratios[fk].data.shape)
         # ff_mask = ff_mask | np.logical_not(np.isfinite(/*something*/))
         self._fitresult = FitMap(fmdata, wcs=self._observedratios[fk].wcs, mask=fm_mask, name="result")
-        print(f"fitted {count} of {self._observedratios[fk].size} pixels")
-        print(f"got {excount} exceptions")
-        if False:
-            self._rf2 = deepcopy(self._radiation_field)
-            self._rf2.data = rf.reshape(self._rf2.data.shape)
-            self._rf2.uncertainty.array = rfe.reshape(self._rf2.uncertainty.array.shape)
-            self._d2 = deepcopy(self._density)
-            self._d2.data = den.reshape(self._d2.data.shape)
-            self._d2.uncertainty.array = dene.reshape(self._d2.uncertainty.array.shape)
-            self._chi2 = deepcopy(self._chisq_min)
-            self._rchi2 = deepcopy(self._reduced_chisq_min)
-            self._chi2.data = chi.reshape(self._chi2.data.shape)
-            self._rchi2.data = rchi.reshape(self._rchi2.data.shape)
+        # print(f"fitted {count} of {self._observedratios[fk].size} pixels")
+        # print(f"got {excount} exceptions")
         rshape = self._radiation_field.data.shape
         dshape = self._density.data.shape
         self._radiation_field.data = rf.reshape(rshape)
@@ -871,10 +858,8 @@ class LineRatioFit(ToolBase):
             self._chisq_min.data = np.array([chi_min])
         else:
             if self._modelnaxis == 2:
-                # print("modelnaxis 2")
                 self._chisq_min.data = chi_min
             else:
-                # print("modelnaxis!= 2")
                 self._chisq_min.data = chi_min[0, :, :]
                 self._chisq_min.data[np.isnan(self._observedratios[fk2])] = np.nan
         self._chisq_min.unit = u.dimensionless_unscaled
@@ -1077,7 +1062,6 @@ class LineRatioFit(ToolBase):
             # result order is y,x,g0,n
             # newshape = np.hstack((self._observedratios[r].shape,self._modelratios[r].shape))
             _qq = np.squeeze(np.reshape(residuals, newshape))
-            # print("QQ SHAPE ",_qq.shape)
             # WCS will be None for single pixel
             _wcs = deepcopy(self._observedratios[r].wcs)
             returnval[r] = CCDData(_qq, unit="adu", wcs=_wcs, meta=_meta)

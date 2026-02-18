@@ -1215,7 +1215,8 @@ class BaseExcitationFit(ToolBase):
             tcold = np.array([tcold])
             thot = np.array([thot])
         saveshape = tcold.shape
-        print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K" % (tcold, thot))
+        if verbose:
+            print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K" % (tcold, thot))
         fmdata = np.empty(tcold.shape, dtype=object).flatten()
         tcold = tcold.flatten()
         thot = thot.flatten()

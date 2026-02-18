@@ -131,7 +131,6 @@ class Measurement(CCDData):
         if self._restfreq is not None:
             rf = u.Unit(self._restfreq).to("Hz")
             self.header["RESTFREQ"] = rf
-            print("set header restfreq ", rf)
         # Set unit to header BUNIT or put BUNIT into header if it
         # wasn't present AND if unit wasn't given in the constructor
         if not unitpresent and "BUNIT" in self.header:
