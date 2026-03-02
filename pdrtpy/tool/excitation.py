@@ -1124,8 +1124,8 @@ class BaseExcitationFit(ToolBase):
             slopehot = slopecold
             inthot = intcold
         if np.all(slopecold >= 0):
-            #(f"Bad first guess, resetting from {slopecold=} to -0.5")
-            slopecold = np.full_like(slopecold,-0.5)
+            # (f"Bad first guess, resetting from {slopecold=} to -0.5")
+            slopecold = np.full_like(slopecold, -0.5)
         # print("FG ",type(slopecold),type(slopehot),type(intcold),type(inthot))
         return np.array([slopecold, intcold, slopehot, inthot])
 
