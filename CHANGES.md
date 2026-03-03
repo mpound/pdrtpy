@@ -1,5 +1,25 @@
 ## Change Log
 
+### Release 2.6.2
+
+#### _Models_
+
+- Support alternate viewing angles i=0(faceon), 15,30,45,60,75 degrees
+
+- Updated chemical and  radiative network??
+
+#### _Excitation Tool_
+
+ - Use Gordon 2023 dust extinction package for default curves 
+  
+ - Refactor code to fit molecules other than H_2
+
+ - Fix too strict sigma when fitting (issue #191)
+ - 
+#### _Issues_
+
+- Issues 160, 163, 164, 184, 185, 191 closed
+
 ### Release 2.4.4
 
 #### _Models_
