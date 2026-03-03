@@ -1124,8 +1124,8 @@ class BaseExcitationFit(ToolBase):
             slopehot = slopecold
             inthot = intcold
         if np.all(slopecold >= 0):
-            #(f"Bad first guess, resetting from {slopecold=} to -0.5")
-            slopecold = np.full_like(slopecold,-0.5)
+            # (f"Bad first guess, resetting from {slopecold=} to -0.5")
+            slopecold = np.full_like(slopecold, -0.5)
         # print("FG ",type(slopecold),type(slopehot),type(intcold),type(inthot))
         return np.array([slopecold, intcold, slopehot, inthot])
 
@@ -1416,7 +1416,7 @@ class CHplusExcitationFit(BaseExcitationFit):
     def __init__(self, measurements: Measurement = None):
         r"""Tool for fitting temperatures, column densities, `A_v`, and ortho-to-para ratio(`OPR`) from an :math:`CH^{+}` excitation diagram. It takes as input a set of :math:`CH^{+}` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
 
-        Often, excitation diagrams show evidence of both "hot" and "cold" gas components, where the cold gas dominates the intensity in the low :math:`J` transitions and the hot gas dominates in the high :math:`J` transitions. Given data over several transitions, one can fit for :math:`T_{cold}, T_{hot}, N_{total} = N_{cold}+ N_{hot}`. One needs at least 5 points to fit the temperatures and column densities (slope and intercept :math:`\times 2`), though one could compute (not fit) them with only 4 points. 
+        Often, excitation diagrams show evidence of both "hot" and "cold" gas components, where the cold gas dominates the intensity in the low :math:`J` transitions and the hot gas dominates in the high :math:`J` transitions. Given data over several transitions, one can fit for :math:`T_{cold}, T_{hot}, N_{total} = N_{cold}+ N_{hot}`. One needs at least 5 points to fit the temperatures and column densities (slope and intercept :math:`\times 2`), though one could compute (not fit) them with only 4 points.
 
         Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view the results.
 
