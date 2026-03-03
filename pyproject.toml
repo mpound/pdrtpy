@@ -48,6 +48,7 @@ dev = [
   "numpydoc",
   "pytest",
   "pytest-cov",
+  "pytest-xdist",
   "myst_nb",
   "sphinx",
   "sphinx-autobuild",
