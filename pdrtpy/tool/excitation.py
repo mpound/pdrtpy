@@ -78,9 +78,9 @@ class BaseExcitationFit(ToolBase):
         self._numcomponents = 2
 
     def _init_measurements(self, m: list):
-        """Initialize measurements dictionary given a list.
+        r"""Initialize measurements dictionary given a list.
 
-        :param m: list of intensity :class:`~pdrtpy.measurement.Measurement`s in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
+        :param m: list of intensity :class:`~pdrtpy.measurement.Measurement`s in units equivalent to :math:`{\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
         :type m: list of :class:`~pdrtpy.measurement.Measurement`
         """
         self._measurements = dict()
@@ -140,11 +140,11 @@ class BaseExcitationFit(ToolBase):
     # Public user methods for managing measurements and running the fit
     ######################################################################################
     def add_measurement(self, m: Measurement):
-        """Add an intensity Measurement to internal dictionary used to
+        r"""Add an intensity Measurement to internal dictionary used to
         compute the excitation diagram.   This method can also be used
         to safely replace an existing intensity Measurement.
 
-        :param m: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
+        :param m: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
         """
         if not utils.check_units(m.unit, self._intensity_units):
             raise TypeError(
@@ -169,17 +169,17 @@ class BaseExcitationFit(ToolBase):
         self._column_density.pop(identifier, None)  # but not this.
 
     def replace_measurement(self, m: Measurement):
-        """Safely replace an existing intensity Measurement.  Do not
+        r"""Safely replace an existing intensity Measurement.  Do not
         change a Measurement in place, use this method.
         Otherwise, the column densities will be inconsistent.
 
-        :param m: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
+        :param m: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
         """
         self.add_measurement(m)
 
     def set_extinction_model(self, model):
         r"""
-        Set the model to be used for fitting visual extinction, $A_v$.  This is typically a model
+        Set the model to be used for fitting visual extinction, :math:`A_v`.  This is typically a model
         from the `~dust_extinction` package.
 
         Parameters
@@ -582,7 +582,7 @@ class BaseExcitationFit(ToolBase):
     @property
     def extinction_model(self):
         r"""
-        The extinction law used when fitting for visual extinction, $A_v$.
+        The extinction law used when fitting for visual extinction, :math:`A_v`.
 
         Returns
         -------
@@ -620,7 +620,7 @@ class BaseExcitationFit(ToolBase):
                     statistical weight of the upper state, :math:`g_u`.
                     Default: False
         :type norm: bool
-        :param unit: The units in which to return the column density. Default: :math:`{\\rm }cm^{-2}`
+        :param unit: The units in which to return the column density. Default: :math:`{\rm cm}^{-2}`
         :type unit: str or :class:`astropy.units.Unit`
         :param line: if True, the dictionary index is the Line name,
                   otherwise it is the upper state :math:`J` number.  Default: False
@@ -674,7 +674,7 @@ class BaseExcitationFit(ToolBase):
         :param size: The size of the cutout array along each axis. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(nx,ny)` order [*this is the opposite of Cutout2D signature*]. Scalar numbers in size are assumed to be in units of pixels.  Default value of None means use all pixels (position is ignored)
         :type size: int, array_like`
         :param norm: if True, normalize the column densities by the
-                       statistical weight of the upper state, :math:`g_u`.  For ortho-$H_2$ $g_u = OPR \times (2J+1)$, for para-$H_2$ $g_u=2J+1$. In LTE, $OPR = 3$.
+                       statistical weight of the upper state, :math:`g_u`.  For ortho-:math:`H_2`, :math:`g_u = OPR \times (2J+1)`, for para-:math:`H_2`, :math:`g_u=2J+1`. In LTE, :math:`OPR = 3`.
         :type norm: bool
         :param unit: The units in which to return the column density. Default: :math:`{\rm cm}^{-2}`
         :type unit: str or :class:`astropy.units.Unit`
@@ -753,7 +753,7 @@ class BaseExcitationFit(ToolBase):
 
     def energies(self, line=True):
         # @todo remove unit if transition_data is changed to QTable
-        """Upper state energies of stored intensities, in K.
+        r"""Upper state energies of stored intensities, in K.
 
         :param line: if True, the dictionary index is the Line name,
                   otherwise it is the upper state :math:`J` number.  Default: False
@@ -771,7 +771,7 @@ class BaseExcitationFit(ToolBase):
         return t
 
     def wavelengths(self, line=True, units=False):
-        """Wavelengths of transitions, in micron (assumed unit using Roueff et al table)
+        r"""Wavelengths of transitions, in micron (assumed unit using Roueff et al table)
 
         :param line: if True, the dictionary index is the Line name,
                   otherwise it is the upper state :math:`J` number.  Default: False
@@ -796,13 +796,13 @@ class BaseExcitationFit(ToolBase):
         return t
 
     def gu(self, id, opr):
-        r"""Get the upper state statistical weight $g_u$ for the given transition identifer, and, if the transition is odd-$J$, scale the result by the given ortho-to-para ratio.  If the transition is even-$J$, the LTE value is returned.
+        r"""Get the upper state statistical weight :math:`g_u` for the given transition identifer, and, if the transition is odd-:math:`J`, scale the result by the given ortho-to-para ratio.  If the transition is even-:math:`J`, the LTE value is returned.
 
         :param id: the measurement identifier
         :type id: str
         :param opr:
         :type opr: float
-        :raises KeyError: if id not in existing Measurements
+        :raises KeyError: if `id` not in existing Measurements
         :rtype: float
         """
         if not self.molecule.opr_can_vary:
@@ -815,7 +815,7 @@ class BaseExcitationFit(ToolBase):
             return self._molecule._transition_data.loc[id]["gu"] * opr / self._canonical_opr
 
     def intensity(self, colden):
-        """Given an upper state column density :math:`N_u`, compute the intensity :math:`I`.
+        r"""Given an upper state column density :math:`N_u`, compute the intensity :math:`I`.
 
            .. math::
                  I = {A \Delta E~N_u \over 4\pi}
@@ -843,10 +843,10 @@ class BaseExcitationFit(ToolBase):
         return i
 
     def upper_colden(self, intensity, unit):
-        """Compute the column density in upper state :math:`N_u`, given an
+        r"""Compute the column density in upper state :math:`N_u`, given an
         intensity :math:`I` and assuming optically thin emission.
         Units of :math:`I` need to be equivalent to
-        :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`.
+        :math:`{\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`.
 
         .. math::
               I &= {A \Delta E~N_u \over 4\pi}
@@ -855,9 +855,9 @@ class BaseExcitationFit(ToolBase):
 
         where :math:`A` is the Einstein A coefficient and :math:`\Delta E` is the energy of the transition.
 
-        :param intensity: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
+        :param intensity: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
         :type intensity: :class:`~pdrtpy.measurement.Measurement`
-        :param unit: The units in which to return the column density. Default: :math:`{\\rm }cm^{-2}`
+        :param unit: The units in which to return the column density. Default: :math:`{\rm cm}^{-2}`
         :type unit: str or :class:`astropy.units.Unit`
         :returns: a :class:`~pdrtpy.measurement.Measurement` of the column density.
         :rtype: :class:`~pdrtpy.measurement.Measurement`
@@ -880,7 +880,7 @@ class BaseExcitationFit(ToolBase):
 
     def _compute_column_densities(self, unit=utils._CM2, line=True):
         r"""Compute all upper level column densities for stored intensity measurements and puts them in a dictionary
-        :param unit: The units in which to return the column density. Default: :math:`{\\rm }cm^{-2}`
+        :param unit: The units in which to return the column density. Default: :math:`{\rm }cm^{-2}`
         :type unit: str or :class:`astropy.units.Unit`
         :param line: if True, the dictionary index is the Line name,
                   otherwise it is the upper state :math:`J` number.  Default: False
@@ -1124,13 +1124,13 @@ class BaseExcitationFit(ToolBase):
             slopehot = slopecold
             inthot = intcold
         if np.all(slopecold >= 0):
-            #(f"Bad first guess, resetting from {slopecold=} to -0.5")
-            slopecold = np.full_like(slopecold,-0.5)
+            # (f"Bad first guess, resetting from {slopecold=} to -0.5")
+            slopecold = np.full_like(slopecold, -0.5)
         # print("FG ",type(slopecold),type(slopehot),type(intcold),type(inthot))
         return np.array([slopecold, intcold, slopehot, inthot])
 
     def _fit_excitation(self, position, size, fit_opr=False, fit_av=False, **kwargs):
-        """Fit the :math:`log N_u-E` diagram with two excitation temperatures,
+        r"""Fit the :math:`log N_u-E` diagram with two excitation temperatures,
            a ``hot`` :math:`T_{ex}` and a ``cold`` :math:`T_{ex}`.  A first
            pass guess is initially made using data partitioning and two
            linear fits.
@@ -1215,7 +1215,8 @@ class BaseExcitationFit(ToolBase):
             tcold = np.array([tcold])
             thot = np.array([thot])
         saveshape = tcold.shape
-        print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K" % (tcold, thot))
+        if verbose:
+            print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K" % (tcold, thot))
         fmdata = np.empty(tcold.shape, dtype=object).flatten()
         tcold = tcold.flatten()
         thot = thot.flatten()
@@ -1359,11 +1360,11 @@ class H2ExcitationFit(BaseExcitationFit):
         represented as :class:`~pdrtpy.measurement.Measurement`.
 
         Often, excitation diagrams show evidence of both "hot" and "cold" gas components, where the cold gas
-        dominates the intensity in the low `J` transitions and the hot gas dominates in the high `J` transitions.
+        dominates the intensity in the low :math:`J` transitions and the hot gas dominates in the high :math:`J` transitions.
         Given data over several transitions, one can fit for :math:`T_{cold}, T_{hot}, N_{total} = N_{cold}+ N_{hot}`,
-        and optionally `A_v` or `OPR`. One needs at least 5 points to fit two temperatures and column
+        and optionally :math:`A_v` or :math:`OPR`. One needs at least 5 points to fit two temperatures and column
         densities (slope and intercept :math:`\times 2`), though one could compute (not fit) them with only 4 points.
-        To additionally fit `A_v` or `OPR`, one should have 6 points (5 degrees of freedom).
+        To additionally fit :math:`A_v` or :math:`OPR`, one should have 6 points (5 degrees of freedom).
 
         Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view the results.
 
@@ -1381,9 +1382,9 @@ class COExcitationFit(BaseExcitationFit):
         Often, excitation diagrams show evidence of both "hot" and "cold" gas components, where the cold gas
         dominates the intensity in the low `J` transitions and the hot gas dominates in the high `J` transitions.
         Given data over several transitions, one can fit for :math:`T_{cold}, T_{hot}, N_{total} = N_{cold}+ N_{hot}`,
-        and optionally `A_v`. One needs at least 5 points to fit two temperatures and column
+        and optionally :math:`A_v`. One needs at least 5 points to fit two temperatures and column
         densities (slope and intercept :math:`\times 2`), though one could compute (not fit) them with only 4 points.
-        To additionally fit `A_v`, one should have 6 points (5 degrees of freedom).
+        To additionally fit :math:`A_v`, one should have 6 points (5 degrees of freedom).
 
         Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view the results.
 
@@ -1398,11 +1399,10 @@ class C13OExcitationFit(BaseExcitationFit):
         r"""Tool for fitting temperatures, column densities, `A_v` from an :math:`^{13}C^{16}O` excitation diagram. It takes as input a set of :math:`H_2` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
 
         Often, excitation diagrams show evidence of both "hot" and "cold" gas components, where the cold gas
-        dominates the intensity in the low `J` transitions and the hot gas dominates in the high `J` transitions.
+        dominates the intensity in the low :math:`J` transitions and the hot gas dominates in the high :math:`J` transitions.
         Given data over several transitions, one can fit for :math:`T_{cold}, T_{hot}, N_{total} = N_{cold}+ N_{hot}`,
-        and optionally `A_v` or `OPR`. One needs at least 5 points to fit two temperatures and column
+        and optionally :math:`A_v`. One needs at least 5 points to fit two temperatures and column
         densities (slope and intercept :math:`\times 2`), though one could compute (not fit) them with only 4 points.
-        To additionally fit `A_v` or `OPR`, one should have 6 points (5 degrees of freedom).
 
         Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view the results.
 
@@ -1414,9 +1414,9 @@ class C13OExcitationFit(BaseExcitationFit):
 
 class CHplusExcitationFit(BaseExcitationFit):
     def __init__(self, measurements: Measurement = None):
-        r"""Tool for fitting temperatures, column densities, `A_v`, and ortho-to-para ratio(`OPR`) from an :math:`CH^{+}` excitation diagram. It takes as input a set of :math:`H_2` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
+        r"""Tool for fitting temperatures, column densities, `A_v`, and ortho-to-para ratio(`OPR`) from an :math:`CH^{+}` excitation diagram. It takes as input a set of :math:`CH^{+}` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
 
-        Often, excitation diagrams show evidence of both "hot" and "cold" gas components, where the cold gas dominates the intensity in the low `J` transitions and the hot gas dominates in the high `J` transitions. Given data over several transitions, one can fit for :math:`T_{cold}, T_{hot}, N_{total} = N_{cold}+ N_{hot}`, and optionally `OPR`. One needs at least 5 points to fit the temperatures and column densities (slope and intercept :math:`\times 2`), though one could compute (not fit) them with only 4 points. To additionally fit `OPR`, one should have 6 points (5 degrees of freedom).
+        Often, excitation diagrams show evidence of both "hot" and "cold" gas components, where the cold gas dominates the intensity in the low :math:`J` transitions and the hot gas dominates in the high :math:`J` transitions. Given data over several transitions, one can fit for :math:`T_{cold}, T_{hot}, N_{total} = N_{cold}+ N_{hot}`. One needs at least 5 points to fit the temperatures and column densities (slope and intercept :math:`\times 2`), though one could compute (not fit) them with only 4 points.
 
         Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view the results.
 

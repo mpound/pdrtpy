@@ -38,14 +38,14 @@ PhotoDissociation Region Toolbox --- Python
    :target: https://results.pre-commit.ci/latest/github/mpound/pdrtpy/master
    :alt: pre-commit.ci status
 
-``pdrtpy`` is the Python `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/>`_.  The current stable version is 2.4.4.
+``pdrtpy`` is the Python `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/>`_.  The current stable version is 2.6.2
 
 The PDR Toolbox is a science-enabling tool for the community, designed to
 help astronomers determine the physical parameters of photodissociation
 regions from observations. Typical observations of both Galactic
 and extragalactic PDRs come from ground- and space-based millimeter,
 submillimeter, and far-infrared telescopes such as ALMA, SOFIA, JWST,
-Spitzer, and Herschel. Given a set of observations of spectral line or
+Spitzer, STO, and Herschel. Given a set of observations of spectral line or
 continuum intensities, PDR Toolbox can compute best-fit FUV incident
 intensity and cloud density based on our models of PDR emission.
 
@@ -67,7 +67,7 @@ excitation rates for |OI| from
 communication) and have included |13C| chemistry along with the
 emitted line intensities for  |13CII| and |13CO|.
 
-We also support fitting of temperatures and column densities to |H2| excitation diagrams.
+We also support fitting of temperatures and column densities of excitation diagrams of |H2|, CO, and |13CO| excitation diagrams.  Users can fit other molecules by providing appropriate transition data.
 
 Up to date documentation can be found at `pdrtpy.readthedocs.io <http://pdrtpy.readthedocs.io/>`_.
 

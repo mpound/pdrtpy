@@ -22,8 +22,8 @@ classifiers = [
     "Intended Audience :: Science/Research",
 ]
 dependencies = [
-    'astropy<7.0',
-    'numpy<2.0',
+    'astropy>=6.1',
+    'numpy',
     'scipy',
     'matplotlib',
     'lmfit',
@@ -55,12 +55,13 @@ dev = [
   "sphinx-inline-tabs",
   "sphinx-book-theme",
   "sphinxcontrib-mermaid",
+  "dysh[all]",
 ]
 nb = [
   "jupyter",
   "jupyterlab",
 ]
-all = ["pdrtpy[dev,nb]"]
+all = ["pdrtpy[nb]"]
 
 [project.urls]
 Documentation = "https://pdrtpy.readthedocs.io"

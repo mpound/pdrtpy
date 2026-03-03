@@ -589,7 +589,7 @@ def squeeze(image):
     if image.data is not None:
         image.data = np.squeeze(image.data)
     if image.uncertainty is not None:
-        image.uncertainty._array = np.squeeze(image.uncertainty._array)
+        image.uncertainty.array = np.squeeze(image.uncertainty.array)
     if image.mask is not None:
         image.mask = np.squeeze(image.mask)
 
