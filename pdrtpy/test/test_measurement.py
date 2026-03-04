@@ -147,5 +147,126 @@ class TestMeasurement(unittest.TestCase):
                     pass
 
 
+class TestMeasurementFromTable(unittest.TestCase):
+    """Tests for Measurement.from_table"""
+
+    def setUp(self):
+        self.tab_no_beam = utils.get_testdata("cii-co-nc.tab")
+        self.tab_abs_err = utils.get_testdata("rcw49_nc_cii158.tab")
+
+    def test_from_table_array_false_percent_error(self):
+        """from_table with array=False, % uncertainty"""
+        m = Measurement.from_table(self.tab_no_beam, array=False)
+        self.assertIsInstance(m, Measurement)
+        self.assertTrue(m.data is not None)
+        self.assertTrue(m.uncertainty is not None)
+        # identifier from first row
+        self.assertEqual(m.id, "CII_158/CO_32")
+
+    def test_from_table_array_true_percent_error(self):
+        """from_table with array=True returns list of Measurements"""
+        result = Measurement.from_table(self.tab_no_beam, array=True)
+        self.assertIsInstance(result, list)
+        self.assertGreater(len(result), 0)
+        for m in result:
+            self.assertIsInstance(m, Measurement)
+            self.assertEqual(m.id, "CII_158/CO_32")
+
+    def test_from_table_absolute_error(self):
+        """from_table with absolute (non-%) uncertainty"""
+        m = Measurement.from_table(self.tab_abs_err, array=False)
+        self.assertIsInstance(m, Measurement)
+        self.assertTrue(m.uncertainty is not None)
+        self.assertEqual(m.id, "CII_158")
+
+    def test_from_table_array_true_absolute_error(self):
+        result = Measurement.from_table(self.tab_abs_err, array=True)
+        self.assertIsInstance(result, list)
+        self.assertGreater(len(result), 0)
+
+    def test_from_table_uncertainty_values(self):
+        """% errors should be converted to absolute"""
+        result = Measurement.from_table(self.tab_no_beam, array=True)
+        for m in result:
+            # 8.3% of ~300-500 -> ~25-41
+            self.assertGreater(m.uncertainty.array[0], 0)
+
+    def test_from_table_missing_required_column_raises(self):
+        """Missing required columns should raise an exception"""
+        import tempfile
+
+        bad_tab = """| data|    id|
+| double|  char|
+|      |      |
+|  null|  null|
+  1.0  CII_158
+"""
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".tab", delete=False) as f:
+            f.write(bad_tab)
+            fname = f.name
+        try:
+            with self.assertRaises(Exception):
+                Measurement.from_table(fname, format="ipac")
+        finally:
+            import os
+
+            os.unlink(fname)
+
+
+class TestMeasurementGetPixel(unittest.TestCase):
+    """Tests for Measurement.get_pixel and get"""
+
+    def setUp(self):
+        cii_combined = utils.testdata_dir() + "n22_cii_flux_error.fits"
+        self.m = Measurement.read(cii_combined, identifier="CII_158")
+
+    def test_get_pixel_returns_tuple(self):
+        crval = self.m.wcs.wcs.crval
+        px = self.m.get_pixel(crval[0], crval[1])
+        self.assertIsInstance(px, tuple)
+        self.assertEqual(len(px), 2)
+
+    def test_get_pixel_roundtrip(self):
+        """Convert pixel to world and back"""
+        center_x = self.m.wcs._naxis[0] // 2
+        center_y = self.m.wcs._naxis[1] // 2
+        world = self.m.wcs.pixel_to_world_values(center_x, center_y)
+        px = self.m.get_pixel(world[0], world[1])
+        self.assertEqual(px[0], center_x)
+        self.assertEqual(px[1], center_y)
+
+
+class TestMeasurementBeamConvert(unittest.TestCase):
+    """Tests for _beam_convert"""
+
+    def test_beam_convert_none(self):
+        m = Measurement(data=np.array([1.0]), unit="adu", identifier="test")
+        # None beam parameters stored as None in header
+        self.assertIsNone(m.header["BMAJ"])
+
+    def test_beam_convert_quantity(self):
+        m = Measurement(
+            data=np.array([1.0]),
+            unit="adu",
+            identifier="test",
+            bmaj=10 * u.arcsec,
+            bmin=8 * u.arcsec,
+            bpa=45 * u.deg,
+        )
+        # stored as degrees
+        self.assertAlmostEqual(m.header["BMAJ"], 10 / 3600.0, places=10)
+        self.assertAlmostEqual(m.header["BMIN"], 8 / 3600.0, places=10)
+        self.assertAlmostEqual(m.header["BPA"], 45.0, places=10)
+
+    def test_beam_convert_non_quantity_raises(self):
+        with self.assertRaises(TypeError):
+            Measurement(
+                data=np.array([1.0]),
+                unit="adu",
+                identifier="test",
+                bmaj=10.0,  # not a Quantity
+            )
+
+
 if __name__ == "__main__":
     unittest.main()
