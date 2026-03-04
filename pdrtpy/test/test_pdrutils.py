@@ -1,19 +1,21 @@
 """Tests for pdrutils utility functions"""
+
+from copy import deepcopy
+
+import astropy.units as u
 import numpy as np
 import numpy.ma as ma
 import pytest
-import astropy.units as u
 from astropy.nddata import StdDevUncertainty
 from astropy.wcs import WCS
-from copy import deepcopy
 
 import pdrtpy.pdrutils as utils
 from pdrtpy.measurement import Measurement
 
-
 # ──────────────────────────────────────────────────────────────
 # Helpers
 # ──────────────────────────────────────────────────────────────
+
 
 def make_measurement(data, unit, err=None, identifier="test"):
     if err is not None:
@@ -41,6 +43,7 @@ def make_wcs_2d(crpix=(5, 5), cdelt=(0.01, 0.01), crval=(10.0, -70.0), naxis=(10
 # ──────────────────────────────────────────────────────────────
 # Radiation-field unit conversions
 # ──────────────────────────────────────────────────────────────
+
 
 class TestRadiationFieldConversions:
     def test_toHabing_from_draine(self):
@@ -110,6 +113,7 @@ class TestRadiationFieldConversions:
 # convert_integrated_intensity
 # ──────────────────────────────────────────────────────────────
 
+
 class TestConvertIntegratedIntensity:
     def _kkms_measurement(self, restfreq_hz=None):
         m = make_measurement(1.0, "K km s-1")
@@ -159,6 +163,7 @@ class TestConvertIntegratedIntensity:
 # mask_union
 # ──────────────────────────────────────────────────────────────
 
+
 class TestMaskUnion:
     def test_basic_union(self):
         a = ma.MaskedArray([1, 2, 3], mask=[True, False, False])
@@ -182,6 +187,7 @@ class TestMaskUnion:
 # ──────────────────────────────────────────────────────────────
 # WCS helpers: dropaxis, has_single_axis, squeeze
 # ──────────────────────────────────────────────────────────────
+
 
 class TestWCSHelpers:
     def test_has_single_axis_true(self):
@@ -225,6 +231,7 @@ class TestWCSHelpers:
 # fliplabel
 # ──────────────────────────────────────────────────────────────
 
+
 class TestFliplabel:
     def test_simple_flip(self):
         assert utils.fliplabel("OI_145/CII_158") == "CII_158/OI_145"
@@ -240,6 +247,7 @@ class TestFliplabel:
 # ──────────────────────────────────────────────────────────────
 # Simple utility functions
 # ──────────────────────────────────────────────────────────────
+
 
 class TestSimpleUtils:
     def test_is_ratio_true(self):
@@ -267,6 +275,7 @@ class TestSimpleUtils:
 # ──────────────────────────────────────────────────────────────
 # get_xy_from_wcs
 # ──────────────────────────────────────────────────────────────
+
 
 class TestGetXYFromWCS:
     @pytest.fixture(autouse=True)

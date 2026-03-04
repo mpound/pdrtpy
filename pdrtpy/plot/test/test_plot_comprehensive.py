@@ -1,20 +1,20 @@
 """Comprehensive tests for ModelPlot, LineRatioPlot, and PlotBase."""
+
 import matplotlib
 
 matplotlib.use("Agg")
 
+import astropy.units as u
 import numpy as np
 import pytest
-import astropy.units as u
 from astropy.nddata import StdDevUncertainty
 
 import pdrtpy.pdrutils as utils
 from pdrtpy.measurement import Measurement
 from pdrtpy.modelset import ModelSet
-from pdrtpy.plot.modelplot import ModelPlot
 from pdrtpy.plot.lineratioplot import LineRatioPlot
+from pdrtpy.plot.modelplot import ModelPlot
 from pdrtpy.tool.lineratiofit import LineRatioFit
-
 
 # ──────────────────────────────────────────────────────────────
 # Module-scoped fixtures (expensive – created once per test run)
@@ -44,7 +44,8 @@ def single_pixel_fit(wk2020):
 @pytest.fixture(scope="module")
 def map_fit():
     """Map-based LineRatioFit result, shared across tests."""
-    import tempfile, os
+    import os
+    import tempfile
 
     cii_flux = utils.get_testdata("n22_cii_flux.fits")
     cii_err = utils.get_testdata("n22_cii_error.fits")
@@ -370,8 +371,9 @@ class TestLineRatioPlotSinglePixel:
 
     def test_chisq_vectors_raises(self, single_pixel_fit):
         """chisq should raise NotImplementedError for vector data"""
-        import matplotlib.pyplot as plt
         from unittest.mock import patch
+
+        import matplotlib.pyplot as plt
 
         plot = LineRatioPlot(single_pixel_fit)
         with patch.object(type(single_pixel_fit), "has_vectors", new_callable=lambda: property(lambda self: True)):
