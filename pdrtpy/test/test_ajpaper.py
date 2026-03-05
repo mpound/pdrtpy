@@ -287,4 +287,3 @@ class TestAJPaperListings:
         hplot.ex_diagram(show_fit=True, ymax=21)
         hplot.savefig("example7_figure.pdf")
         self._files.append("example7_figure.pdf")
-

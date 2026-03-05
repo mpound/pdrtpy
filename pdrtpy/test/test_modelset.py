@@ -176,5 +176,3 @@ class TestModelSetFindMethods:
     def test_model_intensities_empty(self):
         result = self.ms.model_intensities(["fake_1", "fake_2"])
         assert result == []
-
-
