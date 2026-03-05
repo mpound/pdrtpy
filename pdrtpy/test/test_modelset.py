@@ -1,6 +1,5 @@
 # test modelset.ModelSet
 import os
-import unittest
 from copy import deepcopy
 
 import pytest
@@ -9,7 +8,7 @@ import pdrtpy.pdrutils as utils
 from pdrtpy.modelset import ModelSet
 
 
-class TestModelSet(unittest.TestCase):
+class TestModelSet:
     def test_existence(self):
         # print("ModelSet Unit Test")
         success = True
@@ -179,5 +178,3 @@ class TestModelSetFindMethods:
         assert result == []
 
 
-if __name__ == "__main__":
-    unittest.main()
