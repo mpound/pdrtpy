@@ -256,5 +256,3 @@ class TestMeasurementBeamConvert:
                 identifier="test",
                 bmaj=10.0,  # not a Quantity
             )
-
-
