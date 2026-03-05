@@ -1,10 +1,10 @@
 import os
-import unittest
 from copy import deepcopy
 
 import astropy.units as u
 import corner
 import numpy as np
+import pytest
 from astropy.nddata import StdDevUncertainty
 from lmfit import fit_report
 
@@ -18,9 +18,16 @@ from pdrtpy.tool.h2excitation import H2ExcitationFit
 from pdrtpy.tool.lineratiofit import LineRatioFit
 
 
-class TestAJPaperListings(unittest.TestCase):
-    def setUp(self):
+class TestAJPaperListings:
+    @pytest.fixture(autouse=True)
+    def cleanup_files(self):
         self._files = []
+        yield
+        for f in self._files:
+            try:
+                os.remove(f)
+            except OSError:
+                pass
 
     def test_listingA1(self):
         print("### LISTING A.1")
@@ -280,15 +287,3 @@ class TestAJPaperListings(unittest.TestCase):
         hplot.ex_diagram(show_fit=True, ymax=21)
         hplot.savefig("example7_figure.pdf")
         self._files.append("example7_figure.pdf")
-
-    def tearDown(self):
-        print("cleaning up")
-        for f in self._files:
-            try:
-                os.remove(f)
-            except OSError:
-                pass
-
-
-if __name__ == "__main__":
-    unittest.main()

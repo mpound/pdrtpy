@@ -1,5 +1,3 @@
-import unittest
-
 import pdrtpy.pdrutils as utils
 from pdrtpy.measurement import Measurement
 from pdrtpy.modelset import ModelSet
@@ -7,7 +5,7 @@ from pdrtpy.plot.lineratioplot import LineRatioPlot
 from pdrtpy.tool.lineratiofit import LineRatioFit
 
 
-class TestPlotBase(unittest.TestCase):
+class TestPlotBase:
     def test_plt_axis_plot(self):
         """This is a regression test for issue #89."""
         # basic map fitting example from notebooks. Jameson et al.
