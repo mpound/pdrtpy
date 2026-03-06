@@ -25,13 +25,13 @@ uv pip install -e .
 ### Testing
 ```bash
 # Run all tests
-uv run pytest
+uv run pytest -n auto
 
 # Run tests with coverage
 uv run pytest --cov-report=xml --cov-config=pyproject.toml --cov=pdrtpy --cov=tests
 
 # Run a single test file
-uv run pytest pdrtpy/test/test_measurement.py
+uv run pytest -n auto pdrtpy/test/test_measurement.py
 
 # Run a single test function
 uv run pytest pdrtpy/tool/test/test_h2excitation.py::test_h2_single_pixel
