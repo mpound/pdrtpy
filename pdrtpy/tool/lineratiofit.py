@@ -1,7 +1,9 @@
 import cProfile
 import io
+import os
 import pstats
 import warnings
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from copy import deepcopy
 
 import astropy.stats as astats
@@ -26,6 +28,49 @@ from .fitmap import FitMap
 from .toolbase import ToolBase
 
 log.setLevel("WARNING")  # see issue 163
+
+# ---------------------------------------------------------------------------
+# Module-level helpers for parallel pixel fitting (Opt 1).
+# Must be at module level so ProcessPoolExecutor can pickle them.
+# ---------------------------------------------------------------------------
+
+# Per-worker-process cache of RegularGridInterpolators.  Set once by _init_worker.
+_worker_model_interps = None
+
+
+def _init_worker(model_points, model_values):
+    """Initializer for ProcessPoolExecutor workers.  Builds RegularGridInterpolators
+    from plain numpy arrays once per worker process so they are not rebuilt for
+    every pixel."""
+    from scipy.interpolate import RegularGridInterpolator
+
+    global _worker_model_interps
+    _worker_model_interps = [
+        RegularGridInterpolator(pts, vals, method="linear", bounds_error=True)
+        for pts, vals in zip(model_points, model_values)
+    ]
+
+
+def _fit_pixel_worker(j, obs_data_j, obs_err_j, init_density, init_rf, minn, maxn, minfuv, maxfuv, nan_policy, minimize_kwargs):
+    """Fit a single spatial pixel.  Runs in a worker process spawned by
+    ProcessPoolExecutor.  Uses the interpolators set up by _init_worker.
+
+    Returns (j, MinimizerResult)."""
+    import numpy as _np
+    from lmfit import Minimizer as _Minimizer, Parameters as _Parameters
+
+    def _residual(params):
+        parvals = params.valuesdict()
+        d = parvals["density"]
+        rf = parvals["radiation_field"]
+        mvalue = _np.array([float(interp((d, rf))) for interp in _worker_model_interps])
+        return (obs_data_j - mvalue) / obs_err_j
+
+    params = _Parameters()
+    params.add("density", min=minn, max=maxn, value=init_density)
+    params.add("radiation_field", min=minfuv, max=maxfuv, value=init_rf)
+    minimizer = _Minimizer(_residual, params=None, nan_policy=nan_policy)
+    return j, minimizer.minimize(params=params, **minimize_kwargs)
 
 
 class LineRatioFit(ToolBase):
@@ -384,6 +429,11 @@ class LineRatioFit(ToolBase):
                 * ’propagate’ : the values returned from userfcn are un-altered
                 * ’omit’ : non-finite values are filtered
            :type nan_policy: str
+           :param workers: Number of worker processes for parallel pixel fitting.
+                           ``None`` (default) uses serial fitting. ``-1`` uses all available
+                           CPUs. A positive integer sets the exact number of workers.
+                           Ignored for single-pixel fits and emcee.
+           :type workers: int or None
 
            :raises Exception: if no models match the input observations, observations are not compatible,
                               or on unrecognized parameters, or NaN encountered.
@@ -399,6 +449,8 @@ class LineRatioFit(ToolBase):
             # for emcee
             "burn": 0,
             "steps": 1000,
+            # parallelism
+            "workers": None,
             # debugging
             "test": False,
             "profile": False,
@@ -427,7 +479,8 @@ class LineRatioFit(ToolBase):
 
         # eventually need to check that the maps overlap in real space.
         self._compute_residual()
-        self._minimizer = Minimizer(self._residual_single_pixel, params=None, nan_policy=kwargs_opts["nan_policy"])
+        self._nan_policy = kwargs_opts["nan_policy"]
+        self._minimizer = Minimizer(self._residual_single_pixel, params=None, nan_policy=self._nan_policy)
         # need to pop nan_policy and test so that it does not get passed to Minimzer.minimize()
         kwargs_opts.pop("nan_policy", None)
         kwargs_opts.pop("test", None)
@@ -660,12 +713,15 @@ class LineRatioFit(ToolBase):
         self._reduced_chisq.write(rchi, overwrite=overwrite, hdu_mask="MASK", output_verify="silentfix")
 
     def _refine_density_radiation_field(self, **kwargs):
+        workers = kwargs.pop("workers", None)
         if kwargs["method"] != "emcee":
             kwargs.pop("steps")
             kwargs.pop("burn")
             progress = kwargs.pop("progress", True)  # progress bar
+            use_parallel = workers is not None and workers != 1
         else:
             progress = kwargs.get("progress", False)  # keep the progress keyword for emcee, get vs pop
+            use_parallel = False  # emcee manages its own parallelism
         # First get the range of density n and radiation field FUV from the
         # model space, in order to provide them to the Parameters object.
         # Since the wk2006 H2 models have a smaller model space,
@@ -714,39 +770,71 @@ class LineRatioFit(ToolBase):
         # turn off progress bar for single pixel or emcee prints out multiple bars.
         if self._observedratios[fk].size == 1:
             progress = False
-        with get_progress_bar(progress, self._observedratios[fk].size, leave=True, position=0) as pbar:
-            for j in range(self._observedratios[fk].size):
-                # use previous coarse fit as first guess
-                self._fitparam["density"].value = dflat[j]
-                self._fitparam["radiation_field"].value = rflat[j]
-                if np.isnan(dflat[j]) or np.isnan(rflat[j]):
-                    fmdata[j] = None
-                    fm_mask[j] = True
-                    den[j] = np.nan
-                    dene[j] = np.nan
-                    rfe[j] = np.nan
-                    rf[j] = np.nan
-                    chi[j] = np.nan
-                    rchi[j] = np.nan
-                else:
-                    try:
-                        self._minimizer.userargs = (j,)
-                        fmdata[j] = self._minimizer.minimize(params=self._fitparam, **kwargs)
-                        # if hasattr(fmdata[j],"success")   ugh.  not guaranteed
-                        # if fmdata[j].errorbars:
-                        count = count + 1
-                        den[j] = fmdata[j].params["density"].value
-                        dene[j] = fmdata[j].params["density"].stderr
-                        rf[j] = fmdata[j].params["radiation_field"].value
-                        rfe[j] = fmdata[j].params["radiation_field"].stderr
-                        chi[j] = fmdata[j].chisqr
-                        rchi[j] = fmdata[j].redchi
-                        # else:
-                        # fmdata[j] = None
-                        # fm_mask[j] = True
-                    except ValueError as exc:
-                        # print("At pixel %d, got valuerror %s with fitparams %s" %(j, exc,self._fitparam))
-                        excount = excount + 1
+            use_parallel = False
+
+        if use_parallel:
+            # ------------------------------------------------------------------
+            # Parallel pixel loop using ProcessPoolExecutor.
+            # Model interpolators are built once per worker process by
+            # _init_worker to avoid re-sending large model arrays per task.
+            # ------------------------------------------------------------------
+            ratio_keys = list(self._modelratios.keys())
+            model_points = [self._modelratios[k]._world_axis_lin for k in ratio_keys]
+            model_values = [self._modelratios[k].data.T for k in ratio_keys]
+            obs_data_arr = np.array([self._observedratios_flat[k][0] for k in ratio_keys])
+            obs_err_arr = np.array([self._observedratios_flat[k][1] for k in ratio_keys])
+            nan_policy = getattr(self, "_nan_policy", "raise")
+            max_workers = None if workers == -1 else workers
+
+            futures = {}
+            with ProcessPoolExecutor(
+                max_workers=max_workers,
+                initializer=_init_worker,
+                initargs=(model_points, model_values),
+            ) as pool:
+                for j in range(self._observedratios[fk].size):
+                    if np.isnan(dflat[j]) or np.isnan(rflat[j]):
+                        fmdata[j] = None
+                        fm_mask[j] = True
+                        den[j] = dene[j] = rf[j] = rfe[j] = chi[j] = rchi[j] = np.nan
+                    else:
+                        futures[pool.submit(
+                            _fit_pixel_worker, j,
+                            obs_data_arr[:, j], obs_err_arr[:, j],
+                            dflat[j], rflat[j],
+                            minn, maxn, minfuv, maxfuv,
+                            nan_policy, dict(kwargs),
+                        )] = j
+
+                with get_progress_bar(progress, len(futures), leave=True, position=0) as pbar:
+                    for fut in as_completed(futures):
+                        j = futures[fut]
+                        try:
+                            _, result = fut.result()
+                            fmdata[j] = result
+                            count += 1
+                            den[j] = result.params["density"].value
+                            dene[j] = result.params["density"].stderr
+                            rf[j] = result.params["radiation_field"].value
+                            rfe[j] = result.params["radiation_field"].stderr
+                            chi[j] = result.chisqr
+                            rchi[j] = result.redchi
+                        except ValueError:
+                            excount += 1
+                            fmdata[j] = None
+                            fm_mask[j] = True
+                            den[j] = dene[j] = rf[j] = rfe[j] = chi[j] = rchi[j] = np.nan
+                        pbar.update(1)
+        else:
+            # ------------------------------------------------------------------
+            # Serial pixel loop (default).
+            # ------------------------------------------------------------------
+            with get_progress_bar(progress, self._observedratios[fk].size, leave=True, position=0) as pbar:
+                for j in range(self._observedratios[fk].size):
+                    # use previous coarse fit as first guess
+                    self._fitparam["density"].value = dflat[j]
+                    self._fitparam["radiation_field"].value = rflat[j]
+                    if np.isnan(dflat[j]) or np.isnan(rflat[j]):
                         fmdata[j] = None
                         fm_mask[j] = True
                         den[j] = np.nan
@@ -755,7 +843,34 @@ class LineRatioFit(ToolBase):
                         rf[j] = np.nan
                         chi[j] = np.nan
                         rchi[j] = np.nan
-                pbar.update(1)
+                    else:
+                        try:
+                            self._minimizer.userargs = (j,)
+                            fmdata[j] = self._minimizer.minimize(params=self._fitparam, **kwargs)
+                            # if hasattr(fmdata[j],"success")   ugh.  not guaranteed
+                            # if fmdata[j].errorbars:
+                            count = count + 1
+                            den[j] = fmdata[j].params["density"].value
+                            dene[j] = fmdata[j].params["density"].stderr
+                            rf[j] = fmdata[j].params["radiation_field"].value
+                            rfe[j] = fmdata[j].params["radiation_field"].stderr
+                            chi[j] = fmdata[j].chisqr
+                            rchi[j] = fmdata[j].redchi
+                            # else:
+                            # fmdata[j] = None
+                            # fm_mask[j] = True
+                        except ValueError as exc:
+                            # print("At pixel %d, got valuerror %s with fitparams %s" %(j, exc,self._fitparam))
+                            excount = excount + 1
+                            fmdata[j] = None
+                            fm_mask[j] = True
+                            den[j] = np.nan
+                            dene[j] = np.nan
+                            rfe[j] = np.nan
+                            rf[j] = np.nan
+                            chi[j] = np.nan
+                            rchi[j] = np.nan
+                    pbar.update(1)
         fmdata = fmdata.reshape(self._observedratios[fk].data.shape)
         fm_mask = fm_mask.reshape(self._observedratios[fk].data.shape)
         # ff_mask = ff_mask | np.logical_not(np.isfinite(/*something*/))

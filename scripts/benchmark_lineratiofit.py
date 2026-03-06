@@ -72,6 +72,8 @@ def run_benchmark(args: argparse.Namespace, log: logging.Logger) -> None:
     log.info("=== LineRatioFit benchmark ===")
     log.info("ModelSet : wk2020 z=1")
     log.info("Runs     : %d", args.runs)
+    workers_label = "serial" if args.workers is None else (f"all CPUs" if args.workers == -1 else f"{args.workers} workers")
+    log.info("Workers  : %s", workers_label)
 
     log.info("Loading measurements...")
     measurements = load_measurements(log)
@@ -86,9 +88,12 @@ def run_benchmark(args: argparse.Namespace, log: logging.Logger) -> None:
     elapsed_times = []
     for i in range(args.runs):
         log.info("--- Run %d/%d ---", i + 1, args.runs)
+        run_kwargs = {}
+        if args.workers is not None:
+            run_kwargs["workers"] = args.workers
         p = LineRatioFit(ms, measurements=measurements)
         t0 = time.perf_counter()
-        p.run()
+        p.run(**run_kwargs)
         elapsed = time.perf_counter() - t0
         elapsed_times.append(elapsed)
         log.info("  Elapsed: %.3f s  (%.1f ms/pixel)", elapsed, 1000 * elapsed / npix)
@@ -123,6 +128,14 @@ def main() -> None:
         "-v",
         action="store_true",
         help="enable debug-level output",
+    )
+    parser.add_argument(
+        "--workers",
+        "-w",
+        type=int,
+        default=None,
+        metavar="N",
+        help="number of worker processes for parallel fitting (-1 = all CPUs, default: serial)",
     )
     parser.add_argument(
         "--log",
