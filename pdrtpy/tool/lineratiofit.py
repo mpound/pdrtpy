@@ -419,6 +419,11 @@ class LineRatioFit(ToolBase):
         self._compute_valid_ratios()
         if self.ratiocount == 0:
             raise Exception("No models were found that match your data. Check ModelSet.supported_ratios.")
+        # Pre-flatten observed ratio data and errors once so _residual_single_pixel
+        # does not call flatten() on every minimizer iteration.
+        self._observedratios_flat = {
+            k: (v.data.flatten(), v.uncertainty.array.flatten()) for k, v in self._observedratios.items()
+        }
 
         # eventually need to check that the maps overlap in real space.
         self._compute_residual()
@@ -541,8 +546,8 @@ class LineRatioFit(ToolBase):
         # OR save residuals from computeDelta so you don't do this twice.
         for k in self._modelratios:
             mvalue[i] = self._modelratios[k].get(parvals["density"], parvals["radiation_field"])
-            dvalue[i] = self._observedratios[k].data.flatten()[index]
-            evalue[i] = self._observedratios[k].uncertainty.array.flatten()[index]
+            dvalue[i] = self._observedratios_flat[k][0][index]
+            evalue[i] = self._observedratios_flat[k][1][index]
             i = i + 1
         return (dvalue - mvalue) / evalue
 
@@ -570,14 +575,16 @@ class LineRatioFit(ToolBase):
         self._residual = dict()
         for r in self._observedratios:
             modelpix = self._modelratios[r].data.flatten()
-            residuals = list()
             mdata = ma.masked_invalid(self._observedratios[r].value)
             merror = ma.masked_invalid(self._observedratios[r].error)
-            for pix in modelpix:
-                # optional fractional error correction for log likelihood.
-                _q = (mdata - pix) / merror
-                _q = ma.masked_invalid(_q)
-                residuals.append(_q)
+            # Vectorized: broadcast modelpix over all spatial pixels at once.
+            # modelpix shape: (n_model_pix,); mdata shape: (ny, nx) or scalar.
+            # modelpix_exp shape: (n_model_pix, 1, ...) to broadcast against mdata.
+            # result shape: (n_model_pix, ny, nx) or (n_model_pix,).
+            modelpix_exp = modelpix.reshape((-1,) + (1,) * mdata.ndim)
+            residuals_arr = ma.masked_invalid(
+                (mdata[np.newaxis, ...] - modelpix_exp) / merror[np.newaxis, ...]
+            )
             # result order is g0,n,y,x
 
             # Catch the case of a single pixel
@@ -593,7 +600,7 @@ class LineRatioFit(ToolBase):
                 _meta = deepcopy(self._observedratios[r].meta)
                 _wcs = deepcopy(self._observedratios[r].wcs)
             # result order is g0,n,y,x
-            _qq = np.squeeze(np.reshape(residuals, newshape))
+            _qq = np.squeeze(np.reshape(residuals_arr, newshape))
             self._residual[r] = CCDData(_qq, unit="adu", wcs=_wcs, meta=_meta)
         self._fancy_index_residual()
 
