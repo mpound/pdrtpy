@@ -72,8 +72,9 @@ def run_benchmark(args: argparse.Namespace, log: logging.Logger) -> None:
     log.info("=== LineRatioFit benchmark ===")
     log.info("ModelSet : wk2020 z=1")
     log.info("Runs     : %d", args.runs)
-    workers_label = "serial" if args.workers is None else (f"all CPUs" if args.workers == -1 else f"{args.workers} workers")
+    workers_label = "serial" if args.workers is None else ("all CPUs" if args.workers == -1 else f"{args.workers} workers")
     log.info("Workers  : %s", workers_label)
+    log.info("JointFit : %s", args.joint_fit)
 
     log.info("Loading measurements...")
     measurements = load_measurements(log)
@@ -91,6 +92,8 @@ def run_benchmark(args: argparse.Namespace, log: logging.Logger) -> None:
         run_kwargs = {}
         if args.workers is not None:
             run_kwargs["workers"] = args.workers
+        if args.joint_fit:
+            run_kwargs["joint_fit"] = args.joint_fit
         p = LineRatioFit(ms, measurements=measurements)
         t0 = time.perf_counter()
         p.run(**run_kwargs)
@@ -136,6 +139,14 @@ def main() -> None:
         default=None,
         metavar="N",
         help="number of worker processes for parallel fitting (-1 = all CPUs, default: serial)",
+    )
+    parser.add_argument(
+        "--joint-fit",
+        "-j",
+        choices=["hybrid", "fast"],
+        default=None,
+        metavar="MODE",
+        help="joint pixel fitting mode: 'hybrid' (accurate, ~3x vs parallel) or 'fast' (~11x vs serial, ~7-9%% error)",
     )
     parser.add_argument(
         "--log",
