@@ -12,6 +12,7 @@ Usage::
     python scripts/benchmark_lineratiofit.py --log bench.log
 
 """
+
 import argparse
 import logging
 import sys
@@ -72,7 +73,9 @@ def run_benchmark(args: argparse.Namespace, log: logging.Logger) -> None:
     log.info("=== LineRatioFit benchmark ===")
     log.info("ModelSet : wk2020 z=1")
     log.info("Runs     : %d", args.runs)
-    workers_label = "serial" if args.workers is None else ("all CPUs" if args.workers == -1 else f"{args.workers} workers")
+    workers_label = (
+        "serial" if args.workers is None else ("all CPUs" if args.workers == -1 else f"{args.workers} workers")
+    )
     log.info("Workers  : %s", workers_label)
     log.info("JointFit : %s", args.joint_fit)
 

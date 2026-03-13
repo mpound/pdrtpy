@@ -53,7 +53,9 @@ def _init_worker(model_points, model_values):
     ]
 
 
-def _fit_pixel_worker(j, obs_data_j, obs_err_j, init_density, init_rf, minn, maxn, minfuv, maxfuv, nan_policy, minimize_kwargs):
+def _fit_pixel_worker(
+    j, obs_data_j, obs_err_j, init_density, init_rf, minn, maxn, minfuv, maxfuv, nan_policy, minimize_kwargs
+):
     """Fit a single spatial pixel.  Runs in a worker process spawned by
     ProcessPoolExecutor.  Uses the interpolators set up by _init_worker.
 
@@ -89,8 +91,7 @@ class _PixelResult:
     same attributes as a full lmfit.MinimizerResult for the two fitted
     parameters (density, radiation_field) of a single pixel."""
 
-    def __init__(self, density_val, density_err, rf_val, rf_err,
-                 chisqr, redchi, ndata, success, residual):
+    def __init__(self, density_val, density_err, rf_val, rf_err, chisqr, redchi, ndata, success, residual):
         self.params = Parameters()
         self.params.add("density", value=density_val)
         self.params["density"].stderr = density_err
@@ -104,7 +105,7 @@ class _PixelResult:
         self.nvarys = 2
         self.ndata = ndata
         self.nfree = max(ndata - 2, 1)
-        self.nfev = None   # not meaningful per-pixel in a joint fit
+        self.nfev = None  # not meaningful per-pixel in a joint fit
         self.errorbars = density_err is not None and rf_err is not None
 
 
@@ -688,9 +689,7 @@ class LineRatioFit(ToolBase):
             # modelpix_exp shape: (n_model_pix, 1, ...) to broadcast against mdata.
             # result shape: (n_model_pix, ny, nx) or (n_model_pix,).
             modelpix_exp = modelpix.reshape((-1,) + (1,) * mdata.ndim)
-            residuals_arr = ma.masked_invalid(
-                (mdata[np.newaxis, ...] - modelpix_exp) / merror[np.newaxis, ...]
-            )
+            residuals_arr = ma.masked_invalid((mdata[np.newaxis, ...] - modelpix_exp) / merror[np.newaxis, ...])
             # result order is g0,n,y,x
 
             # Catch the case of a single pixel
@@ -800,7 +799,7 @@ class LineRatioFit(ToolBase):
         else:
             progress = kwargs.get("progress", False)  # keep the progress keyword for emcee, get vs pop
             use_parallel = False  # emcee manages its own parallelism
-            joint_fit = None      # emcee manages its own parallelism
+            joint_fit = None  # emcee manages its own parallelism
         # First get the range of density n and radiation field FUV from the
         # model space, in order to provide them to the Parameters object.
         # Since the wk2006 H2 models have a smaller model space,
@@ -878,7 +877,7 @@ class LineRatioFit(ToolBase):
             def _joint_residual(x):
                 pts = np.column_stack([x[::2], x[1::2]])  # (n_valid, 2)
                 mvalues = np.array([interp(pts) for interp in interps])  # (n_ratios, n_valid)
-                return ((obs_data - mvalues) / obs_err).flatten()        # (n_valid * n_ratios,)
+                return ((obs_data - mvalues) / obs_err).flatten()  # (n_valid * n_ratios,)
 
             # Build x0 (initial guess) and bounds from coarse-fit values
             x0 = np.empty(2 * n_valid)
@@ -886,8 +885,10 @@ class LineRatioFit(ToolBase):
             x0[1::2] = rflat[valid_pixels]
             lb = np.empty(2 * n_valid)
             ub = np.empty(2 * n_valid)
-            lb[::2] = minn;  ub[::2] = maxn
-            lb[1::2] = minfuv; ub[1::2] = maxfuv
+            lb[::2] = minn
+            ub[::2] = maxn
+            lb[1::2] = minfuv
+            ub[1::2] = maxfuv
 
             sparsity = self._build_jac_sparsity(n_valid, n_ratios)
 
@@ -932,8 +933,15 @@ class LineRatioFit(ToolBase):
                 dene[j] = stderr_den
                 rfe[j] = stderr_rf
                 fmdata[j] = _PixelResult(
-                    den[j], dene[j], rf[j], rfe[j],
-                    chi[j], rchi[j], n_ratios, joint_result.success, all_resid[i],
+                    den[j],
+                    dene[j],
+                    rf[j],
+                    rfe[j],
+                    chi[j],
+                    rchi[j],
+                    n_ratios,
+                    joint_result.success,
+                    all_resid[i],
                 )
                 count += 1
 
@@ -979,8 +987,15 @@ class LineRatioFit(ToolBase):
                     dene[j] = stderr_den
                     rfe[j] = stderr_rf
                     fmdata[j] = _PixelResult(
-                        den[j], dene[j], rf[j], rfe[j],
-                        chi[j], rchi[j], n_ratios, r.success, resid_i,
+                        den[j],
+                        dene[j],
+                        rf[j],
+                        rfe[j],
+                        chi[j],
+                        rchi[j],
+                        n_ratios,
+                        r.success,
+                        resid_i,
                     )
 
         elif use_parallel:
@@ -1009,13 +1024,22 @@ class LineRatioFit(ToolBase):
                         fm_mask[j] = True
                         den[j] = dene[j] = rf[j] = rfe[j] = chi[j] = rchi[j] = np.nan
                     else:
-                        futures[pool.submit(
-                            _fit_pixel_worker, j,
-                            obs_data_arr[:, j], obs_err_arr[:, j],
-                            dflat[j], rflat[j],
-                            minn, maxn, minfuv, maxfuv,
-                            nan_policy, dict(kwargs),
-                        )] = j
+                        futures[
+                            pool.submit(
+                                _fit_pixel_worker,
+                                j,
+                                obs_data_arr[:, j],
+                                obs_err_arr[:, j],
+                                dflat[j],
+                                rflat[j],
+                                minn,
+                                maxn,
+                                minfuv,
+                                maxfuv,
+                                nan_policy,
+                                dict(kwargs),
+                            )
+                        ] = j
 
                 with get_progress_bar(progress, len(futures), leave=True, position=0) as pbar:
                     for fut in as_completed(futures):
