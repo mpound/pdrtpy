@@ -260,7 +260,7 @@ class Measurement(CCDData):
         """
         if self.uncertainty is None:
             return None
-        return self.uncertainty._array
+        return self.uncertainty.array
 
     @property
     def SN(self):

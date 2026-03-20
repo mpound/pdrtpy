@@ -430,7 +430,7 @@ class LineRatioFit(ToolBase):
         self._coarse_density_radiation_field()
         if kwargs_opts["refine"]:
             kwargs_opts.pop("refine")
-            self._refine_density_radiation_field2(**kwargs_opts)
+            self._refine_density_radiation_field(**kwargs_opts)
         if profile:
             pr.disable()
             s = io.StringIO()
@@ -652,7 +652,7 @@ class LineRatioFit(ToolBase):
         self._chisq.write(chi, overwrite=overwrite, hdu_mask="MASK", output_verify="silentfix")
         self._reduced_chisq.write(rchi, overwrite=overwrite, hdu_mask="MASK", output_verify="silentfix")
 
-    def _refine_density_radiation_field2(self, **kwargs):
+    def _refine_density_radiation_field(self, **kwargs):
         if kwargs["method"] != "emcee":
             kwargs.pop("steps")
             kwargs.pop("burn")
@@ -995,75 +995,3 @@ class LineRatioFit(ToolBase):
         for j in t.columns:
             t[j].format = "3.2E"
         return t
-
-    # ========= Below is deprecated
-    def _compute_delta_sq(self):
-        """Compute the difference-squared values from the observed ratios
-        and models - multi-pixel version and store in _deltasq member"""
-        self._deltasq = self._computeDelta(f=0)
-
-    def _computeDelta(self, f):
-        """Compute the difference-squared values from the observed ratios
-        and models - multi-pixel version
-
-        :param f: fractional amount by which the variance is underestimated.
-        For traditional chi-squared calculation f is zero.
-        For log-likelihood calculation f is positive and less than 1.
-        See, e.g. https://emcee.readthedocs.io/en/stable/tutorials/line/#maximum-likelihood-estimation
-        :type f: float
-        """
-        if not self._modelratios:  # empty list or None
-            raise Exception("No model data ready.  Was read_models() called?")
-
-        if self.ratiocount < 2:
-            raise Exception(
-                "Not enough ratios.  You need to provide at least 3 observations that can be used to compute 2 ratios"
-                " that are covered by the ModelSet. From your observations, only %d ratios can be computed."
-                % self.ratiocount
-            )
-
-        if not self._check_ratio_shapes():
-            raise Exception("Observed ratio maps have different dimensions")
-
-        returnval = dict()
-        for r in self._observedratios:
-            sz = self._modelratios[r].size
-            modelpix = np.reshape(self._modelratios[r], sz)
-
-            residuals = list()
-            mf = ma.masked_invalid(self._observedratios[r].value)
-            me = ma.masked_invalid(self._observedratios[r].error)
-            # frac_error = f*modelpix  # this is actually slower than looping over modelpix
-            s2 = me**2
-            add_term = 0
-            for pix in modelpix:
-                # optional fractional error correction for log likelihood.
-                if f != 0:
-                    # term is actually log(2*pi*s2) but addition of
-                    # constant makes no difference in likelihood.
-                    frac_error = f * pix
-                    s2 += frac_error**2
-                    add_term += np.log(s2)
-                _q = (mf - pix) ** 2 / s2 + add_term
-                _q = ma.masked_invalid(_q)
-                residuals.append(_q)
-            # result order is g0,n,y,x
-
-            # Catch the case of a single pixel
-            if len(self._observedratios[r].shape) == 0:
-                newshape = np.hstack((self._modelratios[r].shape))
-                _meta = deepcopy(self._modelratios[r].meta)
-                # clean potential crap
-                _meta.pop("", None)
-                _meta.pop("TITLE", None)
-            else:
-                newshape = np.hstack((self._modelratios[r].shape, self._observedratios[r].shape))
-                _meta = deepcopy(self._observedratios[r].meta)
-            # result order is y,x,g0,n
-            # newshape = np.hstack((self._observedratios[r].shape,self._modelratios[r].shape))
-            _qq = np.squeeze(np.reshape(residuals, newshape))
-            # WCS will be None for single pixel
-            _wcs = deepcopy(self._observedratios[r].wcs)
-            returnval[r] = CCDData(_qq, unit="adu", wcs=_wcs, meta=_meta)
-
-        return returnval

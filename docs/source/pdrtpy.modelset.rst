@@ -30,9 +30,9 @@ intensity is the intensity along the ray at the given angle.
 
 Models are stored in FITS format as ratios of intensities as a function
 of radiation field  and hydrogen nucleus volume density.
-The FITS headers list three different extinction values: 
+The FITS headers list three different extinction values:
 
-- *AV*: optical depth in magnitudes of visual extinction of PDR along a line 
+- *AV*: optical depth in magnitudes of visual extinction of PDR along a line
 through the illuminated face to the deepest layers. All models are
 fixed at :math:`A_V = 7`.
 
@@ -40,7 +40,7 @@ fixed at :math:`A_V = 7`.
 perpendicular to Av
 
 - *AVLOS*:  optical depth in magnitudes of visual extinction of the PDR along
-the line-of-sight. 
+the line-of-sight.
 
 
 For example how to use ModelSets, see the notebook
