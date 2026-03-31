@@ -43,6 +43,7 @@ dev = [
   "coverage-badge",
   "pip-tools",
   "pre-commit",
+  "ruff",
   "ipdb",
   "flake8",
   "numpydoc",
@@ -55,7 +56,7 @@ dev = [
   "sphinx-inline-tabs",
   "sphinx-book-theme",
   "sphinxcontrib-mermaid",
-  "dysh[all]",
+  "pdrtpy[all]",
 ]
 nb = [
   "jupyter",
