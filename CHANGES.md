@@ -6,8 +6,6 @@
 
 - Support alternate viewing angles i=0(faceon), 15,30,45,60,75 degrees
 
-- Updated chemical and  radiative network??
-
 #### _Excitation Tool_
 
  - Use Gordon 2023 dust extinction package for default curves
