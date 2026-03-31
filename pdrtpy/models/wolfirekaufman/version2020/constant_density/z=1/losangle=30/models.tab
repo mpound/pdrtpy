@@ -89,12 +89,3 @@
          H200S1           1                 H200S1             H200S1sm    1.0                              H$_2$0-0S(1) 17 $\mu$m       30
          H200S0           1                 H200S0             H200S0sm    1.0                            H$_2$0-0S(0) 28.2 $\mu$m       30
              TS           1                     TS           TSAV0p01sm    1.0                           Temperature at $A_V=0.01$       30
-      FEII_1.60   FEII_1.64    FEII_1.60/FEII_1.64    FEII1p60_FEII1p64    1.0             [Fe II] 1.60 $\mu$m/[Fe II] 1.64 $\mu$m       30
-      FEII_1.64   FEII_5.34    FEII_1.64/FEII_5.34    FEII1p64_FEII5p34    1.0             [Fe II] 1.64 $\mu$m/[Fe II] 5.34 $\mu$m       30
-      FEII_5.67   FEII_5.34    FEII_5.67/FEII_5.34    FEII5p67_FEII5p34    1.0             [Fe II] 5.67 $\mu$m/[Fe II] 5.34 $\mu$m       30
-     FEII_17.94   FEII_5.34   FEII_17.94/FEII_5.34   FEII17p94_FEII5p34    1.0            [Fe II] 17.94 $\mu$m/[Fe II] 5.34 $\mu$m       30
-     FEII_22.90   FEII_5.34   FEII_22.90/FEII_5.34   FEII22p90_FEII5p34    1.0            [Fe II] 22.90 $\mu$m/[Fe II] 5.34 $\mu$m       30
-        FEII_26   FEII_5.34      FEII_26/FEII_5.34   FEII25p99_FEII5p34    1.0            [Fe II] 25.99 $\mu$m/[Fe II] 5.34 $\mu$m       30
-        FEII_26           1                FEII_26            FEII25p99    1.0                                [Fe II] 25.99 $\mu$m       30
-    ARIII_21.83  ARIII_8.99 ARIII_21.83/ARIII_8.99 ARIII21p83_ARIII8p99    1.0          [Ar III] 21.83 $\mu$m/[Ar III] 8.99 $\mu$m       30
-      ARV_13.07    ARV_7.91     ARV_13.07/ARV_7.91     ARV13p07_ARV7p91    1.0              [Ar V] 13.07 $\mu$m/[Ar V] 7.91 $\mu$m       30
