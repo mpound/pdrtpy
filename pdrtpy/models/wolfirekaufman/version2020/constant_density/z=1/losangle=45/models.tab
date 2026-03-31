@@ -3,9 +3,11 @@
 |              |           |                      |                    |      |                                               null|        |
 |          null|       null|                  null|                null|  null|                                               null|    null|
           OI_63     CII_158          OI_63/CII_158        OI63_CII158sm    1.0                 [O I] 63 $\mu$m / [C II] 158 $\mu$m       45
+          OI_63    13CO65            OI_63/13CO65         OI63_13CO65sm    1.0                  [O I] 63 $\mu$m / $^{13}$CO(J=6-5)       45
   OI_63+CII_158         FIR      OI_63+CII_158/FIR    OI63+CII158_FIRsm    1.0   ([O I] 63 $\mu$m + [C II] 158 $\mu$m) / I$_{FIR}$       45
  OI_145+CII_158         FIR     OI_145+CII_158/FIR   OI145+CII158_FIRsm    1.0  ([O I] 145 $\mu$m + [C II] 158 $\mu$m) / I$_{FIR}$       45
          OI_145       OI_63           OI_145/OI_63         OI145_OI63sm    1.0                  [O I] 145 $\mu$m / [O I] 63 $\mu$m       45
+         OI_145      13CO65          OI_145/13CO65       OI145_13CO65sm    1.0                 [O I] 145 $\mu$m / $^{13}$CO(J=6-5)       45
          CI_370      CI_609          CI_370/CI_609        CI370_CI609sm    1.0                 [C I] 370 $\mu$m / [C I] 609 $\mu$m       45
         CII_158      CI_609         CII_158/CI_609       CII158_CI609sm    1.0                [C II] 158 $\mu$m / [C I] 609 $\mu$m       45
         CII_158      OI_145         CII_158/OI_145       CII158_OI145sm    1.0                [C II] 158 $\mu$m / [O I] 145 $\mu$m       45
@@ -15,6 +17,7 @@
         CII_158       CO_32          CII_158/CO_32        CII158_CO32sm    1.0                       [C II] 158 $\mu$m / CO(J=3-2)       45
         CII_158       CO_65          CII_158/CO_65        CII158_CO65sm    1.0                       [C II] 158 $\mu$m / CO(J=6-5)       45
         CII_158     13CO_10        CII_158/13CO_10      CII158_13CO10sm    1.0                [C II] 158 $\mu$m / $^{13}$CO(J=1-0)       45
+        CII_158     13CO_65        CII_158/13CO_65      CII158_13CO65sm    1.0                [C II] 158 $\mu$m / $^{13}$CO(J=6-5)       45
           CO_21       CO_10            CO_21/CO_10          CO21_CO10sm    1.0                               CO(J=2-1) / CO(J=1-0)       45
           CO_32       CO_10            CO_32/CO_10          CO32_CO10sm    1.0                               CO(J=3-2) / CO(J=1-0)       45
           CO_32       CO_21            CO_32/CO_21          CO32_CO21sm    1.0                               CO(J=3-2) / CO(J=2-1)       45
@@ -40,6 +43,7 @@
          CO_109       CO_76           CO_109/CO_76         CO109_CO76sm    1.0                              CO(J=10-9) / CO(J=7-6)       45
         CO_1110       CO_54          CO_1110/CO_54        CO1110_CO54sm    1.0                             CO(J=11-10) / CO(J=5-4)       45
         CO_1110       CO_65          CO_1110/CO_65        CO1110_CO65sm    1.0                             CO(J=11-10) / CO(J=6-5)       45
+        CO_1110       CO_87          CO_1110/CO_87        CO1110_CO87sm    1.0                             CO(J=11-10) / CO(J=8-7)       45
         CO_1211       CO_54          CO_1211/CO_54        CO1211_CO54sm    1.0                             CO(J=12-11) / CO(J=5-4)       45
         CO_1211       CO_65          CO_1211/CO_65        CO1211_CO65sm    1.0                             CO(J=12-11) / CO(J=6-5)       45
         CO_1312       CO_54          CO_1312/CO_54        CO1312_CO54sm    1.0                             CO(J=13-12) / CO(J=5-4)       45
@@ -89,3 +93,12 @@
          H200S1           1                 H200S1             H200S1sm    1.0                              H$_2$0-0S(1) 17 $\mu$m       45
          H200S0           1                 H200S0             H200S0sm    1.0                            H$_2$0-0S(0) 28.2 $\mu$m       45
              TS           1                     TS           TSAV0p01sm    1.0                           Temperature at $A_V=0.01$       45
+      FEII_1.60   FEII_1.64    FEII_1.60/FEII_1.64    FEII1p60_FEII1p64    1.0             [Fe II] 1.60 $\mu$m/[Fe II] 1.64 $\mu$m       45
+      FEII_1.64   FEII_5.34    FEII_1.64/FEII_5.34    FEII1p64_FEII5p34    1.0             [Fe II] 1.64 $\mu$m/[Fe II] 5.34 $\mu$m       45
+      FEII_5.67   FEII_5.34    FEII_5.67/FEII_5.34    FEII5p67_FEII5p34    1.0             [Fe II] 5.67 $\mu$m/[Fe II] 5.34 $\mu$m       45
+     FEII_17.94   FEII_5.34   FEII_17.94/FEII_5.34   FEII17p94_FEII5p34    1.0            [Fe II] 17.94 $\mu$m/[Fe II] 5.34 $\mu$m       45
+     FEII_22.90   FEII_5.34   FEII_22.90/FEII_5.34   FEII22p90_FEII5p34    1.0            [Fe II] 22.90 $\mu$m/[Fe II] 5.34 $\mu$m       45
+        FEII_26   FEII_5.34      FEII_26/FEII_5.34   FEII25p99_FEII5p34    1.0            [Fe II] 25.99 $\mu$m/[Fe II] 5.34 $\mu$m       45
+        FEII_26           1                FEII_26            FEII25p99    1.0                                [Fe II] 25.99 $\mu$m       45
+    ARIII_21.83  ARIII_8.99 ARIII_21.83/ARIII_8.99 ARIII21p83_ARIII8p99    1.0          [Ar III] 21.83 $\mu$m/[Ar III] 8.99 $\mu$m       45
+      ARV_13.07    ARV_7.91     ARV_13.07/ARV_7.91     ARV13p07_ARV7p91    1.0              [Ar V] 13.07 $\mu$m/[Ar V] 7.91 $\mu$m       45
