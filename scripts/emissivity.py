@@ -5,8 +5,9 @@ Created on Wed Jul  2 08:30:50 2025
 
 @author: mpound
 """
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
 
 # emissiviity as function of inclination angle
 OI63 = np.array([[90, 6.71e-3], [75, 1.13e-2], [60, 1.17e-2], [45, 1.05e-2], [30, 9.72e-3]])

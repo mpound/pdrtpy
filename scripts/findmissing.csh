@@ -1,6 +1,6 @@
 #!/bin/csh -f
 # Identify if any model files are not listed in models.tab
-# 
+#
 foreach z ( 1 )
     cd ../pdrtpy/models/wolfirekaufman/version2020/constant_density/z=${z}
     foreach dir  ( losangle=* )
@@ -19,4 +19,3 @@ foreach z ( 1 )
         cd ..
     end
 end
-

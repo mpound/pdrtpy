@@ -204,7 +204,7 @@ class PlotBase(ABC):
             #    return simple_norm(km, vmin=vmin, vmax=vmax, stretch=stretch, clip=False)
             # else:
             # @deprecated_renamed_argument should fix this in astropy 6.1+
-            return simple_norm(km, vmin=vmin,vmax=vmax, stretch=stretch, clip=False)
+            return simple_norm(km, vmin=vmin, vmax=vmax, stretch=stretch, clip=False)
         elif norm == "zscale":
             return self._zscale(km, vmin, vmax, stretch)
         elif norm == "log":
