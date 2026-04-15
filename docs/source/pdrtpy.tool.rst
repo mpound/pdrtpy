@@ -35,7 +35,7 @@ Excitation Diagram Fitting
 
 :class:`~pdrtpy.tool.excitation.H2ExcitationFit` is a tool for fitting temperature, column density, and ortho-to-para ratio in :math:`H_2` excitation diagrams.  A two temperature model is assumed, and the fit will find :math:`T_{hot}, T_{cold}, N_{hot}(H_2), N_{cold}(H_2),` and optionally `A_v` or `OPR`.  The base class :class:`~pdrtpy.tool.excitation.ExcitationFit` can be used to create a tool to fit a different molecule.
 
-Similarly, there are tools to fit :math:`CO`, :math:`^{13}CO`, and :math:`CH^{+}` excitation diagrams.
+Similarly, there are tools to fit :math:`CO` and :math:`^{13}CO`.
 
 .. automodule:: pdrtpy.tool.excitation
    :members:
