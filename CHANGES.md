@@ -1,6 +1,6 @@
 ## Change Log
 
-### Release 2.6.2
+### Release 2.6.4
 
 #### _Models_
 
@@ -17,6 +17,10 @@
 #### _Issues_
 
 - Issues 160, 163, 164, 184, 185, 191 closed
+
+#### _Notebooks_
+
+- New notebook showing how to fit density and radiation field for an edge-on PDR (Horsehead)
 
 ### Release 2.4.4
 
