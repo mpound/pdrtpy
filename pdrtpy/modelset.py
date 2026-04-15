@@ -145,9 +145,9 @@ class ModelSet(object):
 
         :rtype: str
         """
-        s = f", Z={self.z:2.1f}, losangle={self.losangle:d}" 
+        s = f", Z={self.z:2.1f}, losangle={self.losangle:d}"
         if self.avlos is not None:
-            s+=f", avlos={self.avlos:d}"
+            s += f", avlos={self.avlos:d}"
         return self._tabrow["description"] + s
 
     @property
