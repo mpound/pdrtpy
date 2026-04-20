@@ -32,7 +32,7 @@ from .toolbase import ToolBase
 log.setLevel("WARNING")  # see issue 163
 
 # ---------------------------------------------------------------------------
-# Module-level helpers for parallel pixel fitting (Opt 1).
+# Module-level helpers for parallel pixel fitting.
 # Must be at module level so ProcessPoolExecutor can pickle them.
 # ---------------------------------------------------------------------------
 
@@ -78,7 +78,7 @@ def _fit_pixel_worker(
 
 
 # ---------------------------------------------------------------------------
-# Per-pixel proxy for joint fitting results (Opt 4).
+# Per-pixel proxy for joint fitting results.
 # Presents the same interface as lmfit.MinimizerResult so that
 # fit_result[j].params, fit_result[j].chisqr, etc. work unchanged.
 # ---------------------------------------------------------------------------
@@ -470,7 +470,7 @@ class LineRatioFit(ToolBase):
                            CPUs. A positive integer sets the exact number of workers.
                            Ignored for single-pixel fits, emcee, and when ``joint_fit`` is not ``None``.
            :type workers: int or None
-           :param joint_fit: Controls joint pixel fitting (Opt 4).
+           :param joint_fit: Controls joint pixel fitting.
 
                 * ``None`` (default): serial or parallel per-pixel fitting.
                 * ``'hybrid'``: joint scipy fit for all pixels simultaneously using a
@@ -502,7 +502,7 @@ class LineRatioFit(ToolBase):
             "steps": 1000,
             # parallelism
             "workers": None,
-            # joint fitting (Opt 4): None | 'hybrid' | 'fast'
+            # joint fitting: None | 'hybrid' | 'fast'
             "joint_fit": None,
             # debugging
             "test": False,
@@ -853,7 +853,7 @@ class LineRatioFit(ToolBase):
 
         if joint_fit in ("hybrid", "fast"):
             # ------------------------------------------------------------------
-            # Joint pixel fitting (Opt 4): single scipy.optimize.least_squares
+            # Joint pixel fitting: single scipy.optimize.least_squares
             # call for all pixels with block-diagonal jac_sparsity.
             # Bypasses lmfit to avoid its sparse-Jacobian covariance bug
             # (element-wise * instead of matrix @ when computing J^T J).
