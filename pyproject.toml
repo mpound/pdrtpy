@@ -37,7 +37,7 @@ dependencies = [
     'dust_extinction'
  ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
   "coverage[toml]",
   "coverage-badge",
@@ -59,6 +59,8 @@ dev = [
   "sphinxcontrib-mermaid",
   "pdrtpy[all]",
 ]
+
+[project.optional-dependencies]
 nb = [
   "jupyter",
   "jupyterlab",
