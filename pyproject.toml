@@ -50,6 +50,7 @@ dev = [
   "pytest",
   "pytest-cov",
   "pytest-xdist",
+  "pytest-timeout",
   "myst_nb",
   "sphinx",
   "sphinx-autobuild",
