@@ -425,7 +425,7 @@ class ExcitationPlot(PlotBase):
         :type data: :class:`~pdrtpy.measurement.Measurement`
         :param interaction_type: whether to use mouse click or mouse move to update the right hand panel.   Valid values are 'click' or 'move'.
         :type interaction_type: str
-        :param \*\*kwargs: Other parameters passed to :meth:`~pdrtpy.plot.excitationplot.ExcitationPlot._plot`, :meth:`~pdrtpy.plot.excitationplot.ExcitationPlot.ex_diagram`, or matplotlib methods.
+        :param **kwargs: Other parameters passed to :meth:`~pdrtpy.plot.excitationplot.ExcitationPlot._plot`, :meth:`~pdrtpy.plot.excitationplot.ExcitationPlot.ex_diagram`, or matplotlib methods.
 
             - *units,image, contours, label, title, norm, figsize* -- See the general `Plot Keywords`_ documentation
             - *show_fit* - show the fit in the excitation diagram, Default: True
@@ -477,7 +477,7 @@ class ExcitationPlot(PlotBase):
         if debug:
             self._logfile.write(f"Explore using position: {position} world {coord.to_string('hmsdms')} size=1\n")
             self._logfile.flush()
-        self._figure = self._plt.figure(figsize=kwargs_opts["figsize"], clear=True)
+        self._figure = self._plt.figure(figsize=kwargs_opts["figsize"])
         self._axis = np.empty([2], dtype=object)
         # self._axis[0] = self._figure.add_subplot(121, projection=data.wcs, aspect="auto")
         if nowcs:

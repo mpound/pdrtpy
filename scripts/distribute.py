@@ -47,3 +47,5 @@ for d in dirs:
                 print(f"cp {file} {outfile}")
             if not args.dry_run:
                 shutil.copy(file, outfile)
+
+# @TODO add copying of TsAV0p01sm.fits from losangle=00 to losangle=*

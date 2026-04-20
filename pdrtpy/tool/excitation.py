@@ -1201,7 +1201,11 @@ class BaseExcitationFit(ToolBase):
         _colden = Measurement(_cd, uncertainty=StdDevUncertainty(_er), unit="cm-2")
         fk = utils.firstkey(colden)
         x = _energy.data
-        y = np.log10(_colden.data)
+        # suppress log10 invalid value
+        with warnings.catch_warnings():
+            # ignore warning about invalid value in log.
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            y = np.log10(_colden.data)
         # print(f"energy {x=}\nlog coldeb {y=}")
         # print("SHAPE Y LEN(SHAPE(Y) ",y.shape,len(y.shape))
         # kwargs_opts = {"guess": self._first_guess(x,y)}

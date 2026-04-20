@@ -37,26 +37,30 @@ dependencies = [
     'dust_extinction'
  ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
   "coverage[toml]",
   "coverage-badge",
   "pip-tools",
   "pre-commit",
+  "ruff",
   "ipdb",
   "flake8",
   "numpydoc",
   "pytest",
   "pytest-cov",
   "pytest-xdist",
+  "pytest-timeout",
   "myst_nb",
   "sphinx",
   "sphinx-autobuild",
   "sphinx-inline-tabs",
   "sphinx-book-theme",
   "sphinxcontrib-mermaid",
-  "dysh[all]",
+  "pdrtpy[all]",
 ]
+
+[project.optional-dependencies]
 nb = [
   "jupyter",
   "jupyterlab",

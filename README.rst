@@ -38,7 +38,7 @@ PhotoDissociation Region Toolbox --- Python
    :target: https://results.pre-commit.ci/latest/github/mpound/pdrtpy/master
    :alt: pre-commit.ci status
 
-``pdrtpy`` is the Python `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/>`_.  The current stable version is 2.6.2
+``pdrtpy`` is the Python `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/>`_.  The current stable version is 2.6.4
 
 The PDR Toolbox is a science-enabling tool for the community, designed to
 help astronomers determine the physical parameters of photodissociation
@@ -153,6 +153,7 @@ To familiarize yourself with the capabilities of ``pdrtpy``, we suggest you do t
 - `Exploring Models <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Model_Plotting.ipynb>`_
 - `Determining Radiation Field and Intensity <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Find_n_G0_Single_Pixel.ipynb>`_
 - `Image Radiation Field and Intensity for Maps <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Make_n_G0_maps.ipynb>`_
+- `Using Alternate Viewing Angle PDR Models to fit emission maps of the Horsehead. <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_EdgeOnModelHorsehead.ipynb>`_
 - `Fitting |H2| Excitation Diagrams <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_H2_Excitation.ipynb>`_
 - `Adding Custom Models <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Adding_Models.ipynb>`_
 
