@@ -1,6 +1,5 @@
 """Tests for pdrutils utility functions"""
 
-
 import astropy.units as u
 import numpy as np
 import numpy.ma as ma

@@ -1,4 +1,3 @@
-
 import logging
 
 __all__ = ["get_progress_bar"]
