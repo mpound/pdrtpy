@@ -10,7 +10,7 @@ from pdrtpy.tool.lineratiofit import LineRatioFit
 # Get the input filenames of the FITS files in the testdata directory
 # utils.get_testdata() is a special method to locate files there.
 # These are maps from Jameson et al 2018.
-print("Test FITS files are in: %s" % utils.testdata_dir())
+print(f"Test FITS files are in: {utils.testdata_dir()}")
 cii_flux = utils.get_testdata("n22_cii_flux.fits")  # [C II] flux
 cii_err = utils.get_testdata("n22_cii_error.fits")  # [C II] error
 oi_flux = utils.get_testdata("n22_oi_flux.fits")  # [O I] flux

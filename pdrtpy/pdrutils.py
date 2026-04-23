@@ -310,7 +310,7 @@ def firstkey(d):
     :param d: the dictionary
     :type d: dict
     """
-    return list(d)[0]
+    return next(iter(d))
 
 
 def warn(cls, msg):
@@ -744,7 +744,7 @@ def get_xy_from_wcs(data, quantity=False, linear=False):
     yind = np.arange(w._naxis[1])
     x_pixel_arrays = [xind, xind]
     y_pixel_arrays = [yind, yind]
-    for i in range(2, w.pixel_n_dim):
+    for _i in range(2, w.pixel_n_dim):
         x_pixel_arrays.append([0])
         y_pixel_arrays.append([0])
 

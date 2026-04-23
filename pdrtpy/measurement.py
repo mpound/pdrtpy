@@ -205,7 +205,7 @@ class Measurement(CCDData):
                 if rms is None:
                     raise Exception("rms not given as parameter and RMS keyword not present in data header")
                 else:
-                    print("Found RMS in header: %.2E %s" % (rms, _error[0].data.shape))
+                    print("Found RMS in header: {rms.2E}{_error[0].data.shape}")
             # tmp = np.full(_error[0].data.shape,rms)
             _error[0].data[:] = rms
         elif "%" in error:
@@ -219,7 +219,7 @@ class Measurement(CCDData):
         fb = _data[0].header.get("bunit", str(unit))  # use str in case Unit was given
         eb = _error[0].header.get("bunit", str(unit))
         if fb != eb:
-            raise Exception("BUNIT must be the same in both data (%s) and error (%s) maps" % (fb, eb))
+            raise Exception(f"BUNIT must be the same in both data {fb} and error {eb} maps")
         # Sigh, this is necessary since there is no mode available in
         # fits.open that will truncate an existing file for writing
         if overwrite and exists(outfile):
@@ -699,8 +699,8 @@ def fits_measurement_reader(
     # @TODO header values get stuffed into WCS, others may be dropped by CCDData._generate_wcs_and_update_header
     try:
         z = Measurement(z, unit=z._unit, title=_title, restfreq=_restfreq)
-    except Exception:
-        raise TypeError("could not convert fits_measurement_reader output to Measurement")
+    except Exception as exc:
+        raise TypeError(f"Could not convert fits_measurement_reader output to Measurement because {exc}") from exc
     z.identifier(_id)
     # astropy.io.registry.read creates a FileIO object before calling the registered
     # reader (this method), so the filename is FileIO.name.
