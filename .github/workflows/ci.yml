@@ -35,8 +35,6 @@ jobs:
           enable-cache: true
       - name: Install the project
         run: uv sync --all-extras --dev
-      - name: Cache example data
-        uses: actions/cache@v5
       - name: Test with pytest
         env:
           COVERAGE_FILE: coverage.${{ matrix.os }}.${{ matrix.python-version }}
