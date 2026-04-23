@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Thu May  1 15:42:40 2025
 
@@ -9,9 +8,8 @@ Convert Meudon line transition data files to pdrtpy format
 
 import astropy.units as u
 import numpy as np
-from astropy.table import Column, vstack
-
 import pdrtpy.pdrutils as util
+from astropy.table import Column, vstack
 
 # from astropy.table import Table
 

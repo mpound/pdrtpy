@@ -322,7 +322,7 @@ class ModelPlot(PlotBase):
             bunit = bunit.to(kwargs_opts["yaxis_unit"])
             bscale = bunit.value
         if bunit != u.dimensionless_unscaled:
-            ylabel = r"{0} [{1:latex_inline}]".format(model.title, bunit.unit)
+            ylabel = rf"{model.title} [{bunit.unit:latex_inline}]"
         else:
             ylabel = model.title
         for j in xi2[:: kwargs_opts["step"]]:
@@ -331,9 +331,9 @@ class ModelPlot(PlotBase):
             else:
                 yy = bscale * model[j, 0 : len(naxis[otherindex])]
             if naxis_is_log[pindex]:
-                label = "{0:.1f}".format(np.round(np.log10(naxis[pindex][j].to(nax_clip.unit).value), 1))
+                label = f"{np.round(np.log10(naxis[pindex][j].to(nax_clip.unit).value), 1):.1f}"
             else:
-                label = "{0:.0f}".format(np.round(naxis[pindex][j].to(nax_clip.unit).value, 0))
+                label = f"{np.round(naxis[pindex][j].to(nax_clip.unit).value, 0):.0f}"
             lines.extend(self._axis.plot(naxis[otherindex], yy, label=label))
         # Format the plot in a sensible way
         self._axis.set_ylabel(ylabel)
@@ -513,7 +513,7 @@ class ModelPlot(PlotBase):
             if x_is_log:
                 label = np.round(np.log10(xlin[j].to(nax1_clip.unit).value), 1)
             else:
-                label = "{0:.0f}".format(np.round(xlin[j].to(nax1_clip.unit).value, 0))
+                label = f"{np.round(xlin[j].to(nax1_clip.unit).value, 0):.0f}"
             if models[0].unit == "":
                 m0label = models[0].title
             else:
@@ -540,7 +540,7 @@ class ModelPlot(PlotBase):
             if y_is_log:
                 label = np.round(np.log10(ylin[j].to(nax2_clip.unit).value), 1)
             else:
-                label = "{0:.0f}".format(np.round(ylin[j].to(nax2_clip.unit).value, 0))
+                label = f"{np.round(ylin[j].to(nax2_clip.unit).value, 0):.0f}"
             if reciprocal[0]:
                 xx = 1 / models[0][j, xi2[0] : xi2[-1] + 1]
             else:

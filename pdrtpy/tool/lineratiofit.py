@@ -1,6 +1,5 @@
 import cProfile
 import io
-import os
 import pstats
 import warnings
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -21,7 +20,6 @@ from astropy.table import Column, Table
 from lmfit import Minimizer, Parameters  # , fit_report
 from scipy.interpolate import interpn
 from scipy.optimize import least_squares as _scipy_least_squares
-from scipy.sparse import issparse as _issparse
 
 from pdrtpy.pbar import get_progress_bar
 
@@ -694,7 +692,7 @@ class LineRatioFit(ToolBase):
 
             # Catch the case of a single pixel
             if self._observedratios[r].is_single_pixel():
-                newshape = np.hstack((self._modelratios[r].shape))
+                newshape = np.hstack(self._modelratios[r].shape)
                 _meta = deepcopy(self._modelratios[r].meta)
                 _wcs = deepcopy(self._modelratios[r].wcs)
                 # clean potential crap
@@ -736,7 +734,7 @@ class LineRatioFit(ToolBase):
         """Compute the chi-squared values from observed ratios and models"""
         if self.ratiocount < 2:
             raise Exception("Not enough ratios to compute chisq.  Need 2, got %d" % self.ratiocount)
-        sumary = sum((self._residual[r]._data ** 2 for r in self._residual))
+        sumary = sum(self._residual[r]._data ** 2 for r in self._residual)
         self._dof = len(self._residual) - 1
         k = utils.firstkey(self._residual)
         _wcs = deepcopy(self._residual[k].wcs)
@@ -1094,7 +1092,7 @@ class LineRatioFit(ToolBase):
                             # else:
                             # fmdata[j] = None
                             # fm_mask[j] = True
-                        except ValueError as exc:
+                        except ValueError:
                             # print("At pixel %d, got valuerror %s with fitparams %s" %(j, exc,self._fitparam))
                             excount = excount + 1
                             fmdata[j] = None
@@ -1213,12 +1211,11 @@ class LineRatioFit(ToolBase):
         self._chisq_min = deepcopy(self._observedratios[fk2])
         if spatial_idx == 0 and newshape == (1,):
             self._chisq_min.data = np.array([chi_min])
+        elif self._modelnaxis == 2:
+            self._chisq_min.data = chi_min
         else:
-            if self._modelnaxis == 2:
-                self._chisq_min.data = chi_min
-            else:
-                self._chisq_min.data = chi_min[0, :, :]
-                self._chisq_min.data[np.isnan(self._observedratios[fk2])] = np.nan
+            self._chisq_min.data = chi_min[0, :, :]
+            self._chisq_min.data[np.isnan(self._observedratios[fk2])] = np.nan
         self._chisq_min.unit = u.dimensionless_unscaled
         self._chisq_min.uncertainty.array = [0.0]
         self._chisq_min.uncertainty.unit = u.dimensionless_unscaled

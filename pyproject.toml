@@ -197,7 +197,7 @@ addopts = [
 ]
 
 
-#markers = [] 
+#markers = []
 
 [build-system]
 requires = ["hatchling"]

@@ -6,10 +6,9 @@ matplotlib.use("Agg")
 
 import astropy.units as u
 import numpy as np
+import pdrtpy.pdrutils as utils
 import pytest
 from astropy.nddata import StdDevUncertainty
-
-import pdrtpy.pdrutils as utils
 from pdrtpy.measurement import Measurement
 from pdrtpy.modelset import ModelSet
 from pdrtpy.plot.lineratioplot import LineRatioPlot

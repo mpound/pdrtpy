@@ -2,11 +2,10 @@
 
 import os
 
-import pytest
-from astropy.nddata import CCDData, NDData, StdDevUncertainty
-from astropy.table import Table
-
 import pdrtpy.pdrutils as utils
+import pytest
+from astropy.nddata import StdDevUncertainty
+from astropy.table import Table
 from pdrtpy.measurement import Measurement
 from pdrtpy.modelset import ModelSet
 from pdrtpy.tool.fitmap import FitMap

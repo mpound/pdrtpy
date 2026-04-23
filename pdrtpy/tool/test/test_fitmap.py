@@ -3,7 +3,6 @@
 import numpy as np
 import pytest
 from astropy.wcs import WCS
-
 from pdrtpy.tool.fitmap import FitMap
 
 
@@ -88,7 +87,6 @@ class TestFitMapCoordinates:
 
     def test_get_skycoord(self, fitmap_with_wcs):
         """get_skycoord should return a SkyCoord"""
-        from astropy.coordinates import SkyCoord
 
         coord = fitmap_with_wcs.get_skycoord(4, 4)
         assert coord is not None

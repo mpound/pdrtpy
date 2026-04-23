@@ -49,7 +49,7 @@ class LineRatioPlot(PlotBase):
         self._ratiocolor = []
 
     def modelintensity(self, id, **kwargs):
-        """Plot one of the model intensities
+        r"""Plot one of the model intensities
 
         :param id: the intensity identifier, such as `CO_32``.
         :type id: str
@@ -68,7 +68,7 @@ class LineRatioPlot(PlotBase):
         self._axis = self._modelplot.axis
 
     def modelratio(self, id, **kwargs):
-        """Plot one of the model ratios
+        r"""Plot one of the model ratios
 
         :param id: the ratio identifier, such as ``CII_158/CO_32``.
         :type id: str
@@ -129,7 +129,7 @@ class LineRatioPlot(PlotBase):
 
         tunit = u.Unit(kwargs_opts["units"])
         if kwargs_opts["title"] is None:
-            kwargs_opts["title"] = r"n [{0:latex_inline}]".format(tunit)
+            kwargs_opts["title"] = rf"n [{tunit:latex_inline}]"
         self._plot(self._tool._density, **kwargs_opts)
 
     def radiation_field(self, **kwargs):
@@ -155,13 +155,13 @@ class LineRatioPlot(PlotBase):
         if kwargs_opts["title"] is None:
             rad_title = utils.get_rad(kwargs_opts["units"])
             tunit = u.Unit(kwargs_opts["units"])
-            kwargs_opts["title"] = r"{0} [{1:latex_inline}]".format(rad_title, tunit)
+            kwargs_opts["title"] = rf"{rad_title} [{tunit:latex_inline}]"
 
         self._plot(self._tool.radiation_field, **kwargs_opts)
 
     # @TODO refactor this method with reduced_chisq()
     def chisq(self, **kwargs):
-        """Plot the :math:`\chi^2` map that was computed by the
+        r"""Plot the :math:`\chi^2` map that was computed by the
         :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
 
         """
@@ -236,7 +236,7 @@ class LineRatioPlot(PlotBase):
             self._axis = self._modelplot.axis
 
     def reduced_chisq(self, **kwargs):
-        """Plot the reduced :math:`\chi^2` map that was computed by the
+        r"""Plot the reduced :math:`\chi^2` map that was computed by the
         :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
 
         """
@@ -354,7 +354,7 @@ class LineRatioPlot(PlotBase):
         return (rf, d)
 
     def confidence_intervals(self, **kwargs):
-        """Plot the confidence intervals from the :math:`\chi^2` map computed by the
+        r"""Plot the confidence intervals from the :math:`\chi^2` map computed by the
         :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool. Default levels:  [50., 68., 80., 95., 99.]
 
         **Currently only works for single-pixel Measurements**

@@ -20,7 +20,6 @@ import time
 from pathlib import Path
 
 import astropy.units as u
-
 import pdrtpy.pdrutils as utils
 from pdrtpy.measurement import Measurement
 from pdrtpy.modelset import ModelSet

@@ -1,6 +1,5 @@
 # test modelplot.ModelPlot
 from astropy.nddata import StdDevUncertainty
-
 from pdrtpy.measurement import Measurement
 from pdrtpy.modelset import ModelSet
 from pdrtpy.plot.modelplot import ModelPlot

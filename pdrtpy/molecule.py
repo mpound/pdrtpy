@@ -1,6 +1,5 @@
 import warnings
 from pathlib import Path
-from typing import Union
 
 import astropy.units as u
 import numpy as np
@@ -10,8 +9,8 @@ from astropy.units.quantity import Quantity
 from . import pdrutils as utils
 
 
-class BaseMolecule(object):
-    def __init__(self, name: str, path: Union[Path, str], opr: float = 1, opr_can_vary: bool = False, **kwargs) -> None:
+class BaseMolecule:
+    def __init__(self, name: str, path: Path | str, opr: float = 1, opr_can_vary: bool = False, **kwargs) -> None:
         """
 
         The base class for holding molecular transition data.

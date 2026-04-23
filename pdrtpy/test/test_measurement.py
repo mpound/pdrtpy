@@ -3,10 +3,9 @@ import os
 
 import astropy.units as u
 import numpy as np
+import pdrtpy.pdrutils as utils
 import pytest
 from astropy.nddata import StdDevUncertainty
-
-import pdrtpy.pdrutils as utils
 from pdrtpy.measurement import Measurement
 
 
@@ -28,7 +27,7 @@ class TestMeasurement:
             self.q.append(m)
 
     def _check_title_card(self, a, b, op, c):
-        return c.header["TITLE"] == f'{a.header["TITLE"]}{op}{b.header["TITLE"]}'
+        return c.header["TITLE"] == f"{a.header['TITLE']}{op}{b.header['TITLE']}"
 
     def test_arithmetic(self):
         print("Measurement Unit Test")

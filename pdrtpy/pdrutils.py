@@ -54,14 +54,14 @@ u.add_enabled_units(mathis_unit)
 
 _rad_title = dict()
 _rad_title["Habing"] = "$G_0$"
-_rad_title["Draine"] = "$\chi$"
+_rad_title["Draine"] = r"$\chi$"
 _rad_title["Mathis"] = "FUV"
 
 
 # these only work if pdrtpy-nb is inside pdrtpy.
 # need to fix or remove.
 def _nbversion():
-    return open("../VERSION", "r").readline().strip(*"\n")
+    return open("../VERSION").readline().strip(*"\n")
 
 
 def check_nb():
@@ -80,7 +80,7 @@ def check_nb():
 
 
 def get_rad(key):
-    """Get radiation field symbol (LaTeX) given radiation field unit.
+    r"""Get radiation field symbol (LaTeX) given radiation field unit.
     If key is unrecognized, 'FUV Radiation Field' is returned.
 
     :param key: input field unit name, e.g. 'Habing', 'Draine' or an :class:`astropy.units.Unit`
@@ -390,7 +390,7 @@ def to(unit, image):
     newmap.unit = u.Unit(unit)
     # @TODO deal with identifier.
     # deal with uncertainty in Measurements.
-    if getattr(newmap, "_uncertainty") is not None:
+    if newmap._uncertainty is not None:
         newmap._uncertainty.array = newmap.uncertainty.array * value
         newmap._uncertainty.unit = u.Unit(unit)
     return newmap
@@ -499,13 +499,13 @@ def convert_integrated_intensity(image, wavelength=None):
     if u.Unit(image.header.get("BUNIT")) != _KKMS:
         raise Exception("Image BUNIT must be 'K km/s'")
     factor = 2e5 * k_B / wavelength**3
-    print("Converting K km/s to %s using Factor = %s" % (_OBS_UNIT_, "{0:+0.3E}".format(factor.decompose(u.cgs.bases))))
+    print("Converting K km/s to %s using Factor = %s" % (_OBS_UNIT_, f"{factor.decompose(u.cgs.bases):+0.3E}"))
     newmap = deepcopy(image)
     value = factor.decompose(u.cgs.bases).value
     newmap.data = newmap.data * value
     newmap.unit = _OBS_UNIT_
     # deal with uncertainty in Measurements.
-    if getattr(newmap, "_uncertainty") is not None:
+    if newmap._uncertainty is not None:
         newmap._uncertainty.array = newmap.uncertainty.array * value
         newmap._uncertainty.unit = _OBS_UNIT_
     return newmap
@@ -621,7 +621,7 @@ def fliplabel(label):
 
 # partly stolen from astropy.quantity.to_string, will also work with Measurements
 def float_formatter(quantity, precision):
-    format_spec = ".{}g".format(precision)
+    format_spec = f".{precision}g"
     number = Latex.format_exponential_notation(np.squeeze(quantity.value), format_spec=format_spec)
     # strip the $ signs
     unit = quantity.unit.to_string("latex_inline")[1:-1]
@@ -796,19 +796,18 @@ def rescale_axis_units(x, from_unit, from_ctype, to_unit, loglabel=True):
         x._unit = xax_unit
     if is_rad(xax_unit):
         if loglabel:
-            xtype = "log({0})".format(get_rad(xax_unit))
+            xtype = f"log({get_rad(xax_unit)})"
         else:
-            xtype = "{0}".format(get_rad(xax_unit))
+            xtype = f"{get_rad(xax_unit)}"
+    elif loglabel and "log" in from_ctype:
+        if "_" in from_ctype:
+            xtype = r"${\rm " + from_ctype + "}$"
+        else:
+            xtype = from_ctype
     else:
-        if loglabel and "log" in from_ctype:
-            if "_" in from_ctype:
-                xtype = r"${\rm " + from_ctype + "}$"
-            else:
-                xtype = from_ctype
-        else:
-            xtype = from_ctype.replace("log(", "").replace(")", "")
-            if "_" in xtype:
-                xtype = r"${\rm " + xtype + "}$"
+        xtype = from_ctype.replace("log(", "").replace(")", "")
+        if "_" in xtype:
+            xtype = r"${\rm " + xtype + "}$"
     if to_unit is not None:
         # Make  axis of the grid into a Quantity using the cunit from the grid header
         # Get desired unit from arguments
@@ -817,19 +816,18 @@ def rescale_axis_units(x, from_unit, from_ctype, to_unit, loglabel=True):
         # the conventional symbol for the label (e.g. G_0 for Habing units)
         if is_rad(to_unit):
             if loglabel:
-                xtype = "log({0})".format(get_rad(xax_unit))
+                xtype = f"log({get_rad(xax_unit)})"
             else:
-                xtype = "{0}".format(get_rad(xax_unit))
+                xtype = f"{get_rad(xax_unit)}"
+        elif loglabel and "log" in from_ctype:
+            xtype = from_ctype
         else:
-            if loglabel and "log" in from_ctype:
-                xtype = from_ctype
-            else:
-                xtype = from_ctype.replace("log(", "").replace(")", "")
+            xtype = from_ctype.replace("log(", "").replace(")", "")
         # Convert the unit-aware grid to the desired units and set X to the value (so it's no longer a Quantity)
         x = x.to(xax_unit)
 
     # Set the axis label appropriately, use LaTeX inline formatting
-    xlabel = r"{0} [{1:latex_inline}]".format(xtype, xax_unit)
+    xlabel = rf"{xtype} [{xax_unit:latex_inline}]"
 
     return (x, xlabel)
 

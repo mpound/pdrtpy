@@ -4,11 +4,10 @@ from copy import deepcopy
 import astropy.units as u
 import corner
 import numpy as np
+import pdrtpy.pdrutils as utils
 import pytest
 from astropy.nddata import StdDevUncertainty
 from lmfit import fit_report
-
-import pdrtpy.pdrutils as utils
 from pdrtpy.measurement import Measurement
 from pdrtpy.modelset import ModelSet
 from pdrtpy.plot.excitationplot import ExcitationPlot
@@ -125,7 +124,7 @@ class TestAJPaperListings:
         p = LineRatioFit(ms, measurements=observations)
         p.run()
         # Print the fitted quantities using Python f-strings and the fit report via lmfit
-        print(f"n={p.density:.2e}\nX={utils.to('Draine',p.radiation_field):.2e}")
+        print(f"n={p.density:.2e}\nX={utils.to('Draine', p.radiation_field):.2e}")
         print(fit_report(p.fit_result[0]))
 
         # Create the plotting tool for the LineRatioPlot,
