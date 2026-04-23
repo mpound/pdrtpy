@@ -41,17 +41,16 @@ dependencies = [
 dev = [
   "coverage[toml]",
   "coverage-badge",
+  "ipdb",
+  "myst_nb",
+  "numpydoc",
   "pip-tools",
   "pre-commit",
-  "ruff",
-  "ipdb",
-  "flake8",
-  "numpydoc",
   "pytest",
   "pytest-cov",
   "pytest-xdist",
   "pytest-timeout",
-  "myst_nb",
+  "ruff",
   "sphinx",
   "sphinx-autobuild",
   "sphinx-inline-tabs",
@@ -64,6 +63,7 @@ dev = [
 nb = [
   "jupyter",
   "jupyterlab",
+  "ipympl",
 ]
 all = ["pdrtpy[nb]"]
 
@@ -101,7 +101,7 @@ cov = "pytest --cov-report=xml --cov-config=pyproject.toml --cov=pdrtpy --cov=te
 
 # Run tests across all supported version of Python
 [[tool.hatch.envs.test.matrix]]
-python = ["310", "311", "312"]
+python = ["311", "312", "313", "314"]
 
 [tool.hatch.build.targets.sdist]
 include = ["/pdrtpy", "/tests", "/bin"]
@@ -113,7 +113,9 @@ exclude = [
   "/build",
   "/docs",
   "/dist",
+  "/goals",
   "/notebooks",
+  "/scripts",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -138,48 +140,61 @@ exclude_lines = [
   "if TYPE_CHECKING:",
 ]
 
-[tool.isort]
-# See: https://pycqa.github.io/isort/docs/configuration/options/#example-pyprojecttoml
-profile = "black"
-combine_as_imports = true
-sections = [
-    "FUTURE",
-    "STDLIB",
-    "THIRDPARTY",
-    "FIRSTPARTY",
-    "LOCALFOLDER"
-]
-filter_files = true
-
-[tool.black]
-preview = true
-line-length = 120
-
 [tool.pyright]
 reportImplicitStringConcatenation = false
+
 [tool.ruff]
+line-length = 120
+src = ["pdrtpy"]
+extend-exclude = ["*.ipynb"]
+
+[tool.ruff.lint]
 select = [
-  "F",    # https://beta.ruff.rs/docs/rules/#pyflakes-f
-  "E",    # https://beta.ruff.rs/docs/rules/#error-e
-  "W",    # https://beta.ruff.rs/docs/rules/#warning-w
-  "B",    # https://beta.ruff.rs/docs/rules/#flake8-bugbear-b
-  "I",    # https://beta.ruff.rs/docs/rules/#isort-i
-  "NPY",  # https://beta.ruff.rs/docs/rules/#numpy-specific-rules-npy
-  "PD",   # https://beta.ruff.rs/docs/rules/#pandas-vet-pd
-  "RUF",  # https://beta.ruff.rs/docs/rules/#ruff-specific-rules-ruf
+  "F", # https://docs.astral.sh/ruff/rules/pyflakes-f
+  "E", # https://docs.astral.sh/ruff/rules/error-e
+  "W", # https://docs.astral.sh/ruff/rules/warning-w
+  "B", # https://docs.astral.sh/ruff/rules/flake8-bugbear-b
+  "I", # https://docs.astral.sh/ruff/rules/isort-i
+  "NPY", # https://docs.astral.sh/ruff/rules/numpy-specific-rules-npy
+  "PD", # https://docs.astral.sh/ruff/rules/pandas-vet-pd
+  "RUF", # https://docs.astral.sh/ruff/rules/ruff-specific-rules-ruf
+  "UP", # https://docs.astral.sh/ruff/rules/printf-string-formatting/
+  "S101", # https://docs.astral.sh/ruff/rules/assert/
+  "T10", # https://docs.astral.sh/ruff/rules/#flake8-debugger-t10
+  "PLR5501", # https://docs.astral.sh/ruff/rules/collapsible-else-if/
+  "PLR2044", # https://docs.astral.sh/ruff/rules/empty-comment/
+  "G010",
 ]
 fixable = ["ALL"]
-unfixable = ["B"]
 ignore = [
   "E741",  # ambiguous-variable-name
+  "RUF002", # ambiguous characters
+  "RUF052", # dummy var used
+  "PD015", # TODO: This really should be removed
+  "E501", # line too long TODO: This really should be removed
+  "NPY002", # https://docs.astral.sh/ruff/rules/numpy-legacy-random/
 ]
-line-length = 120
-src = ["pdrtpy"]#, "notebooks"]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.isort]
+combine-as-imports = true
+
+[tool.ruff.lint.per-file-ignores]
 # Ignore  in all `__init__.py` files
-"__init__.py" = ["E402", "F405", "F403"]
-"**/{tests,docs}/*" = ["E402", "B011"]
+"__init__.py" = ["ALL"]
+"**/{tests,docs,tools}/*" = ["E402", "B011", "B017", "S101"]
+"test_*.py" = ["S101"]  # Allow assert in test files
+# The stuff in the attic doesn't need to be linted at all
+"attic/**" = ["ALL"]
+
+
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore  in all `__init__.py` files
+"__init__.py" = ["ALL"]
+"**/{tests,docs,tools}/*" = ["E402", "B011", "B017", "S101"]
+"test_*.py" = ["S101"]  # Allow assert in test files
+# The stuff in the attic doesn't need to be linted at all
+"attic/**" = ["ALL"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
@@ -187,15 +202,12 @@ testpaths = ["tests", "pdrtpy", "docs"]
 filterwarnings = [
     "ignore::DeprecationWarning"
 ]
+addopts = [
+  "--timeout=300",
+]
 
-[tool.pip-tools]
-src_files = ["pyproject.toml"]
-extra = ["nb", "dev"]
-resolver = "backtracking"
-output_file= "requirements.txt"
-no_strip_extras = true
-quiet = true
-no_emit_trusted_host = true
+
+#markers = [] 
 
 [build-system]
 requires = ["hatchling"]
