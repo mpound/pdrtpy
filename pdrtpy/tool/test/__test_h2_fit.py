@@ -1,25 +1,14 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Mon Sep 15 10:28:10 2025
 
 @author: mpound
 """
 
-import astropy.units as u
-import matplotlib.pyplot as plt
-import numpy as np
 from astropy.nddata import StdDevUncertainty
-from astropy.table import Table
-from astropy.units.quantity import Quantity
-from dust_extinction.parameter_averages import G23
-from matplotlib.patches import Rectangle
-
-import pdrtpy.pdrutils as utils
 
 # test exciation fitting
 from pdrtpy.measurement import Measurement
-from pdrtpy.plot.excitationplot import ExcitationPlot
 from pdrtpy.tool.excitation import H2ExcitationFit
 
 intensity = dict()

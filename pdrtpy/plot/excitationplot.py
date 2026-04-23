@@ -35,7 +35,7 @@ class ExcitationPlot(PlotBase):
         # d is a dict of measurements
         ret = dict()
         for m in measurements:
-            _key = f'v={self._tool.molecule._transition_data.loc[m]["vu"]}'
+            _key = f"v={self._tool.molecule._transition_data.loc[m]['vu']}"
             if _key not in ret:
                 ret[_key] = []
             ret[_key].append(measurements[m])
@@ -511,7 +511,7 @@ class ExcitationPlot(PlotBase):
                 if debug:
                     self._logfile = open("/tmp/test.log", "a")
                 if debug:
-                    self._logfile.write(f"\n### event.inaxes = {event.inaxes} x,y={event.xdata,event.ydata}\n")
+                    self._logfile.write(f"\n### event.inaxes = {event.inaxes} x,y={event.xdata, event.ydata}\n")
                     self._logfile.write(f"event dict: {event.__dict__}\n")
                 if event.inaxes == self._axis[0]:  # the click must be on the left panel (map)
                     position = (int(round(event.xdata)), int(round(event.ydata)))
@@ -547,7 +547,7 @@ class ExcitationPlot(PlotBase):
                 if self._logfile is None:
                     pass
                 else:
-                    self._logfile.write("Exception {0}".format(err))
+                    self._logfile.write(f"Exception {err}")
 
             if self._logfile:
                 self._logfile.close()

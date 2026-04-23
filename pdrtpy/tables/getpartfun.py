@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Tue May  6 12:11:41 2025
 Retrieve the partition function tabulations for selected molecules from HITRAN database
@@ -7,10 +6,9 @@ See https://hitran.org/docs/iso-meta/
 @author: mpound
 """
 
+import pdrtpy.pdrutils as utils
 import wget
 from astropy.table import Table
-
-import pdrtpy.pdrutils as utils
 
 baseurl = "https://hitran.org/"
 info = "https://hitran.org/docs/iso-meta/"

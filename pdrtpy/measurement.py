@@ -575,9 +575,9 @@ class Measurement(CCDData):
         errmsg = ""
         for r in required:
             if r not in t.colnames:
-                errmsg += "{0} is a required column. ".format(r)
+                errmsg += f"{r} is a required column. "
         if errmsg != "":
-            raise Exception("Insufficient information in table to create Measurement. {0}".format(errmsg))
+            raise Exception(f"Insufficient information in table to create Measurement. {errmsg}")
 
         # check for beam parameters in table.
         # IFF all beam parameters present, they will be added to the Measurements.

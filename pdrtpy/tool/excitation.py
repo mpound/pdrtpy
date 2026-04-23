@@ -3,18 +3,14 @@ import io
 import math
 import pstats
 import warnings
-from abc import abstractmethod
 from copy import deepcopy
 
 # from scipy.interpolate import interp1d
-from typing import Union
-
 import astropy.constants as constants
 import astropy.units as u
 import numpy as np
 from astropy import log
 from astropy.nddata import Cutout2D, StdDevUncertainty
-from astropy.units.quantity import Quantity
 from emcee.pbar import get_progress_bar
 from lmfit import Parameters  # , fit_report
 from lmfit.model import Model  # , ModelResult
@@ -40,7 +36,7 @@ class BaseExcitationFit(ToolBase):
 
     """
 
-    def __init__(self, molecule: mol.BaseMolecule, measurements: Union[dict, Measurement] = None):
+    def __init__(self, molecule: mol.BaseMolecule, measurements: dict | Measurement = None):
 
         super().__init__()
         self._molecule = molecule
@@ -1006,7 +1002,6 @@ class BaseExcitationFit(ToolBase):
             mask = fitmap.mask | np.logical_not(np.isfinite(nh))
             uhn = StdDevUncertainty(np.abs(unh))
             self._j0_colden["hot"] = Measurement(nh, unit=self._cd_units, uncertainty=uhn, wcs=fitmap.wcs, mask=mask)
-            #
             self._total_colden["cold"] = self._j0_colden["cold"] * self.molecule.partition_function(self.tcold)
             self._total_colden["hot"] = self._j0_colden["hot"] * self.molecule.partition_function(self.thot)
             mask = fitmap.mask | np.logical_not(np.isfinite(opr))

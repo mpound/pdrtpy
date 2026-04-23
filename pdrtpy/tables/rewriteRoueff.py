@@ -3,7 +3,7 @@
 from astropy.constants import c, h, k_B
 from astropy.io import ascii
 
-f = open("RoueffEtAltable2.dat", "r")
+f = open("RoueffEtAltable2.dat")
 header = f.readline().split("|")
 hdvar = list()
 # branch notation key=Ju-Jl
