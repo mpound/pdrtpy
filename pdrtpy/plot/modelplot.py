@@ -272,8 +272,6 @@ class ModelPlot(PlotBase):
             "test": False,
         }
         kwargs_opts.update(kwargs)
-        if nax_clip is None:
-            nax_clip = [1000, 1e5] * u.Unit("K")
         model = self._modelset.get_model(identifier)
         self._figure, self._axis = self._plt.subplots(nrows=1, ncols=1, figsize=kwargs_opts["figsize"])
         # this code substantially copied from phasespace(). At some point
@@ -400,13 +398,13 @@ class ModelPlot(PlotBase):
             in the plot. For most models, NAXIS1 is hydrogen number density
             :math:`n_H` in :math:`{\rm cm}^{-3}`.  For ionized gas models, it is
             electron temperature :math:`T_e` in K.  Must be given as a range
-            of astropy quanitities.  Default: [10,1E7]*Unit("cm-3")
+            of astropy quanitities.  Default: [10,1E7]*Unit("cm-3") (if `nax1_clip` set to None).
         :type nax1_clip: array-like, must contain :class:`~astropy.units.Quantity`
         :param nax2_clip: The range of model parameters on NAXIS2 to
             show in the plot.  For most models, NAXIS2 is radiation field
             intensities in Habing or cgs units.  For ionized gas models, it is
             electron volume density :math:`n_e`.  Must be given as a range of
-            astropy quantities.  Default: nax1_clip=[10,1E6]*utils.habing_unit.
+            astropy quantities.  Default: nax1_clip=[10,1E6]*utils.habing_unit (if `nax2_clip` set to None).
         :type nax2_clip: array-like, must contain :class:`~astropy.units.Quantity`
         :param reciprocal: Whether or not the plot the reciprocal of the
             model on each axis.  Given as a pair of booleans.  e.g. [False,True]
