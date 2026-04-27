@@ -486,7 +486,7 @@ class ModelSet:
             self._really_add_model(identifier, model, title)
 
     def _really_add_model(self, identifier, model, title):
-        print("Adding user model %s" % identifier)
+        print(f"Adding user model {identifier}")
         if type(model) is str:
             m = Measurement.read(model, identifier=identifier)
         else:

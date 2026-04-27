@@ -16,7 +16,7 @@ from pdrtpy.plot.modelplot import ModelPlot
 from pdrtpy.tool.lineratiofit import LineRatioFit
 
 # ──────────────────────────────────────────────────────────────
-# Module-scoped fixtures (expensive – created once per test run)
+# Module-scoped fixtures (expensive - created once per test run)
 # ──────────────────────────────────────────────────────────────
 
 
@@ -250,7 +250,7 @@ class TestModelPlot:
         assert mp.figure is not None
 
     def test_intensity_wrong_unit_raises(self, mp, wk2020):
-        model = wk2020.get_model("CII_158")
+        wk2020.get_model("CII_158")
         m = Measurement(
             data=1.0,
             uncertainty=StdDevUncertainty(0.1),
@@ -310,7 +310,7 @@ class TestModelPlot:
 
 
 # ──────────────────────────────────────────────────────────────
-# LineRatioPlot – single-pixel
+# LineRatioPlot - single-pixel
 # ──────────────────────────────────────────────────────────────
 
 
@@ -352,7 +352,7 @@ class TestLineRatioPlotSinglePixel:
 
     def test_modelratio(self, lrp, single_pixel_fit):
         # Use the first ratio in the fit's model ratios
-        first_ratio = list(single_pixel_fit._modelratios.keys())[0]
+        first_ratio = next(iter(single_pixel_fit._modelratios.keys()))
         lrp.modelratio(first_ratio)
         assert lrp.figure is not None
 
@@ -414,7 +414,7 @@ class TestLineRatioPlotSinglePixel:
 
 
 # ──────────────────────────────────────────────────────────────
-# LineRatioPlot – map data
+# LineRatioPlot - map data
 # ──────────────────────────────────────────────────────────────
 
 

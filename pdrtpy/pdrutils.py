@@ -499,7 +499,7 @@ def convert_integrated_intensity(image, wavelength=None):
     if u.Unit(image.header.get("BUNIT")) != _KKMS:
         raise Exception("Image BUNIT must be 'K km/s'")
     factor = 2e5 * k_B / wavelength**3
-    print("Converting K km/s to %s using Factor = %s" % (_OBS_UNIT_, f"{factor.decompose(u.cgs.bases):+0.3E}"))
+    print(f"Converting K km/s to {_OBS_UNIT_} using Factor = {factor.decompose(u.cgs.bases):+0.3E}")
     newmap = deepcopy(image)
     value = factor.decompose(u.cgs.bases).value
     newmap.data = newmap.data * value

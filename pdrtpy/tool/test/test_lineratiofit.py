@@ -320,7 +320,7 @@ class TestRunVariants:
         m1 = Measurement(data=3.6e-4, uncertainty=StdDevUncertainty(1.2e-4), identifier="OI_63", unit=_MYUNIT)
         m2 = Measurement(data=8e-5, uncertainty=StdDevUncertainty([8e-6]), identifier="CII_158", unit=_MYUNIT)
         p = LineRatioFit(wk2020, measurements=[m1, m2])
-        with pytest.raises(Exception, match="[Nn]ot enough ratios"):
+        with pytest.raises(Exception, match=r"[Nn]ot enough ratios"):
             p.run()
 
     def test_run_emcee(self, wk2020, single_pixel_measurements):
@@ -358,7 +358,7 @@ class TestRunMasking:
 
     def test_run_mask_invalid(self, smc_ms, map_measurements):
         p = LineRatioFit(smc_ms, measurements=list(map_measurements))
-        with pytest.raises(ValueError, match="[Uu]nrecognized mask"):
+        with pytest.raises(ValueError, match=r"[Uu]nrecognized mask"):
             p.run(mask=["bogus", 1.0])
 
     def test_run_mask_ignored_for_scalar(self, wk2020, single_pixel_measurements):

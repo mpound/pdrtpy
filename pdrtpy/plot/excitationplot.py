@@ -132,7 +132,7 @@ class ExcitationPlot(PlotBase):
                 _label = "LTE"
             else:
                 _label = "$" + self._label + "$ data"
-            ec = _axis.errorbar(
+            _axis.errorbar(
                 energy,
                 np.log10(colden),
                 yerr=sigma,
@@ -161,7 +161,7 @@ class ExcitationPlot(PlotBase):
                 # print(f"LOG10(CD({key}))={np.log10(cs)}")
                 # print(f"E{key} = {ens}")
                 sigma = LOGE * es / cs
-                ec = _axis.errorbar(
+                _axis.errorbar(
                     ens,
                     np.log10(cs),
                     yerr=sigma,
@@ -514,7 +514,7 @@ class ExcitationPlot(PlotBase):
                     self._logfile.write(f"\n### event.inaxes = {event.inaxes} x,y={event.xdata, event.ydata}\n")
                     self._logfile.write(f"event dict: {event.__dict__}\n")
                 if event.inaxes == self._axis[0]:  # the click must be on the left panel (map)
-                    position = (int(round(event.xdata)), int(round(event.ydata)))
+                    position = (round(event.xdata), round(event.ydata))
                     self._marker[0].set_marker("None")
                     self._marker = self.axis[0].plot(
                         position[0],

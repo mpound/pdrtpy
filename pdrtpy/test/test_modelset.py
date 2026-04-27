@@ -21,7 +21,7 @@ class TestModelSet:
             md,
             m,
             losangle,
-        ) in zip(list(t["name"]), list(t["z"]), list(t["medium"]), list(t["mass"]), list(t["losangle"])):
+        ) in zip(list(t["name"]), list(t["z"]), list(t["medium"]), list(t["mass"]), list(t["losangle"]), strict=False):
             print(n, z, md, m, losangle)
             nodir = None
             try:

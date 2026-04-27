@@ -274,8 +274,7 @@ class BaseExcitationFit(ToolBase):
         # This may be entirely unnecessary
         for p, q in self._params.items():
             self._model.set_param_hint(p, min=q.min, max=q.max, vary=q.vary)
-        pp = self._model.make_params()
-        # pp.pretty_print()
+        self._model.make_params()
 
     def _one_component_model(
         self,
@@ -284,7 +283,7 @@ class BaseExcitationFit(ToolBase):
         n1,
         opr,
         av,
-        idx=[],
+        idx=None,
         fit_opr=False,
         fit_av=False,
         extinction_ratio=None,
@@ -312,6 +311,8 @@ class BaseExcitationFit(ToolBase):
 
         :rtype: :class:`numpy.ndarray`
         """
+        if idx is None:
+            idx = []
         idx = [int(i) for i in idx]
         # model is already in log space
         model = x * m1 + n1
@@ -349,7 +350,7 @@ class BaseExcitationFit(ToolBase):
         n2,
         opr,
         av,
-        idx=[],
+        idx=None,
         fit_opr=False,
         fit_av=False,
         extinction_ratio=None,
@@ -380,6 +381,8 @@ class BaseExcitationFit(ToolBase):
         :return: Sum of lines in log space:log10(10**(x*m1+n1) + 10**(x*m2+n2)) + log10(opr/3.0) - 0.4*extinction_ratio*av*log10(e)
         :rtype: :class:`numpy.ndarray`
         """
+        if idx is None:
+            idx = []
         # why are these coming in as floats?
         idx = [int(i) for i in idx]
         # print(f"{x=}, {m1=}, {n1=}, {m2=}, {n2=}")
@@ -661,7 +664,7 @@ class BaseExcitationFit(ToolBase):
         norm=True,
         unit=utils._CM2,
         line=True,
-        clip=-1e40 * u.Unit("cm-2"),
+        clip=None,
     ):
         r"""Compute the average column density over a spatial box.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.
 
@@ -697,6 +700,8 @@ class BaseExcitationFit(ToolBase):
                 # Cutout2D wants (ny,nx)
                 size = np.array([size[1], size[0]])
 
+        if clip is None:
+            clip = -1e40 * u.Unit("cm-2")
         clip = clip.to("cm-2")
         cdnorm = self.column_densities(norm=norm, unit=unit, line=line)
         cdmeas = dict()
@@ -1179,7 +1184,8 @@ class BaseExcitationFit(ToolBase):
         if len(_ee) == min_points:
             warnings.warn(
                 f"Number of data points is equal to number of free parameters ({min_points:d}). Fit will be"
-                " over-constrained"
+                " over-constrained",
+                stacklevel=2,
             )
         _energy = Measurement(_ee, unit="K")
         _ids = list(energy.keys())
@@ -1215,7 +1221,7 @@ class BaseExcitationFit(ToolBase):
             thot = np.array([thot])
         saveshape = tcold.shape
         if verbose:
-            print("First guess at excitation temperatures:\n T_cold = %.1f K\n T_hot = %.1f K" % (tcold, thot))
+            print(f"First guess at excitation temperatures:\n T_cold = {tcold:.1f} K\n T_hot = {thot:.1f} K")
         fmdata = np.empty(tcold.shape, dtype=object).flatten()
         tcold = tcold.flatten()
         thot = thot.flatten()

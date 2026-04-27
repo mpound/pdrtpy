@@ -37,7 +37,6 @@ energies = h.energies(line=False)
 cdl = np.squeeze(np.array([v.data for v in cd.values()]))
 logcdl = np.log10(cdl)
 el = np.squeeze(np.array(list(energies.values())))
-logcdl
 
 pw_fit = piecewise_regression.Fit(el, logcdl, n_breakpoints=1)
 pw_fit.summary()

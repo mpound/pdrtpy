@@ -208,7 +208,9 @@ class CO(BaseMolecule):  # 12C16O
             (temperature.value * u.Unit(temperature.unit)).to("K", equivalencies=u.temperature()).value
         )
         if np.nanmax(t) > self._maxQtemp:
-            warnings.warn(f"Input temperature exceeds maximum partition function temperature: {self._maxQtemp} K")
+            warnings.warn(
+                f"Input temperature exceeds maximum partition function temperature: {self._maxQtemp} K", stacklevel=2
+            )
         return np.interp(t, self._partfun_data["T"], self._partfun_data["Q"])
 
 
@@ -239,7 +241,9 @@ class C13O(BaseMolecule):  # 13CO16O
             (temperature.value * u.Unit(temperature.unit)).to("K", equivalencies=u.temperature()).value
         )
         if np.nanmax(t) > self._maxQtemp:
-            warnings.warn(f"Input temperature exceeds maximum partition function temperature: {self._maxQtemp} K")
+            warnings.warn(
+                f"Input temperature exceeds maximum partition function temperature: {self._maxQtemp} K", stacklevel=2
+            )
         return np.interp(t, self._partfun_data["T"], self._partfun_data["Q"])
 
 

@@ -510,14 +510,13 @@ class Measurement(CCDData):
         return z
 
     def __repr__(self):
-        m = "%s +/- %s %s" % (np.squeeze(self.data), np.squeeze(self.error), self.unit)
+        m = f"{np.squeeze(self.data)} +/- {np.squeeze(self.error)} {self.unit}"
         return m
 
     def __str__(self):
         # this fails for array data
         # return  "{:3.2e} +/- {:3.2e} {:s}".format(self.data,self.error,self.unit)
-        # m = "%s +/- %s %s" % (self.data,self.error,self.unit)
-        m = "%s +/- %s %s" % (np.squeeze(self.data), np.squeeze(self.error), self.unit)
+        m = f"{np.squeeze(self.data)} +/- {np.squeeze(self.error)} {self.unit}"
         return m
 
     def __format__(self, spec):
@@ -532,7 +531,7 @@ class Measurement(CCDData):
         # this does not always work
         # a = np.vectorize(spec.__mod__,otypes=[np.float64])(self.data)
         # b = np.vectorize(spec.__mod__,otypes=[np.float64])(self.error)
-        return "%s +/- %s %s" % (a, b, self.unit)
+        return f"{a} +/- {b} {self.unit}"
 
     def __getitem__(self, index):
         """Allows us to use [] to index into the data array"""
