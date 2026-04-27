@@ -128,7 +128,7 @@ class ModelPlot(PlotBase):
                     f"Identifiers of model {identifier} and supplied Measurement {meas[0].id} do not match. Plotting"
                     " anyway."
                 )
-                warnings.warn(msg)
+                warnings.warn(msg, stacklevel=2)
 
         kwargs_opts = {
             "title": ms.table.loc[identifier]["title"],
@@ -196,11 +196,11 @@ class ModelPlot(PlotBase):
         if kwargs_opts["shading"] < 0 or kwargs_opts["shading"] > 1:
             raise ValueError("Shading must be between 0 and 1 inclusive")
         ids = [m.id for m in measurements]
-        meas = dict(zip(ids, measurements))
+        meas = dict(zip(ids, measurements, strict=False))
         models = [self._modelset.get_model(i) for i in ids]
         # need to trim model grids if H2 is present
         if utils._has_H2(ids) and self._modelset.is_wk2006:
-            warnings.warn("Trimming all model grids to match H2 grid: log(n) = 1-5, log(G0) = 1-5")
+            warnings.warn("Trimming all model grids to match H2 grid: log(n) = 1-5, log(G0) = 1-5", stacklevel=2)
             utils._trim_all_to_H2(models)
         i = 0
         nratio = 0
@@ -239,7 +239,7 @@ class ModelPlot(PlotBase):
                 title="Observed " + word,
             )
 
-    def isoplot(self, identifier, plotnaxis, nax_clip=[1000, 1e5] * u.Unit("K"), **kwargs):
+    def isoplot(self, identifier, plotnaxis, nax_clip=None, **kwargs):
         """Plot lines of constant model parameter as a function of the other model parameter and a model intensity or ratio
 
         :param identifier: identifier tag for the model to plot, e.g., "OI_63/CO_21" or "CII_158"
@@ -264,8 +264,6 @@ class ModelPlot(PlotBase):
             "step": 1,
             "logx": False,
             "logy": False,
-            "title": None,
-            "grid": True,
             "measurements": None,
             "bbox_to_anchor": (1.024, 1),
             "loc": "upper left",
@@ -281,12 +279,9 @@ class ModelPlot(PlotBase):
         if plotnaxis != 1 and plotnaxis != 2:
             raise ValueError("plotnaxis must be 1 or 2")
         if plotnaxis == 1:
-            otheraxis = 2
             otherindex = 1
         if plotnaxis == 2:
-            otheraxis = 1
             otherindex = 0
-        xaxis = ["naxis2", "naxis1"]
         pindex = plotnaxis - 1
         naxis_is_log = ["log" in c for c in model.wcs.wcs.ctype]
         naxis = list(self._get_xy_from_wcs(model, quantity=True, linear=True))
@@ -322,7 +317,7 @@ class ModelPlot(PlotBase):
             bunit = bunit.to(kwargs_opts["yaxis_unit"])
             bscale = bunit.value
         if bunit != u.dimensionless_unscaled:
-            ylabel = r"{0} [{1:latex_inline}]".format(model.title, bunit.unit)
+            ylabel = rf"{model.title} [{bunit.unit:latex_inline}]"
         else:
             ylabel = model.title
         for j in xi2[:: kwargs_opts["step"]]:
@@ -331,9 +326,9 @@ class ModelPlot(PlotBase):
             else:
                 yy = bscale * model[j, 0 : len(naxis[otherindex])]
             if naxis_is_log[pindex]:
-                label = "{0:.1f}".format(np.round(np.log10(naxis[pindex][j].to(nax_clip.unit).value), 1))
+                label = f"{np.round(np.log10(naxis[pindex][j].to(nax_clip.unit).value), 1):.1f}"
             else:
-                label = "{0:.0f}".format(np.round(naxis[pindex][j].to(nax_clip.unit).value, 0))
+                label = f"{np.round(naxis[pindex][j].to(nax_clip.unit).value, 0):.0f}"
             lines.extend(self._axis.plot(naxis[otherindex], yy, label=label))
         # Format the plot in a sensible way
         self._axis.set_ylabel(ylabel)
@@ -367,7 +362,7 @@ class ModelPlot(PlotBase):
             unit1 = "[" + nax_clip.unit.to_string("latex_inline") + "]"
             handles, labels = self._axis.get_legend_handles_labels()
             phantom = [self._axis.plot([], marker="", markersize=0, ls="", lw=0)[0]] * 2
-            labels = [title1, unit1] + labels
+            labels = [title1, unit1, *labels]
             handles = phantom + lines
             leg = self._axis.legend(
                 handles,
@@ -389,9 +384,9 @@ class ModelPlot(PlotBase):
     def phasespace(
         self,
         identifiers,
-        nax1_clip=[10, 1e7] * u.Unit("cm-3"),
-        nax2_clip=[10, 1e6] * utils.habing_unit,
-        reciprocal=[False, False],
+        nax1_clip=None,
+        nax2_clip=None,
+        reciprocal=None,
         **kwargs,
     ):
         r"""Plot lines of constant density and radiation field on a ratio-ratio, ratio-intensity, or intensity-intensity map
@@ -403,13 +398,13 @@ class ModelPlot(PlotBase):
             in the plot. For most models, NAXIS1 is hydrogen number density
             :math:`n_H` in :math:`{\rm cm}^{-3}`.  For ionized gas models, it is
             electron temperature :math:`T_e` in K.  Must be given as a range
-            of astropy quanitities.  Default: [10,1E7]*Unit("cm-3")
+            of astropy quanitities.  Default: [10,1E7]*Unit("cm-3") (if `nax1_clip` set to None).
         :type nax1_clip: array-like, must contain :class:`~astropy.units.Quantity`
         :param nax2_clip: The range of model parameters on NAXIS2 to
             show in the plot.  For most models, NAXIS2 is radiation field
             intensities in Habing or cgs units.  For ionized gas models, it is
             electron volume density :math:`n_e`.  Must be given as a range of
-            astropy quantities.  Default: nax1_clip=[10,1E6]*utils.habing_unit.
+            astropy quantities.  Default: nax1_clip=[10,1E6]*utils.habing_unit (if `nax2_clip` set to None).
         :type nax2_clip: array-like, must contain :class:`~astropy.units.Quantity`
         :param reciprocal: Whether or not the plot the reciprocal of the
             model on each axis.  Given as a pair of booleans.  e.g. [False,True]
@@ -461,12 +456,18 @@ class ModelPlot(PlotBase):
         }
 
         kwargs_opts.update(kwargs)
+        if nax1_clip is None:
+            nax1_clip = [10, 1e7] * u.Unit("cm-3")
+        if nax2_clip is None:
+            nax2_clip = [10, 1e6] * utils.habing_unit
+        if reciprocal is None:
+            reciprocal = [False, False]
         # various input checks
         if len(list(identifiers)) != 2:
             raise ValueError("Length of identifiers list must be exactly 2")
         models = [self._modelset.get_model(i) for i in identifiers]
         mids = [m.id for m in models]
-        mdict = dict(zip(mids, models))
+        mdict = dict(zip(mids, models, strict=False))
         if kwargs_opts["measurements"] is not None:
             for m in kwargs_opts["measurements"]:
                 if type(m) is not Measurement:
@@ -513,7 +514,7 @@ class ModelPlot(PlotBase):
             if x_is_log:
                 label = np.round(np.log10(xlin[j].to(nax1_clip.unit).value), 1)
             else:
-                label = "{0:.0f}".format(np.round(xlin[j].to(nax1_clip.unit).value, 0))
+                label = f"{np.round(xlin[j].to(nax1_clip.unit).value, 0):.0f}"
             if models[0].unit == "":
                 m0label = models[0].title
             else:
@@ -540,7 +541,7 @@ class ModelPlot(PlotBase):
             if y_is_log:
                 label = np.round(np.log10(ylin[j].to(nax2_clip.unit).value), 1)
             else:
-                label = "{0:.0f}".format(np.round(ylin[j].to(nax2_clip.unit).value, 0))
+                label = f"{np.round(ylin[j].to(nax2_clip.unit).value, 0):.0f}"
             if reciprocal[0]:
                 xx = 1 / models[0][j, xi2[0] : xi2[-1] + 1]
             else:
@@ -656,20 +657,20 @@ class ModelPlot(PlotBase):
             if diff == 0:
                 labels.insert(lN, unit2)
                 labels.insert(lN, title2)
-                labels = [title1, unit1] + labels
+                labels = [title1, unit1, *labels]
                 linesN = phantom + linesN
                 linesG = phantom + linesG
             elif diff > 0:  # more densities than radiation fields
                 labels.insert(lN, unit2)
                 labels.insert(lN, title2)
-                labels = [title1, unit1] + labels + blank
+                labels = [title1, unit1, *labels, *blank]
                 linesN = phantom + linesN
                 linesG = phantom + linesG + phantom2
             elif diff < 0:  # more radiation fields than densities
                 labels = labels[0:lN] + blank + labels[lN:]
                 labels.insert(lN + adiff, unit2)
                 labels.insert(lN + adiff, title2)
-                labels = [title1, unit1] + labels
+                labels = [title1, unit1, *labels]
                 linesN = phantom + linesN + phantom2
                 linesG = phantom + linesG
             handles = linesN + linesG
@@ -783,7 +784,7 @@ class ModelPlot(PlotBase):
             else:
                 k = data[0, :, :]
         else:
-            raise Exception("Unexpected NAXIS value: %d" % _naxis)
+            raise Exception(f"Unexpected NAXIS value: {_naxis:d}")
 
         km = ma.masked_invalid(k)
         if getattr(k, "mask", None) is not None:
@@ -937,7 +938,7 @@ class ModelPlot(PlotBase):
             warnings.resetwarnings()
 
             if kwargs_opts["label"]:
-                drawn = self._axis[axidx].clabel(contourset, contourset.levels, inline=True, fmt="%1.2e")
+                self._axis[axidx].clabel(contourset, contourset.levels, inline=True, fmt="%1.2e")
 
         if kwargs_opts["title"] is not None and not kwargs_opts["legend"]:
             self._axis[axidx].set_title(kwargs_opts["title"])
@@ -966,18 +967,18 @@ class ModelPlot(PlotBase):
                 # run into issues with incrementing of jj interfering with colorcounter.
                 colors = [kwargs_opts["meas_color"][jj]] * mlen
                 if kwargs_opts["shading"] != 0:
-                    cset = self._axis[axidx].contourf(
+                    self._axis[axidx].contourf(
                         x.value, y.value, k.data, levels=m.levels, colors=colors, alpha=kwargs_opts["shading"]
                     )
                     # Add extra call to plot contour because savefig("file.pdf")
                     # gets zorder of shading vs. contour wrong and contour lines
                     # don't show up. Only a bug when output is pdf. Harumph.
                     # See https://github.com/mpound/pdrtpy/issues/23
-                    cset2 = self._axis[axidx].contour(
+                    self._axis[axidx].contour(
                         x.value, y.value, k.data, levels=[m.levels[1]], colors=colors, alpha=kwargs_opts["shading"]
                     )
                 else:
-                    cset = self._axis[axidx].contour(
+                    self._axis[axidx].contour(
                         x.value, y.value, k.data, levels=m.levels, linestyles=lstyles, colors=colors
                     )
                 jj = jj + 1

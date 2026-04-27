@@ -12,7 +12,7 @@ from .measurement import Measurement
 from .pdrutils import _OBS_UNIT_, get_table, model_dir
 
 
-class ModelSet(object):
+class ModelSet:
     """Class for computed PDR Model Sets. :class:`ModelSet` provides interface to a directory containing the model FITS files and the ability to query details about.
 
     :param name: identifying name, e.g., 'wk2006'
@@ -84,7 +84,7 @@ class ModelSet(object):
         possible = dict()
         if name not in self._all_models["name"]:
             raise ValueError(
-                f'Unrecognized PDR model code {name:s}. Choices  are: {set(list(self._all_models["name"]))}'
+                f"Unrecognized PDR model code {name:s}. Choices  are: {set(list(self._all_models['name']))}"
             )
         if np.all(self._all_models.loc[name]["mass"].mask):
             matching_rows = np.where(
@@ -117,7 +117,7 @@ class ModelSet(object):
                 possible[j] = sorted(set(np.array([possible[j]])))
 
         if mass is None and possible["mass"] is not None:
-            raise ValueError(f'mass value is required for model {name:s}. Allowed values are {possible["mass"]}')
+            raise ValueError(f"mass value is required for model {name:s}. Allowed values are {possible['mass']}")
         if matching_rows[0].size == 0:
             msg = (
                 f"Requested ModelSet not found in {name:s}. Check your input values.  Allowed z are {possible['z']}. "
@@ -378,11 +378,10 @@ class ModelSet(object):
             else:
                 unit = self._default_unit["intensity"]
                 modeltype = "intensity"  # this is wrong for emissivity modeltypes
+        elif unit == u.dimensionless_unscaled:
+            modeltype = "ratio"
         else:
-            if unit == u.dimensionless_unscaled:
-                modeltype = "ratio"
-            else:
-                modeltype = "intensity"
+            modeltype = "intensity"
         _model = Measurement.read(_thefile, title=_title, unit=unit, identifier=identifier)
         # if _model.unit=="":
         #    _model.unit = u.Unit("adu")#self._default_unit["ratio"]
@@ -487,7 +486,7 @@ class ModelSet(object):
             self._really_add_model(identifier, model, title)
 
     def _really_add_model(self, identifier, model, title):
-        print("Adding user model %s" % identifier)
+        print(f"Adding user model {identifier}")
         if type(model) is str:
             m = Measurement.read(model, identifier=identifier)
         else:
@@ -588,7 +587,7 @@ class ModelSet(object):
     def _set_identifiers(self):
         """make a useful table of identifiers of lines covered by ratios in this ModelSet"""
         # remove the single line intensity models from the list.
-        matching_rows = np.where((self._table["denominator"] != "1"))[0]
+        matching_rows = np.where(self._table["denominator"] != "1")[0]
         n = deepcopy(self._table["numerator"][matching_rows])
         n.name = "ID"
         d = deepcopy(self._table["denominator"][matching_rows])

@@ -4,11 +4,10 @@ from copy import deepcopy
 import astropy.units as u
 import corner
 import numpy as np
+import pdrtpy.pdrutils as utils
 import pytest
 from astropy.nddata import StdDevUncertainty
 from lmfit import fit_report
-
-import pdrtpy.pdrutils as utils
 from pdrtpy.measurement import Measurement
 from pdrtpy.modelset import ModelSet
 from pdrtpy.plot.excitationplot import ExcitationPlot
@@ -44,8 +43,8 @@ class TestAJPaperListings:
         # Example of how to fetch a given model, the [OI] 63 micron/[CII] 158 micron intensity ratio.
         # The returned model type is pdrtpy.measurement.Measurement.
 
-        model = ms.get_model("OI_63/CII_158")
-        modelkt = mskt.get_model("OI_63/CII_158")
+        ms.get_model("OI_63/CII_158")
+        mskt.get_model("OI_63/CII_158")
 
         # Find all the models that use some combination of CO(J=1-0), [C II] 158 micron,
         # [O I] 145 micron,  and far-infrared intensity. This example gets both intensity
@@ -125,7 +124,7 @@ class TestAJPaperListings:
         p = LineRatioFit(ms, measurements=observations)
         p.run()
         # Print the fitted quantities using Python f-strings and the fit report via lmfit
-        print(f"n={p.density:.2e}\nX={utils.to('Draine',p.radiation_field):.2e}")
+        print(f"n={p.density:.2e}\nX={utils.to('Draine', p.radiation_field):.2e}")
         print(fit_report(p.fit_result[0]))
 
         # Create the plotting tool for the LineRatioPlot,
@@ -204,7 +203,7 @@ class TestAJPaperListings:
         # Get the input filenames of the FITS files in the testdata directory
         # utils.get_testdata() is a special method to locate files there.
         # These are maps from Jameson et al 2018.
-        print("Test FITS files are in: %s" % utils.testdata_dir())
+        print(f"Test FITS files are in: {utils.testdata_dir()}")
         cii_flux = utils.get_testdata("n22_cii_flux.fits")  # [C II] flux
         cii_err = utils.get_testdata("n22_cii_error.fits")  # [C II] error
         oi_flux = utils.get_testdata("n22_oi_flux.fits")  # [O I] flux

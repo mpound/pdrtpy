@@ -3,10 +3,9 @@ import numpy as np
 import pytest
 from astropy.constants import c, h
 from astropy.nddata import StdDevUncertainty
-from scipy.optimize import curve_fit
-
 from pdrtpy.measurement import Measurement
 from pdrtpy.tool.h2excitation import H2ExcitationFit
+from scipy.optimize import curve_fit
 
 
 # Regression test for issue 191
@@ -38,7 +37,7 @@ class TestExcitation:
             m = Measurement(
                 data=Jfluxes_pdrtpy_demo[J],
                 uncertainty=StdDevUncertainty(Jerrs_pdrtpy_demo[J]),
-                identifier="H200S{}".format(J),
+                identifier=f"H200S{J}",
                 unit="erg cm-2 s-1 sr-1",
             )
             print("Input for J =", J, m)

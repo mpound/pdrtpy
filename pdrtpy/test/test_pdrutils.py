@@ -1,15 +1,12 @@
 """Tests for pdrutils utility functions"""
 
-from copy import deepcopy
-
 import astropy.units as u
 import numpy as np
 import numpy.ma as ma
+import pdrtpy.pdrutils as utils
 import pytest
 from astropy.nddata import StdDevUncertainty
 from astropy.wcs import WCS
-
-import pdrtpy.pdrutils as utils
 from pdrtpy.measurement import Measurement
 
 # ──────────────────────────────────────────────────────────────
@@ -297,8 +294,8 @@ class TestGetXYFromWCS:
         assert np.all(np.isfinite(y))
 
     def test_linear_space(self):
-        x_lin, y_lin = utils.get_xy_from_wcs(self.model, linear=True)
-        x_log, y_log = utils.get_xy_from_wcs(self.model, linear=False)
+        x_lin, _y_lin = utils.get_xy_from_wcs(self.model, linear=True)
+        x_log, _y_log = utils.get_xy_from_wcs(self.model, linear=False)
         # linear values should be larger than log values for typical grid
         assert np.nanmax(x_lin) >= np.nanmax(x_log)
 
