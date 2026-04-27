@@ -13,13 +13,10 @@ on:
   workflow_dispatch:  # needed for "Run" button to show up in action
 env:
   FORCE_COLOR: "1" # Make tools pretty.
-  PIP_DISABLE_PIP_VERSION_CHECK: "1"
-#  PIP_NO_PYTHON_VERSION_WARNING: "1"
 
 jobs:
   tests:
     runs-on: ${{ matrix.os }}
-
     strategy:
       # Ensure that if even if a build in the matrix fails, the others continue
       fail-fast: false
@@ -27,66 +24,62 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
         python-version: [ "3.11", "3.12", "3.13", "3.14"]
     steps:
-      - uses: actions/checkout@v4
-      - if: ${{ runner.os != 'Windows' }}
-        name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v6
         with:
-          python-version: ${{ matrix.python-version }}
-          # Enable caching of pip packages between workflow jobs. This can speed things up dramatically, _if_
-          # jobs are executed fairly close together in time
-          # See: https://github.com/actions/setup-python/blob/main/docs/advanced-usage.md#caching-packages
-          cache: 'pip'
-          cache-dependency-path: 'requirements.txt'
-      - if: ${{ runner.os == 'Windows' }}
-        name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+          fetch-depth: 1
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v7
         with:
+          version: 0.9.17 # Update this occasionally to stay up to date!
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
-        run: |
-          # Install requirements, as compiled by pip-compile
-          pip install -r requirements.txt
-          # Install pdrtpy itself, in editable mode (which is required to avoid breaking the caching mechanism above)
-          pip install -e .[all]
-      - name: Test with pytest and run coverage
+          enable-cache: true
+      - name: Install the project
+        run: uv sync --all-extras --dev
+      - name: Test with pytest
+        env:
+          COVERAGE_FILE: coverage.${{ matrix.os }}.${{ matrix.python-version }}
         run: |
           # Write coverage data files, namespaced using matrix info
-          coverage run --data-file="coverage.${{ matrix.os }}.${{ matrix.python-version }}" -m pytest
+          # Run all tests including slow ones
+          uv run pytest --numprocesses auto --cov=pdrtpy  --timeout=0
       - name: Upload coverage data
         # Upload only ubuntu results, since we are only running the coverage step on ubuntu
         if: matrix.os == 'ubuntu-latest'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage.${{ matrix.os }}.${{ matrix.python-version }}
-          path: "coverage.ubuntu-latest*"
+          path: coverage.ubuntu-latest*
   coverage:
     needs: tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v6
         with:
-          python-version: "3.10"
-          cache: pip
-      - run: pip install --upgrade coverage[toml]
-      - uses: actions/download-artifact@v4
+          fetch-depth: 1
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: 0.9.17 # Update this occasionally to stay up to date!
+          enable-cache: true
+      - name: Install the project
+        run: uv sync --all-extras --dev
+      - uses: actions/download-artifact@v8
         with:
           pattern: coverage.*
           path: coverage-data
           merge-multiple: true
       - name: Combine coverage
         run: |
-          coverage combine coverage-data/coverage.*
-          coverage html --skip-covered --skip-empty
+          uv run coverage combine coverage-data/coverage.*
+          uv run coverage html --skip-covered --skip-empty
 
           # Report and write to summary.
-          coverage report | sed 's/^/    /' >> $GITHUB_STEP_SUMMARY
+          uv run coverage report | sed 's/^/    /' >> $GITHUB_STEP_SUMMARY
 
           # Report again and fail if under 100%.
           # coverage report --fail-under=100
       - name: Upload HTML report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: html-report
           path: htmlcov

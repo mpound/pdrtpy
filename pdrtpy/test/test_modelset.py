@@ -2,9 +2,8 @@
 import os
 from copy import deepcopy
 
-import pytest
-
 import pdrtpy.pdrutils as utils
+import pytest
 from pdrtpy.modelset import ModelSet
 
 
@@ -22,7 +21,7 @@ class TestModelSet:
             md,
             m,
             losangle,
-        ) in zip(list(t["name"]), list(t["z"]), list(t["medium"]), list(t["mass"]), list(t["losangle"])):
+        ) in zip(list(t["name"]), list(t["z"]), list(t["medium"]), list(t["mass"]), list(t["losangle"]), strict=False):
             print(n, z, md, m, losangle)
             nodir = None
             try:
@@ -59,7 +58,7 @@ class TestModelSet:
         c.header["HISTORY"] = "Computed arithmetically from (CII_158/CO_1110)"
         c.header["DATE"] = utils.now()  # the current time and date
         # print(c.header)
-        ms.add_model(identifier="CII_158/CO_1110", model=c, title="[C II] 158 $\mu$m / CO(J=11-10)")
+        ms.add_model(identifier="CII_158/CO_1110", model=c, title=r"[C II] 158 $\mu$m / CO(J=11-10)")
 
 
 class TestModelSetValidation:

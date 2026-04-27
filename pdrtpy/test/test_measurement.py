@@ -3,10 +3,9 @@ import os
 
 import astropy.units as u
 import numpy as np
+import pdrtpy.pdrutils as utils
 import pytest
 from astropy.nddata import StdDevUncertainty
-
-import pdrtpy.pdrutils as utils
 from pdrtpy.measurement import Measurement
 
 
@@ -28,7 +27,7 @@ class TestMeasurement:
             self.q.append(m)
 
     def _check_title_card(self, a, b, op, c):
-        return c.header["TITLE"] == f'{a.header["TITLE"]}{op}{b.header["TITLE"]}'
+        return c.header["TITLE"] == f"{a.header['TITLE']}{op}{b.header['TITLE']}"
 
     def test_arithmetic(self):
         print("Measurement Unit Test")
@@ -95,7 +94,7 @@ class TestMeasurement:
     def test_read_write(self):
         # Get the input filenames of the FITS files in the testdata directory
         # These are maps from Jameson et al 2018.
-        print("Test FITS files are in: %s" % utils.testdata_dir())
+        print(f"Test FITS files are in: {utils.testdata_dir()}")
         cii_flux = utils.get_testdata("n22_cii_flux.fits")  # [C II] flux
         cii_err = utils.get_testdata("n22_cii_error.fits")  # [C II] error
         oi_flux = utils.get_testdata("n22_oi_flux.fits")  # [O I] flux
@@ -207,8 +206,11 @@ class TestMeasurementGetPixel:
 
     @pytest.fixture(autouse=True)
     def setup(self):
-        cii_combined = utils.testdata_dir() + "n22_cii_flux_error.fits"
-        self.m = Measurement.read(cii_combined, identifier="CII_158")
+        # Read the flux-only file directly. Reading the combined flux+error file
+        # produced by test_read_write would race with that test on Windows, where
+        # memmap holds a file lock that blocks the writer's overwrite.
+        cii_file = utils.get_testdata("n22_cii_flux.fits")
+        self.m = Measurement.read(cii_file, identifier="CII_158")
 
     def test_get_pixel_returns_tuple(self):
         crval = self.m.wcs.wcs.crval

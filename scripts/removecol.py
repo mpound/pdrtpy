@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 import argparse
 import glob
-import os
 import sys
 from pathlib import Path
 
@@ -27,12 +26,11 @@ for a in dirs:
     print(path)
     if path.exists():
         t = Table.read(path, format="ascii.ipac")
+    # read from template if provided
+    elif args.template is None:
+        raise ValueError(f"Must provide template file since {path} doesn't exists yet")
     else:
-        # read from template if provided
-        if args.template is None:
-            raise ValueError(f"Must provide template file since {path} doesn't exists yet")
-        else:
-            t = Table.read(args.template, format="ascii.ipac")
+        t = Table.read(args.template, format="ascii.ipac")
     if "avperp" in t.colnames:
         t.remove_column("avperp")
         t.write(path, format="ascii.ipac", overwrite=True)

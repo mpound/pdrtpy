@@ -7,15 +7,11 @@
 # Also https://docs.bokeh.org/en
 # especially for coloring and style
 
-import warnings
 from copy import deepcopy
 
 import astropy.units as u
-import astropy.wcs as wcs
-import numpy as np
 import scipy.stats as stats
 from astropy import log
-from astropy.units import UnitsWarning
 from matplotlib.lines import Line2D
 
 from .. import pdrutils as utils
@@ -49,7 +45,7 @@ class LineRatioPlot(PlotBase):
         self._ratiocolor = []
 
     def modelintensity(self, id, **kwargs):
-        """Plot one of the model intensities
+        r"""Plot one of the model intensities
 
         :param id: the intensity identifier, such as `CO_32``.
         :type id: str
@@ -68,7 +64,7 @@ class LineRatioPlot(PlotBase):
         self._axis = self._modelplot.axis
 
     def modelratio(self, id, **kwargs):
-        """Plot one of the model ratios
+        r"""Plot one of the model ratios
 
         :param id: the ratio identifier, such as ``CII_158/CO_32``.
         :type id: str
@@ -129,7 +125,7 @@ class LineRatioPlot(PlotBase):
 
         tunit = u.Unit(kwargs_opts["units"])
         if kwargs_opts["title"] is None:
-            kwargs_opts["title"] = r"n [{0:latex_inline}]".format(tunit)
+            kwargs_opts["title"] = rf"n [{tunit:latex_inline}]"
         self._plot(self._tool._density, **kwargs_opts)
 
     def radiation_field(self, **kwargs):
@@ -155,13 +151,13 @@ class LineRatioPlot(PlotBase):
         if kwargs_opts["title"] is None:
             rad_title = utils.get_rad(kwargs_opts["units"])
             tunit = u.Unit(kwargs_opts["units"])
-            kwargs_opts["title"] = r"{0} [{1:latex_inline}]".format(rad_title, tunit)
+            kwargs_opts["title"] = rf"{rad_title} [{tunit:latex_inline}]"
 
         self._plot(self._tool.radiation_field, **kwargs_opts)
 
     # @TODO refactor this method with reduced_chisq()
     def chisq(self, **kwargs):
-        """Plot the :math:`\chi^2` map that was computed by the
+        r"""Plot the :math:`\chi^2` map that was computed by the
         :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
 
         """
@@ -193,23 +189,11 @@ class LineRatioPlot(PlotBase):
         if self._tool.has_maps:
             data = self._tool.chisq(min=True)
             if "title" not in kwargs:
-                kwargs_opts["title"] = r"$\chi^2$ (dof=%d)" % self._tool._dof
+                kwargs_opts["title"] = rf"$\chi^2$ (dof={self._tool._dof:d})"
             self._plot(data, **kwargs_opts)
         else:
             data = self._tool.chisq(min=False)
             self._modelplot._plot_no_wcs(data, header=None, **kwargs_opts)
-            # Put a crosshair where the chisq minimum is.
-            if False:
-                # To do this we first get the array index of the minimum
-                # then use WCS to translate to world coordinates.
-                [row, col] = np.where(self._tool._chisq == self._tool._chisq_min.value)
-                mywcs = wcs.WCS(data.header)
-                # Suppress WCS warning about 1/cm3 not being FITS
-                warnings.simplefilter("ignore", category=UnitsWarning)
-                logn, logrf = mywcs.array_index_to_world(row, col)
-                warnings.resetwarnings()
-                n = (10 ** logn.value[0]) * u.Unit(logn.unit.to_string())
-                rf = (10 ** logrf.value[0]) * u.Unit(logrf.unit.to_string())
             # since the minimum can now be between pixels, we use the value
             # of radiation field and density directly.  (Why didn't we do this before?)
             if kwargs_opts["xaxis_unit"] is not None:
@@ -224,19 +208,22 @@ class LineRatioPlot(PlotBase):
             # print("Plot x,y %s,%s"%(x,y))
 
             if kwargs_opts["title"] is None:
-                kwargs_opts["title"] = r"$\chi^2$ (dof=%d)" % self._tool._dof
-            label = r"$\chi_{min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)" % (self._tool._chisq_min.value[0], x[0], y[0])
+                kwargs_opts["title"] = rf"$\chi^2$ (dof={self._tool._dof:d})"
+            label = (
+                rf"$\chi_{{min}}^2$ = {self._tool._chisq_min.value[0]:.2g}"
+                rf" @ (n,FUV) = ({x[0]:.2g},{y[0]:.2g})"
+            )
             self._modelplot._axis[0].scatter(x, y, c="r", marker="+", s=200, linewidth=2, label=label)
             # handle legend locally
             if kwargs_opts["legend"]:
-                legend = self._modelplot._axis[0].legend(
+                self._modelplot._axis[0].legend(
                     title=kwargs_opts["title"], bbox_to_anchor=kwargs_opts["bbox_to_anchor"], loc=kwargs_opts["loc"]
                 )
             self._figure = self._modelplot.figure
             self._axis = self._modelplot.axis
 
     def reduced_chisq(self, **kwargs):
-        """Plot the reduced :math:`\chi^2` map that was computed by the
+        r"""Plot the reduced :math:`\chi^2` map that was computed by the
         :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
 
         """
@@ -264,7 +251,7 @@ class LineRatioPlot(PlotBase):
 
         if self._tool.has_maps:
             if "title" not in kwargs:
-                kwargs_opts["title"] = r"$\chi_\nu^2$ (dof=%d)" % self._tool._dof
+                kwargs_opts["title"] = rf"$\chi_\nu^2$ (dof={self._tool._dof:d})"
             data = self._tool.reduced_chisq(min=True)
             self._plot(data, **kwargs_opts)
             # doesn't make sense to point out minimum chisq on a spatial-spatial map,
@@ -273,26 +260,6 @@ class LineRatioPlot(PlotBase):
             data = self._tool.reduced_chisq(min=False)
 
             self._modelplot._plot_no_wcs(data, header=None, **kwargs_opts)
-            # Put a crosshair where the chisq minimum is.
-            if False:
-                # To do this we first get the array index of the minimum
-                # then use WCS to translate to world coordinates.
-                [row, col] = np.where(self._tool._reduced_chisq == self._tool._reduced_chisq_min.value)
-                mywcs = wcs.WCS(data.header)
-                # Suppress WCS warning about 1/cm3 not being FITS
-                warnings.simplefilter("ignore", category=UnitsWarning)
-                logn, logrf = mywcs.array_index_to_world(row, col)
-                warnings.resetwarnings()
-                # logn, logrf are Quantities of the log(density) and log(radiation field),
-                # respectively.  The model default units are cm^-2 and erg/s/cm^-2.
-                # These must be converted to plot units based on user input
-                # xaxis_unit and yaxis_unit.
-                # Note: multiplying by n.unit causes the ValueError:
-                # "The unit '1/cm3' is unrecognized, so all arithmetic operations with it are invalid."
-                # Yet by all other measures this appears to be a valid unit.
-                # The workaround is to us to_string() method.
-                n = (10 ** logn.value[0]) * u.Unit(logn.unit.to_string())
-                rf = (10 ** logrf.value[0]) * u.Unit(logrf.unit.to_string())
             # since the minimum can now be between pixels, we use the value
             # of radiation field and density directly.  (Why didn't we do this before?)
             if kwargs_opts["xaxis_unit"] is not None:
@@ -305,26 +272,27 @@ class LineRatioPlot(PlotBase):
                 y = self._tool._radiation_field.value
             # print("Plot x,y %s,%s"%(x,y))
             if kwargs_opts["title"] is None:
-                kwargs_opts["title"] = r"$\chi_\nu^2$ (dof=%d)" % self._tool._dof
-            label = r"$\chi_{\nu,min}^2$ = %.2g @ (n,FUV) = (%.2g,%.2g)" % (
-                self._tool._reduced_chisq_min.value[0],
-                x[0],
-                y[0],
+                kwargs_opts["title"] = rf"$\chi_\nu^2$ (dof={self._tool._dof:d})"
+            label = (
+                rf"$\chi_{{\nu,min}}^2$ = {self._tool._reduced_chisq_min.value[0]:.2g}"
+                rf" @ (n,FUV) = ({x[0]:.2g},{y[0]:.2g})"
             )
             self._modelplot.axis[0].scatter(x, y, c="r", marker="+", s=200, linewidth=2, label=label)
             # handle legend locally
             if kwargs_opts["legend"]:
-                legend = self._modelplot.axis[0].legend(
+                self._modelplot.axis[0].legend(
                     title=kwargs_opts["title"], bbox_to_anchor=kwargs_opts["bbox_to_anchor"], loc=kwargs_opts["loc"]
                 )
             self._figure = self._modelplot.figure
             self._axis = self._modelplot.axis
 
-    def show_both(self, units=["Habing", "cm^-3"], **kwargs):
+    def show_both(self, units=None, **kwargs):
         """Plot both radiation field and volume density maps computed by the
         :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool in a 1x2 panel subplot. Default units: ['Habing','cm^-3']
         """
 
+        if units is None:
+            units = ["Habing", "cm^-3"]
         _index = [1, 2]
         _reset = [True, False]
 
@@ -354,7 +322,7 @@ class LineRatioPlot(PlotBase):
         return (rf, d)
 
     def confidence_intervals(self, **kwargs):
-        """Plot the confidence intervals from the :math:`\chi^2` map computed by the
+        r"""Plot the confidence intervals from the :math:`\chi^2` map computed by the
         :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool. Default levels:  [50., 68., 80., 95., 99.]
 
         **Currently only works for single-pixel Measurements**
@@ -438,7 +406,7 @@ class LineRatioPlot(PlotBase):
                 kwargs_opts["measurements"] = [utils.convert_if_necessary(m)]
                 self._modelplot._plot_no_wcs(_models[i], header=None, colorcounter=i, **kwargs_opts)
                 i = i + 1
-            km = kwargs_opts.pop("measurements")
+            kwargs_opts.pop("measurements")
         # for m in _measurements:
         #    print("A ",type(m))
 
@@ -523,7 +491,6 @@ class LineRatioPlot(PlotBase):
             axidx = kwargs_opts["index"] - 1
             if kwargs_opts["index"] > 1:
                 kwargs_opts["reset"] = False
-            m = self._tool._model_files_used[key]
             kwargs_opts["measurements"] = [self._tool._observedratios[key]]
             self._modelplot._plot_no_wcs(val, header=None, **kwargs_opts)
             self._axis = self._modelplot._axis

@@ -1,4 +1,3 @@
-from abc import ABC
 from copy import copy, deepcopy
 
 # import astropy.version
@@ -22,7 +21,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from .. import pdrutils as utils
 
 
-class PlotBase(ABC):
+class PlotBase:
     """Base class for plotting.
 
     :param tool:  Reference to a :mod:`~pdrtpy.tool` object or `None`.  This is used for classes that inherit from PlotBase and are coupled to a specific tool, e.g. :class:`~pdrtpy.plot.LineRatioPlot` and :class:`~pdrtpy.tool.LineRatioFit`.
@@ -111,7 +110,7 @@ class PlotBase(ABC):
         else:
             raise ValueError("steps must be 'lin' or 'log'")
         if verbose:
-            print("Computed %d contour autolevels: %s" % (numlevels, levels))
+            print(f"Computed {numlevels:d} contour autolevels: {levels}")
         return levels
 
     @property
@@ -145,7 +144,7 @@ class PlotBase(ABC):
         :type fontdict: dict
         :param **kwargs: Other miscellaneous :class:`~matplotlib.text.Text` parameters.
         """
-        n = self._plt.text(x, y, s, fontdict, **kwargs)
+        self._plt.text(x, y, s, fontdict, **kwargs)
 
     def _zscale(self, image, vmin, vmax, stretch, contrast=0.25):
         """Normalization object using Zscale algorithm
@@ -194,9 +193,9 @@ class PlotBase(ABC):
         if isinstance(norm, str):
             norm = norm.lower()
             if norm not in self._valid_norms:
-                raise ValueError("Unrecognized normalization %s. Valid values are %s" % (norm, self._valid_norms))
+                raise ValueError(f"Unrecognized normalization {norm}. Valid values are {self._valid_norms}")
         if stretch not in self._valid_stretch:
-            raise ValueError("Unrecognized stretch %s. Valid values are %s" % (stretch, self._valid_stretch))
+            raise ValueError(f"Unrecognized stretch {stretch}. Valid values are {self._valid_stretch}")
         # print("norm cut at %.1e %.1e"%(vmin,vmax))
         if norm == "simple":
             # astropy made a non-backwards compatible argument name change.
@@ -283,7 +282,7 @@ class PlotBase(ABC):
     def _plot(self, data, **kwargs):
         """generic plotting method used by other plot methods"""
 
-        test = kwargs.pop("test", False)
+        kwargs.pop("test", False)
         kwargs_plot = {"show": "data"}  # or 'mask' or 'error'
 
         kwargs_opts = {
@@ -331,7 +330,7 @@ class PlotBase(ABC):
             else:
                 k = _data[0, :, :]
         else:
-            raise Exception("Unexpected model naxis: %d" % self._tool._modelnaxis)
+            raise Exception(f"Unexpected model naxis: {self._tool._modelnaxis:d}")
 
         km = ma.masked_invalid(k)
         if getattr(k, "mask", None) is not None:

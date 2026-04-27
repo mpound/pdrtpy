@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Wed Feb 26 16:01:56 2025
 
@@ -11,7 +10,6 @@ Created on Wed Feb 26 16:01:56 2025
 import pytest
 from astropy.nddata import StdDevUncertainty
 from dust_extinction.parameter_averages import G23
-
 from pdrtpy.measurement import Measurement
 from pdrtpy.tool.excitation import H2ExcitationFit
 

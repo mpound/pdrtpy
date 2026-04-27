@@ -1,6 +1,5 @@
 import cProfile
 import io
-import os
 import pstats
 import warnings
 from concurrent.futures import ProcessPoolExecutor, as_completed
@@ -21,7 +20,6 @@ from astropy.table import Column, Table
 from lmfit import Minimizer, Parameters  # , fit_report
 from scipy.interpolate import interpn
 from scipy.optimize import least_squares as _scipy_least_squares
-from scipy.sparse import issparse as _issparse
 
 from pdrtpy.pbar import get_progress_bar
 
@@ -49,7 +47,7 @@ def _init_worker(model_points, model_values):
     global _worker_model_interps
     _worker_model_interps = [
         RegularGridInterpolator(pts, vals, method="linear", bounds_error=True)
-        for pts, vals in zip(model_points, model_values)
+        for pts, vals in zip(model_points, model_values, strict=False)
     ]
 
 
@@ -305,7 +303,7 @@ class LineRatioFit(ToolBase):
             else:
                 return np.all([m.header[kw] == s1 for m in d.values()])
         except KeyError:
-            print("WARNING: %s keyword not present in all Measurements" % kw)
+            print(f"WARNING: {kw} keyword not present in all Measurements")
             return False
 
     def _check_measurement_shapes(self):
@@ -381,13 +379,13 @@ class LineRatioFit(ToolBase):
             if self.radiation_field_unit.to_string() == "":
                 try:
                     self.radiation_field_unit = u.Unit(self._modelratios[k].header["CUNIT2"])
-                except KeyError:
+                except KeyError as err:
                     raise Exception(
-                        "Keyword CUNIT2 is required in file %s FITS header to describe units of interstellar radiation"
-                        " field" % self._model_files_used[k]
-                    )
+                        f"Keyword CUNIT2 is required in file {self._model_files_used[k]} FITS header to describe units"
+                        " of interstellar radiation field"
+                    ) from err
         if not self._check_model_shapes():
-            warnings.warn("Trimming all model grids to match H2 grid: log(n) = 1-5, log(G0) = 1-5")
+            warnings.warn("Trimming all model grids to match H2 grid: log(n) = 1-5, log(G0) = 1-5", stacklevel=2)
             utils._trim_all_to_H2(self._modelratios)
 
     def _check_compatibility(self):
@@ -569,7 +567,7 @@ class LineRatioFit(ToolBase):
         if mask[0] == "mad":
             for k, v in self._measurements.items():
                 sigcut = mask[1] * astats.mad_std(v.data, ignore_nan=True)
-                print("Masking %s data between [%.1e,%.1e]" % (k, -sigcut, sigcut))
+                print(f"Masking {k} data between [{-sigcut:.1e},{sigcut:.1e}]")
                 masked_data = ma.masked_inside(v.data, -sigcut, sigcut, copy=True)
                 # CCDData/NDData do not use MaskArrays underneath but two nddata.arrays. Why??
                 # Make a copy so we are keeping references to data copies lying around.
@@ -578,12 +576,12 @@ class LineRatioFit(ToolBase):
             for k, v in self._measurements.items():
                 masked_data = ma.masked_inside(v.data, mask[1][0], mask[1][1], copy=True)
                 v.mask = masked_data.mask.copy()
-                print("Masking %s data between [%.1e,%.1e]" % (k, mask[1][0], mask[1][1]))
+                print(f"Masking {k} data between [{mask[1][0]:.1e},{mask[1][1]:.1e}]")
         elif mask[0] == "clip":
             for k, v in self._measurements.items():
                 masked_data = ma.masked_outside(v.data, mask[1][0], mask[1][1], copy=True)
                 v.mask = masked_data.mask.copy()
-                print("Masking %s data outside [%.1e,%.1e]" % (k, mask[1][0], mask[1][1]))
+                print(f"Masking {k} data outside [{mask[1][0]:.1e},{mask[1][1]:.1e}]")
         elif mask[0] == "error":
             for k, v in self._measurements.items():
                 # error is StdDevUncertainty so must use _array to get at raw values
@@ -593,9 +591,9 @@ class LineRatioFit(ToolBase):
                 else:
                     v.mask = np.full(v.data.shape, False)
                     v.mask[indices] = True
-                print("Masking %s data where error outside [%.1e,%.1e]" % (k, mask[1][0], mask[1][1]))
+                print(f"Masking {k} data where error outside [{mask[1][0]:.1e},{mask[1][1]:.1e}]")
         else:
-            raise ValueError("Unrecognized mask parameter %s. Valid values are 'mad','data','error'" % mask[0])
+            raise ValueError(f"Unrecognized mask parameter {mask[0]}. Valid values are 'mad','data','error'")
 
     def _compute_valid_ratios(self):
         """Compute the valid observed ratio maps for the available model data"""
@@ -694,7 +692,7 @@ class LineRatioFit(ToolBase):
 
             # Catch the case of a single pixel
             if self._observedratios[r].is_single_pixel():
-                newshape = np.hstack((self._modelratios[r].shape))
+                newshape = np.hstack(self._modelratios[r].shape)
                 _meta = deepcopy(self._modelratios[r].meta)
                 _wcs = deepcopy(self._modelratios[r].wcs)
                 # clean potential crap
@@ -735,8 +733,8 @@ class LineRatioFit(ToolBase):
     def _compute_chisq(self):
         """Compute the chi-squared values from observed ratios and models"""
         if self.ratiocount < 2:
-            raise Exception("Not enough ratios to compute chisq.  Need 2, got %d" % self.ratiocount)
-        sumary = sum((self._residual[r]._data ** 2 for r in self._residual))
+            raise Exception(f"Not enough ratios to compute chisq.  Need 2, got {self.ratiocount:d}")
+        sumary = sum(self._residual[r]._data ** 2 for r in self._residual)
         self._dof = len(self._residual) - 1
         k = utils.firstkey(self._residual)
         _wcs = deepcopy(self._residual[k].wcs)
@@ -749,7 +747,7 @@ class LineRatioFit(ToolBase):
         self._fixheader(self._chisq)
         self._fixheader(self._reduced_chisq)
         utils.comment("Chi-squared", self._chisq)
-        utils.comment(("Reduced Chi-squared (DOF=%d)" % self._dof), self._reduced_chisq)
+        utils.comment(f"Reduced Chi-squared (DOF={self._dof:d})", self._reduced_chisq)
         self._makehistory(self._chisq)
         self._makehistory(self._reduced_chisq)
 
@@ -808,7 +806,7 @@ class LineRatioFit(ToolBase):
         if utils._has_H2(keys):
             # this will get the index for the first modelratio that has H2 in it
             # https://stackoverflow.com/questions/2170900/get-first-list-index-containing-sub-string
-            i = [idx for idx, s in enumerate(keys) if "H2" in s][0]
+            i = next(idx for idx, s in enumerate(keys) if "H2" in s)
             fk = keys[i]
         else:
             fk = keys[0]
@@ -1094,7 +1092,7 @@ class LineRatioFit(ToolBase):
                             # else:
                             # fmdata[j] = None
                             # fm_mask[j] = True
-                        except ValueError as exc:
+                        except ValueError:
                             # print("At pixel %d, got valuerror %s with fitparams %s" %(j, exc,self._fitparam))
                             excount = excount + 1
                             fmdata[j] = None
@@ -1140,7 +1138,7 @@ class LineRatioFit(ToolBase):
             fourthindex = 3
         elif self._modelnaxis == 3:
             if mshape[0] != 1:
-                raise Exception("Unexpected NAXIS3 != 1 in model %s" % fk)
+                raise Exception(f"Unexpected NAXIS3 != 1 in model {fk}")
             firstindex = 1
             secondindex = 2
             thirdindex = 3
@@ -1213,12 +1211,11 @@ class LineRatioFit(ToolBase):
         self._chisq_min = deepcopy(self._observedratios[fk2])
         if spatial_idx == 0 and newshape == (1,):
             self._chisq_min.data = np.array([chi_min])
+        elif self._modelnaxis == 2:
+            self._chisq_min.data = chi_min
         else:
-            if self._modelnaxis == 2:
-                self._chisq_min.data = chi_min
-            else:
-                self._chisq_min.data = chi_min[0, :, :]
-                self._chisq_min.data[np.isnan(self._observedratios[fk2])] = np.nan
+            self._chisq_min.data = chi_min[0, :, :]
+            self._chisq_min.data[np.isnan(self._observedratios[fk2])] = np.nan
         self._chisq_min.unit = u.dimensionless_unscaled
         self._chisq_min.uncertainty.array = [0.0]
         self._chisq_min.uncertainty.unit = u.dimensionless_unscaled
@@ -1238,7 +1235,7 @@ class LineRatioFit(ToolBase):
 
         # update histories
         utils.setkey("BUNIT", "Minimum Chi-squared", self._chisq_min)
-        utils.setkey("BUNIT", ("Minimum Reduced Chi-squared (DOF=%d)" % self._dof), self._reduced_chisq_min)
+        utils.setkey("BUNIT", f"Minimum Reduced Chi-squared (DOF={self._dof:d})", self._reduced_chisq_min)
         self._makehistory(self._reduced_chisq_min)
         self._makehistory(self._chisq_min)
 
