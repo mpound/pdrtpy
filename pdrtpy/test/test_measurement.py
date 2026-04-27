@@ -206,8 +206,11 @@ class TestMeasurementGetPixel:
 
     @pytest.fixture(autouse=True)
     def setup(self):
-        cii_combined = utils.testdata_dir() + "n22_cii_flux_error.fits"
-        self.m = Measurement.read(cii_combined, identifier="CII_158")
+        # Read the flux-only file directly. Reading the combined flux+error file
+        # produced by test_read_write would race with that test on Windows, where
+        # memmap holds a file lock that blocks the writer's overwrite.
+        cii_file = utils.get_testdata("n22_cii_flux.fits")
+        self.m = Measurement.read(cii_file, identifier="CII_158")
 
     def test_get_pixel_returns_tuple(self):
         crval = self.m.wcs.wcs.crval
