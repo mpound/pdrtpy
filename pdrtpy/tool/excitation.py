@@ -1,6 +1,5 @@
 import math
 import warnings
-from copy import deepcopy
 from types import SimpleNamespace
 
 import astropy.constants as constants
@@ -1177,6 +1176,11 @@ class BaseExcitationFit(ToolBase):
             {k: kwargs[k] for k in ("burn", "steps", "nwalkers") if k in kwargs} if method == "emcee" else None
         )
 
+        # lmfit.Model.fit deepcopies the params argument before minimizing, so we
+        # can reuse one Parameters object across pixels and just overwrite the
+        # per-pixel starting .value entries each iteration.
+        p = self._params.copy()
+
         with get_progress_bar(progress, total, leave=True, position=0) as pbar:
             for i in range(total):
                 if not (np.isfinite(prep.yr[:, i]).all() and np.isfinite(prep.sig[:, i]).all()):
@@ -1185,7 +1189,6 @@ class BaseExcitationFit(ToolBase):
                     fm_mask[i] = True
                     pbar.update(1)
                     continue
-                p = deepcopy(self._params)
                 p["n1"].value = prep.intcold[i]
                 p["m1"].value = prep.slopecold[i]
                 if self._numcomponents == 2:
