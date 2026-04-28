@@ -1,6 +1,7 @@
 import math
 import warnings
 from copy import deepcopy
+from types import SimpleNamespace
 
 import astropy.constants as constants
 import astropy.units as u
@@ -1029,26 +1030,47 @@ class BaseExcitationFit(ToolBase):
         return np.array([slopecold, intcold, slopehot, inthot])
 
     def _fit_excitation(self, position, size, fit_opr=False, fit_av=False, **kwargs):
-        r"""Fit the :math:`log N_u-E` diagram with two excitation temperatures,
-           a ``hot`` :math:`T_{ex}` and a ``cold`` :math:`T_{ex}`.  A first
-           pass guess is initially made using data partitioning and two
-           linear fits.
+        r"""Fit the :math:`log N_u-E` diagram with one or two excitation temperatures.
 
-           If ``position`` and ``size`` are given, the data will be averaged over a spatial box before fitting.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.  If position or size is None, the data are averaged over all pixels.  If the Measurements are single values, these arguments are ignored.
+        A first-pass guess is made by partitioning the data and fitting two lines
+        (or one, depending on ``self._numcomponents``). If ``position`` and ``size``
+        are both given, the data are averaged over a spatial box (``Cutout2D``)
+        before fitting; otherwise every pixel is fit independently.
 
-           :param position: The position of the cutout array's center with respect to the data array. The position can be specified either as a `(x, y)` tuple of pixel coordinates or a :class:`~astropy.coordinates.SkyCoord`, which will use the :class:`~astropy.wcs.WCS` of the ::class:`~pdrtpy.measurement.Measurement`s added to this tool. See :class:`~astropy.nddata.utils.Cutout2D`.
-           :type position: tuple or :class:`astropy.coordinates.SkyCoord`
-           :param size: The size of the cutout array along each axis. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(ny, nx)` order. Scalar numbers in size are assumed to be in units of pixels. `size` can also be a :class:`~astropy.units.Quantity` object or contain :class:`~astropy.units.Quantity` objects. Such :class:`~astropy.units.Quantity` objects must be in pixel or angular units. For all cases, size will be converted to an integer number of pixels, rounding the the nearest integer. See the mode keyword for additional details on the final cutout size. Default value of None means use all pixels (position is ignored)
-           :type size: int, array_like, or :class:`astropy.units.Quantity`
-           :param fit_opr: Whether to fit the ortho-to-para ratio or not. If True, the OPR will be varied to determine the best value. If False, the OPR is fixed at the canonical LTE value of 3.
-           :type fit_opr: bool
-        ,dtype=object   :returns: The fit result which contains slopes, intercepts, the ortho to para ratio (OPR), and fit statistics
-           :rtype:  :class:`lmfit.model.ModelResult`
+        :param position: ``(x, y)`` pixel coordinate or :class:`~astropy.coordinates.SkyCoord`.
+        :param size: scalar pixel size or ``(nx, ny)`` tuple.
+        :param fit_opr: vary the ortho-to-para ratio.
+        :param fit_av: vary the visual extinction.
         """
-        # fit_av = kwargs.pop("fit_av")
-        init_av = kwargs.pop("init_av", 0.0)
-        init_opr = kwargs.pop("init_opr", 3.0)
         verbose = kwargs.pop("verbose")
+        prep = self._prep_fit_data(
+            position,
+            size,
+            fit_opr,
+            fit_av,
+            kwargs.pop("init_opr", 3.0),
+            kwargs.pop("init_av", 0.0),
+            verbose,
+        )
+        fmdata, fm_mask, count = self._run_pixel_fits(prep, fit_opr, fit_av, kwargs, verbose)
+        count = self._cleanup_fits(fmdata, fm_mask, count, verbose)
+        warnings.resetwarnings()
+        self._reshape_results(fmdata, fm_mask, prep.saveshape, prep.colden_wcs)
+        self._compute_quantities(self._fitresult)
+        if verbose:
+            print(f"fitted {count} of {prep.total} pixels")
+            print(f"got {self._excount} exceptions and {self._badfit} bad fits")
+        self._position = position
+        self._size = size
+
+    def _prep_fit_data(self, position, size, fit_opr, fit_av, init_opr, init_av, verbose):
+        """Validate inputs, build energy/column-density vectors, run first-guess.
+
+        Returns a :class:`SimpleNamespace` with everything the pixel loop needs:
+        flat ``yr`` (data), ``sig`` (sigma), per-pixel first-guess slopes/intercepts,
+        ``saveshape`` for later reshape, ``colden_wcs`` for the FitMap, and the
+        precomputed extinction ratios.
+        """
         min_points = self._numcomponents * 2
         if fit_opr:
             min_points += 1
@@ -1056,8 +1078,8 @@ class BaseExcitationFit(ToolBase):
             self._opr = Measurement(data=[self._canonical_opr], uncertainty=None)
         if fit_av:
             min_points += 1
-            wavelengths = list(self.wavelengths(line=True).values()) * u.micron  # assume micron for now
-            extinction_ratios = self.extinction_model(wavelengths)  # A_lambda/A_v at the wavelengths of the transitions
+            wavelengths = list(self.wavelengths(line=True).values()) * u.micron
+            extinction_ratios = self.extinction_model(wavelengths)
         else:
             self._av = Measurement(data=[0.0], uncertainty=None)
             extinction_ratios = None
@@ -1068,46 +1090,36 @@ class BaseExcitationFit(ToolBase):
         self._params["av"].vary = fit_av
         if fit_av:
             self._params["av"].value = init_av
+
         energy = self.energies(line=True)
-        _ee = np.array([c for c in energy.values()])
-        # @ todo: allow fitting of one-temperature model
+        _ee = np.array(list(energy.values()))
         if len(_ee) < min_points:
             raise Exception(
                 f"You need at least {min_points:d} data points to determine {self._numcomponents}-temperature model"
             )
         if len(_ee) == min_points:
             warnings.warn(
-                f"Number of data points is equal to number of free parameters ({min_points:d}). Fit will be"
-                " over-constrained",
+                f"Number of data points is equal to number of free parameters ({min_points:d}). "
+                "Fit will be over-constrained",
                 stacklevel=2,
             )
-        _energy = Measurement(_ee, unit="K")
-        _ids = list(energy.keys())
-        idx = self._get_ortho_indices(_ids)
-        # Get Nu/gu.  Canonical opr will be used.
+        idx = self._get_ortho_indices(list(energy.keys()))
+
         if position is None or size is None:
             colden = self.column_densities(norm=True, line=True)
         else:
             colden = self.average_column_density(norm=True, position=position, size=size, line=True)
 
-        # Need to stuff the data into a single vector
         _cd = np.squeeze(np.array([c.data for c in colden.values()]))
         _er = np.squeeze(np.array([c.error for c in colden.values()]))
         _colden = Measurement(_cd, uncertainty=StdDevUncertainty(_er), unit="cm-2")
-        fk = utils.firstkey(colden)
-        x = _energy.data
-        # suppress log10 invalid value
+        x = _ee
         with warnings.catch_warnings():
-            # ignore warning about invalid value in log.
             warnings.simplefilter("ignore", category=RuntimeWarning)
             y = np.log10(_colden.data)
-        # print(f"energy {x=}\nlog coldeb {y=}")
-        # print("SHAPE Y LEN(SHAPE(Y) ",y.shape,len(y.shape))
-        # kwargs_opts = {"guess": self._first_guess(x,y)}
-        # kwargs_opts.update(kwargs)
         sigma = utils.LOGE * _colden.error / _colden.data
+
         slopecold, intcold, slopehot, inthot = self._first_guess(x, y)
-        # print(f"{slopecold=}, {intcold=}, {slopehot=}, {inthot=}")
         tcold = -utils.LOGE / slopecold
         thot = -utils.LOGE / slopehot
         if np.shape(tcold) == ():
@@ -1116,102 +1128,111 @@ class BaseExcitationFit(ToolBase):
         saveshape = tcold.shape
         if verbose:
             print(f"First guess at excitation temperatures:\n T_cold = {tcold:.1f} K\n T_hot = {thot:.1f} K")
-        fmdata = np.empty(tcold.shape, dtype=object).flatten()
-        tcold = tcold.flatten()
-        thot = thot.flatten()
-        slopecold = slopecold.flatten()
-        slopehot = slopehot.flatten()
-        inthot = inthot.flatten()
-        intcold = intcold.flatten()
-        # sigma = sigma.flatten()
-        # flatten any dimensions past 0
+
+        # flatten any dimensions past 0 so the pixel loop indexes are 1-D
         shp = y.shape
         if len(shp) == 1:
             y = y[:, np.newaxis]
             shp = y.shape
-        yr = y.reshape((shp[0], np.prod(shp[1:])))
-        sig = sigma.reshape((shp[0], np.prod(shp[1:])))
+        n_pix = int(np.prod(shp[1:]))
+
+        return SimpleNamespace(
+            x=x,
+            yr=y.reshape((shp[0], n_pix)),
+            sig=sigma.reshape((shp[0], n_pix)),
+            idx=idx,
+            slopecold=slopecold.flatten(),
+            intcold=intcold.flatten(),
+            slopehot=slopehot.flatten(),
+            inthot=inthot.flatten(),
+            extinction_ratios=extinction_ratios,
+            saveshape=saveshape,
+            total=n_pix,
+            colden_wcs=colden[utils.firstkey(colden)].wcs,
+        )
+
+    def _run_pixel_fits(self, prep, fit_opr, fit_av, kwargs, verbose):
+        """Run lmfit on every pixel. Returns ``(fmdata, fm_mask, count)``.
+
+        Sets ``self._excount`` (ValueError count) and ``self._badfit`` (fits that
+        completed but reported success=False).
+        """
+        total = prep.total
+        fmdata = np.empty(total, dtype=object)
+        fm_mask = np.full(total, False)
         count = 0
-        total = len(tcold)
-        fm_mask = np.full(shape=tcold.shape, fill_value=False)
-        # Suppress the incorrect warning about model parameters
-        warnings.simplefilter("ignore", category=UserWarning)
-        # update whether opr is allowed to vary or not.
-        self._model.set_param_hint("opr", vary=fit_opr)
-        self._model.set_param_hint("av", vary=fit_av)
-        # use progress bar if more than one pixel
-        if total > 1:
-            progress = kwargs.pop("progress", True)
-        else:
-            progress = False
-        # self._params.pretty_print()
         self._excount = 0
         self._badfit = 0
+
+        # Suppress lmfit's incorrect warning about model parameters during the loop.
+        # Caller is responsible for `warnings.resetwarnings()` after we return.
+        warnings.simplefilter("ignore", category=UserWarning)
+
+        self._model.set_param_hint("opr", vary=fit_opr)
+        self._model.set_param_hint("av", vary=fit_av)
+
+        progress = kwargs.pop("progress", True) if total > 1 else False
+        method = kwargs["method"]
+        emcee_kwargs = (
+            {k: kwargs[k] for k in ("burn", "steps", "nwalkers") if k in kwargs} if method == "emcee" else None
+        )
+
         with get_progress_bar(progress, total, leave=True, position=0) as pbar:
             for i in range(total):
-                if np.isfinite(yr[:, i]).all() and np.isfinite(sig[:, i]).all():
-                    # update Parameter hints based on first guess.
-                    p = deepcopy(self._params)
-                    p["n1"].value = intcold[i]
-                    p["m1"].value = slopecold[i]
-                    # self._model.set_param_hint("m1", value=slopecold[i], vary=True)
-                    # self._model.set_param_hint("n1", value=intcold[i], vary=True)
-                    if self._numcomponents == 2:
-                        #    self._model.set_param_hint("m2", value=slopehot[i], vary=True)
-                        #    self._model.set_param_hint("n2", value=inthot[i], vary=True)
-                        p["n2"].value = inthot[i]
-                        p["m2"].value = slopehot[i]
-                    wts = 1.0 / sig[:, i]
-                    try:
-                        if kwargs["method"] == "emcee":
-                            emcee_kwargs = {k: kwargs[k] for k in ("burn", "steps", "nwalkers") if k in kwargs}
-                        else:
-                            emcee_kwargs = None
-                        # print(
-                        #    f"_model.fit(data={yr[:,i]},weights={wts},x={x},params={p},idx={idx},{fit_opr=},{fit_av=},{extinction_ratios=}"
-                        # )
-                        fmdata[i] = self._model.fit(
-                            data=yr[:, i],
-                            weights=wts,
-                            x=x,
-                            params=p,
-                            idx=idx,
-                            fit_opr=fit_opr,
-                            fit_av=fit_av,
-                            extinction_ratio=extinction_ratios,
-                            method=kwargs["method"],
-                            nan_policy=kwargs["nan_policy"],
-                            fit_kws=emcee_kwargs,
-                        )
-                        # print(f"fitted {fmdata[i]=}")
-                        # if fmdata[i].success and fmdata[i].errorbars:
-                        if fmdata[i].success:
-                            count = count + 1
-                        else:
-                            if verbose:
-                                print(
-                                    f"Bad fit because 'success' value ({fmdata[i].success}) or errorbars ({fmdata[i].errorbars}) was False."
-                                )
-                            # fmdata[i] = None
-                            fm_mask[i] = True
-                            self._badfit = self._badfit + 1
-                    except ValueError as v:
-                        print(f"Bad fit because {v}")
-                        # fmdata[i] = None
-                        fm_mask[i] = True
-                        self._excount = self._excount + 1
-                else:
+                if not (np.isfinite(prep.yr[:, i]).all() and np.isfinite(prep.sig[:, i]).all()):
                     if verbose:
                         print("Bad fit because NaNs in data")
-                    # fmdata[i] = None
                     fm_mask[i] = True
+                    pbar.update(1)
+                    continue
+                p = deepcopy(self._params)
+                p["n1"].value = prep.intcold[i]
+                p["m1"].value = prep.slopecold[i]
+                if self._numcomponents == 2:
+                    p["n2"].value = prep.inthot[i]
+                    p["m2"].value = prep.slopehot[i]
+                try:
+                    fmdata[i] = self._model.fit(
+                        data=prep.yr[:, i],
+                        weights=1.0 / prep.sig[:, i],
+                        x=prep.x,
+                        params=p,
+                        idx=prep.idx,
+                        fit_opr=fit_opr,
+                        fit_av=fit_av,
+                        extinction_ratio=prep.extinction_ratios,
+                        method=method,
+                        nan_policy=kwargs["nan_policy"],
+                        fit_kws=emcee_kwargs,
+                    )
+                    if fmdata[i].success:
+                        count += 1
+                    else:
+                        if verbose:
+                            print(
+                                f"Bad fit because 'success' value ({fmdata[i].success}) "
+                                f"or errorbars ({fmdata[i].errorbars}) was False."
+                            )
+                        fm_mask[i] = True
+                        self._badfit += 1
+                except ValueError as v:
+                    print(f"Bad fit because {v}")
+                    fm_mask[i] = True
+                    self._excount += 1
                 pbar.update(1)
-        # cleanup weird fits
+
+        return fmdata, fm_mask, count
+
+    def _cleanup_fits(self, fmdata, fm_mask, count, verbose):
+        """Mark pixels that completed but reported a None stderr on a varying
+        parameter. Mutates ``fmdata`` and ``fm_mask`` in place. Returns the
+        adjusted successful-fit count.
+        """
         for ii in range(len(fmdata)):
-            badstderr = False
             fmd = fmdata[ii]
             if fmd is None:
                 continue
+            badstderr = False
             for p in fmd.params:
                 if fmd.params[p].stderr is None and fmd.params[p].vary:
                     if verbose:
@@ -1220,23 +1241,20 @@ class BaseExcitationFit(ToolBase):
                             print("Try fitting a single component instead.")
                     fmdata[ii].success = False
                     fm_mask[ii] = True
-                    self._badfit = self._badfit + 1
+                    self._badfit += 1
                     badstderr = True
-                    # fmdata[ii] = None
             if badstderr:
-                count = count - 1
-        warnings.resetwarnings()
-        fmdata = fmdata.reshape(saveshape)
-        fm_mask = fm_mask.reshape(saveshape)
-        self._fitresult = FitMap(fmdata, wcs=colden[fk].wcs, mask=fm_mask, name="result")
-        # this will raise an exception if the fit was bad (fit errors == None)
-        self._compute_quantities(self._fitresult)
-        if verbose:
-            print(f"fitted {count} of {slopecold.size} pixels")
-            print(f"got {self._excount} exceptions and {self._badfit} bad fits")
-        # if successful, set the used position and size
-        self._position = position
-        self._size = size
+                count -= 1
+        return count
+
+    def _reshape_results(self, fmdata, fm_mask, saveshape, colden_wcs):
+        """Build ``self._fitresult`` from the flat fit arrays."""
+        self._fitresult = FitMap(
+            fmdata.reshape(saveshape),
+            wcs=colden_wcs,
+            mask=fm_mask.reshape(saveshape),
+            name="result",
+        )
 
 
 # ========================== END BASEEXCITATION FIT ===================================================
