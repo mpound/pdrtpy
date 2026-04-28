@@ -1,11 +1,7 @@
-import cProfile
-import io
 import math
-import pstats
 import warnings
 from copy import deepcopy
 
-# from scipy.interpolate import interp1d
 import astropy.constants as constants
 import astropy.units as u
 import numpy as np
@@ -57,10 +53,6 @@ class BaseExcitationFit(ToolBase):
         self._column_density = dict()
         self._canonical_opr = molecule.canonical_opr
         self._opr = Measurement(data=[self._canonical_opr], uncertainty=None)
-        self._residual_functions = {
-            1: self._one_component_residual,
-            2: self._two_component_residual,
-        }
         self._model_functions = {
             1: self._one_component_model,
             2: self._two_component_model,
@@ -211,7 +203,6 @@ class BaseExcitationFit(ToolBase):
             "method": "leastsq",
             "nan_policy": "raise",
             "test": False,
-            "profile": False,
             "verbose": False,
             "init_opr": 3.0,
             "init_av": 0.0,
@@ -322,13 +313,6 @@ class BaseExcitationFit(ToolBase):
             model = model - 0.4 * extinction_ratio * av * utils.LOGE
         return model
 
-    def _one_component_residual(self, params, x, data, error, idx):
-        p = params.valuesdict()
-        model = x * p["m1"] + p["n1"]
-        if params["opr"].vary:
-            model *= p["opr"] / self._canonical_opr
-        return (model - data) / error
-
     def _one_line(self, x, m1, n1):
         """Return a line.
 
@@ -405,27 +389,6 @@ class BaseExcitationFit(ToolBase):
         if fit_av:
             model = model - 0.4 * extinction_ratio * av * utils.LOGE
         return model
-
-    def _two_component_residual(self, params, x, data, error, idx):
-        # We assume that the column densities passed in have been normalized
-        # using the canonical OPR=3. Therefore what we are actually fitting is
-        # the ratio of the actual OPR to the canonical OPR.
-        # For odd J, input x = Nu/(3*(2J+1) where 3=canonical OPR.
-        #
-        # We want the model-data residual to be small, but if the opr
-        # is different from the  canonical value of 3, then data[idx] will
-        # be low by a factor of 3/opr.
-        # So we must LOWER model[idx] artificially by dividing it by
-        # 3/opr, i.e. multiplying by opr/3.  This is equivalent to addition in log-space.
-        #
-        # @TODO add extinction correction. however this method is not currently used.
-        p = params.valuesdict()
-        y1 = 10 ** (x * p["m1"] + p["n1"])
-        y2 = 10 ** (x * p["m2"] + p["n2"])
-        model = np.log10(y1 + y2)
-        if params["opr"].vary:
-            model += np.log10(p["opr"] / self._canonical_opr)
-        return (model - data) / error
 
     def _two_lines(self, x, m1, n1, m2, n2):
         """This function is used to partition a fit to data using two lines and
@@ -1146,15 +1109,10 @@ class BaseExcitationFit(ToolBase):
         ,dtype=object   :returns: The fit result which contains slopes, intercepts, the ortho to para ratio (OPR), and fit statistics
            :rtype:  :class:`lmfit.model.ModelResult`
         """
-        profile = kwargs.pop("profile", None)
         # fit_av = kwargs.pop("fit_av")
         init_av = kwargs.pop("init_av", 0.0)
         init_opr = kwargs.pop("init_opr", 3.0)
         verbose = kwargs.pop("verbose")
-        self._stats = None
-        if profile:
-            pr = cProfile.Profile()
-            pr.enable()
         min_points = self._numcomponents * 2
         if fit_opr:
             min_points += 1
@@ -1242,8 +1200,6 @@ class BaseExcitationFit(ToolBase):
         fm_mask = np.full(shape=tcold.shape, fill_value=False)
         # Suppress the incorrect warning about model parameters
         warnings.simplefilter("ignore", category=UserWarning)
-        excount = 0
-        badfit = 0
         # update whether opr is allowed to vary or not.
         self._model.set_param_hint("opr", vary=fit_opr)
         self._model.set_param_hint("av", vary=fit_av)
@@ -1326,7 +1282,7 @@ class BaseExcitationFit(ToolBase):
                         print(f"Fit completed at pixel {ii} but stderr for parameter {p} is None. Setting mask.")
                         if self._numcomponents == 2:
                             print("Try fitting a single component instead.")
-                    fmdata[i].success = False
+                    fmdata[ii].success = False
                     fm_mask[ii] = True
                     self._badfit = self._badfit + 1
                     badstderr = True
@@ -1341,17 +1297,10 @@ class BaseExcitationFit(ToolBase):
         self._compute_quantities(self._fitresult)
         if verbose:
             print(f"fitted {count} of {slopecold.size} pixels")
-            print(f"got {excount} exceptions and {badfit} bad fits")
+            print(f"got {self._excount} exceptions and {self._badfit} bad fits")
         # if successful, set the used position and size
         self._position = position
         self._size = size
-        if profile:
-            pr.disable()
-            s = io.StringIO()
-            sortby = pstats.SortKey.CUMULATIVE
-            ps = pstats.Stats(pr, stream=s).sort_stats(sortby)
-            ps.print_stats()
-            self._stats = s
 
 
 # ========================== END BASEEXCITATION FIT ===================================================
