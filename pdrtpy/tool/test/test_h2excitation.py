@@ -277,28 +277,25 @@ class TestH2RunErrors:
         assert any("over-constrained" in str(w.message) for w in caught)
 
 
-class TestH2BadStderrCurrentBehavior:
-    """Pin the *current* raise-on-bad-stderr behavior.
-
-    This will be replaced by `TestH2BadStderrWarnAndMask` in the
-    `_compute_quantities` refactor (Phase 3), which converts the raise
-    to a `UserWarning` and per-pixel mask so that one bad pixel cannot
-    abort an entire map fit.
+class TestH2BadStderrWarnAndMask:
+    """A pixel where a varying parameter has stderr=None must warn and mask,
+    not raise — a single bad pixel cannot be allowed to abort an entire map fit.
     """
 
-    def test_raises_when_any_param_stderr_is_none(self, h2_map_fit_two_component):
-        h = h2_map_fit_two_component
-        # Find a successful pixel to vandalize
+    def test_warns_and_masks(self, h2_map_measurements_small):
+        # Build a fresh fit so we don't pollute the module-scoped fixture
+        h = H2ExcitationFit(list(h2_map_measurements_small))
+        h.run(components=2, verbose=False)
         ff = h.fit_result.data.flatten()
         ffmask = h.fit_result.mask.flatten()
         good_idx = next(i for i, ok in enumerate(ffmask) if not ok and ff[i] is not None)
-        # Save and restore to leave the module-scoped fixture untouched for other tests
-        saved = ff[good_idx].params["m1"].stderr
-        try:
-            ff[good_idx].params["m1"].stderr = None
-            with pytest.raises(Exception, match="Something went wrong with the fit"):
-                h._compute_quantities(h._fitresult)
-        finally:
-            ff[good_idx].params["m1"].stderr = saved
-            # Restore _compute_quantities-derived state so other tests using the fixture see clean values
+        ff[good_idx].params["m1"].stderr = None
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
             h._compute_quantities(h._fitresult)
+        assert any("stderr" in str(w.message) for w in caught)
+        ii, jj = np.unravel_index(good_idx, h.fit_result.data.shape)
+        assert h.tcold.mask[ii, jj]
+        assert h.thot.mask[ii, jj]
+        assert h.cold_colden.mask[ii, jj]
+        assert h.hot_colden.mask[ii, jj]
