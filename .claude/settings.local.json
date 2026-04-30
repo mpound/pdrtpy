@@ -19,7 +19,9 @@
       "Bash(grep -A60 '^name = \"numpy\"$' uv.lock)",
       "Bash(grep -A150 '^name = \"numpy\"$' uv.lock)",
       "Bash(git checkout *)",
-      "Bash(git branch *)"
+      "Bash(git branch *)",
+      "Bash(awk '/^[[:space:]]*def / {start=NR; name=$0} /^[[:space:]]*def / && NR > start+1 {print prev_start\"-\"NR-1\": \"prev_name; prev_start=start; prev_name=name} {prev_start=start; prev_name=name} END {print start\"-\"NR\": \"name}' /bigdisk/src/pclaude/pdrtpy/pdrtpy/tool/excitation.py)",
+      "Bash(python *)"
     ]
   }
 }
