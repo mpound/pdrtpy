@@ -58,27 +58,6 @@ _rad_title["Draine"] = r"$\chi$"
 _rad_title["Mathis"] = "FUV"
 
 
-# these only work if pdrtpy-nb is inside pdrtpy.
-# need to fix or remove.
-def _nbversion():
-    return open("../VERSION").readline().strip(*"\n")
-
-
-def check_nb():
-    nbv = _nbversion()
-    ver = version()
-    if nbv != ver:
-        # How do I suppress the stacktrace of the warning itself?!
-        #    warnings.warn("The version of this notebook does not match the version of pdrtpy. You may be missing some functionality.  For best results, upgrade both pdtpry and pdrtpy-nb to the latest version.",stacklevel=0)
-        print(
-            f"WARNING: Your version of the PDRT notebooks does [{nbv:s}] not match your version of pdrtpy [{ver:s}]."
-            " You may be missing some functionality.  For best results, upgrade both pdtpry and pdrtpy-nb to the"
-            " latest version. See https://pdrtpy.readthedocs.io"
-        )
-    else:
-        print("Your PDRT notebooks version matches your pdrtpy version -- hooray!")
-
-
 def get_rad(key):
     r"""Get radiation field symbol (LaTeX) given radiation field unit.
     If key is unrecognized, 'FUV Radiation Field' is returned.
@@ -99,38 +78,11 @@ def get_rad(key):
 # density_unit = u.def_unit("1/cm3",1/(u.cm*u.cm*u.cm))
 # u.add_enabled_units(density_unit)
 
-# See https://stackoverflow.com/questions/880530/can-modules-have-properties-the-same-way-that-objects-can
-# only works python 3.8+??
-# def module_property(func):
-#    """Decorator to turn module functions into properties.
-#    Function names must be prefixed with an underscore."""
-#    module = sys.modules[func.__module__]
-#
-#    def base_getattr(name):
-#        raise AttributeError(
-#            f"module '{module.__name__}' has no fucking attribute '{name}'")
-#
-#    old_getattr = getattr(module, '__getattr__', base_getattr)
-#
-#    def new_getattr(name):
-#        if f'_{name}' == func.__name__:
-#            return func()
-#        else:
-#            return old_getattr(name)
-#
-
-#    module.__getattr__ = new_getattr
-#    return func
-
-# @module_property
-# def _version():
 
 # @todo check_header_present(list) to return boolean array of keywwords
 # present or not in a FITS header
 
 
-# @module_property
-# def _now():
 def now():
     """
     :returns: a string representing the current date and time in ISO format
@@ -138,11 +90,6 @@ def now():
     return datetime.datetime.now().isoformat()
 
 
-# @module_property
-# def _root_dir():
-
-
-# @TODO  use setup.py and pkg_resources to do this properly
 def root_dir():
     """Project root directory, including trailing slash
 
@@ -326,7 +273,6 @@ def warn(cls, msg):
     warnings.warn(cls.__class__.__name__ + ": " + msg, stacklevel=3)
 
 
-# @module_property
 ################################################################
 # Conversions between various units of Radiation Field Strength
 # See table on page 18 of
