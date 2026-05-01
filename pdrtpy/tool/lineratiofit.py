@@ -23,7 +23,7 @@ from scipy.optimize import least_squares as _scipy_least_squares
 
 from pdrtpy.pbar import get_progress_bar
 
-from .. import pdrutils as utils
+from .. import utils
 from .fitmap import FitMap
 from .toolbase import ToolBase
 

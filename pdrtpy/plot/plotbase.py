@@ -19,7 +19,7 @@ from matplotlib.colors import LogNorm
 # import matplotlib.cm as mcm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-from .. import pdrutils as utils
+from .. import utils
 
 # WCS-projected axes over NaN-filled maps produce NaN sky coordinates for some
 # tick positions. astropy's Angle.to_string() wraps do_format in np.vectorize;

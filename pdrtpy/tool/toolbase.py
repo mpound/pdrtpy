@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-import pdrtpy.pdrutils as utils
+import pdrtpy.utils as utils
 
 
 class ToolBase(ABC):

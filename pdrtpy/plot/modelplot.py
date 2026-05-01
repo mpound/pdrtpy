@@ -9,7 +9,7 @@ from astropy import log
 from matplotlib import ticker
 from matplotlib.lines import Line2D
 
-from .. import pdrutils as utils
+from .. import utils
 from ..measurement import Measurement
 from .plotbase import PlotBase
 
