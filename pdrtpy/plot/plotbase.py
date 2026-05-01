@@ -1,3 +1,4 @@
+import warnings
 from copy import copy, deepcopy
 
 # import astropy.version
@@ -19,6 +20,12 @@ from matplotlib.colors import LogNorm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from .. import pdrutils as utils
+
+# WCS-projected axes over NaN-filled maps produce NaN sky coordinates for some
+# tick positions. astropy's Angle.to_string() wraps do_format in np.vectorize;
+# numpy's ufunc layer warns "invalid value encountered in do_format (vectorized)"
+# before do_format even runs (it handles NaN correctly internally). Suppress it.
+warnings.filterwarnings("ignore", message=".*do_format.*", category=RuntimeWarning)
 
 
 class PlotBase:
@@ -430,7 +437,12 @@ class PlotBase:
             if kwargs_opts["colorbar"]:
                 self._wcs_colorbar(im, self._axis[axidx])
                 # reset the axis so that users can call plot._plt.whatever()
-                self._plt.sca(self._axis[axidx])
+                # ipympl and similar backends may not register a canvas manager,
+                # causing pyplot.sca() to raise ValueError. Skip when unmanaged.
+                _ax = self._axis[axidx]
+                _fig = _ax.get_figure()
+                if _fig is not None and getattr(_fig.canvas, "manager", None) is not None:
+                    self._plt.sca(_ax)
 
         if kwargs_opts["contours"]:
             if kwargs_contour["levels"] is None:
@@ -477,5 +489,12 @@ class PlotBase:
             self.figure.suptitle(kwargs_opts["title"], y=0.95)
 
         if k.wcs is not None:
-            self._axis[axidx].set_xlabel(k.wcs.wcs.lngtyp)
-            self._axis[axidx].set_ylabel(k.wcs.wcs.lattyp)
+            ax = self._axis[axidx]
+            if hasattr(ax, "coords"):
+                # WCSAxes: use the coords interface; set_xlabel/ylabel triggers
+                # layout/tick machinery that accesses _coord_range before draw.
+                ax.coords[0].set_axislabel(k.wcs.wcs.lngtyp)
+                ax.coords[1].set_axislabel(k.wcs.wcs.lattyp)
+            else:
+                ax.set_xlabel(k.wcs.wcs.lngtyp)
+                ax.set_ylabel(k.wcs.wcs.lattyp)

@@ -190,7 +190,8 @@ combine-as-imports = true
 minversion = "6.0"
 testpaths = ["tests", "pdrtpy", "docs"]
 filterwarnings = [
-    "ignore::DeprecationWarning"
+    "ignore::DeprecationWarning",
+    "ignore:.*do_format.*:RuntimeWarning"
 ]
 addopts = [
   "--timeout=300",
