@@ -6,7 +6,7 @@ import numpy as np
 from astropy.table import Table  # , QTable
 from astropy.units.quantity import Quantity
 
-from . import pdrutils as utils
+from . import utils
 
 
 class BaseMolecule:

@@ -1,4 +1,4 @@
-import pdrtpy.pdrutils as utils
+import pdrtpy.utils as utils
 from pdrtpy.measurement import Measurement
 from pdrtpy.modelset import ModelSet
 from pdrtpy.plot.lineratioplot import LineRatioPlot

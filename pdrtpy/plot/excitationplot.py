@@ -7,7 +7,7 @@ from astropy.units.quantity import Quantity
 from matplotlib.ticker import MultipleLocator
 
 from ..measurement import Measurement
-from ..pdrutils import LOGE, float_formatter
+from ..utils import LOGE, float_formatter
 from .plotbase import PlotBase
 
 # from cycler import cycler

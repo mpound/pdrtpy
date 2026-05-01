@@ -3,7 +3,7 @@
 import astropy.units as u
 import numpy as np
 import numpy.ma as ma
-import pdrtpy.pdrutils as utils
+import pdrtpy.utils as utils
 import pytest
 from astropy.nddata import StdDevUncertainty
 from astropy.wcs import WCS

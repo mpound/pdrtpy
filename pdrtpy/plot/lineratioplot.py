@@ -14,7 +14,7 @@ import scipy.stats as stats
 from astropy import log
 from matplotlib.lines import Line2D
 
-from .. import pdrutils as utils
+from .. import utils
 from .modelplot import ModelPlot
 from .plotbase import PlotBase
 

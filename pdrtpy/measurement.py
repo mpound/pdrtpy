@@ -17,7 +17,7 @@ from astropy.nddata import CCDData, StdDevUncertainty
 from astropy.table import Table
 from scipy.interpolate import RegularGridInterpolator
 
-from . import pdrutils as utils
+from . import utils
 
 log.setLevel("WARNING")  # see issue 163
 
