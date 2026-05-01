@@ -2,7 +2,7 @@
 import os
 from copy import deepcopy
 
-import pdrtpy.pdrutils as utils
+import pdrtpy.utils as utils
 import pytest
 from pdrtpy.modelset import ModelSet
 
@@ -148,7 +148,7 @@ class TestModelSetFindMethods:
             assert isinstance(path, str)
 
     def test_find_files_paths_exist(self):
-        from pdrtpy.pdrutils import model_dir
+        from pdrtpy.utils import model_dir
 
         ids = ["CII_158", "OI_63"]
         files = list(self.ms.find_files(ids))

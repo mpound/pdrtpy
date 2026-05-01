@@ -10,7 +10,7 @@ Created on Wed Feb 26 16:01:56 2025
 import warnings
 
 import numpy as np
-import pdrtpy.pdrutils as utils
+import pdrtpy.utils as utils
 import pytest
 from astropy.nddata import StdDevUncertainty
 from dust_extinction.parameter_averages import G23
