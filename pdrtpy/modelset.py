@@ -9,7 +9,7 @@ import numpy as np
 from astropy.table import Column, Table, unique, vstack
 
 from .measurement import Measurement
-from .pdrutils import _OBS_UNIT_, get_table, model_dir
+from .utils import _OBS_UNIT_, get_table, model_dir
 
 
 class ModelSet:

@@ -4,7 +4,7 @@ from copy import deepcopy
 import astropy.units as u
 import corner
 import numpy as np
-import pdrtpy.pdrutils as utils
+import pdrtpy.utils as utils
 import pytest
 from astropy.nddata import StdDevUncertainty
 from lmfit import fit_report

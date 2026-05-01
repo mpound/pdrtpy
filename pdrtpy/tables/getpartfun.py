@@ -6,7 +6,7 @@ See https://hitran.org/docs/iso-meta/
 @author: mpound
 """
 
-import pdrtpy.pdrutils as utils
+import pdrtpy.utils as utils
 import wget
 from astropy.table import Table
 

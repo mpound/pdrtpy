@@ -2,7 +2,7 @@
 
 import os
 
-import pdrtpy.pdrutils as utils
+import pdrtpy.utils as utils
 import pytest
 from astropy.nddata import StdDevUncertainty
 from astropy.table import Table

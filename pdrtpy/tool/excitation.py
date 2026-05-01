@@ -11,7 +11,7 @@ from emcee.pbar import get_progress_bar
 from lmfit import Parameters  # , fit_report
 from lmfit.model import Model  # , ModelResult
 
-from .. import molecule as mol, pdrutils as utils
+from .. import molecule as mol, utils
 from ..measurement import Measurement
 from .fitmap import FitMap
 from .toolbase import ToolBase
