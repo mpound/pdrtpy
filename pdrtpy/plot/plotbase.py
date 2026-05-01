@@ -482,5 +482,12 @@ class PlotBase:
             self.figure.suptitle(kwargs_opts["title"], y=0.95)
 
         if k.wcs is not None:
-            self._axis[axidx].set_xlabel(k.wcs.wcs.lngtyp)
-            self._axis[axidx].set_ylabel(k.wcs.wcs.lattyp)
+            ax = self._axis[axidx]
+            if hasattr(ax, "coords"):
+                # WCSAxes: use the coords interface; set_xlabel/ylabel triggers
+                # layout/tick machinery that accesses _coord_range before draw.
+                ax.coords[0].set_axislabel(k.wcs.wcs.lngtyp)
+                ax.coords[1].set_axislabel(k.wcs.wcs.lattyp)
+            else:
+                ax.set_xlabel(k.wcs.wcs.lngtyp)
+                ax.set_ylabel(k.wcs.wcs.lattyp)
