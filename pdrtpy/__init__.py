@@ -1,7 +1,6 @@
 """Top level package for pdrtpy"""
 
-# __all__ = [ "pdrutils", "measurement", "modelset"]
-__version__ = "2.7.3"
+__version__ = "2.7.4"
 
 VERSION = __version__
 AUTHORS = "Marc W. Pound, Mark G. Wolfire"
