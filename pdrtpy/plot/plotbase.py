@@ -430,7 +430,12 @@ class PlotBase:
             if kwargs_opts["colorbar"]:
                 self._wcs_colorbar(im, self._axis[axidx])
                 # reset the axis so that users can call plot._plt.whatever()
-                self._plt.sca(self._axis[axidx])
+                # ipympl and similar backends may not register a canvas manager,
+                # causing pyplot.sca() to raise ValueError. Skip when unmanaged.
+                _ax = self._axis[axidx]
+                _fig = _ax.get_figure()
+                if _fig is not None and getattr(_fig.canvas, "manager", None) is not None:
+                    self._plt.sca(_ax)
 
         if kwargs_opts["contours"]:
             if kwargs_contour["levels"] is None:
