@@ -1,3 +1,4 @@
+import warnings
 from copy import copy, deepcopy
 
 # import astropy.version
@@ -19,6 +20,12 @@ from matplotlib.colors import LogNorm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from .. import pdrutils as utils
+
+# WCS-projected axes over NaN-filled maps produce NaN sky coordinates for some
+# tick positions. astropy's Angle.to_string() wraps do_format in np.vectorize;
+# numpy's ufunc layer warns "invalid value encountered in do_format (vectorized)"
+# before do_format even runs (it handles NaN correctly internally). Suppress it.
+warnings.filterwarnings("ignore", message=".*do_format.*", category=RuntimeWarning)
 
 
 class PlotBase:
