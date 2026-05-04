@@ -102,7 +102,7 @@ class ModelPlot(PlotBase):
             )
 
     def intensity(self, identifier, **kwargs):
-        """Plot a model ratio
+        """Plot a model intensity
 
         :param identifier: Identifier tag for the model to plot, e.g., "OI_63", "CII_158", "CO_10"]
         :type identifier: str
