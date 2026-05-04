@@ -258,3 +258,88 @@ class TestMeasurementBeamConvert:
                 identifier="test",
                 bmaj=10.0,  # not a Quantity
             )
+
+
+class TestMeasurementIdSetter:
+    def test_id_setter(self):
+        m = Measurement(data=np.array([1.0]), unit="adu", identifier="original")
+        assert m.id == "original"
+        m.id = "new_id"
+        assert m.id == "new_id"
+
+    def test_id_setter_affects_repr(self):
+        m = Measurement(data=np.array([1.0]), uncertainty=StdDevUncertainty(0.1), unit="adu", identifier="foo")
+        m.id = "bar"
+        assert m.id == "bar"
+
+
+class TestMeasurementReprStr:
+    def test_repr_and_str_identical(self):
+        m = Measurement(data=np.array([1.0]), uncertainty=StdDevUncertainty(0.1), unit="adu", identifier="test")
+        assert repr(m) == str(m)
+
+
+class TestMeasurementProperties:
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.m = Measurement(
+            data=np.array([4.0]), uncertainty=StdDevUncertainty(np.array([2.0])), unit="adu", identifier="test"
+        )
+
+    def test_sn(self):
+        assert self.m.SN[0] == pytest.approx(2.0)
+
+    def test_sn_no_uncertainty(self):
+        m = Measurement(data=np.array([1.0]), unit="adu", identifier="test")
+        assert m.SN is None
+
+    def test_is_single_pixel_true(self):
+        assert self.m.is_single_pixel() is True
+
+    def test_is_single_pixel_false(self):
+        m = Measurement(data=np.array([1.0, 2.0]), unit="adu", identifier="test")
+        assert m.is_single_pixel() is False
+
+    def test_levels(self):
+        lvl = self.m.levels
+        assert lvl[0] == pytest.approx(2.0)
+        assert lvl[1] == pytest.approx(4.0)
+        assert lvl[2] == pytest.approx(6.0)
+
+    def test_is_ratio_true(self):
+        m = Measurement(data=np.array([1.0]), unit="adu", identifier="CII_158/CO_32")
+        assert m.is_ratio() is True
+
+    def test_is_ratio_false(self):
+        assert self.m.is_ratio() is False
+
+    def test_value_returns_data(self):
+        assert np.all(self.m.value == self.m.data)
+
+
+class TestMakeMeasurementErrors:
+    """Tests for make_measurement with rms and percent error modes."""
+
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.flux_file = utils.get_testdata("n22_cii_flux.fits")
+        self.err_file = utils.get_testdata("n22_cii_error.fits")
+
+    def test_make_measurement_error_file(self, tmp_path):
+        outfile = str(tmp_path / "out.fits")
+        Measurement.make_measurement(self.flux_file, self.err_file, outfile, overwrite=False)
+        m = Measurement.read(outfile, identifier="CII_158")
+        assert m.error is not None
+        assert np.all(np.isfinite(m.error[~np.isnan(m.error)]))
+
+    def test_make_measurement_percent_error(self, tmp_path):
+        outfile = str(tmp_path / "out_pct.fits")
+        Measurement.make_measurement(self.flux_file, "10%", outfile)
+        m = Measurement.read(outfile, identifier="CII_158")
+        assert m.error is not None
+
+    def test_make_measurement_overwrite_raises(self, tmp_path):
+        outfile = str(tmp_path / "out.fits")
+        Measurement.make_measurement(self.flux_file, self.err_file, outfile)
+        with pytest.raises(OSError):
+            Measurement.make_measurement(self.flux_file, self.err_file, outfile, overwrite=False)

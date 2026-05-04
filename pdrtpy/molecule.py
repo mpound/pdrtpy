@@ -65,6 +65,28 @@ class BaseMolecule:
         eu = self._transition_data["Tu"]
         return np.array([np.sum(gu * np.exp(-eu / t)) for t in temperature])
 
+    def _table_partition_function(self, temperature: Quantity) -> np.ndarray:
+        """Interpolate partition function from a pre-computed table stored in ``self._partfun_data``.
+
+        Parameters
+        ----------
+        temperature : :class:`astropy.units.quantity.Quantity`
+            The excitation temperature(s)
+
+        Returns
+        -------
+        :class:`~numpy.ndarray`
+            The partition function evaluated at the given excitation temperatures
+        """
+        t = np.ma.masked_invalid(
+            (temperature.value * u.Unit(temperature.unit)).to("K", equivalencies=u.temperature()).value
+        )
+        if np.nanmax(t) > self._maxQtemp:
+            warnings.warn(
+                f"Input temperature exceeds maximum partition function temperature: {self._maxQtemp} K", stacklevel=2
+            )
+        return np.interp(t, self._partfun_data["T"], self._partfun_data["Q"])
+
     @property
     def name(self):
         """
@@ -190,9 +212,9 @@ class CO(BaseMolecule):  # 12C16O
 
     def partition_function(self, temperature: Quantity) -> np.ndarray:
         """
-        Calculate the partition function for CO at the given temperature usin the HITRAN partition function.
+        Calculate the partition function for CO at the given temperature using the HITRAN partition function.
         https://hitran.org/data/Q/q26.txt
-        The HITRAN function is evaluated at 1K intervals; this function performas a linear interpolation on those data.
+        The HITRAN function is evaluated at 1K intervals; this function performs a linear interpolation on those data.
 
         Parameters
         ----------
@@ -204,14 +226,7 @@ class CO(BaseMolecule):  # 12C16O
         Q: :class:`~numpy.ndarray`
             The partition function evaluated at the given excitation temperature(s)
         """
-        t = np.ma.masked_invalid(
-            (temperature.value * u.Unit(temperature.unit)).to("K", equivalencies=u.temperature()).value
-        )
-        if np.nanmax(t) > self._maxQtemp:
-            warnings.warn(
-                f"Input temperature exceeds maximum partition function temperature: {self._maxQtemp} K", stacklevel=2
-            )
-        return np.interp(t, self._partfun_data["T"], self._partfun_data["Q"])
+        return self._table_partition_function(temperature)
 
 
 class C13O(BaseMolecule):  # 13CO16O
@@ -221,11 +236,10 @@ class C13O(BaseMolecule):  # 13CO16O
         self._partfun_data = utils.get_table("PartFun_13C16O.tab", format="ascii.ecsv")
         self._maxQtemp = np.max(self._partfun_data["T"])
 
-    # @todo refactor partition_function since we use same table format for all
     def partition_function(self, temperature: Quantity) -> np.ndarray:
-        """Calculate the partition function for 13CO at the given temperature usin the HITRAN partition function.
+        """Calculate the partition function for 13CO at the given temperature using the HITRAN partition function.
         https://hitran.org/data/Q/q27.txt
-        The HITRAN function is evaluated at 1K intervals; this function performas a linear interpolation on those data.
+        The HITRAN function is evaluated at 1K intervals; this function performs a linear interpolation on those data.
 
         Parameters
         ----------
@@ -237,18 +251,4 @@ class C13O(BaseMolecule):  # 13CO16O
         Q: :class:`~numpy.ndarray`
             The partition function evaluated at the given excitation temperature(s)
         """
-        t = np.ma.masked_invalid(
-            (temperature.value * u.Unit(temperature.unit)).to("K", equivalencies=u.temperature()).value
-        )
-        if np.nanmax(t) > self._maxQtemp:
-            warnings.warn(
-                f"Input temperature exceeds maximum partition function temperature: {self._maxQtemp} K", stacklevel=2
-            )
-        return np.interp(t, self._partfun_data["T"], self._partfun_data["Q"])
-
-
-# class CHplus(BaseMolecule):  # CH+
-#    def __init__(self, name="CH^+", path="CHp_transition.tab", opr=3.0, opr_can_vary=True):
-#        super().__init__(name, path, opr, opr_can_vary)
-#       self._partfun_data = utils.get_table("PartFun_CH+.tab", format="ascii.ecsv")
-#       self._maxQtemp = np.max(self._partfun_data["T"])
+        return self._table_partition_function(temperature)

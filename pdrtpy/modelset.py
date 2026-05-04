@@ -76,7 +76,7 @@ class ModelSet:
         if modelsetinfo is None:
             # get the package default
             self._all_models = get_table("all_models.tab")
-        elif type(modelsetinfo) is str:
+        elif isinstance(modelsetinfo, str):
             self._all_models = Table.read(modelsetinfo, format=format)
         else:  # must be an Astropy Table
             self._all_models = deepcopy(modelsetinfo)
@@ -102,10 +102,9 @@ class ModelSet:
             possible["mass"] = self._all_models.loc[name]["mass"]
         for key in ["z", "medium", "losangle"]:
             possible[key] = self._all_models.loc[name][key]
-        # ugh, possible[] resulting from above can be a Python native or a Column.
-        # If only one row matches it will be a native, otherwise it will be a Column,
-        # so we have to check if it is a Column or not, so that we can successfully
-        # import numberscreate a numpy array.
+        # possible[] can be a Python native or a Column depending on how many rows matched.
+        # If only one row matches it will be a native, otherwise a Column.
+        # Check the type so we can create a sorted numpy array in either case.
         for j in possible:
             if possible[j] is None:
                 continue
@@ -138,6 +137,8 @@ class ModelSet:
         self._default_unit["intensity"] = _OBS_UNIT_
         self._default_unit["emissivity"] = "erg / (cm3 ion s)"
         self._user_added_models = dict()
+        self._av_table = get_table("av.tab", format="ascii")
+        self._av_table.add_index("LOSANGLE")
 
     @property
     def description(self):
@@ -145,9 +146,11 @@ class ModelSet:
 
         :rtype: str
         """
-        s = f", Z={self.z:2.1f}, losangle={self.losangle:d}"
+        s = f", Z={self.z:2.1f}, losangle={int(self.losangle):d}"
         if self.avlos is not None:
-            s += f", avlos={self.avlos:d}"
+            s += f", avlos={self.avlos:.4f}"
+        if self.avperp is not None:
+            s += f", avperp={self.avperp:.4f}"
         return self._tabrow["description"] + s
 
     @property
@@ -214,17 +217,28 @@ class ModelSet:
 
     @property
     def avperp(self):
-        """The PDR thickness for inclined viewing angle models, expressed in visual magnitudes. A value of 0 indicates a face-on model, for which `avperp` is undefined.
-        :rtype: float
+        """The PDR thickness for inclined viewing angle models, expressed in visual magnitudes.
+        Returns ``None`` for face-on geometry (losangle=0) and for non-wk2020 models.
+
+        :rtype: float or None
         """
-        pass
+        if not self.is_wk2020:
+            return None
+        avperp = float(self._av_table.loc[int(self.losangle)]["AVPERP"])
+        if avperp == 0.0:
+            return None
+        return avperp
 
     @property
-    def avlos(self):  # @todo this might be model specific
-        """The visual extinction along the line of sight, express in magnitudes.
-        :rtype: float
+    def avlos(self):
+        """The visual extinction along the line of sight, expressed in magnitudes.
+        Returns ``None`` for non-wk2020 models.
+
+        :rtype: float or None
         """
-        pass
+        if not self.is_wk2020:
+            return None
+        return float(self._av_table.loc[int(self.losangle)]["AVLOS"])
 
     @property
     def table(self):
