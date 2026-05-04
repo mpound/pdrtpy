@@ -175,3 +175,88 @@ class TestModelSetFindMethods:
     def test_model_intensities_empty(self):
         result = self.ms.model_intensities(["fake_1", "fake_2"])
         assert result == []
+
+    def test_model_ratios(self):
+        ids = ["CII_158", "OI_63", "FIR"]
+        ratios = self.ms.model_ratios(ids)
+        assert isinstance(ratios, list)
+        assert len(ratios) > 0
+
+    def test_model_ratios_too_few_raises(self):
+        with pytest.raises(Exception):
+            self.ms.model_ratios(["CII_158"])
+
+    def test_get_models_ratio(self):
+        ids = ["CII_158", "OI_63"]
+        models = self.ms.get_models(ids, model_type="ratio")
+        assert isinstance(models, dict)
+        assert len(models) > 0
+
+    def test_get_models_intensity(self):
+        ids = ["CII_158", "OI_63"]
+        models = self.ms.get_models(ids, model_type="intensity")
+        assert isinstance(models, dict)
+
+    def test_get_models_bad_type_raises(self):
+        with pytest.raises(ValueError):
+            self.ms.get_models(["CII_158"], model_type="nonsense")
+
+
+class TestModelSetAvLos:
+    """Tests for avlos and avperp properties."""
+
+    def test_wk2020_faceon_avlos(self):
+        ms = ModelSet("wk2020", z=1, losangle=0)
+        assert ms.avlos == pytest.approx(7.0)
+
+    def test_wk2020_faceon_avperp_is_none(self):
+        """avperp is undefined (0) for face-on geometry."""
+        ms = ModelSet("wk2020", z=1, losangle=0)
+        assert ms.avperp is None
+
+    def test_wk2020_inclined_avlos(self):
+        ms = ModelSet("wk2020", z=1, losangle=30)
+        assert ms.avlos == pytest.approx(8.082903)
+
+    def test_wk2020_inclined_avperp(self):
+        ms = ModelSet("wk2020", z=1, losangle=30)
+        assert ms.avperp == pytest.approx(4.041451)
+
+    def test_wk2020_inclined_avlos_60(self):
+        ms = ModelSet("wk2020", z=1, losangle=60)
+        assert ms.avlos == pytest.approx(14.0)
+
+    def test_wk2020_inclined_avperp_60(self):
+        ms = ModelSet("wk2020", z=1, losangle=60)
+        assert ms.avperp == pytest.approx(12.12435)
+
+    def test_wk2006_avlos_is_none(self):
+        ms = ModelSet("wk2006", z=1)
+        assert ms.avlos is None
+
+    def test_wk2006_avperp_is_none(self):
+        ms = ModelSet("wk2006", z=1)
+        assert ms.avperp is None
+
+    def test_kosmatau_avlos_is_none(self):
+        ms = ModelSet("kt2013wd01-7", z=1, medium="clumpy", mass=100)
+        assert ms.avlos is None
+
+    def test_kosmatau_avperp_is_none(self):
+        ms = ModelSet("kt2013wd01-7", z=1, medium="clumpy", mass=100)
+        assert ms.avperp is None
+
+    def test_description_is_string(self):
+        """description property should return a string without crashing."""
+        for losangle in [0, 30, 60]:
+            ms = ModelSet("wk2020", z=1, losangle=losangle)
+            desc = ms.description
+            assert isinstance(desc, str)
+            assert len(desc) > 0
+
+    def test_description_wk2006_no_avlos(self):
+        """wk2006 description should work and not contain avlos."""
+        ms = ModelSet("wk2006", z=1)
+        desc = ms.description
+        assert isinstance(desc, str)
+        assert "avlos" not in desc

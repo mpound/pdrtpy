@@ -1,8 +1,5 @@
 """Manage spectral line or continuum observations"""
 
-# @Todo it would be nice to be able to get Measurment[index] as a Measurement instead of
-# a float. This is the behavior for CCDData, somehow lost in Measurement  See NDUncertainty __getitem__
-# this will have ripple effects if implemented.
 import warnings
 from copy import deepcopy
 from os import remove
@@ -97,30 +94,16 @@ class Measurement(CCDData):
         _beam["BPA"] = self._beam_convert(kwargs.pop("bpa", None))
         self._restfreq = kwargs.pop("restfreq", None)
         self._filename = None
-        self._data = None  # shut up Codacy
 
-        # This won't work: On arithmetic operations, this raises the exception.
-        # if self._identifier is None:
-        #    raise ValueError("an identifier for Measurement must be specified.")
-        # On arithmetic operations, this causes an annoying
-        # log.info() message from CCDData about overwriting Quantity
-
-        # This workaround is needed because CCDData raises an exception if unit
-        # not given. Whereas having BUNIT in the image header instead would be
-        # perfectly reasonable...
-        # The side-effect of this is that Measurement not instantiated from
-        # an image and with no unit given gets "adu" as the unit.
+        # CCDData raises an exception if unit not given. Whereas having BUNIT
+        # in the image header instead would be perfectly reasonable.
+        # The side-effect is that a Measurement with no unit given gets "adu".
         self._defunit = "adu"
         unitpresent = "unit" in kwargs
         _unit = kwargs.pop("unit", self._defunit)
 
-        # Also works: super().__init__(*args, **kwargs, unit=_unit)
         CCDData.__init__(self, *args, **kwargs, unit=_unit)
-        # force single pixel data to be interable arrays.
-        # I consider this a bug in CCDData, StdDevUncertainty that they don't do this.
-        # also StdDevUncertainty does not convert float to np.float!
-        # print("DU",np.shape(self.data),np.shape(self.uncertainty.array))
-        # print(type(self.data))
+        # Force single-pixel data to be iterable arrays; CCDData/StdDevUncertainty don't do this.
         if np.shape(self.data) == ():
             self.data = np.array([self.data])
         if self.error is not None and np.shape(self.error) == ():
@@ -205,7 +188,7 @@ class Measurement(CCDData):
                 if rms is None:
                     raise Exception("rms not given as parameter and RMS keyword not present in data header")
                 else:
-                    print("Found RMS in header: {rms.2E}{_error[0].data.shape}")
+                    print(f"Found RMS in header: {rms:.2E} {_error[0].data.shape}")
             # tmp = np.full(_error[0].data.shape,rms)
             _error[0].data[:] = rms
         elif "%" in error:
@@ -280,13 +263,14 @@ class Measurement(CCDData):
         """
         return self._identifier
 
-    def identifier(self, id):
+    @id.setter
+    def id(self, value):
         """Set the string ID of this measurement, e.g., CO_10
 
-        :param id: the identifier
-        :type id: str
+        :param value: the identifier
+        :type value: str
         """
-        self._identifier = id
+        self._identifier = value
 
     @property
     def beam(self):
@@ -341,12 +325,6 @@ class Measurement(CCDData):
         """
         self._world_axis = utils.get_xy_from_wcs(self, quantity=False, linear=False)
         self._world_axis_lin = utils.get_xy_from_wcs(self, quantity=False, linear=True)
-        # self._interp_log_old = interp2d(
-        #    self._world_axis[0], self._world_axis[1], z=self.data, kind=kind, bounds_error=True
-        # )
-        # self._interp_lin_old = interp2d(
-        #    self._world_axis_lin[0], self._world_axis_lin[1], z=self.data, kind=kind, bounds_error=True
-        # )
         self._interp_log = RegularGridInterpolator(self._world_axis, values=self.data.T, method=kind, bounds_error=True)
         self._interp_lin = RegularGridInterpolator(
             self._world_axis_lin, values=self.data.T, method=kind, bounds_error=True
@@ -514,10 +492,7 @@ class Measurement(CCDData):
         return m
 
     def __str__(self):
-        # this fails for array data
-        # return  "{:3.2e} +/- {:3.2e} {:s}".format(self.data,self.error,self.unit)
-        m = f"{np.squeeze(self.data)} +/- {np.squeeze(self.error)} {self.unit}"
-        return m
+        return repr(self)
 
     def __format__(self, spec):
         # todo look more closely how Quantity does this
@@ -690,21 +665,18 @@ def fits_measurement_reader(
     # suppress INFO messages about units in FITS file. e.g. useless ones like:
     # "INFO: using the unit erg / (cm2 s sr) passed to the FITS reader instead of the unit erg s-1 cm-2 sr-1 in the FITS file."
     log.setLevel("WARNING")
-    z = CCDData.read(filename, unit=unit)  # ,hdu,uu,hdu_uncertainty,hdu_mask,hdu_flags,key_uncertainty_type, **kwd)
+    z = CCDData.read(filename, unit=unit)
     if _squeeze:
         z = utils.squeeze(z)
 
-    # @TODO if uncertainty plane not present, look for RMS keyword
-    # @TODO header values get stuffed into WCS, others may be dropped by CCDData._generate_wcs_and_update_header
     try:
         z = Measurement(z, unit=z._unit, title=_title, restfreq=_restfreq)
     except Exception as exc:
         raise TypeError(f"Could not convert fits_measurement_reader output to Measurement because {exc}") from exc
-    z.identifier(_id)
+    z.id = _id
     # astropy.io.registry.read creates a FileIO object before calling the registered
     # reader (this method), so the filename is FileIO.name.
     z._filename = filename.name
-    # log.setLevel("INFO")  # set back to default
     return z
 
 
