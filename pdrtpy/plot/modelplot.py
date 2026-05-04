@@ -338,13 +338,12 @@ class ModelPlot(PlotBase):
         if kwargs_opts["grid"]:
             self._draw_grid(self._axis, kwargs_opts["linewidth"])
         if kwargs_opts["legend"]:
-            # Manually build the legend.
             title1 = model.wcs.wcs.ctype[pindex]
             if "_" in title1:
                 title1 = r"${\rm " + title1 + "}$"
             unit1 = "[" + nax_clip.unit.to_string("latex_inline") + "]"
             handles, labels = self._axis.get_legend_handles_labels()
-            phantom = [self._axis.plot([], marker="", markersize=0, ls="", lw=0)[0]] * 2
+            phantom = self._make_phantom_handles(self._axis, 2)
             labels = [title1, unit1, *labels]
             handles = phantom + lines
             leg = self._axis.legend(
@@ -355,9 +354,7 @@ class ModelPlot(PlotBase):
                 bbox_to_anchor=kwargs_opts["bbox_to_anchor"],
                 loc=kwargs_opts["loc"],
             )
-            for vpack in leg._legend_handle_box.get_children():
-                for hpack in vpack.get_children()[:2]:
-                    hpack.get_children()[0].set_width(0)
+            self._zero_legend_header_widths(leg)
         if kwargs_opts["title"] is not None:
             self._axis.set_title(kwargs_opts["title"])
 
@@ -614,12 +611,12 @@ class ModelPlot(PlotBase):
             unit2 = "[" + rsl + "]"
 
             handles, labels = self._axis.get_legend_handles_labels()
-            phantom = [self._axis.plot([], marker="", markersize=0, ls="", lw=0)[0]] * 2
+            phantom = self._make_phantom_handles(self._axis, 2)
             lN = len(linesN)
             lG = len(linesG)
             diff = lN - lG
             adiff = abs(diff)
-            phantom2 = [self._axis.plot([], marker="", markersize=0, ls="", lw=0)[0]] * adiff
+            phantom2 = self._make_phantom_handles(self._axis, adiff)
             blank = [""] * adiff
 
             if diff == 0:
@@ -656,12 +653,7 @@ class ModelPlot(PlotBase):
                 bbox_to_anchor=kwargs_opts["bbox_to_anchor"],
                 loc=kwargs_opts["loc"],
             )
-            # trick to remove extra left side space in legend column headers.
-            # doesn't completely center the headers, but gets as close as possible
-            # See https://stackoverflow.com/questions/44071525/matplotlib-add-titles-to-the-legend-rows/44072076
-            for vpack in leg._legend_handle_box.get_children():
-                for hpack in vpack.get_children()[:2]:
-                    hpack.get_children()[0].set_width(0)
+            self._zero_legend_header_widths(leg)
         # Put the plot title on if given.
         if kwargs_opts["title"] is not None:
             self._axis.set_title(kwargs_opts["title"])

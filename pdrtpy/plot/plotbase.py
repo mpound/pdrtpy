@@ -251,6 +251,21 @@ class PlotBase:
         axis.tick_params(axis="both", direction="in", which="both")
         axis.tick_params(axis="both", bottom=True, top=True, left=True, right=True, which="both")
 
+    def _make_phantom_handles(self, axis, n):
+        """Return a list of *n* invisible line handles for use as legend column headers."""
+        return [axis.plot([], marker="", markersize=0, ls="", lw=0)[0]] * n
+
+    def _zero_legend_header_widths(self, leg):
+        """Remove extra left-side space from phantom column-header entries in *leg*.
+
+        Applies the trick from https://stackoverflow.com/a/44072076 that zeroes
+        out the handle width for the first two entries in each legend column so
+        that text-only headers appear centred rather than left-shifted.
+        """
+        for vpack in leg._legend_handle_box.get_children():
+            for hpack in vpack.get_children()[:2]:
+                hpack.get_children()[0].set_width(0)
+
     def savefig(self, fname, **kwargs):
         """Save the current figure to a file.
 
