@@ -91,10 +91,9 @@ class TestMeasurement:
         z2 = np.float64(0.0003121150896071409)
         assert self.q[1]._interp_lin((x1, y1)) == z2
 
-    def test_read_write(self):
+    def test_read_write(self, tmp_path):
         # Get the input filenames of the FITS files in the testdata directory
         # These are maps from Jameson et al 2018.
-        print(f"Test FITS files are in: {utils.testdata_dir()}")
         cii_flux = utils.get_testdata("n22_cii_flux.fits")  # [C II] flux
         cii_err = utils.get_testdata("n22_cii_error.fits")  # [C II] error
         oi_flux = utils.get_testdata("n22_oi_flux.fits")  # [O I] flux
@@ -102,16 +101,14 @@ class TestMeasurement:
         FIR_flux = utils.get_testdata("n22_FIR.fits")  # FIR flux
 
         # Output file names
-        cii_combined = utils.testdata_dir() + "n22_cii_flux_error.fits"
-        oi_combined = utils.testdata_dir() + "n22_oi_flux_error.fits"
-        FIR_combined = utils.testdata_dir() + "n22_FIR_flux_error.fits"
+        cii_combined = str(tmp_path / "n22_cii_flux_error.fits")
+        oi_combined = str(tmp_path / "n22_oi_flux_error.fits")
+        FIR_combined = str(tmp_path / "n22_FIR_flux_error.fits")
 
-        # create the Measurements and write out the FITS files.
-        # Set overwrite=True to allow multiple runs of this notebook.
-        Measurement.make_measurement(cii_flux, cii_err, cii_combined, overwrite=True)
-        Measurement.make_measurement(oi_flux, oi_err, oi_combined, overwrite=True)
+        Measurement.make_measurement(cii_flux, cii_err, cii_combined)
+        Measurement.make_measurement(oi_flux, oi_err, oi_combined)
         # Assign a 10% error in FIR flux
-        Measurement.make_measurement(FIR_flux, error="10%", outfile=FIR_combined, overwrite=True)
+        Measurement.make_measurement(FIR_flux, error="10%", outfile=FIR_combined)
 
         # Read in the FITS files to Measurements
         cii_meas = Measurement.read(cii_combined, identifier="CII_158")
