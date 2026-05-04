@@ -6,10 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **pdrtpy** (PhotoDissociation Region Toolbox - Python) is a scientific Python package for astrophysical analysis of photodissociation regions (PDRs). It helps astronomers determine physical parameters (density, radiation field) from far-infrared and millimeter/submillimeter spectral observations from telescopes like ALMA, SOFIA, JWST, Spitzer, and Herschel.
 
-- **Language**: Python 3.10+
+- **Language**: Python 3.11+
 - **Build System**: Hatchling (pyproject.toml)
-- **Key Dependencies**: astropy, numpy <2.0, scipy, matplotlib, lmfit, emcee
-- **Testing**: pytest across Python 3.10, 3.11, 3.12, 3.13
+- **Key Dependencies**: astropy, numpy, scipy, matplotlib, lmfit, emcee
+- **Testing**: pytest across Python 3.11, 3.12, 3.13, 3.14
 
 ## Development Commands
 
@@ -45,8 +45,8 @@ uv run ruff check .
 # Auto-fix linting issues
 uv run ruff check --fix .
 
-# Format code with black (line length: 120)
-uv run black .
+# Format code with ruff-format (line length: 120)
+uv run ruff format .
 ```
 
 ### Documentation
@@ -69,7 +69,13 @@ Data Models (Foundation)
 ├── Measurement (pdrtpy/measurement.py)
 ├── ModelSet (pdrtpy/modelset.py)
 ├── Molecule (pdrtpy/molecule.py)
-└── pdrutils (pdrtpy/pdrutils.py)
+├── FitMap (pdrtpy/tool/fitmap.py)
+└── Utils subpackage (pdrtpy/utils/)
+    ├── units.py   — custom radiation field unit definitions
+    ├── paths.py   — directory/path helpers and table I/O
+    ├── fits.py    — FITS keyword utilities
+    ├── wcs.py     — WCS and image array helpers
+    └── helpers.py — general helpers (warn, is_image, etc.)
 
 Analysis Tools (Business Logic)
 ├── ToolBase (pdrtpy/tool/toolbase.py)
@@ -77,7 +83,8 @@ Analysis Tools (Business Logic)
 └── ExcitationFit classes (pdrtpy/tool/excitation.py)
     ├── H2ExcitationFit
     ├── COExcitationFit
-    └── C13OExcitationFit
+    ├── C13OExcitationFit
+    └── CHplusExcitationFit (experimental)
 
 Visualization Layer
 ├── PlotBase (pdrtpy/plot/plotbase.py)
@@ -99,10 +106,12 @@ Visualization Layer
 - Models are stored as FITS files in `pdrtpy/models/` with hierarchical directory structure
 - Metadata stored in astropy Tables for efficient querying
 - Supports multiple metallicities, geometries, and viewing angles
+- `avlos` and `avperp` properties implemented for wk2020 models (visual extinction data from `pdrtpy/tables/av.tab`)
 
 #### Tool Classes (pdrtpy/tool/)
 - **LineRatioFit**: Core fitting engine using lmfit minimization. Accepts measurements, creates intensity ratios, performs χ² minimization against models to determine density and radiation field.
-- **ExcitationFit**: Complex fitting tool for molecular excitation diagrams. Supports 1-2 component fits with optional MCMC (via emcee).
+- **ExcitationFit**: Complex fitting tool for molecular excitation diagrams. Supports 1-2 component fits with optional MCMC (via emcee). Classes: `H2ExcitationFit`, `COExcitationFit`, `C13OExcitationFit`, `CHplusExcitationFit` (experimental).
+- **FitMap** (`pdrtpy/tool/fitmap.py`): Stores fit result objects in a spatial array with WCS properties. Used as the return type for map fits. Provides `get_pixel()`, `get_pixel_from_coord()`, `get_world()`, `get_skycoord()`.
 - All tools inherit from `ToolBase` which provides measurement handling and property detection (maps vs. scalars vs. vectors).
 
 #### Plot Classes (pdrtpy/plot/)
@@ -119,12 +128,14 @@ Visualization Layer
 - No tight coupling between fitting and plotting layers
 
 ### 2. Custom Astropy Units
-The package defines custom units for radiation field strength (defined in `pdrutils.py`):
+The package defines custom units for radiation field strength (defined in `pdrtpy/utils/units.py`):
 - **Habing**: G₀ (1.6e-3 erg cm⁻² s⁻¹)
 - **Draine**: χ (radiation field strength)
 - **Mathis**: Alternative radiation field unit
 
 These are automatically registered on import. When working with radiation field values, always use these custom units.
+
+Note: `pdrutils.py` is now a **backward-compatibility shim** — the real code lives in `pdrtpy/utils/`. Internal code should import from `pdrtpy.utils` directly (e.g. `from pdrtpy import utils`).
 
 ### 3. Automatic Error Propagation
 - `Measurement` leverages astropy's `CCDData` uncertainty system
@@ -151,17 +162,17 @@ These are automatically registered on import. When working with radiation field 
 
 ## Code Style and Conventions
 
-- **Formatter**: black with 120 character line length
+- **Formatter**: ruff-format with 120 character line length
 - **Linter**: ruff (checks F, E, W, B, I, NPY, PD, RUF rules)
-- **Import sorting**: isort with black profile
+- **Import sorting**: isort (ruff-managed)
 - **Docstrings**: NumPy docstring style
-- **Pre-commit hooks**: Configured in `.pre-commit-config.yaml` (trailing whitespace, black, isort, ruff)
+- **Pre-commit hooks**: Configured in `.pre-commit-config.yaml` (trailing whitespace, ruff-format, isort, ruff)
 
 ## Testing Notes
 
 - Tests located in `pdrtpy/test/`, `pdrtpy/tool/test/`, `pdrtpy/plot/test/`
 - Test data (FITS files) in `pdrtpy/testdata/`
-- Tests run across Python 3.10, 3.11, 3.12, 3.13 in CI (Ubuntu, macOS, Windows)
+- Tests run across Python  3.11, 3.12, 3.13, 3.14 in CI (Ubuntu, macOS, Windows)
 - When adding new features, follow existing test patterns in similar modules
 - Use pytest fixtures for common setup (see existing test files)
 - Always use 'pytest -n auto' to run across all available CPU cores.
@@ -172,6 +183,6 @@ These are automatically registered on import. When working with radiation field 
 - **Interactive plotting**: Uses `mpl-interactions` for Jupyter exploration
 - **MCMC integration**: `emcee` library used for Bayesian parameter estimation in excitation fits
 - **Flexible I/O**: Measurements can come from FITS files or numpy arrays
-- **Physics constants**: Centralized in `pdrutils.py` (Boltzmann constant, partition functions, etc.)
+- **Physics constants**: Centralized in `pdrtpy/utils/` (pdrutils.py is a backward-compat shim)
 - **Prefer simple solutions**
 - **Always work in a branch.** Never directly change the master branch.
