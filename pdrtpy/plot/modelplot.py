@@ -890,7 +890,8 @@ class ModelPlot(PlotBase):
             )
             if kwargs_opts["colorbar"]:
                 cbar = self._figure.colorbar(im, ax=self._axis[axidx])
-                if kwargs_imshow["norm"].lower() != "log":
+                _norm_val = kwargs_imshow["norm"]
+                if not (isinstance(_norm_val, str) and _norm_val.lower() == "log"):
                     # avoid AttributeError: 'LogFormatterSciNotation' object has no attribute 'set_powerlimits'
                     cbar.formatter = ticker.ScalarFormatter(useMathText=True)
                     cbar.formatter.set_scientific(True)
@@ -928,7 +929,6 @@ class ModelPlot(PlotBase):
                 "legend",
                 "figsize",
                 "constrained_layout",
-                "figsize",
                 "stretch",
             ]:
                 kwargs_contour.pop(kx, None)

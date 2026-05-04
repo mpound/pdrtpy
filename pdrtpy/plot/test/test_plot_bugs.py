@@ -83,27 +83,27 @@ class TestTickLocatorRanges:
 
     def test_range_500_uses_500_major(self):
         loc = self._range_to_locator_major(500)
-        assert loc.base == 500
+        assert loc._edge.step == 500
 
     def test_range_2000_uses_500_major(self):
         loc = self._range_to_locator_major(2000)
-        assert loc.base == 500
+        assert loc._edge.step == 500
 
     def test_range_2001_uses_1000_major(self):
         loc = self._range_to_locator_major(2001)
-        assert loc.base == 1000
+        assert loc._edge.step == 1000
 
     def test_range_10000_uses_1000_major(self):
         loc = self._range_to_locator_major(10000)
-        assert loc.base == 1000
+        assert loc._edge.step == 1000
 
     def test_range_10001_uses_2000_major(self):
         loc = self._range_to_locator_major(10001)
-        assert loc.base == 2000
+        assert loc._edge.step == 2000
 
     def test_range_26001_uses_6000_major(self):
         loc = self._range_to_locator_major(26001)
-        assert loc.base == 6000
+        assert loc._edge.step == 6000
 
 
 # ──────────────────────────────────────────────────────────────

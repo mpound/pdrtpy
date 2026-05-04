@@ -240,23 +240,7 @@ class ExcitationPlot(PlotBase):
             x_fit = np.linspace(0, max(energy), 30)
             if debug:
                 self._logfile.write(f"EXD: {type(tt._fitresult)=}\n")
-
-            if tt.fit_result[data_position] is None or tt.fit_result.mask[data_position]:
-                q = tt.fit_result[data_position].params
-                warnmsg = f"The Excitation Tool was unable to fit pixel {data_position} so a fit cannot be displayed. "
-                for k in q:
-                    noerr = []
-                    if q[k].vary and q[k].stderr is None:
-                        noerr.append(k)
-                if len(noerr) > 0:
-                    warnmsg += f"Fit error(s) could not be determined for the following variables: {noerr}. "
-                warnmsg += f"Examine the {self._tool.__class__.__name__}.fit_result[{data_position}] attribute to see details of the fit."
-                log.warn(warnmsg)
-            else:
-                x_fit = np.linspace(0, max(energy), 30)
-                if debug:
-                    self._logfile.write(f"EXD: {type(tt._fitresult)=}\n")
-                    self._logfile.write(f"EXD: {type(tt._fitresult[data_position])=} at {position=}\n")
+                self._logfile.write(f"EXD: {type(tt._fitresult[data_position])=} at {position=}\n")
                 outpar = tt.fit_result[data_position].params.valuesdict()
                 if tt.numcomponents == 2:
                     labcold = (
@@ -353,7 +337,7 @@ class ExcitationPlot(PlotBase):
         if temperature_range <= 2000:
             _axis.xaxis.set_major_locator(MultipleLocator(500))
             _axis.xaxis.set_minor_locator(MultipleLocator(100))
-        if temperature_range <= 10000:
+        elif temperature_range <= 10000:
             _axis.xaxis.set_major_locator(MultipleLocator(1000))
             _axis.xaxis.set_minor_locator(MultipleLocator(200))
         elif temperature_range <= 26000:
