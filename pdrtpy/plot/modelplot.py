@@ -34,7 +34,6 @@ class ModelPlot(PlotBase):
         self._modelset = modelset
         self._figure = figure
         self._axis = axis
-        # print(utils.habing_unit)
 
     def plot(self, identifier, **kwargs):
         """Plot a model intensity or ratio
@@ -103,15 +102,13 @@ class ModelPlot(PlotBase):
             )
 
     def intensity(self, identifier, **kwargs):
-        """Plot a model ratio
+        """Plot a model intensity
 
         :param identifier: Identifier tag for the model to plot, e.g., "OI_63", "CII_158", "CO_10"]
         :type identifier: str
 
         .. seealso::  :meth:`~pdrtpy.modelset.ModelSet.supported_intensities` for a list of available identifer tags
         """
-        # shouldn't need separate model intensity as keyword would tell you.
-        # Idea: Put a 'modeltyp' keyword in FITS header whether it is intensity ratio or intensity.
         ms = self._modelset
         meas = kwargs.get("measurements", None)
         model = ms.get_models([identifier], model_type="intensity")
@@ -274,8 +271,6 @@ class ModelPlot(PlotBase):
         kwargs_opts.update(kwargs)
         model = self._modelset.get_model(identifier)
         self._figure, self._axis = self._plt.subplots(nrows=1, ncols=1, figsize=kwargs_opts["figsize"])
-        # this code substantially copied from phasespace(). At some point
-        # perhaps they can be refactored.
         if plotnaxis != 1 and plotnaxis != 2:
             raise ValueError("plotnaxis must be 1 or 2")
         if plotnaxis == 1:
@@ -339,29 +334,16 @@ class ModelPlot(PlotBase):
             self._axis.set_xscale("log")
         if kwargs_opts["logy"]:
             self._axis.set_yscale("log")
-        self._axis.tick_params(axis="both", direction="in", which="both")
-        self._axis.tick_params(axis="both", bottom=True, top=True, left=True, right=True, which="both")
+        self._set_standard_ticks(self._axis)
         if kwargs_opts["grid"]:
-            self._axis.grid(
-                visible=True, which="major", axis="both", lw=kwargs_opts["linewidth"] / 2, color="k", alpha=0.33
-            )
-            self._axis.grid(
-                visible=True,
-                which="minor",
-                axis="both",
-                lw=kwargs_opts["linewidth"] / 2,
-                color="k",
-                alpha=0.22,
-                linestyle="--",
-            )
+            self._draw_grid(self._axis, kwargs_opts["linewidth"])
         if kwargs_opts["legend"]:
-            # Manually build the legend.
             title1 = model.wcs.wcs.ctype[pindex]
             if "_" in title1:
                 title1 = r"${\rm " + title1 + "}$"
             unit1 = "[" + nax_clip.unit.to_string("latex_inline") + "]"
             handles, labels = self._axis.get_legend_handles_labels()
-            phantom = [self._axis.plot([], marker="", markersize=0, ls="", lw=0)[0]] * 2
+            phantom = self._make_phantom_handles(self._axis, 2)
             labels = [title1, unit1, *labels]
             handles = phantom + lines
             leg = self._axis.legend(
@@ -372,15 +354,10 @@ class ModelPlot(PlotBase):
                 bbox_to_anchor=kwargs_opts["bbox_to_anchor"],
                 loc=kwargs_opts["loc"],
             )
-            for vpack in leg._legend_handle_box.get_children():
-                for hpack in vpack.get_children()[:2]:
-                    hpack.get_children()[0].set_width(0)
+            self._zero_legend_header_widths(leg)
         if kwargs_opts["title"] is not None:
             self._axis.set_title(kwargs_opts["title"])
 
-    # note when plotting the units as axis labels, the order is not what we specify in _OBS_UNIT because astropy's Unit class
-    # sorts by power .  They have a good reason for this (hashing), but it does mean we get sub-optimal unit ordering.
-    # There is a possible workaround, but it must be custom for each CompositeUnit.https://github.com/astropy/astropy/issues/1578
     def phasespace(
         self,
         identifiers,
@@ -611,21 +588,9 @@ class ModelPlot(PlotBase):
             self._axis.set_aspect(kwargs_opts["aspect"])
             self._axis.set_xscale("log")
             self._axis.set_yscale("log")
-            self._axis.tick_params(axis="both", direction="in", which="both")
-            self._axis.tick_params(axis="both", bottom=True, top=True, left=True, right=True, which="both")
+            self._set_standard_ticks(self._axis)
         if kwargs_opts["grid"]:
-            self._axis.grid(
-                visible=True, which="major", axis="both", lw=kwargs_opts["linewidth"] / 2, color="k", alpha=0.33
-            )
-            self._axis.grid(
-                visible=True,
-                which="minor",
-                axis="both",
-                lw=kwargs_opts["linewidth"] / 2,
-                color="k",
-                alpha=0.22,
-                linestyle="--",
-            )
+            self._draw_grid(self._axis, kwargs_opts["linewidth"])
         if kwargs_opts["legend"]:
             # Manually build the legend. Create the column headers for the legend
             # and blank handles and labels to take up space for the headers and
@@ -646,12 +611,12 @@ class ModelPlot(PlotBase):
             unit2 = "[" + rsl + "]"
 
             handles, labels = self._axis.get_legend_handles_labels()
-            phantom = [self._axis.plot([], marker="", markersize=0, ls="", lw=0)[0]] * 2
+            phantom = self._make_phantom_handles(self._axis, 2)
             lN = len(linesN)
             lG = len(linesG)
             diff = lN - lG
             adiff = abs(diff)
-            phantom2 = [self._axis.plot([], marker="", markersize=0, ls="", lw=0)[0]] * adiff
+            phantom2 = self._make_phantom_handles(self._axis, adiff)
             blank = [""] * adiff
 
             if diff == 0:
@@ -688,12 +653,7 @@ class ModelPlot(PlotBase):
                 bbox_to_anchor=kwargs_opts["bbox_to_anchor"],
                 loc=kwargs_opts["loc"],
             )
-            # trick to remove extra left side space in legend column headers.
-            # doesn't completely center the headers, but gets as close as possible
-            # See https://stackoverflow.com/questions/44071525/matplotlib-add-titles-to-the-legend-rows/44072076
-            for vpack in leg._legend_handle_box.get_children():
-                for hpack in vpack.get_children()[:2]:
-                    hpack.get_children()[0].set_width(0)
+            self._zero_legend_header_widths(leg)
         # Put the plot title on if given.
         if kwargs_opts["title"] is not None:
             self._axis.set_title(kwargs_opts["title"])
@@ -842,21 +802,12 @@ class ModelPlot(PlotBase):
         if len(self._axis.shape) > 1:
             self._axis = self._axis.flatten()
 
-        ax1 = "1"  # Why hardcoded? leftover from something methinks
-        ax2 = "2"
-
-        # make the x and y axes.  Since the models are computed on a log grid, we
-        # use logarithmic ticks.
         x, y = self._get_xy_from_wcs(data, quantity=True, linear=True)
 
         loglabel = not kwargs_opts["logx"]
-        x, xlab = utils.rescale_axis_units(
-            x, _header["CUNIT" + ax1], _header["CTYPE" + ax1], kwargs_opts["xaxis_unit"], loglabel
-        )
+        x, xlab = utils.rescale_axis_units(x, _header["CUNIT1"], _header["CTYPE1"], kwargs_opts["xaxis_unit"], loglabel)
         loglabel = not kwargs_opts["logy"]
-        y, ylab = utils.rescale_axis_units(
-            y, _header["CUNIT" + ax2], _header["CTYPE" + ax2], kwargs_opts["yaxis_unit"], loglabel
-        )
+        y, ylab = utils.rescale_axis_units(y, _header["CUNIT2"], _header["CTYPE2"], kwargs_opts["yaxis_unit"], loglabel)
         # Finish up axes details.
         locmaj = ticker.LogLocator(base=10.0, subs=(1.0,), numticks=10)
         locmin = ticker.LogLocator(base=10.0, subs="auto", numticks=10)
@@ -890,7 +841,8 @@ class ModelPlot(PlotBase):
             )
             if kwargs_opts["colorbar"]:
                 cbar = self._figure.colorbar(im, ax=self._axis[axidx])
-                if kwargs_imshow["norm"].lower() != "log":
+                _norm_val = kwargs_imshow["norm"]
+                if not (isinstance(_norm_val, str) and _norm_val.lower() == "log"):
                     # avoid AttributeError: 'LogFormatterSciNotation' object has no attribute 'set_powerlimits'
                     cbar.formatter = ticker.ScalarFormatter(useMathText=True)
                     cbar.formatter.set_scientific(True)
@@ -928,7 +880,6 @@ class ModelPlot(PlotBase):
                 "legend",
                 "figsize",
                 "constrained_layout",
-                "figsize",
                 "stretch",
             ]:
                 kwargs_contour.pop(kx, None)

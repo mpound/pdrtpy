@@ -10,8 +10,6 @@ from ..measurement import Measurement
 from ..utils import LOGE, float_formatter
 from .plotbase import PlotBase
 
-# from cycler import cycler
-
 log.setLevel("WARNING")
 
 
@@ -147,19 +145,12 @@ class ExcitationPlot(PlotBase):
             # return dict of arrays of measuremtents with keys v=0,v=1,v=2 etc
             cdsort = self._sorted_by_vibrational_level(cdavg)
             ensort = self._sorted_by_vibrational_level(energies)
-            # print("ENSORT" ,ensort.values())
-            # cyc = cycler('color',  self._CB_color_cycle)
-            # cyfill = cycler('fillstyle',['full', 'none', 'full', 'none', 'full', 'none', 'full', 'none', 'full'])
-            # self._plt.rc('axes', prop_cycle=(cyc+cyfill))
-
             fmtd = {False: "o", True: "^"}  # there is no cycler for fmt, do it manually
             fmtb = False
             for key in cdsort:
                 cs = np.squeeze(np.array([m.value[0] for m in cdsort[key]]))
                 es = np.squeeze(np.array([m.error[0] for m in cdsort[key]]))
                 ens = np.array([c for c in ensort[key]])
-                # print(f"LOG10(CD({key}))={np.log10(cs)}")
-                # print(f"E{key} = {ens}")
                 sigma = LOGE * es / cs
                 _axis.errorbar(
                     ens,
@@ -171,7 +162,6 @@ class ExcitationPlot(PlotBase):
                     lw=kwargs_opts["linewidth"],
                     ms=kwargs_opts["markersize"],
                 )
-                # fmtb = not fmtb
         tt = self._tool
         if self._tool.opr_fitted and show_fit:
             if data_position is not None and len(np.shape(tt.opr)) > 1:
@@ -240,23 +230,7 @@ class ExcitationPlot(PlotBase):
             x_fit = np.linspace(0, max(energy), 30)
             if debug:
                 self._logfile.write(f"EXD: {type(tt._fitresult)=}\n")
-
-            if tt.fit_result[data_position] is None or tt.fit_result.mask[data_position]:
-                q = tt.fit_result[data_position].params
-                warnmsg = f"The Excitation Tool was unable to fit pixel {data_position} so a fit cannot be displayed. "
-                for k in q:
-                    noerr = []
-                    if q[k].vary and q[k].stderr is None:
-                        noerr.append(k)
-                if len(noerr) > 0:
-                    warnmsg += f"Fit error(s) could not be determined for the following variables: {noerr}. "
-                warnmsg += f"Examine the {self._tool.__class__.__name__}.fit_result[{data_position}] attribute to see details of the fit."
-                log.warn(warnmsg)
-            else:
-                x_fit = np.linspace(0, max(energy), 30)
-                if debug:
-                    self._logfile.write(f"EXD: {type(tt._fitresult)=}\n")
-                    self._logfile.write(f"EXD: {type(tt._fitresult[data_position])=} at {position=}\n")
+                self._logfile.write(f"EXD: {type(tt._fitresult[data_position])=} at {position=}\n")
                 outpar = tt.fit_result[data_position].params.valuesdict()
                 if tt.numcomponents == 2:
                     labcold = (
@@ -353,7 +327,7 @@ class ExcitationPlot(PlotBase):
         if temperature_range <= 2000:
             _axis.xaxis.set_major_locator(MultipleLocator(500))
             _axis.xaxis.set_minor_locator(MultipleLocator(100))
-        if temperature_range <= 10000:
+        elif temperature_range <= 10000:
             _axis.xaxis.set_major_locator(MultipleLocator(1000))
             _axis.xaxis.set_minor_locator(MultipleLocator(200))
         elif temperature_range <= 26000:
@@ -364,26 +338,9 @@ class ExcitationPlot(PlotBase):
             _axis.xaxis.set_minor_locator(MultipleLocator(2000))
         _axis.yaxis.set_major_locator(MultipleLocator(1))
         _axis.yaxis.set_minor_locator(MultipleLocator(0.2))
-        _axis.tick_params(axis="both", direction="in", which="both")
-        _axis.tick_params(axis="both", bottom=True, top=True, left=True, right=True, which="both")
+        self._set_standard_ticks(_axis)
         if kwargs_opts["grid"]:
-            _axis.grid(
-                visible=True,
-                which="major",
-                axis="both",
-                lw=kwargs_opts["linewidth"] / 2,
-                color="k",
-                alpha=0.33,
-            )
-            _axis.grid(
-                visible=True,
-                which="minor",
-                axis="both",
-                lw=kwargs_opts["linewidth"] / 2,
-                color="k",
-                alpha=0.22,
-                linestyle="--",
-            )
+            self._draw_grid(_axis, kwargs_opts["linewidth"])
 
         _axis.legend(
             handles,

@@ -1,12 +1,3 @@
-# todo:
-# keywords for show_both need to be arrays. ugh.
-#
-# allow levels to be percent?
-#
-# Look into seaborn https://seaborn.pydata.org
-# Also https://docs.bokeh.org/en
-# especially for coloring and style
-
 from copy import deepcopy
 
 import astropy.units as u
@@ -155,13 +146,15 @@ class LineRatioPlot(PlotBase):
 
         self._plot(self._tool.radiation_field, **kwargs_opts)
 
-    # @TODO refactor this method with reduced_chisq()
-    def chisq(self, **kwargs):
-        r"""Plot the :math:`\chi^2` map that was computed by the
-        :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
+    def _plot_chisq_impl(self, data_fn, title, min_val, label_sym, kwargs):
+        """Shared implementation for chisq() and reduced_chisq().
 
+        :param data_fn: bound tool method returning the chi-square data (tool.chisq or tool.reduced_chisq)
+        :param title: axis/legend title string (e.g. r'$\\chi^2$ (dof=3)')
+        :param min_val: scalar minimum chi-square value to show in the legend label
+        :param label_sym: LaTeX symbol for the minimum, e.g. r'$\\chi_{min}^2$'
+        :param kwargs: caller's **kwargs dict
         """
-
         kwargs_opts = {
             "units": None,
             "aspect": "equal",
@@ -179,23 +172,19 @@ class LineRatioPlot(PlotBase):
             "loc": "upper center",
             "title": None,
         }
-
         kwargs_opts.update(kwargs)
-        # make a sensible choice about contours if image is not shown
         if not kwargs_opts["image"] and kwargs_opts["colors"][0] == "white":
             kwargs_opts["colors"][0] = "black"
         if self._tool.has_vectors:
             raise NotImplementedError("Plotting of chi-square is not yet implemented for vector Measurements.")
         if self._tool.has_maps:
-            data = self._tool.chisq(min=True)
+            data = data_fn(min=True)
             if "title" not in kwargs:
-                kwargs_opts["title"] = rf"$\chi^2$ (dof={self._tool._dof:d})"
+                kwargs_opts["title"] = title
             self._plot(data, **kwargs_opts)
         else:
-            data = self._tool.chisq(min=False)
+            data = data_fn(min=False)
             self._modelplot._plot_no_wcs(data, header=None, **kwargs_opts)
-            # since the minimum can now be between pixels, we use the value
-            # of radiation field and density directly.  (Why didn't we do this before?)
             if kwargs_opts["xaxis_unit"] is not None:
                 x = utils.to(self._tool._density, kwargs_opts["xaxis_unit"]).value
             else:
@@ -204,17 +193,10 @@ class LineRatioPlot(PlotBase):
                 y = utils.to(kwargs_opts["yaxis_unit"], self._tool._radiation_field).value
             else:
                 y = self._tool._radiation_field.value
-
-            # print("Plot x,y %s,%s"%(x,y))
-
             if kwargs_opts["title"] is None:
-                kwargs_opts["title"] = rf"$\chi^2$ (dof={self._tool._dof:d})"
-            label = (
-                rf"$\chi_{{min}}^2$ = {self._tool._chisq_min.value[0]:.2g}"
-                rf" @ (n,FUV) = ({x[0]:.2g},{y[0]:.2g})"
-            )
+                kwargs_opts["title"] = title
+            label = rf"{label_sym} = {min_val:.2g} @ (n,FUV) = ({x[0]:.2g},{y[0]:.2g})"
             self._modelplot._axis[0].scatter(x, y, c="r", marker="+", s=200, linewidth=2, label=label)
-            # handle legend locally
             if kwargs_opts["legend"]:
                 self._modelplot._axis[0].legend(
                     title=kwargs_opts["title"], bbox_to_anchor=kwargs_opts["bbox_to_anchor"], loc=kwargs_opts["loc"]
@@ -222,69 +204,29 @@ class LineRatioPlot(PlotBase):
             self._figure = self._modelplot.figure
             self._axis = self._modelplot.axis
 
+    def chisq(self, **kwargs):
+        r"""Plot the :math:`\chi^2` map that was computed by the
+        :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
+        """
+        self._plot_chisq_impl(
+            data_fn=self._tool.chisq,
+            title=rf"$\chi^2$ (dof={self._tool._dof:d})",
+            min_val=self._tool._chisq_min.value[0],
+            label_sym=r"$\chi_{min}^2$",
+            kwargs=kwargs,
+        )
+
     def reduced_chisq(self, **kwargs):
         r"""Plot the reduced :math:`\chi^2` map that was computed by the
         :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
-
         """
-
-        kwargs_opts = {
-            "units": None,
-            "aspect": "equal",
-            "image": True,
-            "contours": True,
-            "label": False,
-            "colors": ["white"],
-            "linewidths": 1.0,
-            "norm": "simple",
-            "stretch": "linear",
-            "xaxis_unit": None,
-            "yaxis_unit": None,
-            "legend": None,
-            "bbox_to_anchor": None,
-            "loc": "upper center",
-            "title": None,
-        }
-        kwargs_opts.update(kwargs)
-        if self._tool.has_vectors:
-            raise NotImplementedError("Plotting of chi-square is not yet implemented for vector Measurements.")
-
-        if self._tool.has_maps:
-            if "title" not in kwargs:
-                kwargs_opts["title"] = rf"$\chi_\nu^2$ (dof={self._tool._dof:d})"
-            data = self._tool.reduced_chisq(min=True)
-            self._plot(data, **kwargs_opts)
-            # doesn't make sense to point out minimum chisq on a spatial-spatial map,
-            # so no legend
-        else:
-            data = self._tool.reduced_chisq(min=False)
-
-            self._modelplot._plot_no_wcs(data, header=None, **kwargs_opts)
-            # since the minimum can now be between pixels, we use the value
-            # of radiation field and density directly.  (Why didn't we do this before?)
-            if kwargs_opts["xaxis_unit"] is not None:
-                x = utils.to(self._tool._density, kwargs_opts["xaxis_unit"]).value
-            else:
-                x = self._tool._density.value
-            if kwargs_opts["yaxis_unit"] is not None:
-                y = utils.to(kwargs_opts["yaxis_unit"], self._tool._radiation_field).value
-            else:
-                y = self._tool._radiation_field.value
-            # print("Plot x,y %s,%s"%(x,y))
-            if kwargs_opts["title"] is None:
-                kwargs_opts["title"] = rf"$\chi_\nu^2$ (dof={self._tool._dof:d})"
-            label = (
-                rf"$\chi_{{\nu,min}}^2$ = {self._tool._reduced_chisq_min.value[0]:.2g}"
-                rf" @ (n,FUV) = ({x[0]:.2g},{y[0]:.2g})"
-            )
-            self._modelplot.axis[0].scatter(x, y, c="r", marker="+", s=200, linewidth=2, label=label)
-            # handle legend locally
-            if kwargs_opts["legend"]:
-                self._modelplot.axis[0].legend(
-                    title=kwargs_opts["title"], bbox_to_anchor=kwargs_opts["bbox_to_anchor"], loc=kwargs_opts["loc"]
-                )
-            self._figure = self._modelplot.figure
-            self._axis = self._modelplot.axis
+        self._plot_chisq_impl(
+            data_fn=self._tool.reduced_chisq,
+            title=rf"$\chi_\nu^2$ (dof={self._tool._dof:d})",
+            min_val=self._tool._reduced_chisq_min.value[0],
+            label_sym=r"$\chi_{\nu,min}^2$",
+            kwargs=kwargs,
+        )
 
     def show_both(self, units=None, **kwargs):
         """Plot both radiation field and volume density maps computed by the
@@ -407,39 +349,28 @@ class LineRatioPlot(PlotBase):
                 self._modelplot._plot_no_wcs(_models[i], header=None, colorcounter=i, **kwargs_opts)
                 i = i + 1
             kwargs_opts.pop("measurements")
-        # for m in _measurements:
-        #    print("A ",type(m))
 
         for key, val in self._tool._modelratios.items():
-            # kwargs_opts['measurements'] = [self._tool._observedratios[key]]
-            # print(" K ",type(self._tool._observedratios[key]))
-            # _measurements.append(self._tool._observedratios[key])
             if i > 0:
                 kwargs_opts["reset"] = False
-            # pass the index of the contour color to use via the "secret" colorcounter keyword.
             self._modelplot._plot_no_wcs(
                 val, header=None, colorcounter=i, **kwargs_opts, measurements=[self._tool._observedratios[key]]
             )
             i = i + 1
-        # for m in _measurements:
-        #    print("B ",type(m))
         if kwargs_opts["legend"]:
             lines = [Line2D([0], [0], color=c, linewidth=3, linestyle="-") for c in kwargs_opts["meas_color"][0:i]]
             labels = list()
             if meas_passed:
-                # THIS WILL EXCEPT IF m.id NOT IN MODELSET WHICH IS VERY POSSIBLE!
                 for m in _measurements:
                     try:
                         tt = self._tool.modelset.get_model(m.id).title
                     except Exception:
                         tt = m.id
                     labels.append(tt)
-                # labels = [m.id for m in _measurements]
                 title = "Observed Ratios and Intensities"
             else:
                 title = "Observed Ratios"
             labels.extend([self._tool._modelratios[k].title for k in self._tool._modelratios])
-            # print("LABELS ",labels)
             _title = kwargs.get("title", None)
             if _title is not None:
                 title += " " + _title
@@ -484,7 +415,6 @@ class LineRatioPlot(PlotBase):
         kwargs_opts["nrows"] = int(round(self._tool.ratiocount / kwargs_opts["ncols"] + 0.49, 0))
         # defend against meas_color not being a list
         if isinstance(kwargs_opts["meas_color"], str):
-            # warnings.warn("meas_color should be a list")
             kwargs_opts["meas_color"] = [kwargs_opts["meas_color"]]
 
         for key, val in self._tool._modelratios.items():

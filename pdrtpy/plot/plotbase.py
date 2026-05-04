@@ -1,7 +1,6 @@
 import warnings
 from copy import copy, deepcopy
 
-# import astropy.version
 import matplotlib.axes as maxes
 import numpy as np
 import numpy.ma as ma
@@ -15,8 +14,6 @@ from astropy.visualization.stretch import (
 )
 from cycler import cycler
 from matplotlib.colors import LogNorm
-
-# import matplotlib.cm as mcm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from .. import utils
@@ -240,15 +237,34 @@ class PlotBase:
         :type orientation: str
         """
         divider = make_axes_locatable(axis)
-        # See https://stackoverflow.com/questions/47060939/matplotlib-colorbar-and-wcs-projection
-        # This makes the colorbar the correct height but then offsets it from the x axis by a large amount.
-        # Changing pad, even to a negative number, does not affect this.:w
-        # ax_cb = divider.new_horizontal(size=width,pad=pad)
-        # ax_cb.yaxis.set_ticks_position(pos)
-        # self._figure.add_axes(ax_cb)
         cax = divider.append_axes(pos, size=width, pad=pad, axes_class=maxes.Axes)
         cax.yaxis.set_ticks_position(pos)
         return self._figure.colorbar(image, ax=axis, cax=cax, orientation=orientation)
+
+    def _draw_grid(self, axis, linewidth):
+        """Draw a standard major+minor grid on *axis*."""
+        axis.grid(visible=True, which="major", axis="both", lw=linewidth / 2, color="k", alpha=0.33)
+        axis.grid(visible=True, which="minor", axis="both", lw=linewidth / 2, color="k", alpha=0.22, linestyle="--")
+
+    def _set_standard_ticks(self, axis):
+        """Set inward ticks on all four sides of *axis*."""
+        axis.tick_params(axis="both", direction="in", which="both")
+        axis.tick_params(axis="both", bottom=True, top=True, left=True, right=True, which="both")
+
+    def _make_phantom_handles(self, axis, n):
+        """Return a list of *n* invisible line handles for use as legend column headers."""
+        return [axis.plot([], marker="", markersize=0, ls="", lw=0)[0]] * n
+
+    def _zero_legend_header_widths(self, leg):
+        """Remove extra left-side space from phantom column-header entries in *leg*.
+
+        Applies the trick from https://stackoverflow.com/a/44072076 that zeroes
+        out the handle width for the first two entries in each legend column so
+        that text-only headers appear centred rather than left-shifted.
+        """
+        for vpack in leg._legend_handle_box.get_children():
+            for hpack in vpack.get_children()[:2]:
+                hpack.get_children()[0].set_width(0)
 
     def savefig(self, fname, **kwargs):
         """Save the current figure to a file.
@@ -394,7 +410,6 @@ class PlotBase:
                 for c in a.coords:
                     c.display_minor_ticks(True)
         if kwargs_opts["image"]:
-            # current_cmap = copy(mcm.get_cmap(kwargs_imshow['cmap']))
             current_cmap = copy(self._plt.get_cmap(kwargs_imshow["cmap"]))
             current_cmap.set_bad(color="white", alpha=1)
             # suppress errors and warnings about unused keywords
