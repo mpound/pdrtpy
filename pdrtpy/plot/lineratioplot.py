@@ -146,12 +146,15 @@ class LineRatioPlot(PlotBase):
 
         self._plot(self._tool.radiation_field, **kwargs_opts)
 
-    def chisq(self, **kwargs):
-        r"""Plot the :math:`\chi^2` map that was computed by the
-        :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
+    def _plot_chisq_impl(self, data_fn, title, min_val, label_sym, kwargs):
+        """Shared implementation for chisq() and reduced_chisq().
 
+        :param data_fn: bound tool method returning the chi-square data (tool.chisq or tool.reduced_chisq)
+        :param title: axis/legend title string (e.g. r'$\\chi^2$ (dof=3)')
+        :param min_val: scalar minimum chi-square value to show in the legend label
+        :param label_sym: LaTeX symbol for the minimum, e.g. r'$\\chi_{min}^2$'
+        :param kwargs: caller's **kwargs dict
         """
-
         kwargs_opts = {
             "units": None,
             "aspect": "equal",
@@ -169,23 +172,19 @@ class LineRatioPlot(PlotBase):
             "loc": "upper center",
             "title": None,
         }
-
         kwargs_opts.update(kwargs)
-        # make a sensible choice about contours if image is not shown
         if not kwargs_opts["image"] and kwargs_opts["colors"][0] == "white":
             kwargs_opts["colors"][0] = "black"
         if self._tool.has_vectors:
             raise NotImplementedError("Plotting of chi-square is not yet implemented for vector Measurements.")
         if self._tool.has_maps:
-            data = self._tool.chisq(min=True)
+            data = data_fn(min=True)
             if "title" not in kwargs:
-                kwargs_opts["title"] = rf"$\chi^2$ (dof={self._tool._dof:d})"
+                kwargs_opts["title"] = title
             self._plot(data, **kwargs_opts)
         else:
-            data = self._tool.chisq(min=False)
+            data = data_fn(min=False)
             self._modelplot._plot_no_wcs(data, header=None, **kwargs_opts)
-            # since the minimum can now be between pixels, we use the value
-            # of radiation field and density directly.  (Why didn't we do this before?)
             if kwargs_opts["xaxis_unit"] is not None:
                 x = utils.to(self._tool._density, kwargs_opts["xaxis_unit"]).value
             else:
@@ -194,15 +193,10 @@ class LineRatioPlot(PlotBase):
                 y = utils.to(kwargs_opts["yaxis_unit"], self._tool._radiation_field).value
             else:
                 y = self._tool._radiation_field.value
-
             if kwargs_opts["title"] is None:
-                kwargs_opts["title"] = rf"$\chi^2$ (dof={self._tool._dof:d})"
-            label = (
-                rf"$\chi_{{min}}^2$ = {self._tool._chisq_min.value[0]:.2g}"
-                rf" @ (n,FUV) = ({x[0]:.2g},{y[0]:.2g})"
-            )
+                kwargs_opts["title"] = title
+            label = rf"{label_sym} = {min_val:.2g} @ (n,FUV) = ({x[0]:.2g},{y[0]:.2g})"
             self._modelplot._axis[0].scatter(x, y, c="r", marker="+", s=200, linewidth=2, label=label)
-            # handle legend locally
             if kwargs_opts["legend"]:
                 self._modelplot._axis[0].legend(
                     title=kwargs_opts["title"], bbox_to_anchor=kwargs_opts["bbox_to_anchor"], loc=kwargs_opts["loc"]
@@ -210,68 +204,29 @@ class LineRatioPlot(PlotBase):
             self._figure = self._modelplot.figure
             self._axis = self._modelplot.axis
 
+    def chisq(self, **kwargs):
+        r"""Plot the :math:`\chi^2` map that was computed by the
+        :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
+        """
+        self._plot_chisq_impl(
+            data_fn=self._tool.chisq,
+            title=rf"$\chi^2$ (dof={self._tool._dof:d})",
+            min_val=self._tool._chisq_min.value[0],
+            label_sym=r"$\chi_{min}^2$",
+            kwargs=kwargs,
+        )
+
     def reduced_chisq(self, **kwargs):
         r"""Plot the reduced :math:`\chi^2` map that was computed by the
         :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
-
         """
-
-        kwargs_opts = {
-            "units": None,
-            "aspect": "equal",
-            "image": True,
-            "contours": True,
-            "label": False,
-            "colors": ["white"],
-            "linewidths": 1.0,
-            "norm": "simple",
-            "stretch": "linear",
-            "xaxis_unit": None,
-            "yaxis_unit": None,
-            "legend": None,
-            "bbox_to_anchor": None,
-            "loc": "upper center",
-            "title": None,
-        }
-        kwargs_opts.update(kwargs)
-        if self._tool.has_vectors:
-            raise NotImplementedError("Plotting of chi-square is not yet implemented for vector Measurements.")
-
-        if self._tool.has_maps:
-            if "title" not in kwargs:
-                kwargs_opts["title"] = rf"$\chi_\nu^2$ (dof={self._tool._dof:d})"
-            data = self._tool.reduced_chisq(min=True)
-            self._plot(data, **kwargs_opts)
-            # doesn't make sense to point out minimum chisq on a spatial-spatial map,
-            # so no legend
-        else:
-            data = self._tool.reduced_chisq(min=False)
-
-            self._modelplot._plot_no_wcs(data, header=None, **kwargs_opts)
-            # since the minimum can now be between pixels, we use the value
-            # of radiation field and density directly.  (Why didn't we do this before?)
-            if kwargs_opts["xaxis_unit"] is not None:
-                x = utils.to(self._tool._density, kwargs_opts["xaxis_unit"]).value
-            else:
-                x = self._tool._density.value
-            if kwargs_opts["yaxis_unit"] is not None:
-                y = utils.to(kwargs_opts["yaxis_unit"], self._tool._radiation_field).value
-            else:
-                y = self._tool._radiation_field.value
-            if kwargs_opts["title"] is None:
-                kwargs_opts["title"] = rf"$\chi_\nu^2$ (dof={self._tool._dof:d})"
-            label = (
-                rf"$\chi_{{\nu,min}}^2$ = {self._tool._reduced_chisq_min.value[0]:.2g}"
-                rf" @ (n,FUV) = ({x[0]:.2g},{y[0]:.2g})"
-            )
-            self._modelplot.axis[0].scatter(x, y, c="r", marker="+", s=200, linewidth=2, label=label)
-            # handle legend locally
-            if kwargs_opts["legend"]:
-                self._modelplot.axis[0].legend(
-                    title=kwargs_opts["title"], bbox_to_anchor=kwargs_opts["bbox_to_anchor"], loc=kwargs_opts["loc"]
-                )
-            self._figure = self._modelplot.figure
-            self._axis = self._modelplot.axis
+        self._plot_chisq_impl(
+            data_fn=self._tool.reduced_chisq,
+            title=rf"$\chi_\nu^2$ (dof={self._tool._dof:d})",
+            min_val=self._tool._reduced_chisq_min.value[0],
+            label_sym=r"$\chi_{\nu,min}^2$",
+            kwargs=kwargs,
+        )
 
     def show_both(self, units=None, **kwargs):
         """Plot both radiation field and volume density maps computed by the
