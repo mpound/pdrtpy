@@ -241,6 +241,16 @@ class PlotBase:
         cax.yaxis.set_ticks_position(pos)
         return self._figure.colorbar(image, ax=axis, cax=cax, orientation=orientation)
 
+    def _draw_grid(self, axis, linewidth):
+        """Draw a standard major+minor grid on *axis*."""
+        axis.grid(visible=True, which="major", axis="both", lw=linewidth / 2, color="k", alpha=0.33)
+        axis.grid(visible=True, which="minor", axis="both", lw=linewidth / 2, color="k", alpha=0.22, linestyle="--")
+
+    def _set_standard_ticks(self, axis):
+        """Set inward ticks on all four sides of *axis*."""
+        axis.tick_params(axis="both", direction="in", which="both")
+        axis.tick_params(axis="both", bottom=True, top=True, left=True, right=True, which="both")
+
     def savefig(self, fname, **kwargs):
         """Save the current figure to a file.
 

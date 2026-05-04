@@ -338,26 +338,9 @@ class ExcitationPlot(PlotBase):
             _axis.xaxis.set_minor_locator(MultipleLocator(2000))
         _axis.yaxis.set_major_locator(MultipleLocator(1))
         _axis.yaxis.set_minor_locator(MultipleLocator(0.2))
-        _axis.tick_params(axis="both", direction="in", which="both")
-        _axis.tick_params(axis="both", bottom=True, top=True, left=True, right=True, which="both")
+        self._set_standard_ticks(_axis)
         if kwargs_opts["grid"]:
-            _axis.grid(
-                visible=True,
-                which="major",
-                axis="both",
-                lw=kwargs_opts["linewidth"] / 2,
-                color="k",
-                alpha=0.33,
-            )
-            _axis.grid(
-                visible=True,
-                which="minor",
-                axis="both",
-                lw=kwargs_opts["linewidth"] / 2,
-                color="k",
-                alpha=0.22,
-                linestyle="--",
-            )
+            self._draw_grid(_axis, kwargs_opts["linewidth"])
 
         _axis.legend(
             handles,

@@ -334,21 +334,9 @@ class ModelPlot(PlotBase):
             self._axis.set_xscale("log")
         if kwargs_opts["logy"]:
             self._axis.set_yscale("log")
-        self._axis.tick_params(axis="both", direction="in", which="both")
-        self._axis.tick_params(axis="both", bottom=True, top=True, left=True, right=True, which="both")
+        self._set_standard_ticks(self._axis)
         if kwargs_opts["grid"]:
-            self._axis.grid(
-                visible=True, which="major", axis="both", lw=kwargs_opts["linewidth"] / 2, color="k", alpha=0.33
-            )
-            self._axis.grid(
-                visible=True,
-                which="minor",
-                axis="both",
-                lw=kwargs_opts["linewidth"] / 2,
-                color="k",
-                alpha=0.22,
-                linestyle="--",
-            )
+            self._draw_grid(self._axis, kwargs_opts["linewidth"])
         if kwargs_opts["legend"]:
             # Manually build the legend.
             title1 = model.wcs.wcs.ctype[pindex]
@@ -603,21 +591,9 @@ class ModelPlot(PlotBase):
             self._axis.set_aspect(kwargs_opts["aspect"])
             self._axis.set_xscale("log")
             self._axis.set_yscale("log")
-            self._axis.tick_params(axis="both", direction="in", which="both")
-            self._axis.tick_params(axis="both", bottom=True, top=True, left=True, right=True, which="both")
+            self._set_standard_ticks(self._axis)
         if kwargs_opts["grid"]:
-            self._axis.grid(
-                visible=True, which="major", axis="both", lw=kwargs_opts["linewidth"] / 2, color="k", alpha=0.33
-            )
-            self._axis.grid(
-                visible=True,
-                which="minor",
-                axis="both",
-                lw=kwargs_opts["linewidth"] / 2,
-                color="k",
-                alpha=0.22,
-                linestyle="--",
-            )
+            self._draw_grid(self._axis, kwargs_opts["linewidth"])
         if kwargs_opts["legend"]:
             # Manually build the legend. Create the column headers for the legend
             # and blank handles and labels to take up space for the headers and
