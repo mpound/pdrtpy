@@ -34,7 +34,6 @@ class ModelPlot(PlotBase):
         self._modelset = modelset
         self._figure = figure
         self._axis = axis
-        # print(utils.habing_unit)
 
     def plot(self, identifier, **kwargs):
         """Plot a model intensity or ratio
@@ -110,8 +109,6 @@ class ModelPlot(PlotBase):
 
         .. seealso::  :meth:`~pdrtpy.modelset.ModelSet.supported_intensities` for a list of available identifer tags
         """
-        # shouldn't need separate model intensity as keyword would tell you.
-        # Idea: Put a 'modeltyp' keyword in FITS header whether it is intensity ratio or intensity.
         ms = self._modelset
         meas = kwargs.get("measurements", None)
         model = ms.get_models([identifier], model_type="intensity")
@@ -274,8 +271,6 @@ class ModelPlot(PlotBase):
         kwargs_opts.update(kwargs)
         model = self._modelset.get_model(identifier)
         self._figure, self._axis = self._plt.subplots(nrows=1, ncols=1, figsize=kwargs_opts["figsize"])
-        # this code substantially copied from phasespace(). At some point
-        # perhaps they can be refactored.
         if plotnaxis != 1 and plotnaxis != 2:
             raise ValueError("plotnaxis must be 1 or 2")
         if plotnaxis == 1:
@@ -378,9 +373,6 @@ class ModelPlot(PlotBase):
         if kwargs_opts["title"] is not None:
             self._axis.set_title(kwargs_opts["title"])
 
-    # note when plotting the units as axis labels, the order is not what we specify in _OBS_UNIT because astropy's Unit class
-    # sorts by power .  They have a good reason for this (hashing), but it does mean we get sub-optimal unit ordering.
-    # There is a possible workaround, but it must be custom for each CompositeUnit.https://github.com/astropy/astropy/issues/1578
     def phasespace(
         self,
         identifiers,
@@ -842,21 +834,12 @@ class ModelPlot(PlotBase):
         if len(self._axis.shape) > 1:
             self._axis = self._axis.flatten()
 
-        ax1 = "1"  # Why hardcoded? leftover from something methinks
-        ax2 = "2"
-
-        # make the x and y axes.  Since the models are computed on a log grid, we
-        # use logarithmic ticks.
         x, y = self._get_xy_from_wcs(data, quantity=True, linear=True)
 
         loglabel = not kwargs_opts["logx"]
-        x, xlab = utils.rescale_axis_units(
-            x, _header["CUNIT" + ax1], _header["CTYPE" + ax1], kwargs_opts["xaxis_unit"], loglabel
-        )
+        x, xlab = utils.rescale_axis_units(x, _header["CUNIT1"], _header["CTYPE1"], kwargs_opts["xaxis_unit"], loglabel)
         loglabel = not kwargs_opts["logy"]
-        y, ylab = utils.rescale_axis_units(
-            y, _header["CUNIT" + ax2], _header["CTYPE" + ax2], kwargs_opts["yaxis_unit"], loglabel
-        )
+        y, ylab = utils.rescale_axis_units(y, _header["CUNIT2"], _header["CTYPE2"], kwargs_opts["yaxis_unit"], loglabel)
         # Finish up axes details.
         locmaj = ticker.LogLocator(base=10.0, subs=(1.0,), numticks=10)
         locmin = ticker.LogLocator(base=10.0, subs="auto", numticks=10)

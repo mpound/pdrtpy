@@ -1,12 +1,3 @@
-# todo:
-# keywords for show_both need to be arrays. ugh.
-#
-# allow levels to be percent?
-#
-# Look into seaborn https://seaborn.pydata.org
-# Also https://docs.bokeh.org/en
-# especially for coloring and style
-
 from copy import deepcopy
 
 import astropy.units as u
@@ -155,7 +146,6 @@ class LineRatioPlot(PlotBase):
 
         self._plot(self._tool.radiation_field, **kwargs_opts)
 
-    # @TODO refactor this method with reduced_chisq()
     def chisq(self, **kwargs):
         r"""Plot the :math:`\chi^2` map that was computed by the
         :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool.
@@ -204,8 +194,6 @@ class LineRatioPlot(PlotBase):
                 y = utils.to(kwargs_opts["yaxis_unit"], self._tool._radiation_field).value
             else:
                 y = self._tool._radiation_field.value
-
-            # print("Plot x,y %s,%s"%(x,y))
 
             if kwargs_opts["title"] is None:
                 kwargs_opts["title"] = rf"$\chi^2$ (dof={self._tool._dof:d})"
@@ -270,7 +258,6 @@ class LineRatioPlot(PlotBase):
                 y = utils.to(kwargs_opts["yaxis_unit"], self._tool._radiation_field).value
             else:
                 y = self._tool._radiation_field.value
-            # print("Plot x,y %s,%s"%(x,y))
             if kwargs_opts["title"] is None:
                 kwargs_opts["title"] = rf"$\chi_\nu^2$ (dof={self._tool._dof:d})"
             label = (
@@ -407,39 +394,28 @@ class LineRatioPlot(PlotBase):
                 self._modelplot._plot_no_wcs(_models[i], header=None, colorcounter=i, **kwargs_opts)
                 i = i + 1
             kwargs_opts.pop("measurements")
-        # for m in _measurements:
-        #    print("A ",type(m))
 
         for key, val in self._tool._modelratios.items():
-            # kwargs_opts['measurements'] = [self._tool._observedratios[key]]
-            # print(" K ",type(self._tool._observedratios[key]))
-            # _measurements.append(self._tool._observedratios[key])
             if i > 0:
                 kwargs_opts["reset"] = False
-            # pass the index of the contour color to use via the "secret" colorcounter keyword.
             self._modelplot._plot_no_wcs(
                 val, header=None, colorcounter=i, **kwargs_opts, measurements=[self._tool._observedratios[key]]
             )
             i = i + 1
-        # for m in _measurements:
-        #    print("B ",type(m))
         if kwargs_opts["legend"]:
             lines = [Line2D([0], [0], color=c, linewidth=3, linestyle="-") for c in kwargs_opts["meas_color"][0:i]]
             labels = list()
             if meas_passed:
-                # THIS WILL EXCEPT IF m.id NOT IN MODELSET WHICH IS VERY POSSIBLE!
                 for m in _measurements:
                     try:
                         tt = self._tool.modelset.get_model(m.id).title
                     except Exception:
                         tt = m.id
                     labels.append(tt)
-                # labels = [m.id for m in _measurements]
                 title = "Observed Ratios and Intensities"
             else:
                 title = "Observed Ratios"
             labels.extend([self._tool._modelratios[k].title for k in self._tool._modelratios])
-            # print("LABELS ",labels)
             _title = kwargs.get("title", None)
             if _title is not None:
                 title += " " + _title
@@ -484,7 +460,6 @@ class LineRatioPlot(PlotBase):
         kwargs_opts["nrows"] = int(round(self._tool.ratiocount / kwargs_opts["ncols"] + 0.49, 0))
         # defend against meas_color not being a list
         if isinstance(kwargs_opts["meas_color"], str):
-            # warnings.warn("meas_color should be a list")
             kwargs_opts["meas_color"] = [kwargs_opts["meas_color"]]
 
         for key, val in self._tool._modelratios.items():

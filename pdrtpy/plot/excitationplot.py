@@ -10,8 +10,6 @@ from ..measurement import Measurement
 from ..utils import LOGE, float_formatter
 from .plotbase import PlotBase
 
-# from cycler import cycler
-
 log.setLevel("WARNING")
 
 
@@ -147,19 +145,12 @@ class ExcitationPlot(PlotBase):
             # return dict of arrays of measuremtents with keys v=0,v=1,v=2 etc
             cdsort = self._sorted_by_vibrational_level(cdavg)
             ensort = self._sorted_by_vibrational_level(energies)
-            # print("ENSORT" ,ensort.values())
-            # cyc = cycler('color',  self._CB_color_cycle)
-            # cyfill = cycler('fillstyle',['full', 'none', 'full', 'none', 'full', 'none', 'full', 'none', 'full'])
-            # self._plt.rc('axes', prop_cycle=(cyc+cyfill))
-
             fmtd = {False: "o", True: "^"}  # there is no cycler for fmt, do it manually
             fmtb = False
             for key in cdsort:
                 cs = np.squeeze(np.array([m.value[0] for m in cdsort[key]]))
                 es = np.squeeze(np.array([m.error[0] for m in cdsort[key]]))
                 ens = np.array([c for c in ensort[key]])
-                # print(f"LOG10(CD({key}))={np.log10(cs)}")
-                # print(f"E{key} = {ens}")
                 sigma = LOGE * es / cs
                 _axis.errorbar(
                     ens,
@@ -171,7 +162,6 @@ class ExcitationPlot(PlotBase):
                     lw=kwargs_opts["linewidth"],
                     ms=kwargs_opts["markersize"],
                 )
-                # fmtb = not fmtb
         tt = self._tool
         if self._tool.opr_fitted and show_fit:
             if data_position is not None and len(np.shape(tt.opr)) > 1:

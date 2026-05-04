@@ -1,7 +1,6 @@
 import warnings
 from copy import copy, deepcopy
 
-# import astropy.version
 import matplotlib.axes as maxes
 import numpy as np
 import numpy.ma as ma
@@ -15,8 +14,6 @@ from astropy.visualization.stretch import (
 )
 from cycler import cycler
 from matplotlib.colors import LogNorm
-
-# import matplotlib.cm as mcm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from .. import utils
@@ -240,12 +237,6 @@ class PlotBase:
         :type orientation: str
         """
         divider = make_axes_locatable(axis)
-        # See https://stackoverflow.com/questions/47060939/matplotlib-colorbar-and-wcs-projection
-        # This makes the colorbar the correct height but then offsets it from the x axis by a large amount.
-        # Changing pad, even to a negative number, does not affect this.:w
-        # ax_cb = divider.new_horizontal(size=width,pad=pad)
-        # ax_cb.yaxis.set_ticks_position(pos)
-        # self._figure.add_axes(ax_cb)
         cax = divider.append_axes(pos, size=width, pad=pad, axes_class=maxes.Axes)
         cax.yaxis.set_ticks_position(pos)
         return self._figure.colorbar(image, ax=axis, cax=cax, orientation=orientation)
@@ -394,7 +385,6 @@ class PlotBase:
                 for c in a.coords:
                     c.display_minor_ticks(True)
         if kwargs_opts["image"]:
-            # current_cmap = copy(mcm.get_cmap(kwargs_imshow['cmap']))
             current_cmap = copy(self._plt.get_cmap(kwargs_imshow["cmap"]))
             current_cmap.set_bad(color="white", alpha=1)
             # suppress errors and warnings about unused keywords
