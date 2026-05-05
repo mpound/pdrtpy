@@ -33,7 +33,7 @@ if args.database == "hitran":
     baseurl = "https://hitran.org/"
     info = "https://hitran.org/docs/iso-meta/"
     # Molecule name and HITRAN ID number
-    mols = {"12C16O": 26, "13C16O": 27, "12C18O": 28, "12C17O": 29, "H2": 103}
+    mols = {"12C16O": 26, "13C16O": 27, "12C18O": 28, "12C17O": 29, "H2": 103, "13C18O": 30}
 elif args.database == "exomol":
     baseurl = "https://www.exomol.com/"
     info = "https://www.exomol.com/data/molecules/ and Pearce+2024, MNRAS 527, 10726"
