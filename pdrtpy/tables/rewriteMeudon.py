@@ -97,7 +97,6 @@ for i in range(len(t)):
 
 t["species"] = mol
 if mol != "CO":
-    # add the v=10 data from Ilane
     tv1 = util.get_table("template_transition.tab", format="ascii.ipac")
     tv1["Transition"] = "abcdefghijklmonpqrstuvwxyz"
     x = Column(name="Line", data=["abcdefghijklmonpqrstuvwxyz"] * len(tv1), dtype=str)
