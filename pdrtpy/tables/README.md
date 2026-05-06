@@ -20,5 +20,32 @@ Data tables
 * `PartFun*.tab` - partition function tables Q(T), used by `ExcitationFit`
 * `RoueffEtAlTable2.dat` - original data file from Roueff et al.
 * `RoueffEtalReadme` - explanation file from Roueff et al.
-Required Columns for Excitation Data Tables
+
+
+### Required Columns for Excitation Data Tables
 --------------------------------------------------------------
+
+- `vu` - Upper state vibrational quantum number
+- `Ju` - Upper state rotational quantum number
+- `vl` - Lower state vibrational quantum number
+- `Jl` - Lower state rotational quantum number
+- `lambda` - Transition wavelength, microns
+- `A` - Einstein A coefficient, s^-1
+- `Tu` - Upper level term energy computed from (0,0), K
+- `gu` - Upper level statistical weight
+- `dE` - Upper level energy computed from `hc/(lambda k_B)`
+- `Line` - Dictionary key name for accessing a specific transition, e.g., H200S0 would refer to H2 0-0 S(0).
+- `Transition` - Transition string used to compose the line name, as `f"{molecule} {transition}"` For instance, in the above axample `transition` is "0-0 S(0)".
+
+
+
+### Optional columns for  Excitation Data Tables
+------------------------------------------------
+
+- `sigma` - Wavenumber, cm^-1
+- `DSigma` - Error in wavenumber, cm^-1
+- `dlambda`  - Eror in wavelength, micron
+- `Eu` - Upper level energy, cm^-1
+- `dEu` - Error in upper level energy, cm^-1
+- `freq` - Transition frequency, GHz
+- `Species` - Descriptive name for species, e.g., "13CO".
