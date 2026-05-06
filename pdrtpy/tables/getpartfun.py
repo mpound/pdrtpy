@@ -109,7 +109,7 @@ elif args.database == "exomol":
             t.meta["Comment"] = (
                 f"Transition data for {m}. Retrieved from {url} on {utils.now()}. See also {info}. Columns are f: counting number upper state, i: counting number lower state, A: Einstein coefficient, wfi: wavenumber f->i"
             )
-            tabout = f"{m}_transition.tab"
+            tabout = f"{m}_trans.tab"
             t.write(tabout, overwrite=True, format="ascii.ecsv")
 
             c = [f"col{n}" for n in range(1, 16)]
