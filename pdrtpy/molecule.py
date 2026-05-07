@@ -62,8 +62,8 @@ class BaseMolecule:
         """
 
         gu = self._transition_data["gu"]
-        eu = self._transition_data["Tu"]
-        return np.array([np.sum(gu * np.exp(-eu / t)) for t in temperature])
+        energy = self._transition_data["Tu"] - self._transition_data["dE"]
+        return np.array([np.sum(gu * np.exp(-energy / t)) for t in temperature])
 
     def _table_partition_function(self, temperature: Quantity) -> np.ndarray:
         """Interpolate partition function from a pre-computed table stored in ``self._partfun_data``.
