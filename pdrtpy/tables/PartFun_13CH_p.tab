@@ -5,7 +5,7 @@
 # - {name: Q, datatype: float64}
 # meta: !!omap
 # - {Comment: 'Partition function tabulation for 13CH_p. Retrieved from https://www.exomol.com/db/CH_p/13C-1H_p/PYT/13C-1H_p__PYT.pf on
-#     2026-05-05T13:04:44.718491. See also https://www.exomol.com/data/molecules/ and Pearce+2024, MNRAS 527, 10726.'}
+#     2026-05-06T12:14:34.273264. See also https://www.exomol.com/data/molecules/ and Pearce+2024, MNRAS 527, 10726.'}
 # schema: astropy-2.0
 T Q
 1.0 4.0
