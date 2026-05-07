@@ -13,6 +13,8 @@ These scripts write tables that are used by molecular excitation diagram fitting
 Data tables
 ----------------
 
+Some data tables are in IPAC format, others are in ECSV.  It is recommended going forward that all new data tables be created in ECSV format which is the only astropy format that survives roundtrip read/write intact.
+
 * `all_models.tab` - Description of all available models used by `ModelSet`
 *  `av.tab` - Short table of Av line of sight and Av perpendicular as a function of viewing angle (losangle). Used by `ModelSet` to avoid having to read this info from  FITS headers.
 * `*_transition.tab(.gz)` - Excitation data tables used by `ExcitationFit`
@@ -33,7 +35,7 @@ Data tables
 - `A` - Einstein A coefficient, s^-1
 - `Tu` - Upper level term energy computed from (0,0), K
 - `gu` - Upper level statistical weight
-- `dE` - Upper level energy computed from `hc/(lambda k_B)`
+- `dE` - Transition delta energy between the states
 - `Line` - Dictionary key name for accessing a specific transition, e.g., H200S0 would refer to H2 0-0 S(0).
 - `Transition` - Transition string used to compose the line name, as `f"{molecule} {transition}"` For instance, in the above axample `transition` is "0-0 S(0)".
 
@@ -47,5 +49,12 @@ Data tables
 - `dlambda`  - Eror in wavelength, micron
 - `Eu` - Upper level energy, cm^-1
 - `dEu` - Error in upper level energy, cm^-1
-- `freq` - Transition frequency, GHz
+- `freq` - Transition frequency, typically GHz
 - `Species` - Descriptive name for species, e.g., "13CO".
+
+## Other files
+These files may be present, but should be considered temporary.  They should **not** be added to the repo since they can be fetched from external websites, or recreated from fetched data.
+
+* `*states.bz2, *trans.bz2`- States and transition data files downloaded from EXOMOL database.
+* `*_states.tab, *_trans.tab` - Astropy ECSV format versions of the above.
+* `*PartFun*.txt, *.pf` - Partition function files downloaded from HITRAN or EXOMOL databases.
