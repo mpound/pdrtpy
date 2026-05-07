@@ -26,6 +26,7 @@ parser.add_argument(
     "--trans", "-t", action="store_true", help="for exomol, also fetch the transition and state files", default=True
 )
 parser.add_argument("--overwrite", "-o", action="store_true", help="overwrite existing files", default=False)
+parser.add_argument("--nofetch", "-n", action="store_true", help="do not (re)fetch the data files", default=False)
 
 args = parser.parse_args()
 
@@ -51,9 +52,13 @@ if args.database == "hitran":
         out = f"PartFun_{m}.txt"
         tabout = f"PartFun_{m}.tab"
         url = f"{baseurl}{file}"
-        if args.verbose:
-            print(f"\nwget url={url} out={out}")
-        wget.download(url=url, out=out)
+        if not args.nofetch:
+            if args.verbose:
+                print(f"\nwget url={url} out={out}")
+            if args.overwrite:
+                if os.path.exists(out):
+                    os.remove(out)
+            wget.download(url=url, out=out)
         t = Table.read(out, format="ascii")
         t.rename_columns(["col1", "col2"], ["T", "Q"])
         t["T"].unit = "K"
@@ -69,12 +74,13 @@ elif args.database == "exomol":
         out = f"PartFun_{m}.txt"
         tabout = f"PartFun_{m}.tab"
         url = f"{baseurl}{file}"
-        if args.verbose:
-            print(f"\nwget url={url} out={out} overwrite={args.overwrite}")
-        if args.overwrite:
-            if os.path.exists(out):
-                os.remove(out)
-        wget.download(url=url, out=out)
+        if not args.nofetch:
+            if args.verbose:
+                print(f"\nwget url={url} out={out} overwrite={args.overwrite}")
+            if args.overwrite:
+                if os.path.exists(out):
+                    os.remove(out)
+            wget.download(url=url, out=out)
         t = Table.read(out, format="ascii")
         t.rename_columns(["col1", "col2"], ["T", "Q"])
         t["T"].unit = "K"
@@ -88,19 +94,20 @@ elif args.database == "exomol":
             transfile = f"/db/{key}/{mols[m]}/PYT/{out1}"
             statesfile = f"/db/{key}/{mols[m]}/PYT/{out2}"
             url = f"{baseurl}{transfile}"
-            if args.verbose:
-                print(f"\nwget url={url} out={out1} overwrite={args.overwrite}")
-            if args.overwrite:
-                if os.path.exists(out1):
-                    os.remove(out1)
-            wget.download(url=url, out=out1)
-            url = f"{baseurl}{statesfile}"
-            if args.verbose:
-                print(f"\nwget url={url} out={out2} overwrite={args.overwrite}")
-            if args.overwrite:
-                if os.path.exists(out2):
-                    os.remove(out2)
-            wget.download(url=url, out=out2)
+            if not args.nofetch:
+                if args.verbose:
+                    print(f"\nwget url={url} out={out1} overwrite={args.overwrite}")
+                if args.overwrite:
+                    if os.path.exists(out1):
+                        os.remove(out1)
+                wget.download(url=url, out=out1)
+                url = f"{baseurl}{statesfile}"
+                if args.verbose:
+                    print(f"\nwget url={url} out={out2} overwrite={args.overwrite}")
+                if args.overwrite:
+                    if os.path.exists(out2):
+                        os.remove(out2)
+                wget.download(url=url, out=out2)
             c = [f"col{n}" for n in range(1, 5)]
             r = ["f", "i", "A", "wfi"]
             units = ["", "", "s-1", "cm-1"]
@@ -134,7 +141,7 @@ elif args.database == "exomol":
             t = Table.read(out2, format="ascii", units=units)
             t.rename_columns(c, r)
             t.meta["Comment"] = (
-                f"States data for {m}. Retrieved from {url} on {utils.now()}. See also {info}. Notes. i: state counting number, gi: total statistical weight, J: total angular momentum, Unc: uncertainty (cm-1), tau : lifetime (s), +/-: total parity, e/f: rotational parity, v: vibrational level quantum number, Lambda : projection of electronic angular momentum, Sigma : projection of electron spin, Omega : projection of total angular momentum (Omega  = Lambda  + Sigma ), Label: 'Ma' denotes MARVEL energy level, 'Ca' denotes LEVEL calculated energy level, and Calc.: LEVEL calculated energy level value."
+                f"States data for {m}. Retrieved from {url} on {utils.now()}. See also {info}. Notes. i: state counting number, Energy: upper(?) level energy (cm-1), gi: total statistical weight, J: total angular momentum, Unc: uncertainty (cm-1), tau : lifetime (s), +/-: total parity, e/f: rotational parity, v: vibrational level quantum number, Lambda : projection of electronic angular momentum, Sigma : projection of electron spin, Omega : projection of total angular momentum (Omega  = Lambda  + Sigma ), Label: 'Ma' denotes MARVEL energy level, 'Ca' denotes LEVEL calculated energy level, and Calc.: LEVEL calculated energy level value."
             )
             tabout = f"{m}_states.tab"
             t.write(tabout, overwrite=args.overwrite, format="ascii.ecsv")
