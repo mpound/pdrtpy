@@ -252,3 +252,85 @@ class C13O(BaseMolecule):  # 13CO16O
             The partition function evaluated at the given excitation temperature(s)
         """
         return self._table_partition_function(temperature)
+
+
+class CO18(BaseMolecule):  # 12CO18O
+    def __init__(self, name="^{12}C^{18}O", path="c18o_transition.tab", opr=1.0, opr_can_vary=False):
+        """Carbon Monoxide isotopologue  :math:`^{12}C^{18}O`. This uses the molecular Lines and Levels data from the Meudon PDR7 code."""
+        super().__init__(name, path, opr, opr_can_vary, format="ascii.ecsv")
+        self._partfun_data = utils.get_table("PartFun_12C18O.tab", format="ascii.ecsv")
+        self._maxQtemp = np.max(self._partfun_data["T"])
+
+    def partition_function(self, temperature: Quantity) -> np.ndarray:
+        """Calculate the partition function for C18O at the given temperature using the HITRAN partition function.
+        https://hitran.org/data/Q/q28.txt
+        The HITRAN function is evaluated at 1K intervals; this function performs a linear interpolation on those data.
+
+        Parameters
+        ----------
+        temperature  :class:`astropy.units.quantity.Quantity`
+            The excitation temperature(s) at which to evaluate the partition function
+
+        Returns
+        -------
+        Q: :class:`~numpy.ndarray`
+            The partition function evaluated at the given excitation temperature(s)
+        """
+        return self._table_partition_function(temperature)
+
+
+class C13O18(BaseMolecule):  # 13C18O
+    def __init__(self, name="^{13}C^{18}O", path="13c18o_transition.tab", opr=1.0, opr_can_vary=False):
+        """Carbon Monoxide isotopologue  :math:`^{12}C^{18}O`. This uses the molecular Lines and Levels data from the Meudon PDR7 code."""
+        super().__init__(name, path, opr, opr_can_vary, format="ascii.ecsv")
+        self._partfun_data = utils.get_table("PartFun_13C18O.tab", format="ascii.ecsv")
+        self._maxQtemp = np.max(self._partfun_data["T"])
+
+    def partition_function(self, temperature: Quantity) -> np.ndarray:
+        """Calculate the partition function for 13C18O at the given temperature using the HITRAN partition function.
+        https://hitran.org/data/Q/q30.txt
+        The HITRAN function is evaluated at 1K intervals; this function performs a linear interpolation on those data.
+
+        Parameters
+        ----------
+        temperature  :class:`astropy.units.quantity.Quantity`
+            The excitation temperature(s) at which to evaluate the partition function
+
+        Returns
+        -------
+        Q: :class:`~numpy.ndarray`
+            The partition function evaluated at the given excitation temperature(s)
+        """
+        return self._table_partition_function(temperature)
+
+
+class CHplus(BaseMolecule):  # CH+
+    def __init__(self, name="CH^+", path="CH_p_transition.tab", opr=3.0, opr_can_vary=True):
+        r"""Methyl Cation isotopologue :math:`^{12}C^H^{+}:`. This uses the molecular data from both the Meudon PDR7 code and EXOMOL database"""
+        super().__init__(name, path, opr, opr_can_vary)
+        self._partfun_data = utils.get_table("PartFun_CH_p.tab", format="ascii.ecsv")
+        self._maxQtemp = np.max(self._partfun_data["T"])
+
+    def partition_function(self, temperature: Quantity) -> np.ndarray:
+        r"""
+        Calculate the partition function for $CH^{+}$ at the given temperature using the EXOMOL partition function (Pearce et al., 2024, MNRAS, 527, 10736).
+        The EXOMOL function is evaluated at 1K intervals; this function performs a linear interpolation on those data.
+
+        ..note:
+
+            Per Pearce+2024, "The ExoMol convention, in accordance with HITRAN (Gamache et al. 2017, J. Quant. Spectrosc. Radiat. Transfer, 203, 70), is
+            to provide partition functions that include full atomic nuclear spin degeneracy, $g_{nu}$."  This results in a factor of 2 increase over the
+            partition functions of Barklem and Collet (2016, A&A,588,A96) and of Godard and Cernicharo (2013) A&A, 550, A8.
+            Be aware of this when comparing total column densities with papers that use those partition functions.
+
+        Parameters
+        ----------
+        temperature  :class:`astropy.units.quantity.Quantity`
+            The excitation temperature(s) at which to evaluate the partition function
+
+        Returns
+        -------
+        Q: :class:`~numpy.ndarray`
+            The partition function evaluated at the given excitation temperature(s)
+        """
+        return self._table_partition_function(temperature)
