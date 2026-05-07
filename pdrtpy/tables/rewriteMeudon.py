@@ -19,8 +19,11 @@ ext = "c_18o.dat"
 mol = "C18O"
 ext = "13c_18o.dat"
 mol = "13C18O"
+# ext = "chp.dat"
+# mol = "CHp"
 t = util.get_table(f"meudon/Lines/line_{ext}", format="ascii")
 levels = util.get_table(f"meudon/Levels/level_{ext}", format="ascii", data_start=1)
+# levels = Table.read("level_chp.dat",format='ascii',data_start=1)
 
 if mol == "CO":
     # CO
@@ -40,7 +43,7 @@ if mol == "CO":
         t[c].unit = units[i]
         i += 1
     t["lambda"] = t["freq"].to("micron", equivalencies=u.spectral())
-elif mol == "13CO" or mol == "C18O" or mol == "13C18O":
+elif mol == "13CO" or mol == "C18O" or mol == "13C18O":  # or mol == "CHp":
     # 13CO
     #   n     nu     nl                E(K)         Aein(s-1)             quant:  Ju    Jl   info:        E(GHz)
     colnames = ["n", "nu", "nl", "dE", "A", "quant", "Ju", "Jl", "info", "freq", "freq unit"]
@@ -83,12 +86,16 @@ for i in range(len(t)):
     levindex = np.where((levels["vu"] == t["vu"][i]) & (levels["Ju"] == t["Ju"][i]))
     if len(levindex) != 1:
         raise Exception(f"Bad {levindex=}")
-    # print(f"setting { levels["Tu"][levindex[0]]} ")
-    # print(f"{np.shape(levels["Tu"][levindex[0]])=} ")
-    t["Tu"][i] = levels["Tu"][levindex[0]][0]
-    t["gu"][i] = levels["gu"][levindex[0]][0]
-    t["Line"][i] = f"{mol}v{t['vu'][i]}-{t['vl'][i]}J{t['Ju'][i]}-{t['Jl'][i]}"
-    t["Transition"][i] = f"v{t['vu'][i]}-{t['vl'][i]} J{t['Ju'][i]}-{t['Jl'][i]}"
+    nlev = np.shape(levels["Tu"][levindex[0]])[0]
+    print(f"{nlev=} ")
+    if nlev != 0:
+        print(f"setting {levels['Tu'][levindex[0]]} ")
+        t["Tu"][i] = levels["Tu"][levindex[0]][0]
+        t["gu"][i] = levels["gu"][levindex[0]][0]
+        t["Line"][i] = f"{mol}v{t['vu'][i]}-{t['vl'][i]}J{t['Ju'][i]}-{t['Jl'][i]}"
+        t["Transition"][i] = f"v{t['vu'][i]}-{t['vl'][i]} J{t['Ju'][i]}-{t['Jl'][i]}"
+    else:
+        print(f"missing data {levindex[0]}")
 
 # if t["vu"][i] > 0:
 #     t["Line"][i] = f"COv{t['vu'][i]}-{t['vl'][i]}J{t['Ju'][i]}-{t['Jl'][i]}"
@@ -101,10 +108,11 @@ if mol != "CO":
     tv1["Transition"] = "abcdefghijklmonpqrstuvwxyz"
     x = Column(name="Line", data=["abcdefghijklmonpqrstuvwxyz"] * len(tv1), dtype=str)
     tv1.replace_column("Line", x)
-    tv1["freq"] = tv1["lambda"].to(u.GHz, equivalencies=u.spectral())
+    tv1["freq"] = tv1["lambda"].to(funit[0], equivalencies=u.spectral())
     for i in range(len(tv1)):
         tv1["Line"][i] = f"{mol}v{tv1['vu'][i]}-{tv1['vl'][i]}J{tv1['Ju'][i]}-{tv1['Jl'][i]}"
         tv1["Transition"][i] = f"v{tv1['vu'][i]}-{tv1['vl'][i]} J{tv1['Ju'][i]}-{tv1['Jl'][i]}"
     tcopy = t.copy()
     t = vstack([t, tv1[t.colnames]])
 t.write(f"{util.table_dir()}{mol.lower()}_transition.tab", format="ascii.ecsv", overwrite=True)
+t.write(f"{util.table_dir()}{mol.lower()}_transition.ipac", format="ascii.ipac", overwrite=True)
