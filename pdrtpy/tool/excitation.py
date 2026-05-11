@@ -1323,6 +1323,42 @@ class C13OExcitationFit(BaseExcitationFit):
         super().__init__(mol.C13O(), measurements)
 
 
+class CO18ExcitationFit(BaseExcitationFit):
+    def __init__(self, measurements: Measurement = None):
+        r"""Tool for fitting temperatures, column densities, `A_v` from an :math:`^{12}C^{18}O` excitation diagram. It takes as input a set of :math:`H_2` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
+
+        Often, excitation diagrams show evidence of both "hot" and "cold" gas components, where the cold gas
+        dominates the intensity in the low :math:`J` transitions and the hot gas dominates in the high :math:`J` transitions.
+        Given data over several transitions, one can fit for :math:`T_{cold}, T_{hot}, N_{total} = N_{cold}+ N_{hot}`,
+        and optionally :math:`A_v`. One needs at least 5 points to fit two temperatures and column
+        densities (slope and intercept :math:`\times 2`), though one could compute (not fit) them with only 4 points.
+
+        Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view the results.
+
+        :param measurements: Input :math:`^{12}C^{18}O` measurements to be fit.
+        :type measurements: list of :class:`~pdrtpy.measurement.Measurement`.
+        """
+        super().__init__(mol.CO18(), measurements)
+
+
+class C13O18ExcitationFit(BaseExcitationFit):
+    def __init__(self, measurements: Measurement = None):
+        r"""Tool for fitting temperatures, column densities, `A_v` from an :math:`^{13}C^{18}O` excitation diagram. It takes as input a set of :math:`H_2` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
+
+        Often, excitation diagrams show evidence of both "hot" and "cold" gas components, where the cold gas
+        dominates the intensity in the low :math:`J` transitions and the hot gas dominates in the high :math:`J` transitions.
+        Given data over several transitions, one can fit for :math:`T_{cold}, T_{hot}, N_{total} = N_{cold}+ N_{hot}`,
+        and optionally :math:`A_v`. One needs at least 5 points to fit two temperatures and column
+        densities (slope and intercept :math:`\times 2`), though one could compute (not fit) them with only 4 points.
+
+        Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view the results.
+
+        :param measurements: Input :math:`^{13}C^{18}O` measurements to be fit.
+        :type measurements: list of :class:`~pdrtpy.measurement.Measurement`.
+        """
+        super().__init__(mol.CO18(), measurements)
+
+
 class CHplusExcitationFit(BaseExcitationFit):
     def __init__(self, measurements: Measurement = None):
         r"""Tool for fitting temperatures, column densities, `A_v`, and ortho-to-para ratio(`OPR`) from an :math:`CH^{+}` excitation diagram. It takes as input a set of :math:`CH^{+}` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
