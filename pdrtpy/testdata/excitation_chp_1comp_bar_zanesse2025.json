@@ -7,9 +7,6 @@
   "reference": "Zanesse et al 2025, A&A, 696, A99",
   "description":"Bar - DF3, v=1-0, Figure 5/Table D.1, Intensity Corrected for Extinction",
   "lines": [
-    {"identifier": "CH+10R3",  "intensity": 1.94E-6,  "uncertainty":0.67E-6 },
-    {"identifier": "CH+10R2",  "intensity": 2.53E-6,  "uncertainty":1.13E-6 },
-    {"identifier": "CH+10R1",  "intensity": 0.76E-6,  "uncertainty":0.24E-6 },
     {"identifier": "CH+10P1",  "intensity": 5.52E-6,  "uncertainty":1.13E-6 },
     {"identifier": "CH+10P2",  "intensity": 4.90E-6,  "uncertainty":0.35E-6 },
     {"identifier": "CH+10P3",  "intensity": 3.83E-6,  "uncertainty":0.82E-6 },
