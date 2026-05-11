@@ -16,8 +16,14 @@ def test_excitation_fit(datafile):
 
     assert fitter.thot.data == pytest.approx(exp["thot"]["value"], rel=exp["thot"]["rel_tol"])
     assert fitter.tcold.data == pytest.approx(exp["tcold"]["value"], rel=exp["tcold"]["rel_tol"])
-    assert fitter.hot_colden.data == pytest.approx(exp["hot_colden"]["value"], rel=exp["hot_colden"]["rel_tol"])
-    assert fitter.cold_colden.data == pytest.approx(exp["cold_colden"]["value"], rel=exp["cold_colden"]["rel_tol"])
+    if exp["hot_colden"] is not None:
+        assert fitter.hot_colden.data == pytest.approx(exp["hot_colden"]["value"], rel=exp["hot_colden"]["rel_tol"])
+    if exp["cold_colden"] is not None:
+        assert fitter.cold_colden.data == pytest.approx(exp["cold_colden"]["value"], rel=exp["cold_colden"]["rel_tol"])
+    if exp["total_colden"] is not None:
+        assert fitter.cold_colden.data == pytest.approx(
+            exp["total_colden"]["value"], rel=exp["total_colden"]["rel_tol"]
+        )
 
     if meta["fit_opr"] and exp["opr"] is not None:
         assert fitter.opr.data == pytest.approx(exp["opr"]["value"], rel=exp["opr"]["rel_tol"])

@@ -18,6 +18,7 @@
     "tcold":      {"value": 78.92093319, "rel_tol": 1e-3},
     "hot_colden": {"value": 8.966e16,    "rel_tol": 1e-3},
     "cold_colden":{"value": 8.966e16,    "rel_tol": 1e-3},
+    "total_colden":{"value": 8.966e16,    "rel_tol": 1e-3},
     "opr": null
   }
 }
