@@ -1,7 +1,51 @@
 import astropy.units as u
 import numpy as np
 import pytest
-from pdrtpy.molecule import C13O, CO, H2
+from pdrtpy.molecule import C13O, C13O18, CO, CO18, H2, CHplus
+
+# ---------------------------------------------------------------------------
+# Parametrized tests that apply to all table-based molecules (CO family + CH+)
+# ---------------------------------------------------------------------------
+
+TABLE_MOLECULES = [CO, C13O, CO18, C13O18, CHplus]
+
+
+@pytest.mark.parametrize("cls", TABLE_MOLECULES)
+def test_partition_function_returns_finite_array(cls):
+    mol = cls()
+    T = [10, 50, 100] * u.K
+    Q = mol.partition_function(T)
+    assert len(Q) == 3
+    assert np.all(np.isfinite(Q))
+
+
+@pytest.mark.parametrize("cls", TABLE_MOLECULES)
+def test_partition_function_increases_with_temperature(cls):
+    mol = cls()
+    T = [10, 50, 100, 200] * u.K
+    Q = mol.partition_function(T)
+    assert np.all(np.diff(Q) > 0)
+
+
+@pytest.mark.parametrize("cls", TABLE_MOLECULES)
+def test_partition_function_exceeds_max_warns(cls):
+    mol = cls()
+    T = [1e7] * u.K
+    with pytest.warns(UserWarning, match="maximum partition function temperature"):
+        mol.partition_function(T)
+
+
+@pytest.mark.parametrize("cls", TABLE_MOLECULES)
+def test_line_ids_is_list(cls):
+    mol = cls()
+    ids = mol.line_ids
+    assert isinstance(ids, list)
+    assert len(ids) > 0
+
+
+# ---------------------------------------------------------------------------
+# TestH2 — uses an analytic formula, not the table path
+# ---------------------------------------------------------------------------
 
 
 class TestH2:
@@ -40,15 +84,18 @@ class TestH2:
         assert np.all(np.diff(Q) > 0)
 
     def test_partition_function_known_value(self):
-        # At T=500K, Herbst formula: 0.0247 * 500 / (1 - exp(-6000/500))
         t = 500.0
         expected = 0.0247 * t / (1.0 - np.exp(-6000.0 / t))
-        T = [t] * u.K
-        Q = self.mol.partition_function(T)
+        Q = self.mol.partition_function([t] * u.K)
         assert Q[0] == pytest.approx(expected, rel=1e-6)
 
     def test_transition_data_has_index(self):
         assert "Line" in self.mol.transition_data.colnames
+
+
+# ---------------------------------------------------------------------------
+# TestCO — spot-checks unique to 12CO
+# ---------------------------------------------------------------------------
 
 
 class TestCO:
@@ -65,25 +112,10 @@ class TestCO:
     def test_opr_can_vary(self):
         assert self.mol.opr_can_vary is False
 
-    def test_line_ids_is_list(self):
-        assert isinstance(self.mol.line_ids, list)
-        assert len(self.mol.line_ids) > 0
 
-    def test_partition_function_returns_array(self):
-        T = [10, 50, 100] * u.K
-        Q = self.mol.partition_function(T)
-        assert len(Q) == 3
-        assert np.all(np.isfinite(Q))
-
-    def test_partition_function_increases_with_temperature(self):
-        T = [10, 50, 100, 200] * u.K
-        Q = self.mol.partition_function(T)
-        assert np.all(np.diff(Q) > 0)
-
-    def test_partition_function_exceeds_max_warns(self):
-        T = [1e7] * u.K
-        with pytest.warns(UserWarning, match="maximum partition function temperature"):
-            self.mol.partition_function(T)
+# ---------------------------------------------------------------------------
+# TestC13O
+# ---------------------------------------------------------------------------
 
 
 class TestC13O:
@@ -94,38 +126,95 @@ class TestC13O:
     def test_name(self):
         assert "CO" in self.mol.name
 
-    def test_partition_function_returns_array(self):
-        T = [10, 50, 100] * u.K
-        Q = self.mol.partition_function(T)
-        assert len(Q) == 3
-        assert np.all(np.isfinite(Q))
+    def test_canonical_opr(self):
+        assert self.mol.canonical_opr == 1.0
 
-    def test_partition_function_increases_with_temperature(self):
-        T = [10, 50, 100, 200] * u.K
-        Q = self.mol.partition_function(T)
-        assert np.all(np.diff(Q) > 0)
-
-    def test_partition_function_exceeds_max_warns(self):
-        T = [1e7] * u.K
-        with pytest.warns(UserWarning, match="maximum partition function temperature"):
-            self.mol.partition_function(T)
+    def test_opr_can_vary(self):
+        assert self.mol.opr_can_vary is False
 
 
-class TestCOC13OConsistency:
-    """CO and C13O use the same interpolation logic — verify structural consistency."""
+# ---------------------------------------------------------------------------
+# TestCO18
+# ---------------------------------------------------------------------------
 
-    def test_both_have_partition_function(self):
-        for cls in [CO, C13O]:
-            mol = cls()
-            T = [50, 100] * u.K
-            Q = mol.partition_function(T)
-            assert len(Q) == 2
 
-    def test_co_and_c13o_partition_functions_differ(self):
-        """CO and 13CO have different partition function tables."""
-        co = CO()
-        c13o = C13O()
+class TestCO18:
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.mol = CO18()
+
+    def test_name(self):
+        assert "18" in self.mol.name
+
+    def test_canonical_opr(self):
+        assert self.mol.canonical_opr == 1.0
+
+    def test_opr_can_vary(self):
+        assert self.mol.opr_can_vary is False
+
+
+# ---------------------------------------------------------------------------
+# TestC13O18
+# ---------------------------------------------------------------------------
+
+
+class TestC13O18:
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.mol = C13O18()
+
+    def test_name(self):
+        assert "13" in self.mol.name
+        assert "18" in self.mol.name
+
+    def test_canonical_opr(self):
+        assert self.mol.canonical_opr == 1.0
+
+    def test_opr_can_vary(self):
+        assert self.mol.opr_can_vary is False
+
+
+# ---------------------------------------------------------------------------
+# TestCHplus
+# ---------------------------------------------------------------------------
+
+
+class TestCHplus:
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.mol = CHplus()
+
+    def test_name(self):
+        assert "CH" in self.mol.name
+
+    def test_canonical_opr(self):
+        assert self.mol.canonical_opr == 3.0
+
+    def test_opr_can_vary(self):
+        assert self.mol.opr_can_vary is True
+
+
+# ---------------------------------------------------------------------------
+# Cross-molecule consistency checks
+# ---------------------------------------------------------------------------
+
+
+class TestIsotopologueConsistency:
+    """Verify that isotopologues use different partition function tables."""
+
+    @pytest.mark.parametrize(
+        "cls_a,cls_b",
+        [
+            (CO, C13O),
+            (CO, CO18),
+            (CO, C13O18),
+            (C13O, CO18),
+            (C13O, C13O18),
+            (CO18, C13O18),
+        ],
+    )
+    def test_partition_functions_differ(self, cls_a, cls_b):
         T = [100, 200] * u.K
-        Q_co = co.partition_function(T)
-        Q_c13o = c13o.partition_function(T)
-        assert not np.allclose(Q_co, Q_c13o)
+        Q_a = cls_a().partition_function(T)
+        Q_b = cls_b().partition_function(T)
+        assert not np.allclose(Q_a, Q_b)
