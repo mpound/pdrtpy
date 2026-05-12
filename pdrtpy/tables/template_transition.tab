@@ -1,0 +1,5 @@
+|        nu|     A|trans_i|  gp|  gu|   elower|  vu|  Ju|  vl|  Jl| molec_id|local_iso_id| nu-err|sw-err|nu-ref|sw-ref|           lambda|    species|   Line|                dE|              Tu|
+|    double|double|   long|long|long|   double|long|long|long|long|     long|        long| double|  long|  long|  long|           double|       char|   char|            double|          double|
+|    1 / cm| 1 / s|       |    |    |   1 / cm|    |    |    |    |         |            | 1 / cm|      |      |      |           micron|           |       |                 K|               K|
+|      null|  null|   null|null|null|     null|null|null|null|null|     null|        null|   null|  null|  null|  null|             null|       null|   null|              null|            null|
+2003.514971  14.26 9296524   90   94  1012.857    1   22    0   23         5            2       4      7   1078   1329 4.9912279891818185       13CO CO10S23  2882.608860886542 4339.88300421559

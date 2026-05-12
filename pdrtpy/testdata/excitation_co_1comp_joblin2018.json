@@ -1,0 +1,35 @@
+{
+  "molecule": "CO",
+  "fit_class": "COExcitationFit",
+  "components": 1,
+  "fit_opr": false,
+  "unit": "W m-2 sr-1",
+  "reference": "Joblin et al. 2018, A&A, 615, A129",
+  "ref_url":"https://ui.adsabs.harvard.edu/abs/2018A&A...615A.129J",
+  "description": "NGC 7023, Table 4, Observed Intensity, For data with asymmetric errors, the errors were averaged",
+  "lines": [
+    {"identifier": "COv0-0J4-3",  "intensity": 2.8e-8,  "uncertainty": 9.0e-9},
+    {"identifier": "COv0-0J5-4",  "intensity": 5.3e-8,  "uncertainty": 1.6e-8},
+    {"identifier": "COv0-0J6-5",  "intensity": 1.1e-7,  "uncertainty": 3.5e-8},
+    {"identifier": "COv0-0J7-6",  "intensity": 2.0e-7,  "uncertainty": 6.0e-8},
+    {"identifier": "COv0-0J8-7",  "intensity": 2.0e-7,  "uncertainty": 6.5e-8},
+    {"identifier": "COv0-0J9-8",  "intensity": 3.1e-7,  "uncertainty": 7.0e-8},
+    {"identifier": "COv0-0J10-9", "intensity": 2.5e-7,  "uncertainty": 8.0e-8},
+    {"identifier": "COv0-0J11-10","intensity": 3.5e-7,  "uncertainty": 1.0e-7},
+    {"identifier": "COv0-0J12-11","intensity": 2.7e-7,  "uncertainty": 8.0e-8},
+    {"identifier": "COv0-0J13-12","intensity": 2.4e-7,  "uncertainty": 7.0e-8},
+    {"identifier": "COv0-0J15-14","intensity": 1.2e-7,  "uncertainty": 2.0e-8},
+    {"identifier": "COv0-0J16-15","intensity": 6.5e-8,  "uncertainty": 1.3e-8},
+    {"identifier": "COv0-0J17-16","intensity": 3.3e-8,  "uncertainty": 8.0e-9},
+    {"identifier": "COv0-0J18-17","intensity": 2.0e-8,  "uncertainty": 5.0e-9},
+    {"identifier": "COv0-0J19-18","intensity": 1.2e-8,  "uncertainty": 7.0e-9}
+  ],
+  "expected": {
+    "thot":       {"value": 116.59194784, "rel_tol": 1e-3},
+    "tcold":      {"value": 116.59194784, "rel_tol": 1e-3},
+    "hot_colden": {"value": 1.37329791e17, "rel_tol": 1e-3},
+    "cold_colden":{"value": 1.37329791e17, "rel_tol": 1e-3},
+    "total_colden":{"value": 1.37329791e17, "rel_tol": 1e-3},
+    "opr": null
+  }
+}

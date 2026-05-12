@@ -6,7 +6,9 @@ represented in the Python class `~pdrtpy.modelset.ModelSet`.  Broadly three clas
 available:
 
     1. Wolfire/Kaufman 2020 models for constant density media (metallicities Z=0.5,1) and viewing angles 0 (face-on), 30, 45, 60, 75 degrees.
+
     2. Wolfire/Kaufman 2006 face-on models for constant density media (Z=0.1,1,3)
+
     3. Kosma-:math:`\tau` 2013 models for clumpy and non-clumpy media (Z=1)
 
 The viewing angle models calculate the emitted line intensity along a
@@ -32,16 +34,11 @@ Models are stored in FITS format as ratios of intensities as a function
 of radiation field  and hydrogen nucleus volume density.
 The FITS headers list three different extinction values:
 
-- *AV*: optical depth in magnitudes of visual extinction of PDR along a line
-through the illuminated face to the deepest layers. All models are
-fixed at :math:`A_V = 7`.
+    - *AV*: optical depth in magnitudes of visual extinction of PDR along a line through the illuminated face to the deepest layers. All models are fixed at :math:`A_V = 7`.
 
-- *AVPERP*: optical depth in magnitudes of visual extinction of the PDR
-perpendicular to Av
+    - *AVPERP*: optical depth in magnitudes of visual extinction of the PDR perpendicular to Av.
 
-- *AVLOS*:  optical depth in magnitudes of visual extinction of the PDR along
-the line-of-sight.
-
+    - *AVLOS*:  optical depth in magnitudes of visual extinction of the PDR along the line-of-sight.
 
 For example how to use ModelSets, see the notebook
 `PDRT_Example_ModelSets.ipynb <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_ModelSets.ipynb>`_

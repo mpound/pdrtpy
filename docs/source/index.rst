@@ -11,7 +11,7 @@ Module Descriptions and APIs
    pdrtpy.molecule
    pdrtpy.plot
    pdrtpy.tool
-   pdrtpy.pdrutils
+   pdrtpy.utils
 
 Indices
 =======

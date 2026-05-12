@@ -1,0 +1,26 @@
+{
+  "molecule": "13CO",
+  "fit_class": "C13OExcitationFit",
+  "components": 1,
+  "fit_opr": false,
+  "unit": "W m-2 sr-1",
+  "reference": "Joblin et al. 2018, A&A, 615, A129",
+  "ref_url":"https://ui.adsabs.harvard.edu/abs/2018A&A...615A.129J",
+  "description": "NGC 7023, Table 4, Observed Intensity, For data with asymmetric errors, the errors were averaged",
+  "lines": [
+    {"identifier": "13COv0-0J5-4", "intensity": 2.6e-8, "uncertainty": 8.5e-9},
+    {"identifier": "13COv0-0J6-5", "intensity": 2.5e-8, "uncertainty": 8.0e-9},
+    {"identifier": "13COv0-0J7-6", "intensity": 3.7e-8, "uncertainty": 1.0e-8},
+    {"identifier": "13COv0-0J8-7", "intensity": 3.8e-8, "uncertainty": 1.2e-8},
+    {"identifier": "13COv0-0J9-8", "intensity": 5.8e-8, "uncertainty": 1.7e-8},
+    {"identifier": "13COv0-0J10-9","intensity": 4.0e-8, "uncertainty": 1.35e-8}
+  ],
+  "expected": {
+    "thot":       {"value": 78.92093319, "rel_tol": 1e-3},
+    "tcold":      {"value": 78.92093319, "rel_tol": 1e-3},
+    "hot_colden": {"value": 8.966e16,    "rel_tol": 1e-3},
+    "cold_colden":{"value": 8.966e16,    "rel_tol": 1e-3},
+    "total_colden":{"value": 8.966e16,    "rel_tol": 1e-3},
+    "opr": null
+  }
+}
