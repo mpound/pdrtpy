@@ -5,7 +5,7 @@
   "fit_opr": false,
   "unit": "erg s-1 cm-2 sr-1",
   "reference": "Zanesse et al 2025, A&A, 696, A99",
-  "description":"Bar - DF3, v=1-0, Figure 5/Table D.1, Intensity Corrected for Extinction. R-branch and J<3 data removed because that is what they fit in Figure 5. For the expected fit below, I have used Zanesse+ for the HOT values and PDRT fit result for the COLD and TOTAL values. This allows for both an external and internal fit check. Note the expected Zanesse+ column density must be multiplied by a factor of 2 because we use the EXOMOL partition function instead of the Godard&Cernicharo partition function.",
+  "description":"Bar - DF3, v=1-0, Figure 5/Table D.1, Intensity - DF3 Corrected for Extinction. R-branch and J<3 data removed because that is what they fit in Figure 5. For the expected fit below, I have used Zanesse+ for the HOT values and PDRT fit result for the COLD and TOTAL values. This allows for both an external and internal fit check. Note the expected Zanesse+ column density must be multiplied by a factor of 2 because we use the EXOMOL partition function instead of the Godard&Cernicharo partition function.",
   "lines": [
     {"identifier": "CH+10P3",  "intensity": 3.83E-6,  "uncertainty":0.82E-6 },
     {"identifier": "CH+10P4",  "intensity": 5.20E-6,  "uncertainty":1.40E-6 },

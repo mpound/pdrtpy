@@ -1,0 +1,28 @@
+{
+  "molecule": "CH+",
+  "fit_class": "CHplusExcitationFit",
+  "components": 1,
+  "fit_opr": false,
+  "unit": "erg s-1 cm-2 sr-1",
+  "reference": "Zanesse et al 2025, A&A, 696, A99",
+  "description":"d203-503 irradiated disk, v=1-0, Figure 5/Table D.1, Intensity - Disk. R-branch and J<3 data removed because that is what they fit in Figure 5. For the expected fit below, I have used Zanesse+ for the HOT values and PDRT fit result for the COLD and TOTAL values. This allows for both an external and internal fit check. Note the expected Zanesse+ column density must be multiplied by a factor of 2 because we use the EXOMOL partition function instead of the Godard&Cernicharo partition function.",
+  "lines": [
+    {"identifier": "CH+10P3",  "intensity": 3.64E-5,  "uncertainty":0.16E-5 },
+    {"identifier": "CH+10P4",  "intensity": 4.17E-5,  "uncertainty":0.09E-5 },
+    {"identifier": "CH+10P5",  "intensity": 5.16E-5,  "uncertainty":0.17E-5 },
+    {"identifier": "CH+10P7",  "intensity": 4.56E-5,  "uncertainty":0.19E-5 },
+    {"identifier": "CH+10P8",  "intensity": 4.36E-5,  "uncertainty":0.27E-5 },
+    {"identifier": "CH+10P11", "intensity": 1.82E-5,  "uncertainty":0.22E-5 },
+    {"identifier": "CH+10P12", "intensity": 1.46E-5,  "uncertainty":0.14E-5 },
+    {"identifier": "CH+10P13", "intensity": 1.13E-5,  "uncertainty":0.07E-5 },
+    {"identifier": "CH+10P14", "intensity": 0.84E-5,  "uncertainty":0.21E-5 }
+  ],
+  "expected": {
+    "thot":       {"value": 849.0 , "rel_tol": 0.30},
+    "tcold":       {"value":845.355, "rel_tol": 0.31},
+    "hot_colden": {"value":6.0E11, "rel_tol": 0.30},
+    "cold_colden": {"value":6.68664E11, "rel_tol": 0.17},
+    "total_colden": {"value":6.68664E11, "rel_tol": 0.17},
+    "opr": null
+  }
+}
