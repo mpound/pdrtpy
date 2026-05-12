@@ -596,8 +596,8 @@ class BaseExcitationFit(ToolBase):
         # Measurement in place, rather than replaceMeasurement(), the colden
         # won't get recomputed. But we warned them!
         # if not self._column_density or (len(self._column_density) != len(self._measurements)):
-
         # screw it. just always compute them.  Note to self: change this if it becomes computationally intensive
+
         # suppress ridiculous NDDATA warning about units. See issue #163
         log.setLevel("WARNING")
         self._compute_column_densities(unit=unit, line=line)
@@ -852,7 +852,7 @@ class BaseExcitationFit(ToolBase):
 
          # should we reutrn something here or just compute them and never store.
          # I'm beginning to think there is no reason to store them.
-        #:700returns: dictionary of column densities as:class:`~pdrtpy.measurement.Measurement  indexed by upper state :math:`J` number or Line name. Default: False means return indexed by :math:`J`.
+        #:returns: dictionary of column densities as:class:`~pdrtpy.measurement.Measurement  indexed by upper state :math:`J` number or Line name. Default: False means return indexed by :math:`J`.
         #:returns: a :class:`~pdrtpy.measurement.Measurement` of the column density.
         """
         self._column_density = dict()

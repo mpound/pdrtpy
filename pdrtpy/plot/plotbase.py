@@ -134,7 +134,7 @@ class PlotBase:
         return self._axis
 
     def text(self, x, y, s, fontdict=None, **kwargs):
-        """
+        r"""
         Add text to the Axes.  Add the text `s` to the Axes at location `x, y` in data coordinates.
         This calls through to :meth:`matplotlib.pyplot.text`.
 
@@ -146,7 +146,7 @@ class PlotBase:
         :type s: str
         :param fontdict: A dictionary to override the default text properties. If fontdict is None, the defaults are determined by rcParams.
         :type fontdict: dict
-        :param **kwargs: Other miscellaneous :class:`~matplotlib.text.Text` parameters.
+        :param \*\*kwargs: Other miscellaneous :class:`~matplotlib.text.Text` parameters.
         """
         self._plt.text(x, y, s, fontdict, **kwargs)
 

@@ -313,15 +313,14 @@ class CHplus(BaseMolecule):  # CH+
 
     def partition_function(self, temperature: Quantity) -> np.ndarray:
         r"""
-        Calculate the partition function for $CH^{+}$ at the given temperature using the EXOMOL partition function (Pearce et al., 2024, MNRAS, 527, 10736).
+        Calculate the partition function for $CH^{+}$ at the given temperature using the EXOMOL partition function `(Pearce et al., 2024, MNRAS, 527, 10736)  <https://doi.org/10.1093/mnras/stad3909>`_.
         The EXOMOL function is evaluated at 1K intervals; this function performs a linear interpolation on those data.
 
         ..note:
 
-            Per Pearce+2024, "The ExoMol convention, in accordance with HITRAN (Gamache et al. 2017, J. Quant. Spectrosc. Radiat. Transfer, 203, 70), is
+            Per Pearce+2024, "The ExoMol convention, in accordance with HITRAN `(Gamache et al. 2017, J. Quant. Spectrosc. Radiat. Transfer, 203, 70) <https://doi.org/10.1016/j.jqsrt.2017.03.045>`_ , is
             to provide partition functions that include full atomic nuclear spin degeneracy, $g_{nu}$."  This results in a factor of 2 increase over the
-            partition functions of Barklem and Collet (2016, A&A,588,A96) and of Godard and Cernicharo (2013) A&A, 550, A8.
-            Be aware of this when comparing total column densities with papers that use those partition functions.
+            partition functions of `Barklem and Collet (2016, A&A,588,A96) <https://doi.org/10.1051/0004-6361/201526961>`_ and of `Godard and Cernicharo (2013) A&A, 550, A8. <https://doi.org/10.1051/0004-6361/201220151>`_ Be aware of this when comparing total column densities with papers that use those partition functions.
 
         Parameters
         ----------
