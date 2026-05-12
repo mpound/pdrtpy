@@ -5,6 +5,7 @@
   "fit_opr": false,
   "unit": "W m-2 sr-1",
   "reference": "Joblin et al. 2018 A&A 615 A129 Table 4, NGC 7023",
+  "description":"",
   "lines": [
     {"identifier": "COv0-0J4-3",  "intensity": 2.8e-8,  "uncertainty": 9.0e-9},
     {"identifier": "COv0-0J5-4",  "intensity": 5.3e-8,  "uncertainty": 1.6e-8},
