@@ -46,9 +46,9 @@ def load_excitation_testcase(path):
     fit_class = getattr(excitation_module, data["fit_class"])
     fitter = fit_class(measurements)
 
-    meta = {
-        "components": data["components"],
-        "fit_opr": data.get("fit_opr", False),
-        "expected": data["expected"],
-    }
+    meta = dict()
+    for k in data:
+        if k != "lines" and k != "fit_opr":
+            meta[k] = data[k]
+    meta["fit_opr"] = data.get("fit_opr", False)
     return fitter, meta
