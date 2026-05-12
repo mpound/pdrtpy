@@ -4,8 +4,9 @@
   "components": 1,
   "fit_opr": false,
   "unit": "W m-2 sr-1",
-  "reference": "Joblin et al. 2018 A&A 615 A129 Table 4, NGC 7023",
-  "description": "",
+  "reference": "Joblin et al. 2018, A&A, 615, A129",
+  "ref_url":"https://ui.adsabs.harvard.edu/abs/2018A&A...615A.129J",
+  "description": "NGC 7023, Table 4, Observed Intensity, For data with asymmetric errors, the errors were averaged",
   "lines": [
     {"identifier": "13COv0-0J5-4", "intensity": 2.6e-8, "uncertainty": 8.5e-9},
     {"identifier": "13COv0-0J6-5", "intensity": 2.5e-8, "uncertainty": 8.0e-9},
