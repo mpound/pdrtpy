@@ -127,6 +127,35 @@ def compare_results(current: dict, ref_path: str, log: logging.Logger) -> None:
         )
 
 
+def _timed_run(method: str, measurements: list, args: argparse.Namespace, log: logging.Logger) -> tuple:
+    """Run H2ExcitationFit with a given partition_method; return (elapsed_times, last_fit)."""
+    npix = measurements[0].data.size
+    run_kwargs = {"components": args.components, "partition_method": method}
+    if args.workers is not None:
+        run_kwargs["workers"] = args.workers
+
+    elapsed_times = []
+    last_fit = None
+    for i in range(args.runs):
+        log.info("  --- Run %d/%d ---", i + 1, args.runs)
+        fit = H2ExcitationFit(measurements=measurements)
+        t0 = time.perf_counter()
+        fit.run(**run_kwargs)
+        elapsed = time.perf_counter() - t0
+        elapsed_times.append(elapsed)
+        last_fit = fit
+        log.info("    Elapsed : %.3f s  (%.1f ms/pixel)", elapsed, 1000 * elapsed / npix)
+
+    if args.runs > 1:
+        avg = sum(elapsed_times) / len(elapsed_times)
+        log.info("  --- Timing summary over %d runs ---", args.runs)
+        log.info("    Min : %.3f s", min(elapsed_times))
+        log.info("    Max : %.3f s", max(elapsed_times))
+        log.info("    Mean: %.3f s  (%.1f ms/pixel)", avg, 1000 * avg / npix)
+
+    return elapsed_times, last_fit
+
+
 def run_benchmark(args: argparse.Namespace, log: logging.Logger) -> None:
     log.info("=== H2ExcitationFit benchmark ===")
     log.info("Components: %d", args.components)
@@ -142,38 +171,56 @@ def run_benchmark(args: argparse.Namespace, log: logging.Logger) -> None:
     shape = measurements[0].data.shape
     log.info("Map shape : %s  (%d pixels)", shape, npix)
 
-    run_kwargs = {"components": args.components}
-    if args.workers is not None:
-        run_kwargs["workers"] = args.workers
+    # Determine which partition methods to run
+    methods = ["ssr", "pelt"] if args.partition_method == "both" else [args.partition_method]
 
-    elapsed_times = []
-    last_fit = None
-    for i in range(args.runs):
-        log.info("--- Run %d/%d ---", i + 1, args.runs)
-        fit = H2ExcitationFit(measurements=measurements)
-        t0 = time.perf_counter()
-        fit.run(**run_kwargs)
-        elapsed = time.perf_counter() - t0
-        elapsed_times.append(elapsed)
-        last_fit = fit
-        log.info("  Elapsed : %.3f s  (%.1f ms/pixel)", elapsed, 1000 * elapsed / npix)
+    all_results = {}
+    all_times = {}
+    for method in methods:
+        log.info("--- Partition method: %s ---", method)
+        elapsed_times, last_fit = _timed_run(method, measurements, args, log)
+        all_times[method] = elapsed_times
+        results = extract_results(last_fit, args.components)
+        all_results[method] = results
+        n_masked = int(results["mask"].sum())
+        log.info("  Masked pixels: %d / %d  (%.1f%%)", n_masked, npix, 100 * n_masked / npix)
 
-    if args.runs > 1:
-        avg = sum(elapsed_times) / len(elapsed_times)
-        log.info("--- Timing summary over %d runs ---", args.runs)
-        log.info("  Min : %.3f s", min(elapsed_times))
-        log.info("  Max : %.3f s", max(elapsed_times))
-        log.info("  Mean: %.3f s  (%.1f ms/pixel)", avg, 1000 * avg / npix)
+    # If both methods ran, print a side-by-side timing comparison
+    if len(methods) == 2:
+        log.info("=== Partition method comparison ===")
+        mean_ssr = sum(all_times["ssr"]) / len(all_times["ssr"])
+        mean_pelt = sum(all_times["pelt"]) / len(all_times["pelt"])
+        log.info("  SSR  mean: %.3f s  (%.1f ms/pixel)", mean_ssr, 1000 * mean_ssr / npix)
+        log.info("  PELT mean: %.3f s  (%.1f ms/pixel)", mean_pelt, 1000 * mean_pelt / npix)
+        if mean_ssr > 0:
+            log.info("  PELT / SSR speedup ratio: %.2fx  (>1 means SSR is faster)", mean_pelt / mean_ssr)
+        # Correctness: compare the two methods against each other
+        log.info("--- SSR vs PELT correctness (median rel-diff) ---")
+        ssr_r, pelt_r = all_results["ssr"], all_results["pelt"]
+        valid = ~ssr_r["mask"] & ~pelt_r["mask"]
+        for key in ["tcold", "ncold", "thot", "nhot"]:
+            if key not in ssr_r or key not in pelt_r:
+                continue
+            sv = ssr_r[key][valid]
+            pv = pelt_r[key][valid]
+            finite = np.isfinite(sv) & np.isfinite(pv)
+            if not finite.any():
+                continue
+            reldiff = np.abs(sv[finite] - pv[finite]) / (np.abs(pv[finite]) + 1e-30)
+            log.info(
+                "  %-8s  median_reldiff=%.2f%%  max_absdiff=%.3g",
+                key,
+                100 * float(np.median(reldiff)),
+                float(np.max(np.abs(sv[finite] - pv[finite]))),
+            )
 
-    results = extract_results(last_fit, args.components)
-    n_masked = int(results["mask"].sum())
-    log.info("Masked pixels: %d / %d  (%.1f%%)", n_masked, npix, 100 * n_masked / npix)
-
+    # Use the first (or only) method's results for save/compare
+    primary = all_results[methods[0]]
     if args.save_reference:
-        save_reference(results, args.save_reference, log)
+        save_reference(primary, args.save_reference, log)
 
     if args.compare_reference:
-        compare_results(results, args.compare_reference, log)
+        compare_results(primary, args.compare_reference, log)
 
     log.info("=== Done ===")
 
@@ -207,6 +254,18 @@ def main() -> None:
         default=None,
         metavar="N",
         help="number of worker processes (-1 = all CPUs, default: serial)",
+    )
+    parser.add_argument(
+        "--partition-method",
+        "-p",
+        choices=["ssr", "pelt", "both"],
+        default="ssr",
+        help=(
+            "breakpoint-finding algorithm used for initial parameter guesses: "
+            "'ssr' (default) uses a vectorised prefix-sum residual search (fast, no external library); "
+            "'pelt' uses the ruptures PELT algorithm (O(n log n), higher per-call overhead for small n); "
+            "'both' runs each method in sequence and prints a timing/correctness comparison."
+        ),
     )
     parser.add_argument(
         "--save-reference",
