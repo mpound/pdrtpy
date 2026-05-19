@@ -279,6 +279,24 @@ class BaseExcitationFit(ToolBase):
         :type fit_opr: bool
         :param fit_av: Whether to fit the visual extinction. If True, the Av will be varied to determine the best value. If False, the Av is fixed at zero.
         :type fit_av: bool
+        :param workers: Number of worker processes for parallel pixel fitting.  ``None``
+            (default) runs serially.  ``-1`` uses all available CPUs.  Any positive
+            integer uses that many workers.  Matches the ``LineRatioFit.run()`` API.
+
+            **Performance note**: each pixel is submitted as a separate task to
+            :class:`~concurrent.futures.ProcessPoolExecutor`, so inter-process
+            communication overhead is paid once per pixel.  For the excitation fits
+            in this package (n ≤ ~20 spectral lines, lightweight lmfit minimisation)
+            the per-pixel compute time is short enough that parallel execution only
+            outperforms serial on maps with roughly 5 000 or more *valid* (unmasked)
+            pixels.  On smaller maps the IPC overhead dominates and serial is faster.
+
+            A future optimisation would be to submit *chunks* of pixels per task
+            (each worker runs a mini serial loop over its chunk), paying the pickle
+            cost once per chunk rather than once per pixel.  This would make parallel
+            worthwhile at much smaller map sizes.  ``emcee`` fitting is excluded from
+            the parallel path regardless of this setting.
+        :type workers: int or None
         """
         # @todo what happens if e.g., fit_av=True and init_av !=0 ?
         kwargs_opts = {
