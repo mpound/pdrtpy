@@ -1,10 +1,13 @@
 import math
 import warnings
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from functools import partial
 from types import SimpleNamespace
 
 import astropy.constants as constants
 import astropy.units as u
 import numpy as np
+import ruptures as rpt
 from astropy import log
 from astropy.nddata import Cutout2D, StdDevUncertainty
 from emcee.pbar import get_progress_bar
@@ -17,6 +20,90 @@ from .fitmap import FitMap
 from .toolbase import ToolBase
 
 log.setLevel("WARNING")
+
+# ── Module-level constants and functions ────────────────────────────────────
+# Must be module-level (not instance methods) so ProcessPoolExecutor can pickle
+# them without needing to pickle the BaseExcitationFit instance.
+
+_LOGE = math.log10(math.e)
+
+_excitation_worker_state = None
+
+
+def _one_comp_model_fn(
+    x, m1, n1, opr, av, idx=None, fit_opr=False, fit_av=False, extinction_ratio=None, canonical_opr=3.0
+):
+    if idx is None:
+        idx = []
+    idx = [int(i) for i in idx]
+    model = x * m1 + n1
+    if fit_opr:
+        model[idx] += math.log10(opr / canonical_opr)
+    if fit_av:
+        model = model - 0.4 * extinction_ratio * av * _LOGE
+    return model
+
+
+def _two_comp_model_fn(
+    x, m1, n1, m2, n2, opr, av, idx=None, fit_opr=False, fit_av=False, extinction_ratio=None, canonical_opr=3.0
+):
+    """Two-component excitation model using log-sum-exp for numerical stability.
+
+    log10(10^a + 10^b) = ref + log10(1 + 10^(other - ref)), where ref = max(a, b).
+    This avoids overflow when a or b are large.
+    """
+    if idx is None:
+        idx = []
+    idx = [int(i) for i in idx]
+    a = x * m1 + n1
+    b = x * m2 + n2
+    ref = np.maximum(a, b)
+    other = np.minimum(a, b)
+    model = ref + np.log10(1.0 + 10.0 ** (other - ref))
+    if fit_opr:
+        model[idx] += math.log10(opr / canonical_opr)
+    if fit_av:
+        model = model - 0.4 * extinction_ratio * av * _LOGE
+    return model
+
+
+def _init_excitation_worker(
+    model_fn_partial, param_names, base_params, x, idx, fit_opr, fit_av, extinction_ratios, method, nan_policy
+):
+    """Build lmfit Model once per worker process and cache shared fit data."""
+    global _excitation_worker_state
+    model = Model(model_fn_partial, param_names=param_names)
+    _excitation_worker_state = (model, base_params, x, idx, fit_opr, fit_av, extinction_ratios, method, nan_policy)
+
+
+def _excitation_pixel_worker(i, yr_i, sig_i, m1v, n1v, m2v, n2v):
+    """Fit a single pixel in a worker process."""
+    model, base_params, x, idx, fit_opr, fit_av, extinction_ratios, method, nan_policy = _excitation_worker_state
+    p = base_params.copy()
+    p["m1"].value = m1v
+    p["n1"].value = n1v
+    if "m2" in p:
+        p["m2"].value = m2v
+        p["n2"].value = n2v
+    try:
+        result = model.fit(
+            data=yr_i,
+            weights=1.0 / sig_i,
+            x=x,
+            params=p,
+            idx=idx,
+            fit_opr=fit_opr,
+            fit_av=fit_av,
+            extinction_ratio=extinction_ratios,
+            method=method,
+            nan_policy=nan_policy,
+        )
+        return i, result
+    except ValueError:
+        return i, None
+
+
+# ── End module-level ─────────────────────────────────────────────────────────
 
 
 class BaseExcitationFit(ToolBase):
@@ -53,10 +140,6 @@ class BaseExcitationFit(ToolBase):
         self._column_density = dict()
         self._canonical_opr = molecule.canonical_opr
         self._opr = Measurement(data=[self._canonical_opr], uncertainty=None)
-        self._model_functions = {
-            1: self._one_component_model,
-            2: self._two_component_model,
-        }
         self._fitresult = None
         self._temperature = None
         self._total_colden = None
@@ -206,6 +289,7 @@ class BaseExcitationFit(ToolBase):
             "verbose": False,
             "init_opr": 3.0,
             "init_av": 0.0,
+            "workers": None,
             # for emcee
             "burn": 0,
             "steps": 1000,
@@ -254,161 +338,14 @@ class BaseExcitationFit(ToolBase):
 
     def _init_model(self):
         """Initialize the lmfit Model class to be used in fitting."""
-        # @todo make a separate class that subclasses Model.
-
-        # potentially allow users to change it.
-        # print(f'initializing model with nc = {self._numcomponents}')
-        self._model = Model(
-            self._model_functions[self._numcomponents],
-            param_names=list(self._params.keys()),
-        )
-        # This may be entirely unnecessary
+        base_fn = _two_comp_model_fn if self._numcomponents == 2 else _one_comp_model_fn
+        fn = partial(base_fn, canonical_opr=self._canonical_opr)
+        fn.__name__ = base_fn.__name__
+        fn.__doc__ = base_fn.__doc__
+        self._model = Model(fn, param_names=list(self._params.keys()))
         for p, q in self._params.items():
             self._model.set_param_hint(p, min=q.min, max=q.max, vary=q.vary)
         self._model.make_params()
-
-    def _one_component_model(
-        self,
-        x,
-        m1,
-        n1,
-        opr,
-        av,
-        idx=None,
-        fit_opr=False,
-        fit_av=False,
-        extinction_ratio=None,
-    ):
-        """Function for fitting the excitation curve as a single linear function
-        and allowing ortho-to-para ratio and/or visual extinctionto vary.  Para is even J, ortho is odd J.
-        :param x: independent axis array
-        :param m1: slope of line
-        :type m1: float
-        :param n1: intercept of line
-        :type n1: float
-        :param opr: ortho-to-para ratio
-        :type opr: float
-        :param av: visual extinction in magnitudes
-        :type av: float
-        :type idx: np.ndarray
-        :param idx: list of indices that may have variable opr (odd J transitions)
-        :param fit_opr: indicate whether opr will be fit, default False (opr fixed = 3)
-        :type fit_opr: bool
-        :param fit_av: indicate whether Av will be fit, default False (Av=0)
-        :type fit_av: bool
-        :param extinction_ratio: The ratio of spectral line wavelength extinction to visual extinction. See set_extinction_law()
-        :type extinction_ratio: float
-        :return: line in log space: x*m1 + n1 + log10(opr/3.0) -  0.4*extinction_ratio*av*log10(e)
-
-        :rtype: :class:`numpy.ndarray`
-        """
-        if idx is None:
-            idx = []
-        idx = [int(i) for i in idx]
-        # model is already in log space
-        model = x * m1 + n1
-        if fit_opr:
-            model[idx] += np.log10(opr / self._canonical_opr)
-        if fit_av:
-            model = model - 0.4 * extinction_ratio * av * utils.LOGE
-        return model
-
-    def _one_line(self, x, m1, n1):
-        """Return a line.
-
-        :param x: array of x values
-        :type x: :class:`numpy.ndarray`
-        :param m1: slope of first line
-        :type m1: float
-        :param n1: intercept of first line
-        :type n1: float
-        """
-        return m1 * x + n1
-
-    def _two_component_model(
-        self,
-        x,
-        m1,
-        n1,
-        m2,
-        n2,
-        opr,
-        av,
-        idx=None,
-        fit_opr=False,
-        fit_av=False,
-        extinction_ratio=None,
-    ):
-        """Function for fitting the excitation curve as sum of two linear functions
-        and allowing ortho-to-para ratio and/or visual extinction to vary.  Para is even J, ortho is odd J.
-        :param x: independent axis array
-        :param m1: slope of first line
-        :type m1: float
-        :param n1: intercept of first line
-        :type n1: float
-        :param m2: slope of second line
-        :type m2: float
-        :param n2: intercept of second line
-        :type n2: float
-        :param opr: ortho-to-para ratio
-        :type opr: float
-        :param av: visual extinction in magnitudes
-        :type av: float
-        :type idx: np.ndarray
-        :param idx: list of indices that may have variable opr (odd J transitions)
-        :param fit_opr: indicate whether opr will be fit, default False (opr fixed = 3)
-        :type fit_opr: bool
-        :param fit_av: indicate whether Av will be fit, default False (Av=0)
-        :type fit_av: bool
-        :param extinction_ratio: The ratio of spectral line wavelength extinction to visual extinction. See set_extinction_law()
-        :type extinction_ratio: float
-        :return: Sum of lines in log space:log10(10**(x*m1+n1) + 10**(x*m2+n2)) + log10(opr/3.0) - 0.4*extinction_ratio*av*log10(e)
-        :rtype: :class:`numpy.ndarray`
-        """
-        if idx is None:
-            idx = []
-        # why are these coming in as floats?
-        idx = [int(i) for i in idx]
-        # print(f"{x=}, {m1=}, {n1=}, {m2=}, {n2=}")
-        y1 = 10 ** (x * m1 + n1)
-        y2 = 10 ** (x * m2 + n2)
-        # print(f"{y1=}, {y2=}")
-        model = np.log10(y1 + y2)
-        # We assume that the column densities passed in have been normalized
-        # using the canonical OPR=3. Therefore what we are actually fitting is
-        # the ratio of the actual OPR to the canonical OPR.
-        # For odd J, input x = Nu/(3*(2J+1) where 3=canonical OPR.
-        #
-        # We want the model-data residual to be small, but if the opr
-        # is different from the  canonical value of 3, then data[idx] will
-        # be low by a factor of 3/opr.
-        # So we must LOWER model[idx] artificially by dividing it by
-        # 3/opr, i.e. multiplying by opr/3.  This is equivalent to addition in log-space.
-        if fit_opr:
-            model[idx] += np.log10(opr / self._canonical_opr)
-        if fit_av:
-            model = model - 0.4 * extinction_ratio * av * utils.LOGE
-        return model
-
-    def _two_lines(self, x, m1, n1, m2, n2):
-        """This function is used to partition a fit to data using two lines and
-        an inflection point.  Second slope is steeper because slopes are
-        negative in excitation diagram.
-
-        :param x: array of x values
-        :type x: :class:`numpy.ndarray`
-        :param m1: slope of first line
-        :type m1: float
-        :param n1: intercept of first line
-        :type n1: float
-        :param m2: slope of second line
-        :type m2: float
-        :param n2: intercept of second line
-        :type n2: float
-
-         See https://stackoverflow.com/questions/48674558/how-to-implement-automatic-model-determination-and-two-state-model-fitting-in-py
-        """
-        return np.max([m1 * x + n1, m2 * x + n2], axis=0)
 
     #############################
     # Properties
@@ -1000,33 +937,88 @@ class BaseExcitationFit(ToolBase):
         self._opr = self._wrap_measurement(opr_v, opr_e, u.dimensionless_unscaled, fitmap)
         self._av = self._wrap_measurement(av_v, av_e, u.dimensionless_unscaled, fitmap)
 
-    def _first_guess(self, x, y):
-        r"""The first guess at the fit parameters is done by finding the line between the first
-        two (lowest energy) points to determine $T_{cold}and between the last two (highest energy)
-        points to determine $T_{hot}. The first guess is needed to ensure the final fit converges.
-        The guess doesn't need to be perfect, just in the ballpark.
+    def _find_breakpoint_pelt(self, x, y_1d):
+        """Find a single interior breakpoint index using ruptures PELT.
 
-        :param x: array of energies, $E/k$
-        :type x: numpy array
-        :param y: array of normalized column densities $N_u/g_u$
-        :type y: numpy array
+        Falls back to an exhaustive search over all interior indices if PELT
+        does not return exactly one interior breakpoint.
+
+        :param x: 1-D energy array (n_lines,)
+        :param y_1d: 1-D log column-density array (n_lines,)
+        :returns: breakpoint index bp such that cold segment = y_1d[:bp], hot = y_1d[bp:]
+        :rtype: int
         """
+        n = len(y_1d)
+        signal = y_1d.reshape(-1, 1)
+        try:
+            std = float(np.nanstd(y_1d))
+            pen = (std**2) * math.log(n) if std > 0 else 1.0
+            bkps = rpt.Pelt(model="l2", min_size=2, jump=1).fit(signal).predict(pen=pen)
+            # bkps includes n as the final sentinel; interior breakpoints are all but last
+            interior = [b for b in bkps if 0 < b < n]
+            if len(interior) == 1:
+                return interior[0]
+        except Exception:
+            pass
+        # Exhaustive fallback: pick breakpoint minimising total residual sum of squares
+        best_bp, best_rss = 2, np.inf
+        for bp in range(2, n - 1):
+            _, res_c, _, _ = self._fit_segment(x[:bp], y_1d[:bp])
+            _, res_h, _, _ = self._fit_segment(x[bp:], y_1d[bp:])
+            rss = res_c + res_h
+            if rss < best_rss:
+                best_rss, best_bp = rss, bp
+        return best_bp
 
-        if self._numcomponents == 2:
-            slopecold = (y[2] - y[0]) / (x[2] - x[0])
-            intcold = y[1] - slopecold * x[1]
-            slopehot = (y[-1] - y[-2]) / (x[-1] - x[-2])
-            inthot = y[-1] - slopehot * x[-1]
-        else:
-            slopecold = (y[-1] - y[0]) / (x[-1] - x[0])
-            intcold = y[-1] - slopecold * x[-1]
-            slopehot = slopecold
-            inthot = intcold
-        if np.all(slopecold >= 0):
-            # (f"Bad first guess, resetting from {slopecold=} to -0.5")
-            slopecold = np.full_like(slopecold, -0.5)
-        # print("FG ",type(slopecold),type(slopehot),type(intcold),type(inthot))
-        return np.array([slopecold, intcold, slopehot, inthot])
+    def _fit_segment(self, x_seg, y_seg):
+        """Fit a line to (x_seg, y_seg) via polyfit; enforce negative slope.
+
+        :returns: (slope, rss, intercept, residuals_sum)
+        :rtype: tuple
+        """
+        coeffs = np.polyfit(x_seg, y_seg, 1)
+        slope, intercept = coeffs
+        if slope >= 0:
+            slope = -0.5
+            intercept = float(np.mean(y_seg - slope * x_seg))
+        residuals = y_seg - (slope * x_seg + intercept)
+        rss = float(np.dot(residuals, residuals))
+        return slope, rss, intercept, rss
+
+    def _ruptures_partition(self, x, yr):
+        """Partition each pixel spectrum and fit segments to get initial guesses.
+
+        :param x: 1-D energy array (n_lines,)
+        :param yr: 2-D array (n_lines, n_pix) of log column densities
+        :returns: (slopecold, intcold, slopehot, inthot) each shape (n_pix,)
+        """
+        n_pix = yr.shape[1]
+        slopecold = np.empty(n_pix)
+        intcold = np.empty(n_pix)
+        slopehot = np.empty(n_pix)
+        inthot = np.empty(n_pix)
+
+        for i in range(n_pix):
+            y_1d = yr[:, i]
+            if not np.isfinite(y_1d).all():
+                slopecold[i] = -0.5
+                intcold[i] = float(np.nanmean(y_1d))
+                slopehot[i] = -1.0
+                inthot[i] = float(np.nanmean(y_1d))
+                continue
+            if self._numcomponents == 2:
+                bp = self._find_breakpoint_pelt(x, y_1d)
+                sc, _, ic, _ = self._fit_segment(x[:bp], y_1d[:bp])
+                sh, _, ih, _ = self._fit_segment(x[bp:], y_1d[bp:])
+            else:
+                sc, _, ic, _ = self._fit_segment(x, y_1d)
+                sh, ih = sc, ic
+            slopecold[i] = sc
+            intcold[i] = ic
+            slopehot[i] = sh
+            inthot[i] = ih
+
+        return slopecold, intcold, slopehot, inthot
 
     def _fit_excitation(self, position, size, fit_opr=False, fit_av=False, **kwargs):
         r"""Fit the :math:`log N_u-E` diagram with one or two excitation temperatures.
@@ -1118,32 +1110,35 @@ class BaseExcitationFit(ToolBase):
             y = np.log10(_colden.data)
         sigma = utils.LOGE * _colden.error / _colden.data
 
-        slopecold, intcold, slopehot, inthot = self._first_guess(x, y)
-        tcold = -utils.LOGE / slopecold
-        thot = -utils.LOGE / slopehot
-        if np.shape(tcold) == ():
-            tcold = np.array([tcold])
-            thot = np.array([thot])
-        saveshape = tcold.shape
-        if verbose:
-            print(f"First guess at excitation temperatures:\n T_cold = {tcold:.1f} K\n T_hot = {thot:.1f} K")
-
-        # flatten any dimensions past 0 so the pixel loop indexes are 1-D
+        # Flatten spatial dimensions before partitioning so pixel loop is 1-D
         shp = y.shape
         if len(shp) == 1:
             y = y[:, np.newaxis]
+            sigma = sigma[:, np.newaxis]
             shp = y.shape
-        n_pix = int(np.prod(shp[1:]))
+        saveshape = shp[1:] if len(shp) > 1 else (1,)
+        n_pix = int(np.prod(saveshape))
+        yr = y.reshape((shp[0], n_pix))
+        sig = sigma.reshape((shp[0], n_pix))
+
+        slopecold, intcold, slopehot, inthot = self._ruptures_partition(x, yr)
+
+        if verbose:
+            tcold = -utils.LOGE / slopecold
+            thot = -utils.LOGE / slopehot
+            print(
+                f"First guess at excitation temperatures:\n T_cold = {np.nanmedian(tcold):.1f} K\n T_hot = {np.nanmedian(thot):.1f} K"
+            )
 
         return SimpleNamespace(
             x=x,
-            yr=y.reshape((shp[0], n_pix)),
-            sig=sigma.reshape((shp[0], n_pix)),
+            yr=yr,
+            sig=sig,
             idx=idx,
-            slopecold=slopecold.flatten(),
-            intcold=intcold.flatten(),
-            slopehot=slopehot.flatten(),
-            inthot=inthot.flatten(),
+            slopecold=slopecold,
+            intcold=intcold,
+            slopehot=slopehot,
+            inthot=inthot,
             extinction_ratios=extinction_ratios,
             saveshape=saveshape,
             total=n_pix,
@@ -1155,7 +1150,11 @@ class BaseExcitationFit(ToolBase):
 
         Sets ``self._excount`` (ValueError count) and ``self._badfit`` (fits that
         completed but reported success=False).
+
+        Pass ``workers=N`` (or -1 for all CPUs) in kwargs to use parallel fitting
+        via :class:`~concurrent.futures.ProcessPoolExecutor`.
         """
+        workers = kwargs.pop("workers", None)
         total = prep.total
         fmdata = np.empty(total, dtype=object)
         fm_mask = np.full(total, False)
@@ -1170,8 +1169,13 @@ class BaseExcitationFit(ToolBase):
         self._model.set_param_hint("opr", vary=fit_opr)
         self._model.set_param_hint("av", vary=fit_av)
 
-        progress = kwargs.pop("progress", True) if total > 1 else False
         method = kwargs["method"]
+        nan_policy = kwargs["nan_policy"]
+
+        if workers is not None and method != "emcee":
+            return self._run_pixel_fits_parallel(prep, fit_opr, fit_av, method, nan_policy, workers, verbose)
+
+        progress = kwargs.pop("progress", True) if total > 1 else False
         emcee_kwargs = (
             {k: kwargs[k] for k in ("burn", "steps", "nwalkers") if k in kwargs} if method == "emcee" else None
         )
@@ -1205,7 +1209,7 @@ class BaseExcitationFit(ToolBase):
                         fit_av=fit_av,
                         extinction_ratio=prep.extinction_ratios,
                         method=method,
-                        nan_policy=kwargs["nan_policy"],
+                        nan_policy=nan_policy,
                         fit_kws=emcee_kwargs,
                     )
                     if fmdata[i].success:
@@ -1223,6 +1227,65 @@ class BaseExcitationFit(ToolBase):
                     fm_mask[i] = True
                     self._excount += 1
                 pbar.update(1)
+
+        return fmdata, fm_mask, count
+
+    def _run_pixel_fits_parallel(self, prep, fit_opr, fit_av, method, nan_policy, workers, verbose):
+        """Parallel pixel fitting via ProcessPoolExecutor."""
+        total = prep.total
+        fmdata = np.empty(total, dtype=object)
+        fm_mask = np.full(total, False)
+        count = 0
+        self._excount = 0
+        self._badfit = 0
+
+        n_workers = None if workers == -1 else workers
+
+        base_fn = _two_comp_model_fn if self._numcomponents == 2 else _one_comp_model_fn
+        model_fn_partial = partial(base_fn, canonical_opr=self._canonical_opr)
+        model_fn_partial.__name__ = base_fn.__name__
+        model_fn_partial.__doc__ = base_fn.__doc__
+        param_names = list(self._params.keys())
+
+        init_args = (
+            model_fn_partial,
+            param_names,
+            self._params.copy(),
+            prep.x,
+            prep.idx,
+            fit_opr,
+            fit_av,
+            prep.extinction_ratios,
+            method,
+            nan_policy,
+        )
+
+        futures = {}
+        with ProcessPoolExecutor(max_workers=n_workers, initializer=_init_excitation_worker, initargs=init_args) as ex:
+            for i in range(total):
+                if not (np.isfinite(prep.yr[:, i]).all() and np.isfinite(prep.sig[:, i]).all()):
+                    fm_mask[i] = True
+                    continue
+                m1v = prep.slopecold[i]
+                n1v = prep.intcold[i]
+                m2v = prep.slopehot[i] if self._numcomponents == 2 else None
+                n2v = prep.inthot[i] if self._numcomponents == 2 else None
+                futures[ex.submit(_excitation_pixel_worker, i, prep.yr[:, i], prep.sig[:, i], m1v, n1v, m2v, n2v)] = i
+
+            with get_progress_bar(True, total, leave=True, position=0) as pbar:
+                for fut in as_completed(futures):
+                    i, result = fut.result()
+                    if result is None:
+                        fm_mask[i] = True
+                        self._excount += 1
+                    else:
+                        fmdata[i] = result
+                        if result.success:
+                            count += 1
+                        else:
+                            fm_mask[i] = True
+                            self._badfit += 1
+                    pbar.update(1)
 
         return fmdata, fm_mask, count
 
