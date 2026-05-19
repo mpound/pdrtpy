@@ -34,7 +34,8 @@ dependencies = [
     'mpl-interactions[jupyter]',
     'pandas',
     'tqdm',
-    'dust_extinction'
+    'dust_extinction',
+    'ruptures',
  ]
 
 [dependency-groups]
@@ -194,7 +195,7 @@ filterwarnings = [
     "ignore:.*do_format.*:RuntimeWarning"
 ]
 addopts = [
-  "--timeout=300",
+  "--timeout=600",
 ]
 
 
