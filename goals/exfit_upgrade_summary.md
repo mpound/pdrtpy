@@ -1,8 +1,9 @@
 # ExcitationFit Upgrade — Implementation Summary
 
-Branch: `excitationfit-upgrade`
-PR: #218
-Date completed: 2026-05-27
+| Branch | PR | Date |
+|---|---|---|
+| `excitationfit-upgrade` | #218 | 2026-05-27 |
+| `excitationfit-chunked` | #220 | 2026-05-27 |
 
 ---
 
@@ -54,7 +55,8 @@ fit.run(components=2)               # serial (default)
 
 Implementation uses `ProcessPoolExecutor` with:
 - `_init_excitation_worker` — builds the lmfit `Model` once per worker process
-- `_excitation_pixel_worker` — fits one pixel, returns parameter dict
+- `_excitation_pixel_worker` — fits one pixel, returns `(i, result)` tuple
+- `_excitation_chunk_worker` — fits a batch of pixels serially, returns list of `(i, result)` (see §3 below)
 
 **Pickling caveat:** lmfit's `Model` requires `func.__name__` to be set.
 `functools.partial` objects lack `__name__`, so it must be assigned manually
@@ -65,7 +67,40 @@ Two-component model uses `ref = max(a, b); model = ref + log10(1 + 10^(other−r
 to avoid overflow/underflow when the two temperature components differ by many
 dex.
 
-### 3. Benchmark script
+### 3. Chunked parallel submission (PR #220)
+
+The initial parallel implementation submitted one pixel per
+`ProcessPoolExecutor` task.  Per-task IPC overhead (~1–2 ms) exceeded per-pixel
+compute time (~10–13 ms) enough that parallel was slower than serial on the CenA
+map (~837 valid pixels).
+
+The fix: batch `chunk_size` pixels (default 32) into each task.  Each worker
+fits its chunk serially; IPC is paid once per chunk, not once per pixel.
+
+**New module-level function:** `_excitation_chunk_worker(indices, yr_chunk,
+sig_chunk, m1s, n1s, m2s, n2s)` — receives a list of pixel indices and
+`(n_lines, chunk_size)` data slices, returns `list[(i, ModelResult|None)]`.
+
+**New parameter:** `chunk_size=32` added to `run()`, threaded through
+`_run_pixel_fits` → `_run_pixel_fits_parallel`.  The progress bar now tracks
+valid pixels only (not the full map including masked pixels).
+
+**Benchmark results (CenA map, 837 valid pixels, 12 CPUs):**
+
+| Mode | Mean time | ms/pixel |
+|---|---|---|
+| Serial | 17.0 s | 6.4 ms |
+| Parallel `chunk_size=32` | 7.8 s | 2.9 ms |
+| **Speedup** | **2.2×** | |
+
+Correctness: median relative difference vs master reference = **0.00%** on all
+four parameters.
+
+**Chunk size guidance:** default 32 is a good starting point (chunk compute
+~320 ms >> IPC ~1–2 ms).  Larger chunks reduce overhead further but coarsen
+progress-bar granularity and may cause load imbalance on the last chunk.
+
+### 4. Benchmark script
 
 `scripts/benchmark_excitationfit.py` — times `H2ExcitationFit.run()` on the
 CenA 7-line H₂ dataset.  Key flags:
@@ -73,6 +108,7 @@ CenA 7-line H₂ dataset.  Key flags:
 ```
 --partition-method {ssr,pelt,both}   # compare algorithms
 --workers N                          # parallel workers
+--chunk-size N                       # pixels per parallel task (default 32)
 --runs N                             # repeated timing
 --save-reference FILE.npz            # save fitted maps for correctness checks
 --compare-reference FILE.npz         # diff current run against saved reference
@@ -84,20 +120,11 @@ CenA 7-line H₂ dataset.  Key flags:
 
 ### Parallel workers: overhead vs. speedup threshold
 
-On small maps (≤ ~800 valid pixels, 12 CPUs) the parallel path is **not
-faster** than serial.  Root cause: per-task IPC overhead (~1–2 ms) vs.
-lightweight lmfit compute (~10–13 ms per pixel) with one task submitted per
-pixel.  Measured: serial ~10.8 s, parallel ~16 s on CenA test data.
-
-Rule of thumb: **parallel helps only above ~5000 valid pixels** (where compute
-time per pixel amortises IPC cost).  The `workers` parameter is still correct to
-expose — it will matter for large JWST/ALMA maps.
-
-### Chunking not implemented
-
-`LineRatioFit` also submits one pixel per task.  Batching N pixels per
-`Executor` task would reduce IPC overhead and is the right next step for both
-tools.  Deferred — tracked here as a future option.
+With the original one-pixel-per-task approach, IPC overhead (~1–2 ms per task)
+exceeded per-pixel compute time enough that parallel was *slower* than serial on
+the CenA map.  The chunked submission (PR #220) fixed this: 2.2× speedup at 837
+valid pixels with `chunk_size=32`.  For very small maps (≲ 100 valid pixels) the
+process-pool startup cost may still dominate; serial remains the safe default.
 
 ### `_one_line` required by `excitationplot.py`
 
@@ -177,7 +204,7 @@ These items were discussed but deliberately left off this branch:
 
 | Item | Notes |
 |---|---|
-| **Chunked parallel submission** | Submit N pixels per task to amortise IPC overhead; threshold ~50–100 pixels/chunk |
+| **Chunked parallel submission** | ✅ Done (PR #220) — `chunk_size=32` default; 2.2× speedup on CenA map |
 | **Tikhonov / spatial regularisation** | Requires moving from per-pixel `minimize()` to a single joint minimisation with sparse Jacobian (Option 4 in `regularization.md`).  Per-pixel independence is a hard architectural barrier to regularisation. |
 | **`components=None` auto-selection** | Automatically choose 1 vs 2 components via AIC/BIC or F-test on the piecewise fit quality |
 | **More than 2 components** | Piecewise framework supports n breakpoints; lmfit model extension straightforward |
@@ -189,8 +216,8 @@ These items were discussed but deliberately left off this branch:
 
 | File | Change |
 |---|---|
-| `pdrtpy/tool/excitation.py` | Core implementation (new methods, `workers`, `partition_method`, log-sum-exp model, `_one_line` restore) |
+| `pdrtpy/tool/excitation.py` | Core implementation (new methods, `workers`, `chunk_size`, `partition_method`, log-sum-exp model, `_one_line` restore) |
 | `pyproject.toml` | Added `ruptures` to dependencies |
 | `uv.lock` | Updated (ruptures 1.1.10) |
-| `scripts/benchmark_excitationfit.py` | New benchmark script |
+| `scripts/benchmark_excitationfit.py` | Benchmark script (`--partition-method`, `--workers`, `--chunk-size`, `--runs`, `--save/compare-reference`) |
 | `scripts/bench_excitation_ref_master.npz` | Reference solution from master branch |
