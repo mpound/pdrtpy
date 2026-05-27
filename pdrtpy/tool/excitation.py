@@ -103,43 +103,6 @@ def _excitation_pixel_worker(i, yr_i, sig_i, m1v, n1v, m2v, n2v):
         return i, None
 
 
-def _excitation_chunk_worker(indices, yr_chunk, sig_chunk, m1s, n1s, m2s, n2s):
-    """Fit a chunk of pixels in a worker process. Returns list of (i, result).
-
-    Each worker receives a contiguous slice of valid pixels so that IPC overhead
-    is paid once per chunk rather than once per pixel.  ``yr_chunk`` and
-    ``sig_chunk`` are shaped ``(n_lines, chunk_size)`` — the same column-major
-    layout as ``prep.yr``.  ``m1s``, ``n1s``, ``m2s``, ``n2s`` are 1-D arrays of
-    per-pixel initial guesses with length ``chunk_size``.
-    """
-    model, base_params, x, idx, fit_opr, fit_av, extinction_ratios, method, nan_policy = _excitation_worker_state
-    out = []
-    for k, i in enumerate(indices):
-        p = base_params.copy()
-        p["m1"].value = m1s[k]
-        p["n1"].value = n1s[k]
-        if "m2" in p:
-            p["m2"].value = m2s[k]
-            p["n2"].value = n2s[k]
-        try:
-            result = model.fit(
-                data=yr_chunk[:, k],
-                weights=1.0 / sig_chunk[:, k],
-                x=x,
-                params=p,
-                idx=idx,
-                fit_opr=fit_opr,
-                fit_av=fit_av,
-                extinction_ratio=extinction_ratios,
-                method=method,
-                nan_policy=nan_policy,
-            )
-            out.append((i, result))
-        except ValueError:
-            out.append((i, None))
-    return out
-
-
 # ── End module-level ─────────────────────────────────────────────────────────
 
 
@@ -328,17 +291,12 @@ class BaseExcitationFit(ToolBase):
             outperforms serial on maps with roughly 5 000 or more *valid* (unmasked)
             pixels.  On smaller maps the IPC overhead dominates and serial is faster.
 
-            ``emcee`` fitting is excluded from the parallel path regardless of
-            this setting.
+            A future optimisation would be to submit *chunks* of pixels per task
+            (each worker runs a mini serial loop over its chunk), paying the pickle
+            cost once per chunk rather than once per pixel.  This would make parallel
+            worthwhile at much smaller map sizes.  ``emcee`` fitting is excluded from
+            the parallel path regardless of this setting.
         :type workers: int or None
-        :param chunk_size: Number of pixels batched into each parallel task
-            (default: 32).  Each worker process fits ``chunk_size`` pixels
-            serially, so IPC serialisation overhead is paid once per chunk
-            rather than once per pixel.  Larger values reduce overhead further
-            but coarsen progress-bar granularity and may cause load imbalance
-            on the last chunk.  Ignored when ``workers`` is ``None`` or when
-            the fitting method is ``'emcee'``.
-        :type chunk_size: int
         """
         # @todo what happens if e.g., fit_av=True and init_av !=0 ?
         kwargs_opts = {
@@ -350,7 +308,6 @@ class BaseExcitationFit(ToolBase):
             "init_opr": 3.0,
             "init_av": 0.0,
             "workers": None,
-            "chunk_size": 32,
             "partition_method": "ssr",
             # for emcee
             "burn": 0,
@@ -1325,7 +1282,6 @@ class BaseExcitationFit(ToolBase):
         via :class:`~concurrent.futures.ProcessPoolExecutor`.
         """
         workers = kwargs.pop("workers", None)
-        chunk_size = kwargs.pop("chunk_size", 32)
         total = prep.total
         fmdata = np.empty(total, dtype=object)
         fm_mask = np.full(total, False)
@@ -1344,9 +1300,7 @@ class BaseExcitationFit(ToolBase):
         nan_policy = kwargs["nan_policy"]
 
         if workers is not None and method != "emcee":
-            return self._run_pixel_fits_parallel(
-                prep, fit_opr, fit_av, method, nan_policy, workers, chunk_size, verbose
-            )
+            return self._run_pixel_fits_parallel(prep, fit_opr, fit_av, method, nan_policy, workers, verbose)
 
         progress = kwargs.pop("progress", True) if total > 1 else False
         emcee_kwargs = (
@@ -1403,16 +1357,8 @@ class BaseExcitationFit(ToolBase):
 
         return fmdata, fm_mask, count
 
-    def _run_pixel_fits_parallel(self, prep, fit_opr, fit_av, method, nan_policy, workers, chunk_size, verbose):
-        """Parallel pixel fitting via ProcessPoolExecutor with chunked submission.
-
-        Pixels are batched into groups of ``chunk_size`` before being submitted
-        to :class:`~concurrent.futures.ProcessPoolExecutor`.  Each worker fits
-        its chunk serially, so inter-process serialisation cost is paid once per
-        chunk rather than once per pixel.  This makes parallel execution
-        worthwhile at much smaller map sizes than the one-pixel-per-task
-        approach.
-        """
+    def _run_pixel_fits_parallel(self, prep, fit_opr, fit_av, method, nan_policy, workers, verbose):
+        """Parallel pixel fitting via ProcessPoolExecutor."""
         total = prep.total
         fmdata = np.empty(total, dtype=object)
         fm_mask = np.full(total, False)
@@ -1441,44 +1387,32 @@ class BaseExcitationFit(ToolBase):
             nan_policy,
         )
 
-        # Collect valid pixel indices; mask the rest immediately.
-        valid = [i for i in range(total) if np.isfinite(prep.yr[:, i]).all() and np.isfinite(prep.sig[:, i]).all()]
-        for i in range(total):
-            if not (np.isfinite(prep.yr[:, i]).all() and np.isfinite(prep.sig[:, i]).all()):
-                fm_mask[i] = True
-
-        # Partition valid indices into chunks.
-        chunks = [valid[s : s + chunk_size] for s in range(0, len(valid), chunk_size)]
-
         futures = {}
         with ProcessPoolExecutor(max_workers=n_workers, initializer=_init_excitation_worker, initargs=init_args) as ex:
-            for chunk in chunks:
-                yr_c = prep.yr[:, chunk]
-                sig_c = prep.sig[:, chunk]
-                m1s = prep.slopecold[chunk]
-                n1s = prep.intcold[chunk]
-                if self._numcomponents == 2:
-                    m2s = prep.slopehot[chunk]
-                    n2s = prep.inthot[chunk]
-                else:
-                    m2s = n2s = [None] * len(chunk)
-                futures[ex.submit(_excitation_chunk_worker, chunk, yr_c, sig_c, m1s, n1s, m2s, n2s)] = chunk
+            for i in range(total):
+                if not (np.isfinite(prep.yr[:, i]).all() and np.isfinite(prep.sig[:, i]).all()):
+                    fm_mask[i] = True
+                    continue
+                m1v = prep.slopecold[i]
+                n1v = prep.intcold[i]
+                m2v = prep.slopehot[i] if self._numcomponents == 2 else None
+                n2v = prep.inthot[i] if self._numcomponents == 2 else None
+                futures[ex.submit(_excitation_pixel_worker, i, prep.yr[:, i], prep.sig[:, i], m1v, n1v, m2v, n2v)] = i
 
-            n_valid = len(valid)
-            with get_progress_bar(True, n_valid, leave=True, position=0) as pbar:
+            with get_progress_bar(True, total, leave=True, position=0) as pbar:
                 for fut in as_completed(futures):
-                    for i, result in fut.result():
-                        if result is None:
-                            fm_mask[i] = True
-                            self._excount += 1
+                    i, result = fut.result()
+                    if result is None:
+                        fm_mask[i] = True
+                        self._excount += 1
+                    else:
+                        fmdata[i] = result
+                        if result.success:
+                            count += 1
                         else:
-                            fmdata[i] = result
-                            if result.success:
-                                count += 1
-                            else:
-                                fm_mask[i] = True
-                                self._badfit += 1
-                        pbar.update(1)
+                            fm_mask[i] = True
+                            self._badfit += 1
+                    pbar.update(1)
 
         return fmdata, fm_mask, count
 

@@ -133,8 +133,6 @@ def _timed_run(method: str, measurements: list, args: argparse.Namespace, log: l
     run_kwargs = {"components": args.components, "partition_method": method}
     if args.workers is not None:
         run_kwargs["workers"] = args.workers
-    if args.chunk_size is not None:
-        run_kwargs["chunk_size"] = args.chunk_size
 
     elapsed_times = []
     last_fit = None
@@ -256,14 +254,6 @@ def main() -> None:
         default=None,
         metavar="N",
         help="number of worker processes (-1 = all CPUs, default: serial)",
-    )
-    parser.add_argument(
-        "--chunk-size",
-        "-k",
-        type=int,
-        default=None,
-        metavar="N",
-        help="pixels per parallel task (default: 32); ignored when --workers is not set",
     )
     parser.add_argument(
         "--partition-method",
