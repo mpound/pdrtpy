@@ -956,6 +956,18 @@ class BaseExcitationFit(ToolBase):
         self._opr = self._wrap_measurement(opr_v, opr_e, u.dimensionless_unscaled, fitmap)
         self._av = self._wrap_measurement(av_v, av_e, u.dimensionless_unscaled, fitmap)
 
+    def _one_line(self, x, m1, n1):
+        """Return a line.
+
+        :param x: array of x values
+        :type x: :class:`numpy.ndarray`
+        :param m1: slope of first line
+        :type m1: float
+        :param n1: intercept of first line
+        :type n1: float
+        """
+        return m1 * x + n1
+
     def _find_breakpoint_ssr(self, x, y_1d):
         r"""Find a single interior breakpoint by minimising total residual sum of squares
         using vectorised prefix sums — no per-breakpoint Python loop, no external library.
