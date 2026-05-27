@@ -29,36 +29,32 @@ class Measurement(CCDData):
 
     Typically, Measurements will be instantiated from a FITS file by using the the :func:`read` or :func:`make_measurement` methods.  For a list of recognized spectral line identifiers, see :meth:`~pdrtpy.modelset.Modelset.supported_lines`.
 
-    :param data:  The actual data contained in this :class:`Measurement` object.
-        Note that the data will always be saved by *reference*, so you should
-        make a copy of the ``data`` before passing it in if that's the desired
-        behavior.
-    :type data: :class:`numpy.ndarray`-like
+    Parameters
+    ----------
+    data : array-like
+        The actual data. Note that data is saved by *reference*, so make a
+        copy before passing if needed.
+    uncertainty : :class:`~astropy.nddata.StdDevUncertainty`, :class:`~astropy.nddata.VarianceUncertainty`, :class:`~astropy.nddata.InverseVariance`, or :class:`numpy.ndarray`
+        Uncertainties on the data. If a :class:`numpy.ndarray`, it is stored
+        as :class:`~astropy.nddata.StdDevUncertainty`. Required.
+    unit : :class:`astropy.units.Unit` or str
+        The units of the data. Required.
+    identifier : str
+        A string indicating what this is an observation of, e.g., ``"CO_10"`` for CO(1-0).
+    title : str, optional
+        A formatted string (e.g., LaTeX) for plotting. r-strings are accepted,
+        e.g., ``r'$^{13}$CO(3-2)'`` gives :math:`^{13}{\rm CO(3-2)}`.
+    bmaj : :class:`astropy.units.Quantity`, optional
+        Beam major axis diameter. Converted to degrees for FITS header storage.
+    bmin : :class:`astropy.units.Quantity`, optional
+        Beam minor axis diameter. Converted to degrees for FITS header storage.
+    bpa : :class:`astropy.units.Quantity`, optional
+        Beam position angle. Converted to degrees for FITS header storage.
 
-    :param uncertainty: Uncertainties on the data. If the uncertainty is a :class:`numpy.ndarray`, it assumed to be, and stored as, a :class:`astropy.nddata.StdDevUncertainty`.  Required.
-    :type uncertainty: :class:`astropy.nddata.StdDevUncertainty`, \
-            :class:`astropy.nddata.VarianceUncertainty`, \
-            :class:`astropy.nddata.InverseVariance` or :class:`numpy.ndarray`
-
-    :param unit: The units of the data.  Required.
-    :type unit: :class:`astropy.units.Unit` or str
-
-    :param identifier: A string indicating what this is an observation of, e.g., "CO_10" for CO(1-0)
-    :type identifier: str
-
-    :param title: A formatted string (e.g., LaTeX) describing this observation that can be used for plotting. Python r-strings are accepted, e.g., r'$^{13}$CO(3-2)'  would give :math:`^{13}{\rm CO(3-2)}`.
-    :type title: str
-
-    :param bmaj: [optional] beam major axis diameter. This will be converted to degrees for storage in FITS header
-    :type  bmaj: :class:`astropy.units.Quantity`
-
-    :param bmin: [optional] beam minor axis diameter. This will be converted to degrees for storage in FITS header
-    :type  bmin: :class:`astropy.units.Quantity`
-
-    :param bpa: [optional] beam position angle. This will be converted to degrees for storage in FITS header
-    :type  bpa: :class:`astropy.units.Quantity`
-
-    :raises TypeError: if beam parameters are not Quantities
+    Raises
+    ------
+    TypeError
+        If beam parameters are not Quantities.
 
     Measurements can also be instantiated by the **read(\\*args, \\**kwargs)**,
     to create an Measurement instance based on a ``FITS`` file.
@@ -142,31 +138,39 @@ class Measurement(CCDData):
 
     @staticmethod
     def make_measurement(datafile, error, outfile, rms=None, masknan=True, overwrite=False, unit="adu"):
-        """Create a FITS files with 2 HDUS, the first being the datavalue and the 2nd being
-        the data uncertainty. This format makes allows the resulting file to be read into the underlying :class:'~astropy.nddata.CCDData` class.
+        """Create a FITS file with 2 HDUs: the first containing the data, the second containing the uncertainty.
 
-        :param datafile: The FITS file containing the data as a function of spatial coordinates
-        :type datafile: str
-        :param error: The errors on the data Possible values for error are:
+        This format allows the resulting file to be read by the underlying
+        :class:`~astropy.nddata.CCDData` class.
 
-             - a filename with the same shape as datafile containing the error values per pixel
-             - a percentage value 'XX%' must have the "%" symbol in it
-             - 'rms' meaning use the rms parameter if given, otherwise look for the RMS keyword in the FITS header of the datafile
+        Parameters
+        ----------
+        datafile : str
+            The FITS file containing the data as a function of spatial coordinates.
+        error : str
+            The errors on the data. Possible values:
 
-        :type error: str
-        :param outfile: The output file to write the result in (FITS format)
-        :type outfile: str
-        :param rms:  If error == 'rms', this value may give the rms in same units as data (e.g 'erg s-1 cm-2 sr-1').
-        :type rms: float or :class:`astropy.units.Unit`
-        :param masknan: Whether to mask any pixel where the data or the error is NaN. Default:true
-        :type masknan: bool
-        :param overwrite: If `True`, overwrite the output file if it exists. Default: `False`.
-        :type overwrite: bool
-        :param unit: Intensity unit to use for the data, this will override BUNIT in header if present.
-        :type unit: :class:`astropy.units.Unit` or str
+             - a filename with the same shape as datafile containing per-pixel errors
+             - a percentage string ``'XX%'`` (must include the ``%`` symbol)
+             - ``'rms'``: use the ``rms`` parameter if given, otherwise look for the RMS keyword in the FITS header
 
-        :raises Exception: on various FITS header issues
-        :raises OSError: if `overwrite` is `False` and the output file exists.
+        outfile : str
+            The output FITS file to write the result to.
+        rms : float or :class:`astropy.units.Unit`, optional
+            If ``error == 'rms'``, the rms value in the same units as the data (e.g. ``'erg s-1 cm-2 sr-1'``).
+        masknan : bool, optional
+            Whether to mask any pixel where the data or error is NaN. Default: True.
+        overwrite : bool, optional
+            If True, overwrite the output file if it exists. Default: False.
+        unit : :class:`astropy.units.Unit` or str, optional
+            Intensity unit for the data; overrides BUNIT in the header if present.
+
+        Raises
+        ------
+        Exception
+            On various FITS header issues.
+        OSError
+            If ``overwrite`` is False and the output file exists.
 
         Example usage:
 
@@ -229,17 +233,21 @@ class Measurement(CCDData):
 
     @property
     def value(self):
-        """Return the underlying data array
+        """Return the underlying data array.
 
-        :rtype: :class:`numpy.ndarray`
+        Returns
+        -------
+        :class:`numpy.ndarray`
         """
         return self.data
 
     @property
     def error(self):
-        """Return the underlying error array
+        """Return the underlying error array.
 
-        :rtype: :class:`numpy.ndarray`
+        Returns
+        -------
+        :class:`numpy.ndarray`
         """
         if self.uncertainty is None:
             return None
@@ -247,9 +255,11 @@ class Measurement(CCDData):
 
     @property
     def SN(self):
-        """Return the signal to noise ratio (value/error)
+        """Return the signal to noise ratio (value/error).
 
-        :rtype: :class:`numpy.ndarray`
+        Returns
+        -------
+        :class:`numpy.ndarray`
         """
         if self.uncertainty is None:
             return None
@@ -257,18 +267,22 @@ class Measurement(CCDData):
 
     @property
     def id(self):
-        """Return the string ID of this measurement, e.g., CO_10
+        """Return the string ID of this measurement, e.g., ``CO_10``.
 
-        :rtype: str
+        Returns
+        -------
+        str
         """
         return self._identifier
 
     @id.setter
     def id(self, value):
-        """Set the string ID of this measurement, e.g., CO_10
+        """Set the string ID of this measurement, e.g., ``CO_10``.
 
-        :param value: the identifier
-        :type value: str
+        Parameters
+        ----------
+        value : str
+            The identifier.
         """
         self._identifier = value
 
@@ -281,36 +295,49 @@ class Measurement(CCDData):
             return None
 
     def is_ratio(self):
-        """Indicate if this `Measurement` is a ratio..
-        This method looks for the '/' past the first character  of the` Measurement` *identifier*, such as "CII_158/CO_32"
-        See also pdrutils.is_ratio(string)
+        """Indicate if this Measurement is a ratio.
 
-        :returns: True if the Measurement is a ratio, False otherwise
-        :rtype: bool"""
+        Looks for ``'/'`` past the first character of the identifier, e.g. ``"CII_158/CO_32"``.
+        See also :func:`~pdrtpy.utils.helpers.is_ratio`.
+
+        Returns
+        -------
+        bool
+            True if the Measurement is a ratio, False otherwise.
+        """
         return utils.is_ratio(self.id)  # pdrutils method
 
     @property
     def title(self):
-        """A formatted title (e.g., LaTeX) that can be in plotting.
+        """A formatted title (e.g., LaTeX) that can be used in plotting.
 
-        :rtype: str or None
+        Returns
+        -------
+        str or None
         """
         return self._title
 
     @property
     def filename(self):
-        """The FITS file that created this measurement, or None if it didn't originate from a file
+        """The FITS file that created this measurement, or None if it didn't originate from a file.
 
-        :rtype: str or None
+        Returns
+        -------
+        str or None
         """
         return self._filename
 
     def write(self, filename, **kwd):
-        """Write this Measurement to a FITS file with value in 1st HDU and error in 2nd HDU. See :meth:`astropy.nddata.CCDData.write`.
+        """Write this Measurement to a FITS file with value in 1st HDU and error in 2nd HDU.
 
-        :param filename:  Name of file.
-        :type filename: str
-        :param kwd: All additional keywords are passed to :py:mod:`astropy.io.fits`
+        See :meth:`astropy.nddata.CCDData.write`.
+
+        Parameters
+        ----------
+        filename : str
+            Name of file.
+        **kwd
+            All additional keywords are passed to :py:mod:`astropy.io.fits`.
         """
         hdu = self.to_hdu()
         hdu.writeto(filename, **kwd)
@@ -331,28 +358,35 @@ class Measurement(CCDData):
         )
 
     def get_pixel(self, world_x, world_y):
-        """Return the nearest pixel coordinates to the input world coordinates
+        """Return the nearest pixel coordinates to the input world coordinates.
 
-        :param world_x: The horizontal world coordinate
-        :type world_x: float
-        :param world_y: The vertical world coordinate
-        :type world_y: float
+        Parameters
+        ----------
+        world_x : float
+            The horizontal world coordinate.
+        world_y : float
+            The vertical world coordinate.
         """
         if self.wcs is None:
             raise Exception(f"No wcs in this Measurement {self.id}")
         return tuple(np.round(self.wcs.world_to_pixel_values(world_x, world_y)).astype(int))
 
     def get(self, world_x, world_y, log=False):
-        """Get the value(s) at the give world coordinates
+        """Get the value(s) at the given world coordinates.
 
-        :param world_x: the x value in world units of naxis1
-        :type world_x: float or array-like
-        :param world_y: the y value in world units of naxis2
-        :type world_y: float or array-lke
-        :param log: True if the input coords are logarithmic Default:False
-        :type log: bool
-        :returns: The value(s) of the Measurement at input coordinates
-        :rtype: float
+        Parameters
+        ----------
+        world_x : float or array-like
+            The x value in world units of naxis1.
+        world_y : float or array-like
+            The y value in world units of naxis2.
+        log : bool, optional
+            True if the input coords are logarithmic. Default: False.
+
+        Returns
+        -------
+        float
+            The value(s) of the Measurement at input coordinates.
         """
         if log:
             return float(self._interp_log((world_x, world_y)))
@@ -368,11 +402,14 @@ class Measurement(CCDData):
         )
 
     def _modify_id(self, other, op):
-        """Handle ID string for arithmetic operations with Measurements or numbers
-        :param other: a Measurement or number
-        :type other: :class:`Measurement` or number
-        :param op: descriptive string of operation, e.g. "+", "*"
-        :type op: str
+        """Handle ID string for arithmetic operations with Measurements or numbers.
+
+        Parameters
+        ----------
+        other : :class:`Measurement` or number
+            A Measurement or number.
+        op : str
+            Descriptive string of operation, e.g. ``"+"`` or ``"*"``.
         """
         if getattr(other, "id", None) is not None:
             return self.id + op + other.id
@@ -407,10 +444,12 @@ class Measurement(CCDData):
         return ""
 
     def add(self, other):
-        """Add this Measurement to another, propagating errors, units,  and updating identifiers.  Masks are logically or'd.
+        """Add this Measurement to another, propagating errors, units, and updating identifiers. Masks are logically or'd.
 
-        :param other: a Measurement or number to add
-        :type other: :class:`Measurement` or number
+        Parameters
+        ----------
+        other : :class:`Measurement` or number
+            A Measurement or number to add.
         """
         # need to do tricky stuff to preserve unit propogation.
         # super().add() does not work because it instantiates a Measurement
@@ -425,10 +464,12 @@ class Measurement(CCDData):
         return z
 
     def subtract(self, other):
-        """Subtract another Measurement from this one, propagating errors, units,  and updating identifiers.  Masks are logically or'd.
+        """Subtract another Measurement from this one, propagating errors, units, and updating identifiers. Masks are logically or'd.
 
-        :param other: a Measurement or number to subtract
-        :type other: :class:`Measurement` or number
+        Parameters
+        ----------
+        other : :class:`Measurement` or number
+            A Measurement or number to subtract.
         """
         z = CCDData.subtract(self, other, handle_mask=np.logical_or, handle_meta="first_found")
         z = Measurement(z, unit=z._unit)
@@ -437,10 +478,12 @@ class Measurement(CCDData):
         return z
 
     def multiply(self, other):
-        """Multiply this Measurement by another, propagating errors, units,  and updating identifiers.  Masks are logically or'd.
+        """Multiply this Measurement by another, propagating errors, units, and updating identifiers. Masks are logically or'd.
 
-        :param other: a Measurement or number to multiply
-        :type other: :class:`Measurement` or number
+        Parameters
+        ----------
+        other : :class:`Measurement` or number
+            A Measurement or number to multiply.
         """
         z = CCDData.multiply(self, other, handle_mask=np.logical_or, handle_meta="first_found")
         z = Measurement(z, unit=z._unit)
@@ -449,10 +492,12 @@ class Measurement(CCDData):
         return z
 
     def divide(self, other):
-        """Divide this Measurement by another, propagating errors, units,  and updating identifiers.  Masks are logically or'd.
+        """Divide this Measurement by another, propagating errors, units, and updating identifiers. Masks are logically or'd.
 
-        :param other: a Measurement or number to divide by
-        :type other: :class:`Measurement` or number
+        Parameters
+        ----------
+        other : :class:`Measurement` or number
+            A Measurement or number to divide by.
         """
         z = CCDData.divide(self, other, handle_mask=np.logical_or, handle_meta="first_found")
         z = Measurement(z, unit=z._unit)
@@ -462,8 +507,11 @@ class Measurement(CCDData):
 
     def is_single_pixel(self):
         """Is this Measurement a single value?
-        :returns: True if a single value (pixel)
-        :rtype: bool
+
+        Returns
+        -------
+        bool
+            True if a single value (pixel).
         """
         return self.data.size == 1
 
@@ -534,13 +582,24 @@ class Measurement(CCDData):
 
         The table must specify the units of each column, e.g. a unit row in the header for IPAC format.  Leave column entry blank if unitless.  Units of value and error should be the same or conformable. Units must be transformable to a valid astropy.unit.Unit.
 
-        :param filename: Name of table file.
-        :type filename: str
-        :param format: `Astropy Table format. <https://docs.astropy.org/en/stable/io/unified.html#built-in-readers-writers>`_ e.g., ascii, ipac, votable. Default is `IPAC format <https://docs.astropy.org/en/stable/api/astropy.io.ascii.Ipac.html#astropy.io.ascii.Ipac>`_
-        :param array: Controls whether a list of Measurements or a single Measurement is returned. If `array` is True,  one Measurement instance will be created for each row in the table and a Python list of Measurements will be returned.  If `array` is False,  one Measurement containing all the points in the `data` member will be returned. If `array` is False, the *identifier* and beam parameters of the first row will be used. If feeding the return value to a plot method such as :meth:`~pdrtpy.plot.modelplot.ModelPlot.phasespace`, choose `array=False`. Default:False.
-        :type array: bool
+        Parameters
+        ----------
+        filename : str
+            Name of table file.
+        format : str, optional
+            `Astropy Table format <https://docs.astropy.org/en/stable/io/unified.html#built-in-readers-writers>`_,
+            e.g., ``ascii``, ``ipac``, ``votable``. Default is
+            `IPAC format <https://docs.astropy.org/en/stable/api/astropy.io.ascii.Ipac.html#astropy.io.ascii.Ipac>`_.
+        array : bool, optional
+            If True, one Measurement is created per table row and a list is returned.
+            If False, one Measurement containing all data points is returned, using
+            the identifier and beam parameters of the first row.
+            For :meth:`~pdrtpy.plot.modelplot.ModelPlot.phasespace`, use ``array=False``.
+            Default: False.
 
-        :rtype: :class:`~pdrtpy.measurement.Measurement` or list of :class:`~pdrtpy.measurement.Measurement`
+        Returns
+        -------
+        :class:`~pdrtpy.measurement.Measurement` or list of :class:`~pdrtpy.measurement.Measurement`
         """
         # @todo support input of a astropy.Table directly
         t = Table.read(filename, format=format)
@@ -613,49 +672,40 @@ class Measurement(CCDData):
 def fits_measurement_reader(
     filename, hdu=0, unit=None, hdu_mask="MASK", hdu_flags=None, key_uncertainty_type="UTYPE", **kwd
 ):
-    """FITS file reader for Measurement class, which will be called by :meth:`Measurement.read`.
+    """FITS file reader for Measurement class, called by :meth:`Measurement.read`.
 
-    :param filename: Name of FITS file.
-    :type filename: str
+    Parameters
+    ----------
+    filename : str
+        Name of FITS file.
+    identifier : str, optional
+        String indicating what this is an observation of, e.g., ``"CO_10"`` for CO(1-0).
+    squeeze : bool, optional
+        If True, remove single dimension axes from the input image. Default: True.
+    hdu : int, optional
+        FITS extension from which Measurement should be initialized. If zero
+        and no data in the primary extension, searches for the first extension
+        with data. Default: 0.
+    unit : :class:`astropy.units.Unit`, optional
+        Units of the image data. If provided and BUNIT is in the header, this
+        argument takes precedence. Default: None.
+    hdu_uncertainty : str or None, optional
+        FITS extension from which the uncertainty should be initialized.
+        If the extension does not exist, uncertainty is ``None``. Default: ``'UNCERT'``.
+    hdu_mask : str or None, optional
+        FITS extension from which the mask should be initialized.
+        If the extension does not exist, mask is ``None``. Default: ``'MASK'``.
+    hdu_flags : str or None, optional
+        Currently not implemented. Default: None.
+    key_uncertainty_type : str, optional
+        Header key name where the uncertainty class name is stored. Default: ``'UTYPE'``.
+    **kwd
+        Additional keyword parameters passed to the FITS reader in :mod:`astropy.io.fits`.
 
-    :param identifier: string indicating what this is an observation of, e.g., "CO_10" for CO(1-0)
-    :type identifier: str
-
-    :param squeeze: If ``True``, remove single dimension axes from the input image. Default: ``True``
-    :type squeeze: bool
-
-    :param hdu: FITS extension from which Measurement should be initialized.
-         If zero and and no data in the primary extension, it will
-         search for the first extension with data. The header will be
-         added to the primary header.  Default is 0.
-    :type hdu: int, optional
-
-    :type unit: :class:`astropy.units.Unit`, optional
-    :param unit:
-         Units of the image data. If this argument is provided and there is a
-         unit for the image in the FITS header (the keyword ``BUNIT`` is used
-         as the unit, if present), this argument is used for the unit.
-         Default is ``None``.
-
-    :type hdu_uncertainty: str or None, optional
-    :param hdu_uncertainty: FITS extension from which the uncertainty
-         should be initialized. If the extension does not exist the
-         uncertainty of the Measurement is ``None``.  Default is
-         ``'UNCERT'``.
-
-    :type hdu_mask: str or None, optional
-    :param hdu_mask: FITS extension from which the mask should be initialized. If the extension does not exist the mask of the Measurement is ``None``.  Default is ``'MASK'``.
-
-    :type hdu_flags: str or None, optional
-    :param hdu_flags: Currently not implemented.  Default is ``None``.
-
-    :type key_uncertainty_type: str, optional
-     :param key_uncertainty_type: The header key name where the class name of the uncertainty  is stored in the hdu of the uncertainty (if any).  Default is ``UTYPE``.
-
-
-    :param kwd: Any additional keyword parameters are passed through to the FITS reader in :mod:`astropy.io.fits`
-
-    :raises TypeError: If the conversion from CCDData to Measurement fails
+    Raises
+    ------
+    TypeError
+        If the conversion from CCDData to Measurement fails.
     """
 
     _id = kwd.pop("identifier", "unknown")

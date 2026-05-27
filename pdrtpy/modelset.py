@@ -15,51 +15,50 @@ from .utils import _OBS_UNIT_, get_table, model_dir
 class ModelSet:
     """Class for computed PDR Model Sets. :class:`ModelSet` provides interface to a directory containing the model FITS files and the ability to query details about.
 
-    :param name: identifying name, e.g., 'wk2006'
-    :type name: str
-
-    :param z:  metallicity in solar units.
-    :type z: float
-
-    :param medium:  medium type, e.g. 'constant density', 'clumpy', 'non-clumpy'
-    :type medium: str
-
-    :param losangle: the line-of-sight inclination angle (aka viewing angle), losangle=0 is face-on, losangle=90 is edge-on.  Valid values are 0, 30, 45, 60, 75, 90.
-    :type  losangle: float
-
-    :param mass: maximum clump mass (for KosmaTau models).  Default:None (appropriate for Wolfire/Kaufman models)
-    :type mass: float
-
-    :param modelsetinfo: For adding user specified ModelSet, this parameter
-        specifies the file with information about the ModelSet. It can be a
-        pathname to an externalt tabular file in an astropy-recognized or an
-        astropy Table object.  If an external tabular file, its format should
-        be give by the `format` keyword. The columns are:
+    Parameters
+    ----------
+    name : str
+        Identifying name, e.g., 'wk2006'.
+    z : float
+        Metallicity in solar units.
+    medium : str
+        Medium type, e.g. 'constant density', 'clumpy', 'non-clumpy'.
+    losangle : float
+        The line-of-sight inclination angle (aka viewing angle), losangle=0 is
+        face-on, losangle=90 is edge-on. Valid values are 0, 30, 45, 60, 75, 90.
+    mass : float
+        Maximum clump mass (for KosmaTau models). Default: None (appropriate for
+        Wolfire/Kaufman models).
+    modelsetinfo : str or :class:`~astropy.table.Table`
+        For adding user specified ModelSet, this parameter specifies the file with
+        information about the ModelSet. It can be a pathname to an external tabular
+        file in an astropy-recognized format or an astropy Table object. If an
+        external tabular file, its format should be given by the `format` keyword.
+        The columns are:
 
         .. code-block:: python
 
            ['PDRcode','name', 'version','path','filename','medium','z','inc', 'mass','description']
 
         `z`, 'inc', and `mass` should be numbers, the rest should be strings.
-        The `name`, `version`, `medium`, `z`, 'inc',  and `mass` columns contain
-        the values available in the input ModelSet as described above. `PDR
-        code` is the originator of the code e.g., "KOSMA-tau", `version`
-        is the code version, `path` is the full-qualified pathname to
-        the FITS files, `filename` is the tabular file which contains
-        descriptions of individual FITS files.  This must also be in
-        the format specified by the `format` keyword.  `description`
-        is a description of the input ModelSet.
-
-    :type modelsetinfo: str or :class:`~astropy.table.Table`
-
-    :param format: If `modelsetinfo` is a file, give the
-        format of file. Must be `an astropy recognized Table format.
+        The `name`, `version`, `medium`, `z`, 'inc', and `mass` columns contain
+        the values available in the input ModelSet as described above. `PDRcode`
+        is the originator of the code e.g., "KOSMA-tau", `version` is the code
+        version, `path` is the full-qualified pathname to the FITS files,
+        `filename` is the tabular file which contains descriptions of individual
+        FITS files. This must also be in the format specified by the `format`
+        keyword. `description` is a description of the input ModelSet.
+    format : str
+        If `modelsetinfo` is a file, give the format of file. Must be
+        `an astropy recognized Table format.
         <https://docs.astropy.org/en/stable/io/unified.html#built-in-readers-writers>`_
         e.g., ascii, ipac, votable. Default is `IPAC format
         <https://docs.astropy.org/en/stable/api/astropy.io.ascii.Ipac.html#astropy.io.ascii.Ipac>`_
-    :type format: str
 
-    :raises ValueError: If model set not recognized/found.
+    Raises
+    ------
+    ValueError
+        If model set not recognized/found.
     """
 
     def __init__(
@@ -144,7 +143,9 @@ class ModelSet:
     def description(self):
         """The description of this model
 
-        :rtype: str
+        Returns
+        -------
+        str
         """
         s = f", Z={self.z:2.1f}, losangle={int(self.losangle):d}"
         if self.avlos is not None:
@@ -157,7 +158,9 @@ class ModelSet:
     def code(self):
         """The PDR code that created this ModelSet, e.g. 'KOSMA-tau'
 
-        :rtype: str
+        Returns
+        -------
+        str
         """
         return self._tabrow["PDRcode"]
 
@@ -165,7 +168,9 @@ class ModelSet:
     def name(self):
         """The name of this ModelSet
 
-        :rtype: str
+        Returns
+        -------
+        str
         """
         return self._tabrow["name"]
 
@@ -173,7 +178,9 @@ class ModelSet:
     def version(self):
         """The version of this ModelSet
 
-        :rtype: str
+        Returns
+        -------
+        str
         """
         return self._tabrow["version"]
 
@@ -181,7 +188,9 @@ class ModelSet:
     def medium(self):
         """The medium type of this model, e.g. 'constant density', 'clumpy', 'non-clumpy'
 
-        :rtype: str
+        Returns
+        -------
+        str
         """
         return self._tabrow["medium"]
 
@@ -189,7 +198,9 @@ class ModelSet:
     def z(self):
         """The metallicity of this ModelSet
 
-        :rtype: float
+        Returns
+        -------
+        float
         """
         return self.metallicity
 
@@ -197,21 +208,29 @@ class ModelSet:
     def metallicity(self):
         """The metallicity of this ModelSet
 
-        :rtype: float
+        Returns
+        -------
+        float
         """
         return self._tabrow["z"]
 
     @property
     def losangle(self):
         """The inclination (viewing) angle with respect to the line of sight, in degrees. A value of 0 means face-on.
-        :rtype: float
+
+        Returns
+        -------
+        float
         """
         return self._tabrow["losangle"]
 
     @property
     def viewangle(self):
         """The viewing angle (inclination) with respect to the line of sight, in degrees. A value of 0 means face-on.
-        :rtype: float
+
+        Returns
+        -------
+        float
         """
         return self.losangle
 
@@ -220,7 +239,9 @@ class ModelSet:
         """The PDR thickness for inclined viewing angle models, expressed in visual magnitudes.
         Returns ``None`` for face-on geometry (losangle=0) and for non-wk2020 models.
 
-        :rtype: float or None
+        Returns
+        -------
+        float or None
         """
         if not self.is_wk2020:
             return None
@@ -234,7 +255,9 @@ class ModelSet:
         """The visual extinction along the line of sight, expressed in magnitudes.
         Returns ``None`` for non-wk2020 models.
 
-        :rtype: float or None
+        Returns
+        -------
+        float or None
         """
         if not self.is_wk2020:
             return None
@@ -244,7 +267,9 @@ class ModelSet:
     def table(self):
         """The table containing details of the models in this ModelSet.
 
-        :rtype: :class:`astropy.table.Table`
+        Returns
+        -------
+        :class:`astropy.table.Table`
         """
         return self._table
 
@@ -252,7 +277,9 @@ class ModelSet:
     def identifiers(self):
         """Table of lines and continuum that are included in ratio models of this ModelSet. Only lines and continuum that are part of ratios are included in this list.   For a separate list of line and continuum intensity models see :meth:`~pdrtpy.modelset.ModelSet.supported_intensities`.
 
-        :rtype: :class:`astropy.table.Table`
+        Returns
+        -------
+        :class:`astropy.table.Table`
         """
         return self._identifiers
 
@@ -261,7 +288,9 @@ class ModelSet:
         """Table of lines and continuum that are covered by this ModelSet and have models separate from
         the any ratio model they might be in.
 
-        :rtype: :class:`astropy.table.Table`
+        Returns
+        -------
+        :class:`astropy.table.Table`
         """
         return self._supported_lines
 
@@ -269,7 +298,9 @@ class ModelSet:
     def supported_ratios(self):
         """The emission ratios that are covered by this ModelSet
 
-        :rtype: :class:`astropy.table.Table`
+        Returns
+        -------
+        :class:`astropy.table.Table`
         """
         return self._supported_ratios
 
@@ -277,27 +308,39 @@ class ModelSet:
     def user_added_models(self):
         """Show which models have been added to this ModelSet by the user
 
-        :rtype: list
+        Returns
+        -------
+        list
         """
         return list(self._user_added_models.keys())
 
     def ratiocount(self, m):
         """The number of valid ratios in this ModelSet, given a list of observation (:class:`~pdrtpy.measurement.Measurement`) identifiers.
 
-        :param m: list of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g. ["CII_158","OI_145","FIR"]
-        :type m: list
-        :returns: The number of model ratios found for the given list of measurement IDs
-        :rtype: int
+        Parameters
+        ----------
+        m : list
+            List of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g. ["CII_158","OI_145","FIR"].
+
+        Returns
+        -------
+        int
+            The number of model ratios found for the given list of measurement IDs.
         """
         return len(self._get_ratio_elements(m))
 
     def find_pairs(self, m):
         """Find the valid model ratios labels in this ModelSet for a given list of measurement IDs
 
-        :param m: list of string `Measurement` IDs, e.g. ["CII_158","OI_145","FIR"]
-        :type m: list
-        :returns: An iterator of model ratios labels for the given list of measurement IDs
-        :rtype: iterator
+        Parameters
+        ----------
+        m : list
+            List of string `Measurement` IDs, e.g. ["CII_158","OI_145","FIR"].
+
+        Returns
+        -------
+        iterator
+            An iterator of model ratio labels for the given list of measurement IDs.
         """
         if not isinstance(m, collections.abc.Iterable) or isinstance(m, (str, bytes)):
             raise Exception("m must be an array of strings")
@@ -313,12 +356,17 @@ class ModelSet:
     def find_files(self, m, ext="fits"):
         """Find the valid model ratios files in this ModelSet for a given list of measurement IDs.  See :meth:`~pdrtpy.measurement.Measurement.id`
 
-        :param m: list of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g. ["CII_158","OI_145","FIR"]
-        :type m: list
-        :param ext: file extension. Default: "fits"
-        :type ext: str
-        :returns: An iterator of model ratio files for the given list of Measurement IDs
-        :rtype: iterator
+        Parameters
+        ----------
+        m : list
+            List of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g. ["CII_158","OI_145","FIR"].
+        ext : str
+            File extension. Default: "fits".
+
+        Returns
+        -------
+        iterator
+            An iterator of model ratio files for the given list of Measurement IDs.
         """
         if not isinstance(m, collections.abc.Iterable) or isinstance(m, (str, bytes)):
             raise Exception("m must be an array of strings")
@@ -337,10 +385,15 @@ class ModelSet:
     def model_ratios(self, m):
         """Return the model ratios that match the input Measurement ID list.  You must provide at least 2 Measurements IDs
 
-        :param m: list of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g., ["CII_158","OI_145","FIR"]
-        :type m: list
-        :returns: list of string identifiers of ratios IDs, e.g., ['OI_145/CII_158', 'OI_145+CII_158/FIR']
-        :rtype: list
+        Parameters
+        ----------
+        m : list
+            List of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g., ["CII_158","OI_145","FIR"].
+
+        Returns
+        -------
+        list
+            List of string identifiers of ratio IDs, e.g., ['OI_145/CII_158', 'OI_145+CII_158/FIR'].
         """
         ratios = list()
         if len(m) < 2:
@@ -353,10 +406,15 @@ class ModelSet:
         """Return the model intensities in this ModelSet that match the input Measurement ID list.
         This method will return the intersection of the input list and the list of supported lines.
 
-        :param m: list of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g., ["CII_158","OI_145","CS_21"]
-        :type m: list
-        :returns: list of string identifiers of ratios IDs, e.g., ['CII_158','OI_145']
-        :rtype: list
+        Parameters
+        ----------
+        m : list
+            List of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g., ["CII_158","OI_145","CS_21"].
+
+        Returns
+        -------
+        list
+            List of string identifiers of intensity IDs, e.g., ['CII_158','OI_145'].
         """
         # get intersection of input list and supported lines
         return list(set(m) & set(self._supported_lines["intensity label"]))
@@ -364,11 +422,20 @@ class ModelSet:
     def get_model(self, identifier, unit=None, ext="fits"):
         """Get a specific model by its identifier
 
-        :param identifier: a :class:`~pdrtpy.measurement.Measurement` ID. It can be an intensity or a ratio, e.g., "CII_158","CI_609/FIR".
-        :type identifier: str
-        :returns: The model matching the identifier
-        :rtype: :class:`~pdrtpy.measurement.Measurement`
-        :raises KeyError: if identifier not found in this ModelSet
+        Parameters
+        ----------
+        identifier : str
+            A :class:`~pdrtpy.measurement.Measurement` ID. It can be an intensity or a ratio, e.g., "CII_158","CI_609/FIR".
+
+        Returns
+        -------
+        :class:`~pdrtpy.measurement.Measurement`
+            The model matching the identifier.
+
+        Raises
+        ------
+        KeyError
+            If identifier not found in this ModelSet.
         """
 
         if identifier in self._user_added_models:
@@ -436,15 +503,24 @@ class ModelSet:
         return _model
 
     def get_models(self, identifiers, model_type="ratio", ext="fits"):
-        """get the models from thie ModelSet that match the input list of identifiers
+        """Get the models from this ModelSet that match the input list of identifiers
 
-        :param identifiers: list of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g., ["CII_158","OI_145","CS_21"]
-        :type identifiers: list
-        :param model_type: indicates which type of model is requested one of 'ratio' or 'intensity'
-        :type model_type: str
-        :returns: The matching models as a list of :class:`~pdrtpy.measurement.Measurement`.
-        :rtype: list
-        :raises KeyError: if identifiers not found in this ModelSet
+        Parameters
+        ----------
+        identifiers : list
+            List of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g., ["CII_158","OI_145","CS_21"].
+        model_type : str
+            Indicates which type of model is requested: one of 'ratio' or 'intensity'.
+
+        Returns
+        -------
+        list
+            The matching models as a list of :class:`~pdrtpy.measurement.Measurement`.
+
+        Raises
+        ------
+        KeyError
+            If identifiers not found in this ModelSet.
         """
 
         # if identifier not in self._identifiers["ID"]:
@@ -476,14 +552,19 @@ class ModelSet:
     def add_model(self, identifier, model, title, overwrite=False):
         r"""Add your own model to this ModelSet.
 
-        :param identifier: a :class:`~pdrtpy.measurement.Measurement` ID. It can be an intensity or a ratio, e.g., "CII_158","CI_609/FIR".
-        :type identifier: str
-        :param model:  the model to add.  If a string, this must be the fully-qualified path of a FITS file.  If a :class:`~pdrtpy.measurement.Measurement` it must have the same CTYPEs and CUNITs as the models in the ModelSet(?).
-        :type model: str or :class:`~pdrtpy.measurement.Measurement`
-        :param title: A formatted string (e.g., LaTeX) describing this observation that can be used for plotting. Python r-strings are accepted, e.g., r'$^{13}$CO(3-2)'  would give :math:`^{13}{\rm CO(3-2)}`.
-        :type title: str
-            :param overwrite:  Whether to overwrite the model if the identifier already exists in the ModelSet or has been previously added.  Default: False
-            :type overwrite: bool
+        Parameters
+        ----------
+        identifier : str
+            A :class:`~pdrtpy.measurement.Measurement` ID. It can be an intensity or a ratio, e.g., "CII_158","CI_609/FIR".
+        model : str or :class:`~pdrtpy.measurement.Measurement`
+            The model to add. If a string, this must be the fully-qualified path of a FITS file.
+            If a :class:`~pdrtpy.measurement.Measurement` it must have the same CTYPEs and CUNITs as the models in the ModelSet.
+        title : str
+            A formatted string (e.g., LaTeX) describing this observation that can be used for plotting.
+            Python r-strings are accepted, e.g., r'$^{13}$CO(3-2)' would give :math:`^{13}{\rm CO(3-2)}`.
+        overwrite : bool
+            Whether to overwrite the model if the identifier already exists in the ModelSet or has been
+            previously added. Default: False.
         """
         if identifier not in self.table["ratio"] and identifier not in self._user_added_models:
             self._really_add_model(identifier, model, title)
@@ -530,9 +611,15 @@ class ModelSet:
         # TODO handle case of OI+CII/FIR so it is not special cased in lineratiofit.py
         """Find the valid model numerator,denominator pairs in this ModelSet for a given list of measurement IDs. See :meth:`~pdrtpy.measurement.Measurement.id`
 
-        :param m: list of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g. ["CII_158","OI_145","FIR"]
-        :type m: list
-        :returns: iterator -- An dictionary iterator where key is numerator and value is denominator
+        Parameters
+        ----------
+        m : list
+            List of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g. ["CII_158","OI_145","FIR"].
+
+        Returns
+        -------
+        iterator
+            A dictionary iterator where key is numerator and value is denominator.
         """
         if not isinstance(m, collections.abc.Iterable) or isinstance(m, (str, bytes)):
             raise Exception("m must be an array of strings")
@@ -547,9 +634,15 @@ class ModelSet:
     def _get_ratio_elements(self, m):
         """Get the valid model numerator,denominator pairs in this ModelSet for a given list of measurement IDs. See :meth:`~pdrtpy.measurement.Measurement.id`
 
-        :param m: list of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g. ["CII_158","OI_145","FIR"]
-        :type m: list
-        :returns: dict -- A dictionary where key is numerator and value is denominator
+        Parameters
+        ----------
+        m : list
+            List of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g. ["CII_158","OI_145","FIR"].
+
+        Returns
+        -------
+        dict
+            A dictionary where key is numerator and value is denominator.
         """
         if not isinstance(m, collections.abc.Iterable) or isinstance(m, (str, bytes)):
             raise Exception("m must be an array of strings")
@@ -566,10 +659,12 @@ class ModelSet:
         """Utility method for determining ratio elements, to handle special
            case of ([O I] 63 micron + [C II] 158 micron)/I_FIR.
 
-        :param m: list of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g. ["CII_158","OI_145","FIR"]
-        :type m: list
-        :param k: list of existing ratios to append to
-        :type k: list
+        Parameters
+        ----------
+        m : list
+            List of string :class:`~pdrtpy.measurement.Measurement` IDs, e.g. ["CII_158","OI_145","FIR"].
+        k : list
+            List of existing ratios to append to.
         """
         if "CII_158" in m and "FIR" in m:
             if "OI_63" in m:
@@ -632,19 +727,23 @@ class ModelSet:
 
     @property
     def is_wk2006(self):
-        """method to indicate this is a wk2006 model, to deal with quirks
-        of that modelset
+        """Indicate this is a wk2006 model, to deal with quirks of that modelset.
 
-        :returns: True if it is.
+        Returns
+        -------
+        bool
+            True if it is.
         """
         return self.name == "wk2006"
 
     @property
     def is_wk2020(self):
-        """method to indicate this is a wk2020 model, to deal with quirks
-        of that modelset
+        """Indicate this is a wk2020 model, to deal with quirks of that modelset.
 
-        :returns: True if it is.
+        Returns
+        -------
+        bool
+            True if it is.
         """
         return self.name == "wk2020"
 
@@ -658,7 +757,9 @@ class ModelSet:
     def all_sets(debug=False):
         """Return a table of the names and descriptions of available ModelSets (not just this one)
 
-        :rtype: :class:`~astropy.table.Table`
+        Returns
+        -------
+        :class:`~astropy.table.Table`
         """
         t = get_table("all_models.tab")
         t.remove_column("path")

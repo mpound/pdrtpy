@@ -6,10 +6,12 @@ class FitMap(NDData):
     def __init__(self, data, *args, **kwargs):
         """A class that can store fit objects in a data array but has all the nice WCS properties of NDData.
 
-        :param data: the data set, an array of lmfit.model.ModelResult or lmfit.minimizer.MinimizerResult
-        :type data: :class:`numpy.ndarray`-like
-        :param name: an identifying name for this object
-        :type name: str
+        Parameters
+        ----------
+        data : array-like
+            The data set, an array of `lmfit.model.ModelResult` or `lmfit.minimizer.MinimizerResult`.
+        name : str, optional
+            An identifying name for this object.
         """
         debug = kwargs.pop("debug", False)
         if debug:
@@ -27,8 +29,11 @@ class FitMap(NDData):
 
     @property
     def name(self):
-        """The name of this FitMap
-        :rtype: str
+        """The name of this FitMap.
+
+        Returns
+        -------
+        str
         """
         return self._name
 
@@ -39,13 +44,16 @@ class FitMap(NDData):
     def get_pixel(self, world_x, world_y):
         # @TODO: allow non-rounding. param round=T/F
         # @TODO: move to util? this method is copied from measurement.py
-        """Return the nearest pixel coordinates to the input world coordinates x,y
-        The pixel values will be rounded to the nearest integer
+        """Return the nearest pixel coordinates to the input world coordinates x,y.
 
-        :param world_x: The horizontal world coordinate
-        :type world_x: float
-        :param world_y: The vertical world coordinate
-        :type world_y: float
+        The pixel values will be rounded to the nearest integer.
+
+        Parameters
+        ----------
+        world_x : float
+            The horizontal world coordinate.
+        world_y : float
+            The vertical world coordinate.
         """
         if self.wcs is None:
             raise Exception(f"No wcs in this FitMap {self.name}")
@@ -53,33 +61,40 @@ class FitMap(NDData):
 
     def get_pixel_from_coord(self, coord):
         """Return the nearest pixel coordinates to the input world coordinates.
-        The pixel values will be rounded to the nearest integer
 
-        :param coord: The world coordinate
-        :type coord: :class:~astropy.coordinates.SkyCoord`
+        The pixel values will be rounded to the nearest integer.
+
+        Parameters
+        ----------
+        coord : :class:`~astropy.coordinates.SkyCoord`
+            The world coordinate.
         """
         if self.wcs is None:
             raise Exception(f"No wcs in this FitMap {self.name}")
         return tuple(np.round(self.wcs.world_to_pixel_values(coord)).astype(int))
 
     def get_world(self, x, y):
-        """Return the world coordinates corresponding to the input pixel coordinates
+        """Return the world coordinates corresponding to the input pixel coordinates.
 
-        :param x: The horizontal pixel coordinate
-        :type x: float
-        :param y: The vertical pixel coordinate
-        :type y: float
+        Parameters
+        ----------
+        x : float
+            The horizontal pixel coordinate.
+        y : float
+            The vertical pixel coordinate.
         """
         if self.wcs is None:
             raise Exception(f"No wcs in this FitMap {self.name}")
         return tuple(self.wcs.pixel_to_world_values([[x, y]])[0])
 
     def get_skycoord(self, x, y):
-        """Return the Sky Coordinate corresponding to the input pixel coordinates
+        """Return the Sky Coordinate corresponding to the input pixel coordinates.
 
-        :param x: The horizontal pixel coordinate
-        :type x: float
-        :param y: The vertical pixel coordinate
-        :type y: float
+        Parameters
+        ----------
+        x : float
+            The horizontal pixel coordinate.
+        y : float
+            The vertical pixel coordinate.
         """
         return self.wcs.pixel_to_world([x], [y])

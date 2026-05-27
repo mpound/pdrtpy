@@ -13,20 +13,21 @@ log.setLevel("WARNING")  # see issue 163
 
 
 class LineRatioPlot(PlotBase):
-    """LineRatioPlot plots the results of :class:`~pdrtpy.tools.lineratiofit.LineRatioFit`.  It can plot maps of fit results, observations with errors on top of models, chi-square and confidence intervals and more.
+    """Plots the results of :class:`~pdrtpy.tools.lineratiofit.LineRatioFit`.
 
+    Can plot maps of fit results, observations with errors on top of models,
+    chi-square and confidence intervals and more.
 
-    :Keyword Arguments:
-
-    The methods of this class can take a variety of optional keywords.  See the general `Plot Keywords`_ documentation
-
+    The methods of this class can take a variety of optional keywords. See the
+    general `Plot Keywords`_ documentation.
     """
 
     def __init__(self, tool):
-        """Init method
-
-        :param tool: The line ratio fitting tool that is to be plotted.
-        :type tool: `~pdrtpy.tool.LineRatioFit`
+        """
+        Parameters
+        ----------
+        tool : :class:`~pdrtpy.tool.LineRatioFit`
+            The line ratio fitting tool that is to be plotted.
         """
 
         super().__init__(tool)
@@ -36,12 +37,19 @@ class LineRatioPlot(PlotBase):
         self._ratiocolor = []
 
     def modelintensity(self, id, **kwargs):
-        r"""Plot one of the model intensities
+        r"""Plot one of the model intensities.
 
-        :param id: the intensity identifier, such as `CO_32``.
-        :type id: str
-        :param \**kwargs: see class documentation above
-        :raises KeyError: if is id not in existing model intensities
+        Parameters
+        ----------
+        id : str
+            The intensity identifier, such as ``CO_32``.
+        \**kwargs
+            See class documentation above.
+
+        Raises
+        ------
+        KeyError
+            If id is not in existing model intensities.
         """
         ms = self._tool.modelset
         if id not in ms.supported_intensities["intensity label"]:
@@ -55,13 +63,19 @@ class LineRatioPlot(PlotBase):
         self._axis = self._modelplot.axis
 
     def modelratio(self, id, **kwargs):
-        r"""Plot one of the model ratios
+        r"""Plot one of the model ratios.
 
-        :param id: the ratio identifier, such as ``CII_158/CO_32``.
-        :type id: str
-        :param \**kwargs: see class documentation above
-        :raises KeyError: if is id not in existing model ratios
+        Parameters
+        ----------
+        id : str
+            The ratio identifier, such as ``CII_158/CO_32``.
+        \**kwargs
+            See class documentation above.
 
+        Raises
+        ------
+        KeyError
+            If id is not in existing model ratios.
         """
         if self._tool._modelratios[id].shape == (1,):  # does this ever occur??
             return self._tool._modelratios[id]
@@ -77,11 +91,17 @@ class LineRatioPlot(PlotBase):
         self._axis = self._modelplot.axis
 
     def observedratio(self, id, **kwargs):
-        """Plot one of the observed ratios
+        """Plot one of the observed ratios.
 
-        :param id: the ratio identifier, such as ``CII_158/CO_32``.
-        :type id: - str
-        :raises KeyError: if id is not in existing observed ratios
+        Parameters
+        ----------
+        id : str
+            The ratio identifier, such as ``CII_158/CO_32``.
+
+        Raises
+        ------
+        KeyError
+            If id is not in existing observed ratios.
         """
         if self._tool._observedratios[id].shape == (1, 0) or self._tool.has_vectors:
             return self._tool._observedratios[id]
@@ -149,11 +169,18 @@ class LineRatioPlot(PlotBase):
     def _plot_chisq_impl(self, data_fn, title, min_val, label_sym, kwargs):
         """Shared implementation for chisq() and reduced_chisq().
 
-        :param data_fn: bound tool method returning the chi-square data (tool.chisq or tool.reduced_chisq)
-        :param title: axis/legend title string (e.g. r'$\\chi^2$ (dof=3)')
-        :param min_val: scalar minimum chi-square value to show in the legend label
-        :param label_sym: LaTeX symbol for the minimum, e.g. r'$\\chi_{min}^2$'
-        :param kwargs: caller's **kwargs dict
+        Parameters
+        ----------
+        data_fn : callable
+            Bound tool method returning the chi-square data (``tool.chisq`` or ``tool.reduced_chisq``).
+        title : str
+            Axis/legend title string, e.g. ``r'$\\chi^2$ (dof=3)'``.
+        min_val : float
+            Scalar minimum chi-square value to show in the legend label.
+        label_sym : str
+            LaTeX symbol for the minimum, e.g. ``r'$\\chi_{min}^2$'``.
+        kwargs : dict
+            Caller's ``**kwargs`` dict.
         """
         kwargs_opts = {
             "units": None,

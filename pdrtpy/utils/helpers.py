@@ -9,22 +9,36 @@ from pdrtpy.utils.fits import comment
 
 
 def warn(cls, msg):
-    """Issue a warning
+    """Issue a warning.
 
-    :param cls:  The calling Class
-    :type cls: Class
-    :param msg:  The warning message
-    :type msg: str
+    Parameters
+    ----------
+    cls : class
+        The calling class.
+    msg : str
+        The warning message.
     """
     # use stacklevel=3 so we get a reference to the caller of warn().
     warnings.warn(cls.__class__.__name__ + ": " + msg, stacklevel=3)
 
 
 def is_image(image):
-    """Check if a Measurement is an image. The be an image it must have a header with axes keywords and a WCS to be considered an image.  This is to distiguish Measurements that have a data array with more than one member from a true image.
-    :param image: the image to check. It must have a :class:`numpy.ndarray` data member and :class:`astropy.units.Unit` unit member or a header BUNIT keyword.
-    :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
-    :return: True if it is an image, False otherwise.
+    """Check if a Measurement is an image.
+
+    To be an image it must have a header with axes keywords and a WCS.
+    This is to distinguish Measurements that have a data array with more
+    than one member from a true image.
+
+    Parameters
+    ----------
+    image : :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`
+        The image to check. It must have a :class:`numpy.ndarray` data member
+        and :class:`astropy.units.Unit` unit member or a header BUNIT keyword.
+
+    Returns
+    -------
+    bool
+        True if it is an image, False otherwise.
     """
     if getattr(image, "header", None) is None or getattr(image, "wcs", None) is None:
         return False
@@ -38,9 +52,11 @@ def is_image(image):
 
 
 def is_ratio(identifier):
-    """Is the identifier a ratio (as opposed to an intensity)
+    """Is the identifier a ratio (as opposed to an intensity).
 
-    :rtype: bool
+    Returns
+    -------
+    bool
     """
     # find() returns -1 if char not found.
     # in our case, also rule out that the / is in the zeroth position.
@@ -48,23 +64,33 @@ def is_ratio(identifier):
 
 
 def is_even(number):
-    """Check if number is even
+    """Check if number is even.
 
-    :param number: a number
-    :return: True if even, False otherwise
-    :type number: float
-    :rtype: bool
+    Parameters
+    ----------
+    number : float
+        A number.
+
+    Returns
+    -------
+    bool
+        True if even, False otherwise.
     """
     return abs(number) % 2 == 0
 
 
 def is_odd(number):
-    """Check if number is odd
+    """Check if number is odd.
 
-    :param number: a number
-    :type number: float
-    :return: True if odd, False otherwise
-    :rtype: bool
+    Parameters
+    ----------
+    number : float
+        A number.
+
+    Returns
+    -------
+    bool
+        True if odd, False otherwise.
     """
     return not is_even(number)
 
@@ -79,12 +105,17 @@ def _has_H2(ids):
 
 def _trim_to_H2(image):
     """H2 models in wk2006 are a smaller grid 17x17 vs 25x29. So when performing operations
-    involving other models, we have to trim the other models to 17x17;  log(n,G0) from 1 to 5
+    involving other models, we have to trim the other models to 17x17;  log(n,G0) from 1 to 5.
 
-    :param image: the model to trim
-    :type image: :class:`~pdrtpy.measurement.Measurement`
-    :returns: the trimmed model
-    :rtype: :class:`~pdrtpy.measurement.Measurement`
+    Parameters
+    ----------
+    image : :class:`~pdrtpy.measurement.Measurement`
+        The model to trim.
+
+    Returns
+    -------
+    :class:`~pdrtpy.measurement.Measurement`
+        The trimmed model.
     """
     f = deepcopy(image)
     # Slice the WCS. Note this is in numpy array order, not WCS axis order
@@ -98,10 +129,12 @@ def _trim_to_H2(image):
 
 def _trim_all_to_H2(models):
     """H2 models in wk2006 are a smaller grid 17x17 vs 25x29. So when performing operations
-    involving other models, we have to trim the other models to 17x17;  log(n,G0) from 1 to 5
+    involving other models, we have to trim the other models to 17x17;  log(n,G0) from 1 to 5.
 
-    :param models: models to trim
-    :type models: :list or dict of class:`~pdrtpy.measurement.Measurement`
+    Parameters
+    ----------
+    models : list or dict of :class:`~pdrtpy.measurement.Measurement`
+        Models to trim.
     """
     if type(models) is dict:
         for id in models:
