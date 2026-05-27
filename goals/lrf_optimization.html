@@ -1,0 +1,333 @@
+<!doctype html>
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<style type="text/css">
+td, th { border: 1px solid #c3c3c3; padding: 0 3px 0 3px; }
+table { border-collapse: collapse; }
+img { max-width: 100%; }
+</style>
+<meta name="generator" content="ReText 8.0.2">
+<title>perf_optimization_session_2026-03-06</title>
+<style type="text/css">
+</style>
+</head>
+<body>
+<h1>PDRTpy Performance Optimization Session</h1>
+<p><strong>Date:</strong> 2026-03-06
+<strong>Branch:</strong> <code>perf-lineratiofit</code>
+<strong>Tag:</strong> <code>Opts_2_and_3</code> (after first commit)</p>
+<hr>
+<h2>Goal</h2>
+<p>Improve the performance of <code>LineRatioFit.run()</code> for multi-pixel image maps, as described in <code>performance.md</code>.</p>
+<hr>
+<h2>Phase 1: Profiling and Bottleneck Identification</h2>
+<h3>Code exploration findings</h3>
+<p><strong>Call chain from <code>run()</code> (lineratiofit.py:359):</strong></p>
+<pre><code>run()
+  ├─ _check_compatibility()
+  ├─ read_models()
+  ├─ _reset_masks() / _mask_measurements()
+  ├─ _compute_valid_ratios()        # creates observed intensity ratios
+  ├─ _compute_residual()            # Python loop over model grid points
+  ├─ Minimizer setup
+  ├─ _compute_chisq()
+  ├─ _coarse_density_radiation_field()   # numpy argmin over chi-sq grid
+  └─ _refine_density_radiation_field()   # per-pixel Python loop + lmfit minimize()
+</code></pre>
+<p><strong>Three bottlenecks identified:</strong></p>
+<ol>
+<li>
+<p><strong><code>_refine_density_radiation_field</code> pixel loop</strong> (<code>lineratiofit.py:711–751</code>):
+   Pure Python <code>for j in range(npix)</code> loop, each calling <code>lmfit.Minimizer.minimize()</code> serially.</p>
+</li>
+<li>
+<p><strong><code>_residual_single_pixel</code> repeated flatten</strong> (<code>lineratiofit.py:544–545</code>):
+   <code>data.flatten()</code> and <code>uncertainty.array.flatten()</code> called on every minimizer iteration for every pixel — N_pixels × N_iterations × N_ratios redundant array allocations.</p>
+</li>
+<li>
+<p><strong><code>_compute_residual</code> inner loop</strong> (<code>lineratiofit.py:571–596</code>):
+   Python loop over model grid points computing <code>(mdata - pix) / merror</code> one point at a time, instead of using numpy broadcasting.</p>
+</li>
+</ol>
+<hr>
+<h2>Phase 2: Benchmark Setup</h2>
+<h3>Test data</h3>
+<p>Four Horsehead Nebula FITS files from <code>pdrtpy/testdata/</code>, read with <code>Measurement.read()</code>:</p>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>identifier</th>
+<th>restfreq</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Horsehead_FIR_measurement.fits</code></td>
+<td><code>"FIR"</code></td>
+<td><code>None</code></td>
+</tr>
+<tr>
+<td><code>Horsehead_12CO_measurement.fits</code></td>
+<td><code>"CO_10"</code></td>
+<td><code>115.2712 GHz</code></td>
+</tr>
+<tr>
+<td><code>Horsehead_13CO_measurement.fits</code></td>
+<td><code>"13CO_10"</code></td>
+<td><code>110.20137 GHz</code></td>
+</tr>
+<tr>
+<td><code>Horsehead_CII_measurement.fits</code></td>
+<td><code>"CII_158"</code></td>
+<td><code>1900.537 GHz</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Note:</strong> identifiers <code>CO_10</code> and <code>13CO_10</code> match wk2020 model identifiers (not <code>12CO</code>/<code>13CO</code>).</p>
+<p><strong>ModelSet:</strong> <code>wk2020</code>, <code>z=1</code>
+<strong>Map size:</strong> 102×102 = 10,404 pixels</p>
+<h3>Benchmark script</h3>
+<p><code>scripts/benchmark_lineratiofit.py</code> — standalone script with:
+- <code>--runs/-n N</code> : number of timed runs (default: 1)
+- <code>--verbose/-v</code> : debug-level logging
+- <code>--workers/-w N</code> : number of parallel worker processes (-1 = all CPUs)
+- <code>--log/-l FILE</code> : write log to file in addition to stdout</p>
+<hr>
+<h2>Phase 3: Optimizations Implemented</h2>
+<h3>Opt 2: Pre-flatten observed ratio arrays (LOW RISK)</h3>
+<p><strong>File:</strong> <code>lineratiofit.py</code>
+<strong>Change:</strong> After <code>_compute_valid_ratios()</code> in <code>run()</code>, pre-compute flattened data and error arrays once:</p>
+<pre><code class="language-python">self._observedratios_flat = {
+    k: (v.data.flatten(), v.uncertainty.array.flatten())
+    for k, v in self._observedratios.items()
+}
+</code></pre>
+<p>Then in <code>_residual_single_pixel()</code>, replace:</p>
+<pre><code class="language-python"># Before
+dvalue[i] = self._observedratios[k].data.flatten()[index]
+evalue[i] = self._observedratios[k].uncertainty.array.flatten()[index]
+
+# After
+dvalue[i] = self._observedratios_flat[k][0][index]
+evalue[i] = self._observedratios_flat[k][1][index]
+</code></pre>
+<p><strong>Result:</strong> 338.7 s → 293.8 s (<strong>1.15× speedup</strong>, ~45 s saved)</p>
+<hr>
+<h3>Opt 3: Vectorize <code>_compute_residual</code> inner loop (LOW RISK)</h3>
+<p><strong>File:</strong> <code>lineratiofit.py</code>
+<strong>Change:</strong> Replace Python loop over model grid points with numpy broadcasting:</p>
+<pre><code class="language-python"># Before
+for pix in modelpix:
+    _q = (mdata - pix) / merror
+    _q = ma.masked_invalid(_q)
+    residuals.append(_q)
+_qq = np.squeeze(np.reshape(residuals, newshape))
+
+# After
+modelpix_exp = modelpix.reshape((-1,) + (1,) * mdata.ndim)
+residuals_arr = ma.masked_invalid(
+    (mdata[np.newaxis, ...] - modelpix_exp) / merror[np.newaxis, ...]
+)
+_qq = np.squeeze(np.reshape(residuals_arr, newshape))
+</code></pre>
+<p>Works for both single-pixel (<code>mdata.ndim=0</code>) and map (<code>mdata.ndim=2</code>) cases via uniform broadcasting.</p>
+<p><strong>Result:</strong> 293.8 s → 144.8 s (<strong>2.34× cumulative speedup</strong>)
+Note: test suite runtime also dropped from 367 s to 143 s.</p>
+<hr>
+<h3>Opt 1: Parallel pixel loop via <code>ProcessPoolExecutor</code> (MEDIUM RISK)</h3>
+<p><strong>File:</strong> <code>lineratiofit.py</code>
+<strong>Change:</strong> Two module-level functions added (must be at module level for picklability):</p>
+<pre><code class="language-python">_worker_model_interps = None  # per-process cache
+
+def _init_worker(model_points, model_values):
+    &quot;&quot;&quot;Build RegularGridInterpolators once per worker process.&quot;&quot;&quot;
+    global _worker_model_interps
+    _worker_model_interps = [
+        RegularGridInterpolator(pts, vals, method=&quot;linear&quot;, bounds_error=True)
+        for pts, vals in zip(model_points, model_values)
+    ]
+
+def _fit_pixel_worker(j, obs_data_j, obs_err_j, init_density, init_rf,
+                      minn, maxn, minfuv, maxfuv, nan_policy, minimize_kwargs):
+    &quot;&quot;&quot;Fit a single pixel in a worker process. Returns (j, MinimizerResult).&quot;&quot;&quot;
+    ...
+</code></pre>
+<p><code>run()</code> gains a <code>workers</code> parameter:
+- <code>workers=None</code> (default): serial, fully backward-compatible
+- <code>workers=-1</code>: use all available CPUs (<code>os.cpu_count()</code>)
+- <code>workers=N</code>: use N worker processes
+- Emcee and single-pixel fits always remain serial</p>
+<p><strong>Why module-level functions are required:</strong> <code>ProcessPoolExecutor</code> serializes work via <code>pickle</code>. Bound methods, lambdas, and closures that capture non-picklable objects (e.g., lmfit <code>Minimizer</code>, astropy <code>CCDData</code>) cannot cross process boundaries. Module-level functions with plain numpy array arguments are always picklable.</p>
+<p><strong>Why <code>initializer</code> is used:</strong> Model interpolator data (grid points + values) is sent once to each worker process at startup via <code>initializer=_init_worker</code>, not once per pixel task. This avoids O(N_pixels) serialization of large model arrays.</p>
+<p><strong>Result:</strong> 144.8 s → 91.8 s on 12 CPUs (<strong>3.69× cumulative speedup</strong>)</p>
+<hr>
+<h2>Performance Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Time</th>
+<th>ms/pixel</th>
+<th>Speedup vs baseline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Baseline (serial)</td>
+<td>338.7 s</td>
+<td>32.6</td>
+<td>—</td>
+</tr>
+<tr>
+<td>+ Opt 2 (pre-flatten)</td>
+<td>293.8 s</td>
+<td>28.2</td>
+<td>1.15×</td>
+</tr>
+<tr>
+<td>+ Opt 3 (vectorize residual)</td>
+<td>144.8 s</td>
+<td>13.9</td>
+<td>2.34×</td>
+</tr>
+<tr>
+<td>+ Opt 1 (12 CPUs, <code>-w -1</code>)</td>
+<td><strong>91.8 s</strong></td>
+<td><strong>8.8</strong></td>
+<td><strong>3.69×</strong></td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2>Discussion: Why Opt 1 Speedup Is Sub-Linear</h2>
+<p>With 12 CPUs, theoretical maximum is 12×; actual is ~1.6× incremental. Reasons:</p>
+<ol>
+<li><strong>Process spawn overhead</strong> — 12 worker processes must be forked and initialized.</li>
+<li><strong>IPC per task</strong> — Each of ~5200 non-NaN pixels requires pickling arguments and <code>MinimizerResult</code> across process boundaries.</li>
+<li><strong>Task granularity</strong> — Each pixel takes ~9 ms of compute; IPC latency is ~0.1–1 ms per task.</li>
+<li><strong>NaN pixels handled serially</strong> — Masked pixels are skipped in the main process before futures are submitted.</li>
+<li><strong>lmfit overhead</strong> — <code>Parameters</code> construction, solver setup, and result extraction per pixel adds fixed overhead.</li>
+</ol>
+<p><strong>Suggested improvement:</strong> Batch pixels into chunks (50–100 per future) to amortize IPC cost per task. Would likely push incremental speedup significantly closer to 12×.</p>
+<hr>
+<h2>Discussion: Can <code>minimizer.minimize()</code> Fit Multiple Pixels at Once?</h2>
+<p>No — <code>minimize()</code> fits a single set of parameters <code>(density, radiation_field)</code> per call. Each pixel has its own independent best-fit values, requiring one call per pixel.</p>
+<hr>
+<h2>Discussion: Opt 4 — Single minimize() Call with jac_sparsity (PROPOSED)</h2>
+<h3>Concept</h3>
+<p>When <code>method='least_squares'</code>, lmfit calls <code>scipy.optimize.least_squares(..., **fit_kws)</code> directly, so <code>jac_sparsity</code> can be passed through <code>fit_kws</code>. This enables fitting all N pixels in a <strong>single</strong> <code>minimize()</code> call:</p>
+<ol>
+<li>
+<p><strong>Create 2×N parameters</strong>: <code>density_0, rf_0, density_1, rf_1, ...</code> with per-pixel initial guesses from the coarse fit.</p>
+</li>
+<li>
+<p><strong>Vectorized residual</strong> using batched <code>RegularGridInterpolator</code> queries:
+   <code>python
+   def residual_all_pixels(params):
+       density = np.array([params[f"density_{j}"].value for j in valid_pixels])
+       rf      = np.array([params[f"rf_{j}"].value     for j in valid_pixels])
+       points  = np.column_stack([density, rf])           # (N, 2)
+       mvalues = np.array([interp(points) for interp in interps])  # (n_ratios, N)
+       return ((obs_data - mvalues) / obs_err).flatten()</code></p>
+</li>
+<li>
+<p><strong>Block-diagonal <code>jac_sparsity</code></strong>: pixel <code>j</code>'s parameters only affect pixel <code>j</code>'s residuals.
+   <code>python
+   from scipy.sparse import lil_matrix
+   sparsity = lil_matrix((N * n_ratios, 2 * N), dtype=np.int8)
+   for j in range(N):
+       sparsity[j*n_ratios:(j+1)*n_ratios, 2*j:2*j+2] = 1</code></p>
+</li>
+<li>
+<p><strong>Pass through fit_kws</strong>:
+   <code>python
+   p.run(method='least_squares', fit_kws={'jac_sparsity': sparsity.tocsr()})</code></p>
+</li>
+</ol>
+<h3>Key benefit of jac_sparsity</h3>
+<p>With block-diagonal sparsity, scipy groups non-overlapping columns and perturbs them simultaneously for finite-difference Jacobian estimation. Since all <code>density_j</code> parameters are independent (no shared residual rows), they can ALL be perturbed in a single residual evaluation. Same for all <code>rf_j</code>. So Jacobian cost is <strong>2 residual evaluations per iteration</strong> regardless of N — instead of 2×N. Combined with the vectorized residual, this is O(iterations) numpy calls total.</p>
+<h3>Support for future regularization</h3>
+<table>
+<thead>
+<tr>
+<th>Regularization</th>
+<th>Opt 1 (parallel per-pixel)</th>
+<th>Opt 4 (single minimize + jac_sparsity)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tikhonov (L2 spatial smoothness)</td>
+<td><strong>No</strong> — pixels are independent</td>
+<td><strong>Yes</strong> — append penalty rows to residual vector; sparsity matrix extended with 2-column rows for adjacent pixel pairs</td>
+</tr>
+<tr>
+<td>LASSO (L1 sparsity)</td>
+<td><strong>No</strong></td>
+<td>Approx. via IRLS outer loop</td>
+</tr>
+<tr>
+<td>Total-variation</td>
+<td><strong>No</strong></td>
+<td>Approx. via IRLS outer loop</td>
+</tr>
+<tr>
+<td>Future regularization</td>
+<td>Impossible without redesign</td>
+<td>Extensible by design</td>
+</tr>
+</tbody>
+</table>
+<p>For Tikhonov, the residual simply grows:</p>
+<pre><code class="language-python">d_reshaped = density.reshape(ny, nx)
+penalty_dx = lambda_reg * (d_reshaped[:, 1:] - d_reshaped[:, :-1]).flatten()
+penalty_dy = lambda_reg * (d_reshaped[1:, :] - d_reshaped[:-1, :]).flatten()
+return np.concatenate([data_resid, penalty_dx, penalty_dy, ...])
+</code></pre>
+<p>Opt 4 is the right architectural foundation if spatial regularization is on the roadmap. <strong>Not yet implemented.</strong></p>
+<hr>
+<h2>Commits</h2>
+<table>
+<thead>
+<tr>
+<th>Hash</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>7d8fe22e</code></td>
+<td>Optimize LineRatioFit performance: pre-flatten arrays (Opt 2) and vectorize residual (Opt 3); add benchmark script</td>
+</tr>
+<tr>
+<td><code>9edde99e</code></td>
+<td>Add parallel pixel fitting to LineRatioFit via ProcessPoolExecutor (Opt 1); add <code>--workers</code> flag to benchmark</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Tag:</strong> <code>Opts_2_and_3</code> points to <code>7d8fe22e</code>.</p>
+<hr>
+<h2>Files Changed</h2>
+<table>
+<thead>
+<tr>
+<th>File</th>
+<th>Change</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>pdrtpy/tool/lineratiofit.py</code></td>
+<td>Opts 1, 2, 3</td>
+</tr>
+<tr>
+<td><code>scripts/benchmark_lineratiofit.py</code></td>
+<td>New benchmark script</td>
+</tr>
+</tbody>
+</table>
+
+</body>
+</html>

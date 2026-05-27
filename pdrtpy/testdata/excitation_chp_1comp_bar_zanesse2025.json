@@ -1,0 +1,29 @@
+{
+  "molecule": "CH+",
+  "fit_class": "CHplusExcitationFit",
+  "components": 1,
+  "fit_opr": false,
+  "unit": "erg s-1 cm-2 sr-1",
+  "reference": "Zanesse et al 2025, A&A, 696, A99",
+  "ref_url": "https://ui.adsabs.harvard.edu/abs/2025A%26A...696A..99Z/abstract",
+  "description":"Bar - DF3, v=1-0, Figure 5/Table D.1, Intensity - DF3 Corrected for Extinction. R-branch and J<3 data removed because that is what they fit in Figure 5. For the expected fit below, I have used Zanesse+ for the HOT values and PDRT fit result for the COLD and TOTAL values. This allows for both an external and internal fit check. Note the expected Zanesse+ column density must be multiplied by a factor of 2 because we use the EXOMOL partition function instead of the Godard&Cernicharo partition function.",
+  "lines": [
+    {"identifier": "CH+10P3",  "intensity": 3.83E-6,  "uncertainty":0.82E-6 },
+    {"identifier": "CH+10P4",  "intensity": 5.20E-6,  "uncertainty":1.40E-6 },
+    {"identifier": "CH+10P5",  "intensity": 4.97E-6,  "uncertainty":1.47E-6 },
+    {"identifier": "CH+10P7",  "intensity": 6.26E-6,  "uncertainty":0.53E-6 },
+    {"identifier": "CH+10P8",  "intensity": 7.79E-6,  "uncertainty":0.81E-6 },
+    {"identifier": "CH+10P10", "intensity": 5.58E-6,  "uncertainty":1.78E-6 },
+    {"identifier": "CH+10P11", "intensity": 5.32E-6,  "uncertainty":1.29E-6 },
+    {"identifier": "CH+10P12", "intensity": 3.44E-6,  "uncertainty":1.03E-6 },
+    {"identifier": "CH+10P13", "intensity": 4.43E-6,  "uncertainty":0.50E-6 }
+  ],
+  "expected": {
+    "thot":       {"value": 1482.0 , "rel_tol": 0.1},
+    "tcold":       {"value": 1474.766 , "rel_tol": 0.075},
+    "hot_colden": {"value":1.52E10, "rel_tol": 0.3},
+    "cold_colden": {"value":1.54E10, "rel_tol": 0.28},
+    "total_colden": {"value":1.54E10, "rel_tol": 0.28},
+    "opr": null
+  }
+}
