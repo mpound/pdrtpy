@@ -29,6 +29,12 @@ class TestMeasurement:
     def _check_title_card(self, a, b, op, c):
         return c.header["TITLE"] == f"{a.header['TITLE']}{op}{b.header['TITLE']}"
 
+    def test_to(self):
+        m = Measurement(data=[1, 2, 3], unit="meter", uncertainty=StdDevUncertainty([0.1, 0.2, 0.3]))
+        m2 = m.to("cm")
+        assert np.all(m2.data == m.data * 100)
+        assert np.all(m2.uncertainty.array == m.uncertainty.array * 100)
+
     def test_arithmetic(self):
         print("Measurement Unit Test")
         _data = np.array([np.array([30, 20]), 10, 10, 100], dtype=object)

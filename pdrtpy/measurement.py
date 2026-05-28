@@ -331,6 +331,32 @@ class Measurement(CCDData):
         """
         return self._filename
 
+    def to(self, unit: str | u.Unit, equivalencies: list | None = None):
+        """Returns a new Measurement object whose values and uncertainties have been converted to a new unit
+
+        Parameters
+        ----------
+
+        unit : :class:`~astropy.unit.Unit` or str
+            The unit to convert to
+        equivalencies : list
+            A list of equivalence pairs in case the unit is not directly convertible. See `Equivalencies <http://docs.astropy.org/en/stable/units/equivalencies.html#unit-equivalencies>`_
+
+        Returns
+        -------
+        :class:`~pdrtpy.measurement.Measurement`
+            The converted measurement
+
+        Raises
+        ------
+        :class:`~astropy.units.UnitConversionError`
+            If the Measurement can't be converted to the given unit.
+
+        """
+        if equivalencies is None:
+            equivalencies = []
+        return self.convert_unit_to(unit, equivalencies)
+
     def write(self, filename, **kwd):
         """Write this Measurement to a FITS file with value in 1st HDU and error in 2nd HDU.
 
