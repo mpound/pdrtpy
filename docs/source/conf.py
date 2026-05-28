@@ -65,6 +65,7 @@ autosummary_generate = True
 
 autodoc_docstring_signature = True
 autodoc_default_options = {"members": None, "undoc-members": None}
+autoclass_content = "both"
 # Make sure the targets are unique
 autosectionlabel_prefix_document = True
 

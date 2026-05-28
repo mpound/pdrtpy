@@ -28,8 +28,12 @@ warnings.filterwarnings("ignore", message=".*do_format.*", category=RuntimeWarni
 class PlotBase:
     """Base class for plotting.
 
-    :param tool:  Reference to a :mod:`~pdrtpy.tool` object or `None`.  This is used for classes that inherit from PlotBase and are coupled to a specific tool, e.g. :class:`~pdrtpy.plot.LineRatioPlot` and :class:`~pdrtpy.tool.LineRatioFit`.
-    :type tool: Any class derived from :class:`~pdrtpy.tool.toolbase.ToolBase`
+    Parameters
+    ----------
+    tool : any class derived from :class:`~pdrtpy.tool.toolbase.ToolBase`
+        Reference to a :mod:`~pdrtpy.tool` object or ``None``. This is used for
+        classes that inherit from PlotBase and are coupled to a specific tool,
+        e.g. :class:`~pdrtpy.plot.LineRatioPlot` and :class:`~pdrtpy.tool.LineRatioFit`.
     """
 
     def __init__(self, tool):
@@ -70,15 +74,22 @@ class PlotBase:
     def _autolevels(self, data, steps="log", numlevels=None, verbose=False):
         """Compute contour levels automatically based on data.
 
-        :param data: The data to contour
-        :type data: numpy.ndarray, astropy.io.fits HDU or CCDData
-        :param steps: The type of steps to compute. "log" for logarithmic, or "lin" for linear. Defaut: log
-        :type steps: str
-        :param numlevels: The number of contour levels to compute. Default: None which means autocompute the number of levels which typically gives about 10 levels.
-        :type numlevels: int
-        :param verbose: Print the computed levels. Default: False
-        :type verbose: boolean
-        :returns:  numpy.array containing level values
+        Parameters
+        ----------
+        data : :class:`numpy.ndarray`, :mod:`astropy.io.fits` HDU, or CCDData
+            The data to contour.
+        steps : str, optional
+            The type of steps to compute: ``"log"`` for logarithmic, or ``"lin"`` for linear. Default: ``"log"``.
+        numlevels : int, optional
+            The number of contour levels to compute. Default: None, which means
+            autocompute (typically gives about 10 levels).
+        verbose : bool, optional
+            Print the computed levels. Default: False.
+
+        Returns
+        -------
+        :class:`numpy.ndarray`
+            Array containing level values.
         """
 
         # tip of the hat to the WIP autolevels code lev.
@@ -121,7 +132,9 @@ class PlotBase:
     def figure(self):
         """The last figure that was drawn.
 
-        :rtype: :class:`matplotlib.figure.Figure`
+        Returns
+        -------
+        :class:`matplotlib.figure.Figure`
         """
         return self._figure
 
@@ -129,36 +142,55 @@ class PlotBase:
     def axis(self):
         """The last axis that was drawn.
 
-        :rtype: :class:`matplotlib.axes._subplots.AxesSubplot`
+        Returns
+        -------
+        :class:`matplotlib.axes._subplots.AxesSubplot`
         """
         return self._axis
 
     def text(self, x, y, s, fontdict=None, **kwargs):
-        r"""
-        Add text to the Axes.  Add the text `s` to the Axes at location `x, y` in data coordinates.
-        This calls through to :meth:`matplotlib.pyplot.text`.
+        r"""Add text to the Axes at location ``x, y`` in data coordinates.
 
-        :param x: the horizontal coordinate for the text
-        :type x: float
-        :param y: the vertical coordinate for the text
-        :type y: float
-        :param s: the text
-        :type s: str
-        :param fontdict: A dictionary to override the default text properties. If fontdict is None, the defaults are determined by rcParams.
-        :type fontdict: dict
-        :param \*\*kwargs: Other miscellaneous :class:`~matplotlib.text.Text` parameters.
+        Calls through to :meth:`matplotlib.pyplot.text`.
+
+        Parameters
+        ----------
+        x : float
+            The horizontal coordinate for the text.
+        y : float
+            The vertical coordinate for the text.
+        s : str
+            The text.
+        fontdict : dict, optional
+            A dictionary to override the default text properties. If None,
+            the defaults are determined by rcParams.
+        \*\*kwargs
+            Other miscellaneous :class:`~matplotlib.text.Text` parameters.
         """
         self._plt.text(x, y, s, fontdict, **kwargs)
 
     def _zscale(self, image, vmin, vmax, stretch, contrast=0.25):
-        """Normalization object using Zscale algorithm
-           See :mod:`astropy.visualization.ZScaleInterval`
+        """Normalization object using Zscale algorithm.
 
-        :param image: the image object
-        :type image: :mod:`astropy.io.fits` HDU or CCDData
-        :param contrast: The scaling factor (between 0 and 1) for determining the minimum and maximum value. Larger values increase the difference between the minimum and maximum values used for display. Defaults to 0.25.
-        :type contrast: float
-        :returns: :mod:`astropy.visualization.normalization` object
+        See :mod:`astropy.visualization.ZScaleInterval`.
+
+        Parameters
+        ----------
+        image : :mod:`astropy.io.fits` HDU or CCDData
+            The image object.
+        vmin : float
+            Minimum value for normalization.
+        vmax : float
+            Maximum value for normalization.
+        stretch : str
+            Stretch type to apply.
+        contrast : float, optional
+            Scaling factor (0 to 1) for determining min/max display values.
+            Larger values increase the difference. Default: 0.25.
+
+        Returns
+        -------
+        :class:`astropy.visualization.ImageNormalize`
         """
         # clip=False required or NaNs get max color value, see https://github.com/astropy/astropy/issues/8165
         if stretch == "linear":
@@ -180,19 +212,24 @@ class PlotBase:
         return norm
 
     def _get_norm(self, norm, km, vmin, vmax, stretch):
-        """Get a Normalization object
+        """Get a Normalization object.
 
-        :param norm: The normalization time ( 'simple', 'zscale', 'log' )
-        :type norm: str
-        :param km: the image object
-        :type km: :mod:`astropy.io.fits` HDU or CCDData
-        :param vmin: the image minimum to use
-        :type vmin: float
-        :param vmax: the image maximum to use
-        :type vmax: float
-        :param stretch: the stretch to use (linear,log,power, asinh)
-        :type stretch: str
-        :returns: :mod:`astropy.visualization.normalization` object
+        Parameters
+        ----------
+        norm : str
+            The normalization type: ``'simple'``, ``'zscale'``, or ``'log'``.
+        km : :mod:`astropy.io.fits` HDU or CCDData
+            The image object.
+        vmin : float
+            The image minimum to use.
+        vmax : float
+            The image maximum to use.
+        stretch : str
+            The stretch to use: ``'linear'``, ``'log'``, ``'power'``, or ``'asinh'``.
+
+        Returns
+        -------
+        :class:`astropy.visualization.ImageNormalize` or :class:`matplotlib.colors.LogNorm`
         """
         if isinstance(norm, str):
             norm = norm.lower()
@@ -217,24 +254,26 @@ class PlotBase:
             return norm
 
     def _wcs_colorbar(self, image, axis, pos="right", width="5%", pad=0.05, orientation="vertical"):
-        """Create a colorbar for a subplot with WCSAxes
-        (as opposed to matplolib Axes).  There are some side-effects of
-        using WCS projection that need to be ameliorated.  Also for
-        subplots, we want the colorbars to have the same height as the
-        plot, which is not the default behavior.
+        """Create a colorbar for a subplot with WCSAxes (as opposed to matplotlib Axes).
 
-        :param image: the mappable object for the plot. Must not be masked.
-        :type image: :obj:`numpy.ndarray`,:mod:`astropy.io.fits` HDU or CCDData
-        :param axis: which Axes object for the plot
-        :type axis:  :class:`matplotlib.axis.Axes`
-        :param pos: colorbar position: ["left"|"right"|"bottom"|"top"]. Default: right
-        :type pos: str
-        :param width: width of the colorbar in terms of percent width of the plot.
-        :type width: str
-        :param pad: padding between colorbar and plot, in inches.
-        :type pad: float
-        :param orientation: orientation of colorbar ["vertical" | "horizontal" ]
-        :type orientation: str
+        There are some side-effects of using WCS projection that need to be
+        ameliorated. Also for subplots, we want the colorbars to have the same
+        height as the plot, which is not the default behavior.
+
+        Parameters
+        ----------
+        image : :class:`numpy.ndarray`, :mod:`astropy.io.fits` HDU, or CCDData
+            The mappable object for the plot. Must not be masked.
+        axis : :class:`matplotlib.axis.Axes`
+            Which Axes object for the plot.
+        pos : str, optional
+            Colorbar position: ``"left"``, ``"right"``, ``"bottom"``, or ``"top"``. Default: ``"right"``.
+        width : str, optional
+            Width of the colorbar as a percent of the plot width. Default: ``"5%"``.
+        pad : float, optional
+            Padding between colorbar and plot, in inches. Default: 0.05.
+        orientation : str, optional
+            Orientation of colorbar: ``"vertical"`` or ``"horizontal"``. Default: ``"vertical"``.
         """
         divider = make_axes_locatable(axis)
         cax = divider.append_axes(pos, size=width, pad=pad, axes_class=maxes.Axes)
@@ -269,32 +308,43 @@ class PlotBase:
     def savefig(self, fname, **kwargs):
         """Save the current figure to a file.
 
-        :param fname: filename to save in
-        :type fname: str
-
-        :Keyword Arguments:
-
-        Additional arguments (**kwargs) are passed to :meth:`matplotlib.pyplot.savefig`. e.g., **bbox_inches='tight'** for a tight layout.
-
+        Parameters
+        ----------
+        fname : str
+            Filename to save to.
+        **kwargs
+            Additional arguments passed to :meth:`matplotlib.pyplot.savefig`,
+            e.g. ``bbox_inches='tight'`` for a tight layout.
         """
         kwargs_opts = {"bbox_inches": "tight", "transparent": False, "facecolor": "white"}
         kwargs_opts.update(kwargs)
         self._figure.savefig(fname=fname, **kwargs_opts)
 
     def usetex(self, use):
-        """Control whether plots delegate rendering of fancy text components in axis labels and elsewhere to the system version of LaTeX or use matplotlib's rendering. This method sets
-        matplotlib parameter `rcParams["text.usetex"]` in the local pyplot instance.  Note: You must have LaTeX installed on your system if setting this to True or an exception will be raised when you try to plot.
+        """Control whether plots delegate rendering to the system LaTeX or use matplotlib's rendering.
 
-        :param use: whether to use LaTeX or not
-        :type use: bool
+        Sets matplotlib parameter ``rcParams["text.usetex"]`` in the local pyplot instance.
+        Note: You must have LaTeX installed if setting this to True or an exception will be
+        raised when you try to plot.
+
+        Parameters
+        ----------
+        use : bool
+            Whether to use LaTeX or not.
         """
         self._plt.rcParams["text.usetex"] = use
 
     def colorcycle(self, colorcycle):
-        """Set the plot color cycle for multi-trace plots.  The default color cycle is optimized for color-blind users.
+        """Set the plot color cycle for multi-trace plots.
 
-        :param colorcycle: List of colors to use, typically a list of hex color strings.  This list will be passed to :meth:`matplotlib.pyplot.rc` as the *axes prop_cycle* parameter using :class:`matplotlib.cycler`.
-        :type colorcycle: list
+        The default color cycle is optimized for color-blind users.
+
+        Parameters
+        ----------
+        colorcycle : list
+            List of colors to use, typically hex color strings. Passed to
+            :meth:`matplotlib.pyplot.rc` as the *axes prop_cycle* parameter
+            using :class:`matplotlib.cycler`.
         """
         self._plt.rc("axes", prop_cycle=(cycler("color", colorcycle)))
 

@@ -4,9 +4,11 @@ import pdrtpy.utils as utils
 
 
 class ToolBase(ABC):
-    """Base class object for PDR Toolbox tools.  This class implements a simple
-    interface with a run method.  Tools will generally do some set up
-    such as reading in observational data before run() can be invoked.
+    """Base class object for PDR Toolbox tools.
+
+    This class implements a simple interface with a run method. Tools will
+    generally do some set up such as reading in observational data before
+    ``run()`` can be invoked.
     """
 
     def __init__(self):
@@ -27,21 +29,23 @@ class ToolBase(ABC):
 
     @property
     def has_maps(self):
-        """Are the Measurements used map-based?. (i.e., have 2 spatial axes)
+        """Are the Measurements used map-based? (i.e., have 2 spatial axes)
 
-        :returns: True, if the observational inputs are spatial maps, False otherwise
-
-        :rtype: bool
+        Returns
+        -------
+        bool
+            True if the observational inputs are spatial maps, False otherwise.
         """
-
         return self._measurementnaxis > 1
 
     @property
     def has_vectors(self):
         """Are the Measurements used a Nx1 vector, e.g. read in from a table with :meth:`~pdrtpy.Measurement.from_table`.
 
-        :returns: True, if the observational inputs are a vector, False otherwise
-        :rtype: bool
+        Returns
+        -------
+        bool
+            True if the observational inputs are a vector, False otherwise.
         """
         fk = utils.firstkey(self._measurements)
         return self._measurementnaxis == 1 and self._measurements[fk].data.size > 1
@@ -51,7 +55,9 @@ class ToolBase(ABC):
     def has_scalar(self):
         """Are the Measurements used scalars.
 
-        :returns: True, if the observational inputs are scalars, False otherwise
-        :rtype: bool
+        Returns
+        -------
+        bool
+            True if the observational inputs are scalars, False otherwise.
         """
         return self._measurementnaxis == 0

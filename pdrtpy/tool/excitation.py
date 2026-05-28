@@ -188,8 +188,10 @@ class BaseExcitationFit(ToolBase):
     def _init_measurements(self, m: list):
         r"""Initialize measurements dictionary given a list.
 
-        :param m: list of intensity :class:`~pdrtpy.measurement.Measurement`s in units equivalent to :math:`{\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
-        :type m: list of :class:`~pdrtpy.measurement.Measurement`
+        Parameters
+        ----------
+        m : list of :class:`~pdrtpy.measurement.Measurement`
+            List of intensity measurements in units equivalent to :math:`{\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`.
         """
         self._measurements = dict()
         for mm in m:
@@ -218,10 +220,14 @@ class BaseExcitationFit(ToolBase):
 
         **If the molecule does not have a variable OPR, then all indices for the `ids` are returned.**
 
-        :param ids:
-        :type ids: list of str
-        :returns: The array indices of the odd J values.
-        :rtype: list of int
+        Parameters
+        ----------
+        ids : list of str
+
+        Returns
+        -------
+        list of int
+            The array indices of the odd J values.
         """
         if not self.molecule.opr_can_vary:
             # log.warning(f"The molecule {self.molecule.name} does not have a variable OPR.")
@@ -234,10 +240,14 @@ class BaseExcitationFit(ToolBase):
 
         **If the molecule does not have a variable OPR, then all indices for the `ids` are returned.**
 
-        :param ids:
-        :type ids: list of str
-        :returns: The array indices of the even J values.
-        :rtype: list of int
+        Parameters
+        ----------
+        ids : list of str
+
+        Returns
+        -------
+        list of int
+            The array indices of the even J values.
         """
         if not self.molecule.opr_can_vary:
             log.warning(f"The molecule {self.molecule.name} does not have a variable OPR.")
@@ -252,7 +262,10 @@ class BaseExcitationFit(ToolBase):
         compute the excitation diagram.   This method can also be used
         to safely replace an existing intensity Measurement.
 
-        :param m: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
+        Parameters
+        ----------
+        m : :class:`~pdrtpy.measurement.Measurement`
+            A measurement instance containing intensity in units equivalent to :math:`{\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`.
         """
         if not utils.check_units(m.unit, self._intensity_units):
             raise TypeError(
@@ -269,9 +282,15 @@ class BaseExcitationFit(ToolBase):
     def remove_measurement(self, identifier: str):
         """Delete a measurement from the internal dictionary used to compute column densities. Any associated column density will also be removed.
 
-        :param identifier: the measurement identifier
-        :type identifier: str
-        :raises KeyError: if identifier not in existing Measurements
+        Parameters
+        ----------
+        identifier : str
+            The measurement identifier.
+
+        Raises
+        ------
+        KeyError
+            If identifier not in existing Measurements.
         """
         del self._measurements[identifier]  # we want this to raise a KeyError if id not found
         self._column_density.pop(identifier, None)  # but not this.
@@ -281,7 +300,10 @@ class BaseExcitationFit(ToolBase):
         change a Measurement in place, use this method.
         Otherwise, the column densities will be inconsistent.
 
-        :param m: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
+        Parameters
+        ----------
+        m : :class:`~pdrtpy.measurement.Measurement`
+            A measurement instance containing intensity in units equivalent to :math:`{\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`.
         """
         self.add_measurement(m)
 
@@ -306,39 +328,46 @@ class BaseExcitationFit(ToolBase):
         r"""Fit the :math:`log N_u-E` diagram with two excitation temperatures,
         a ``hot`` :math:`T_{ex}` and a ``cold`` :math:`T_{ex}`.
 
-        If ``position`` and ``size`` are given, the data will be averaged over a spatial box before fitting.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.  If position or size is None, the data are averaged over all pixels.  If the Measurements are single values, these arguments are ignored.
+        If ``position`` and ``size`` are given, the data will be averaged over a spatial box before fitting.
+        The box is created using :class:`astropy.nddata.utils.Cutout2D`. If position or size is None,
+        the data are averaged over all pixels. If the Measurements are single values, these arguments are ignored.
 
-        :param position: The position of the cutout array's center with respect to the data array. The position can be specified either as a `(x, y)` tuple of pixel coordinates.
-        :type position: tuple
-        :param size: The size of the cutout array along each axis in pixels. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(nx, ny)` order [*this is the opposite of Cutout2D signature*]. Scalar numbers in size are assumed to be in units of pixels.  Default value of None means use all pixels (position is ignored)
-        :type size: int, array_like`
-        :param fit_opr: Whether to fit the ortho-to-para ratio or not. If True, the OPR will be varied to determine the best value. If False, the OPR is fixed at the canonical LTE value of 3.
-        :type fit_opr: bool
-        :param fit_av: Whether to fit the visual extinction. If True, the Av will be varied to determine the best value. If False, the Av is fixed at zero.
-        :type fit_av: bool
-        :param workers: Number of worker processes for parallel pixel fitting.  ``None``
-            (default) runs serially.  ``-1`` uses all available CPUs.  Any positive
-            integer uses that many workers.  Matches the ``LineRatioFit.run()`` API.
+        Parameters
+        ----------
+        position : tuple
+            The position of the cutout array's center with respect to the data array. The position can
+            be specified either as a `(x, y)` tuple of pixel coordinates.
+        size : int or array_like
+            The size of the cutout array along each axis in pixels. If size is a scalar number or a
+            scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If
+            `size` has two elements, they should be in `(nx, ny)` order [*this is the opposite of
+            Cutout2D signature*]. Scalar numbers in size are assumed to be in units of pixels. Default
+            value of None means use all pixels (position is ignored).
+        fit_opr : bool
+            Whether to fit the ortho-to-para ratio or not. If True, the OPR will be varied to determine
+            the best value. If False, the OPR is fixed at the canonical LTE value of 3.
+        fit_av : bool
+            Whether to fit the visual extinction. If True, the Av will be varied to determine the best
+            value. If False, the Av is fixed at zero.
+        workers : int or None
+            Number of worker processes for parallel pixel fitting. ``None`` (default) runs serially.
+            ``-1`` uses all available CPUs. Any positive integer uses that many workers. Matches the
+            ``LineRatioFit.run()`` API.
 
             **Performance note**: each pixel is submitted as a separate task to
-            :class:`~concurrent.futures.ProcessPoolExecutor`, so inter-process
-            communication overhead is paid once per pixel.  For the excitation fits
-            in this package (n ≤ ~20 spectral lines, lightweight lmfit minimisation)
-            the per-pixel compute time is short enough that parallel execution only
-            outperforms serial on maps with roughly 5 000 or more *valid* (unmasked)
-            pixels.  On smaller maps the IPC overhead dominates and serial is faster.
+            :class:`~concurrent.futures.ProcessPoolExecutor`, so inter-process communication overhead
+            is paid once per pixel. For the excitation fits in this package (n ≤ ~20 spectral lines,
+            lightweight lmfit minimisation) the per-pixel compute time is short enough that parallel
+            execution only outperforms serial on maps with roughly 5 000 or more *valid* (unmasked)
+            pixels. On smaller maps the IPC overhead dominates and serial is faster.
 
-            ``emcee`` fitting is excluded from the parallel path regardless of
-            this setting.
-        :type workers: int or None
-        :param chunk_size: Number of pixels batched into each parallel task
-            (default: 32).  Each worker process fits ``chunk_size`` pixels
-            serially, so IPC serialisation overhead is paid once per chunk
-            rather than once per pixel.  Larger values reduce overhead further
-            but coarsen progress-bar granularity and may cause load imbalance
-            on the last chunk.  Ignored when ``workers`` is ``None`` or when
-            the fitting method is ``'emcee'``.
-        :type chunk_size: int
+            ``emcee`` fitting is excluded from the parallel path regardless of this setting.
+        chunk_size : int
+            Number of pixels batched into each parallel task (default: 32). Each worker process fits
+            ``chunk_size`` pixels serially, so IPC serialisation overhead is paid once per chunk rather
+            than once per pixel. Larger values reduce overhead further but coarsen progress-bar
+            granularity and may cause load imbalance on the last chunk. Ignored when ``workers`` is
+            ``None`` or when the fitting method is ``'emcee'``.
         """
         # @todo what happens if e.g., fit_av=True and init_av !=0 ?
         kwargs_opts = {
@@ -416,7 +445,9 @@ class BaseExcitationFit(ToolBase):
     def fit_result(self):
         """The result of the fitting procedure which includes fit statistics, variable values and uncertainties, and correlations between variables.
 
-        :rtype:  :class:`lmfit.model.ModelResult`
+        Returns
+        -------
+        :class:`lmfit.model.ModelResult`
         """
         return self._fitresult
 
@@ -424,7 +455,9 @@ class BaseExcitationFit(ToolBase):
     def numcomponents(self):
         """Number of temperature components in the fit
 
-        :rtype: int
+        Returns
+        -------
+        int
         """
         return self._numcomponents
 
@@ -432,8 +465,10 @@ class BaseExcitationFit(ToolBase):
     def av_fitted(self):
         """Was the visual extinction fitted?
 
-        :returns: True if Av was fitted, False if not
-        :rtype: bool
+        Returns
+        -------
+        bool
+            True if Av was fitted, False if not.
         """
         if self._fitresult is None:
             return False
@@ -443,8 +478,10 @@ class BaseExcitationFit(ToolBase):
     def av(self):
         """The visual extinction
 
-        :returns: The fitted Av if it was determined in the fit, otherwise 0
-        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        Returns
+        -------
+        :class:`~pdrtpy.measurement.Measurement`
+            The fitted Av if it was determined in the fit, otherwise 0.
         """
         return self._av
 
@@ -452,8 +489,10 @@ class BaseExcitationFit(ToolBase):
     def opr_fitted(self):
         """Was the ortho-to-para ratio fitted?
 
-        :returns: True if OPR was fitted, False if canonical LTE value was used or this molecule's OPR canno vary.
-        :rtype: bool
+        Returns
+        -------
+        bool
+            True if OPR was fitted, False if canonical LTE value was used or this molecule's OPR cannot vary.
         """
         if not self.molecule.opr_can_vary:
             return False
@@ -465,8 +504,10 @@ class BaseExcitationFit(ToolBase):
     def opr(self):
         """The ortho-to-para ratio (OPR)
 
-        :returns: The fitted OPR if it was determined in the fit, otherwise the canonical LTE OPR
-        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        Returns
+        -------
+        :class:`~pdrtpy.measurement.Measurement`
+            The fitted OPR if it was determined in the fit, otherwise the canonical LTE OPR.
         """
         return self._opr
 
@@ -487,7 +528,9 @@ class BaseExcitationFit(ToolBase):
     def intensities(self):
         """The stored intensities. See :meth:`add_measurement`
 
-        :rtype: list of :class:`~pdrtpy.measurement.Measurement`
+        Returns
+        -------
+        list of :class:`~pdrtpy.measurement.Measurement`
         """
         return self._measurements
 
@@ -495,7 +538,9 @@ class BaseExcitationFit(ToolBase):
     def total_colden(self):
         """The fitted total column density
 
-        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        Returns
+        -------
+        :class:`~pdrtpy.measurement.Measurement`
         """
         if self._numcomponents == 1:
             return self._total_colden["cold"]
@@ -505,7 +550,9 @@ class BaseExcitationFit(ToolBase):
     def hot_colden(self):
         """The fitted hot gas total column density
 
-        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        Returns
+        -------
+        :class:`~pdrtpy.measurement.Measurement`
         """
         return self._total_colden["hot"]
 
@@ -513,7 +560,9 @@ class BaseExcitationFit(ToolBase):
     def cold_colden(self):
         """The fitted cold gas total column density
 
-        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        Returns
+        -------
+        :class:`~pdrtpy.measurement.Measurement`
         """
         return self._total_colden["cold"]
 
@@ -521,7 +570,9 @@ class BaseExcitationFit(ToolBase):
     def tcold(self):
         """The fitted cold gas excitation temperature
 
-        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        Returns
+        -------
+        :class:`~pdrtpy.measurement.Measurement`
         """
         return self._temperature["cold"]  # self._fitparams.tcold
 
@@ -529,14 +580,19 @@ class BaseExcitationFit(ToolBase):
     def thot(self):
         """The fitted hot gas excitation temperature
 
-        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        Returns
+        -------
+        :class:`~pdrtpy.measurement.Measurement`
         """
         return self._temperature["hot"]  # self._fitparams.thot
 
     @property
     def temperature(self):
         """The fitted gas temperatures, returned in a dictionary with keys 'hot' and 'cold'.
-        :rtype: dict
+
+        Returns
+        -------
+        dict
         """
         return self._temperature
 
@@ -560,10 +616,14 @@ class BaseExcitationFit(ToolBase):
     def colden(self, component):  # ,log=False):
         """The column density of hot or cold gas component, or total column density.
 
-        :param component: 'hot', 'cold', or 'total
-        :type component: str
+        Parameters
+        ----------
+        component : str
+            'hot', 'cold', or 'total'.
 
-        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        Returns
+        -------
+        :class:`~pdrtpy.measurement.Measurement`
         """
         #:param log: take the log10 of the column density
         cl = component.lower()
@@ -577,18 +637,21 @@ class BaseExcitationFit(ToolBase):
     def column_densities(self, norm=False, unit=utils._CM2, line=True):
         r"""The computed upper state column densities of stored intensities
 
-        :param norm: if True, normalize the column densities by the
-                    statistical weight of the upper state, :math:`g_u`.
-                    Default: False
-        :type norm: bool
-        :param unit: The units in which to return the column density. Default: :math:`{\rm cm}^{-2}`
-        :type unit: str or :class:`astropy.units.Unit`
-        :param line: if True, the dictionary index is the Line name,
-                  otherwise it is the upper state :math:`J` number.  Default: False
-        :type line: bool
+        Parameters
+        ----------
+        norm : bool
+            If True, normalize the column densities by the statistical weight of the upper state,
+            :math:`g_u`. Default: False.
+        unit : str or :class:`astropy.units.Unit`
+            The units in which to return the column density. Default: :math:`{\rm cm}^{-2}`.
+        line : bool
+            If True, the dictionary index is the Line name, otherwise it is the upper state
+            :math:`J` number. Default: True.
 
-        :returns: dictionary of column densities indexed by upper state :math:`J` number or Line name. Default: False means return indexed by :math:`J`.
-        :rtype: dict
+        Returns
+        -------
+        dict
+            Dictionary of column densities indexed by upper state :math:`J` number or Line name.
         """
         # Compute column densities if needed.
         # Note: this has a gotcha - if user changes an existing intensity
@@ -630,21 +693,35 @@ class BaseExcitationFit(ToolBase):
     ):
         r"""Compute the average column density over a spatial box.  The box is created using :class:`astropy.nddata.utils.Cutout2D`.
 
-        :param position: The position of the cutout array's center with respect to the data array. The position can be specified either as a `(x, y)` tuple of pixel coordinates.
-        :type position: tuple
-        :param size: The size of the cutout array along each axis. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(nx,ny)` order [*this is the opposite of Cutout2D signature*]. Scalar numbers in size are assumed to be in units of pixels.  Default value of None means use all pixels (position is ignored)
-        :type size: int, array_like`
-        :param norm: if True, normalize the column densities by the
-                       statistical weight of the upper state, :math:`g_u`.  For ortho-:math:`H_2`, :math:`g_u = OPR \times (2J+1)`, for para-:math:`H_2`, :math:`g_u=2J+1`. In LTE, :math:`OPR = 3`.
-        :type norm: bool
-        :param unit: The units in which to return the column density. Default: :math:`{\rm cm}^{-2}`
-        :type unit: str or :class:`astropy.units.Unit`
-        :param line: if True, the returned dictionary index is the Line name, otherwise it is the upper state :math:`J` number.
-        :type line: bool
-        :returns: dictionary of column density Measurements, with keys as :math:`J` number or Line name
-        :rtype:  dict
-        :param clip: Column density value at which to clip pixels. Pixels with column densities below this value will not be used in the average. Default: a large negative number, which translates to no clipping.
-        :type clip: :class:`astropy.units.Quantity`
+        Parameters
+        ----------
+        position : tuple
+            The position of the cutout array's center with respect to the data array. The position can
+            be specified either as a `(x, y)` tuple of pixel coordinates.
+        size : int or array_like
+            The size of the cutout array along each axis. If size is a scalar number or a scalar
+            :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size`
+            has two elements, they should be in `(nx,ny)` order [*this is the opposite of Cutout2D
+            signature*]. Scalar numbers in size are assumed to be in units of pixels. Default value of
+            None means use all pixels (position is ignored).
+        norm : bool
+            If True, normalize the column densities by the statistical weight of the upper state,
+            :math:`g_u`. For ortho-:math:`H_2`, :math:`g_u = OPR \times (2J+1)`, for
+            para-:math:`H_2`, :math:`g_u=2J+1`. In LTE, :math:`OPR = 3`.
+        unit : str or :class:`astropy.units.Unit`
+            The units in which to return the column density. Default: :math:`{\rm cm}^{-2}`.
+        line : bool
+            If True, the returned dictionary index is the Line name, otherwise it is the upper state
+            :math:`J` number.
+        clip : :class:`astropy.units.Quantity`
+            Column density value at which to clip pixels. Pixels with column densities below this value
+            will not be used in the average. Default: a large negative number, which translates to no
+            clipping.
+
+        Returns
+        -------
+        dict
+            Dictionary of column density Measurements, with keys as :math:`J` number or Line name.
         """
         # @todo
         # - should default clip = None?
@@ -718,11 +795,16 @@ class BaseExcitationFit(ToolBase):
         # @todo remove unit if transition_data is changed to QTable
         r"""Upper state energies of stored intensities, in K.
 
-        :param line: if True, the dictionary index is the Line name,
-                  otherwise it is the upper state :math:`J` number.  Default: False
-        :type line: bool
-        :returns: dictionary indexed by upper state :math:`J` number or Line name. Default: False means return indexed by :math:`J`.
-        :rtype: dict
+        Parameters
+        ----------
+        line : bool
+            If True, the dictionary index is the Line name, otherwise it is the upper state
+            :math:`J` number. Default: True.
+
+        Returns
+        -------
+        dict
+            Dictionary indexed by upper state :math:`J` number or Line name.
         """
         t = dict()
         if line:
@@ -736,13 +818,18 @@ class BaseExcitationFit(ToolBase):
     def wavelengths(self, line=True, units=False):
         r"""Wavelengths of transitions, in micron (assumed unit using Roueff et al table)
 
-        :param line: if True, the dictionary index is the Line name,
-                  otherwise it is the upper state :math:`J` number.  Default: False
-        :type line: bool
-        :param units: if True, values are returned with units as astropy Quantity
-        :type units: bool
-        :returns: dictionary indexed by upper state :math:`J` number or Line name. Default: False means return indexed by :math:`J`.
-        :rtype: dict
+        Parameters
+        ----------
+        line : bool
+            If True, the dictionary index is the Line name, otherwise it is the upper state
+            :math:`J` number. Default: True.
+        units : bool
+            If True, values are returned with units as astropy Quantity.
+
+        Returns
+        -------
+        dict
+            Dictionary indexed by upper state :math:`J` number or Line name.
         """
         # @todo remove unit if transition_data is changed to QTable
         t = dict()
@@ -759,14 +846,23 @@ class BaseExcitationFit(ToolBase):
         return t
 
     def gu(self, id, opr):
-        r"""Get the upper state statistical weight :math:`g_u` for the given transition identifer, and, if the transition is odd-:math:`J`, scale the result by the given ortho-to-para ratio.  If the transition is even-:math:`J`, the LTE value is returned.
+        r"""Get the upper state statistical weight :math:`g_u` for the given transition identifier, and, if the transition is odd-:math:`J`, scale the result by the given ortho-to-para ratio.  If the transition is even-:math:`J`, the LTE value is returned.
 
-        :param id: the measurement identifier
-        :type id: str
-        :param opr:
-        :type opr: float
-        :raises KeyError: if `id` not in existing Measurements
-        :rtype: float
+        Parameters
+        ----------
+        id : str
+            The measurement identifier.
+        opr : float
+            Ortho-to-para ratio.
+
+        Returns
+        -------
+        float
+
+        Raises
+        ------
+        KeyError
+            If `id` not in existing Measurements.
         """
         if not self.molecule.opr_can_vary:
             log.warning(f"The molecule {self.molecule.name} does not have a variable OPR.")
@@ -785,10 +881,15 @@ class BaseExcitationFit(ToolBase):
 
         where :math:`A` is the Einstein A coefficient and :math:`\Delta E` is the energy of the transition.
 
-        :param colden: upper state column density
-        :type colden: :class:`~pdrtpy.measurement.Measurement`
-        :returns: optically thin intensity
-        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        Parameters
+        ----------
+        colden : :class:`~pdrtpy.measurement.Measurement`
+            Upper state column density.
+
+        Returns
+        -------
+        :class:`~pdrtpy.measurement.Measurement`
+            Optically thin intensity.
         """
         # colden is N_upper
         # @todo remove unit if transition_data is changed to QTable
@@ -818,12 +919,18 @@ class BaseExcitationFit(ToolBase):
 
         where :math:`A` is the Einstein A coefficient and :math:`\Delta E` is the energy of the transition.
 
-        :param intensity: A :class:`~pdrtpy.measurement.Measurement` instance containing intensity in units equivalent to :math:`{\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`
-        :type intensity: :class:`~pdrtpy.measurement.Measurement`
-        :param unit: The units in which to return the column density. Default: :math:`{\rm cm}^{-2}`
-        :type unit: str or :class:`astropy.units.Unit`
-        :returns: a :class:`~pdrtpy.measurement.Measurement` of the column density.
-        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        Parameters
+        ----------
+        intensity : :class:`~pdrtpy.measurement.Measurement`
+            A measurement instance containing intensity in units equivalent to
+            :math:`{\rm erg~cm^{-2}~s^{-1}~sr^{-1}}`.
+        unit : str or :class:`astropy.units.Unit`
+            The units in which to return the column density. Default: :math:`{\rm cm}^{-2}`.
+
+        Returns
+        -------
+        :class:`~pdrtpy.measurement.Measurement`
+            The column density.
         """
         # suppress ridiculous NDDATA warning about units. See issue #163
         log.setLevel("WARNING")
@@ -843,16 +950,14 @@ class BaseExcitationFit(ToolBase):
 
     def _compute_column_densities(self, unit=utils._CM2, line=True):
         r"""Compute all upper level column densities for stored intensity measurements and puts them in a dictionary
-        :param unit: The units in which to return the column density. Default: :math:`{\rm }cm^{-2}`
-        :type unit: str or :class:`astropy.units.Unit`
-        :param line: if True, the dictionary index is the Line name,
-                  otherwise it is the upper state :math:`J` number.  Default: False
-        :type line: bool
 
-         # should we reutrn something here or just compute them and never store.
-         # I'm beginning to think there is no reason to store them.
-        #:returns: dictionary of column densities as:class:`~pdrtpy.measurement.Measurement  indexed by upper state :math:`J` number or Line name. Default: False means return indexed by :math:`J`.
-        #:returns: a :class:`~pdrtpy.measurement.Measurement` of the column density.
+        Parameters
+        ----------
+        unit : str or :class:`astropy.units.Unit`
+            The units in which to return the column density. Default: :math:`{\rm cm}^{-2}`.
+        line : bool
+            If True, the dictionary index is the Line name, otherwise it is the upper state
+            :math:`J` number. Default: True.
         """
         self._column_density = dict()
         for m in self._measurements:
@@ -1002,12 +1107,14 @@ class BaseExcitationFit(ToolBase):
     def _one_line(self, x, m1, n1):
         """Return a line.
 
-        :param x: array of x values
-        :type x: :class:`numpy.ndarray`
-        :param m1: slope of first line
-        :type m1: float
-        :param n1: intercept of first line
-        :type n1: float
+        Parameters
+        ----------
+        x : :class:`numpy.ndarray`
+            Array of x values.
+        m1 : float
+            Slope of first line.
+        n1 : float
+            Intercept of first line.
         """
         return m1 * x + n1
 
@@ -1058,11 +1165,18 @@ class BaseExcitationFit(ToolBase):
         Benchmarks confirm SSR is 3–5× faster than PELT for n = 7 across a 2655-pixel
         CenA map, with identical breakpoint selections on well-behaved spectra.
 
-        :param x: 1-D energy array (n_lines,)
-        :param y_1d: 1-D log column-density array (n_lines,)
-        :returns: breakpoint index *bp* such that the cold segment is ``y_1d[:bp]``
-                  and the hot segment is ``y_1d[bp:]``, with ``2 ≤ bp ≤ n-2``.
-        :rtype: int
+        Parameters
+        ----------
+        x : array_like
+            1-D energy array (n_lines,).
+        y_1d : array_like
+            1-D log column-density array (n_lines,).
+
+        Returns
+        -------
+        int
+            Breakpoint index *bp* such that the cold segment is ``y_1d[:bp]``
+            and the hot segment is ``y_1d[bp:]``, with ``2 ≤ bp ≤ n-2``.
         """
         n = len(y_1d)
         # Prefix sums (length n+1; index 0 is zero by construction)
@@ -1112,10 +1226,17 @@ class BaseExcitationFit(ToolBase):
         Falls back to :meth:`_find_breakpoint_ssr` if PELT does not return
         exactly one interior breakpoint.
 
-        :param x: 1-D energy array (n_lines,)
-        :param y_1d: 1-D log column-density array (n_lines,)
-        :returns: breakpoint index bp such that cold segment = y_1d[:bp], hot = y_1d[bp:]
-        :rtype: int
+        Parameters
+        ----------
+        x : array_like
+            1-D energy array (n_lines,).
+        y_1d : array_like
+            1-D log column-density array (n_lines,).
+
+        Returns
+        -------
+        int
+            Breakpoint index bp such that cold segment = y_1d[:bp], hot = y_1d[bp:].
         """
         n = len(y_1d)
         signal = y_1d.reshape(-1, 1)
@@ -1135,8 +1256,10 @@ class BaseExcitationFit(ToolBase):
     def _fit_segment(self, x_seg, y_seg):
         """Fit a line to (x_seg, y_seg) via polyfit; enforce negative slope.
 
-        :returns: (slope, rss, intercept, residuals_sum)
-        :rtype: tuple
+        Returns
+        -------
+        tuple
+            (slope, rss, intercept, residuals_sum).
         """
         coeffs = np.polyfit(x_seg, y_seg, 1)
         slope, intercept = coeffs
@@ -1150,14 +1273,21 @@ class BaseExcitationFit(ToolBase):
     def _ruptures_partition(self, x, yr, partition_method="ssr"):
         """Partition each pixel spectrum and fit segments to get initial guesses.
 
-        :param x: 1-D energy array (n_lines,)
-        :param yr: 2-D array (n_lines, n_pix) of log column densities
-        :param partition_method: breakpoint-finding algorithm, ``"ssr"`` (default) or
-            ``"pelt"``.  ``"ssr"`` uses a vectorised prefix-sum search
-            (see :meth:`_find_breakpoint_ssr`); ``"pelt"`` uses the ruptures library
-            (see :meth:`_find_breakpoint_pelt`).
-        :type partition_method: str
-        :returns: (slopecold, intcold, slopehot, inthot) each shape (n_pix,)
+        Parameters
+        ----------
+        x : array_like
+            1-D energy array (n_lines,).
+        yr : array_like
+            2-D array (n_lines, n_pix) of log column densities.
+        partition_method : str
+            Breakpoint-finding algorithm, ``"ssr"`` (default) or ``"pelt"``. ``"ssr"`` uses a
+            vectorised prefix-sum search (see :meth:`_find_breakpoint_ssr`); ``"pelt"`` uses the
+            ruptures library (see :meth:`_find_breakpoint_pelt`).
+
+        Returns
+        -------
+        tuple
+            (slopecold, intcold, slopehot, inthot) each shape (n_pix,).
         """
         find_bp = self._find_breakpoint_pelt if partition_method == "pelt" else self._find_breakpoint_ssr
         n_pix = yr.shape[1]
@@ -1196,10 +1326,16 @@ class BaseExcitationFit(ToolBase):
         are both given, the data are averaged over a spatial box (``Cutout2D``)
         before fitting; otherwise every pixel is fit independently.
 
-        :param position: ``(x, y)`` pixel coordinate or :class:`~astropy.coordinates.SkyCoord`.
-        :param size: scalar pixel size or ``(nx, ny)`` tuple.
-        :param fit_opr: vary the ortho-to-para ratio.
-        :param fit_av: vary the visual extinction.
+        Parameters
+        ----------
+        position : tuple or :class:`~astropy.coordinates.SkyCoord`
+            ``(x, y)`` pixel coordinate.
+        size : int or tuple
+            Scalar pixel size or ``(nx, ny)`` tuple.
+        fit_opr : bool
+            Vary the ortho-to-para ratio.
+        fit_av : bool
+            Vary the visual extinction.
         """
         verbose = kwargs.pop("verbose")
         partition_method = kwargs.pop("partition_method", "ssr")
@@ -1522,7 +1658,7 @@ class BaseExcitationFit(ToolBase):
 # ========================== DERIVED CLASSES FOR SPECIFIC MOLECULES ===================================
 class H2ExcitationFit(BaseExcitationFit):
     def __init__(self, measurements: Measurement = None):
-        r"""Tool for fitting temperatures, column densities, `A_v`, and ortho-to-para ratio(`OPR`) from an :math:`H_2`
+        r"""Tool for fitting temperatures, column densities, :math:`A_v`, and ortho-to-para ratio(`OPR`) from an :math:`H_2`
         excitation diagram. It takes as input a set of :math:`H_2` rovibrational line observations with errors
         represented as :class:`~pdrtpy.measurement.Measurement`.
 
@@ -1535,16 +1671,17 @@ class H2ExcitationFit(BaseExcitationFit):
 
         Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view the results.
 
-        :param measurements: Input :math:`H_2` measurements to be fit.
-        :type measurements: list of :class:`~pdrtpy.measurement.Measurement`.
+        Parameters
+        ----------
+        measurements : list of :class:`~pdrtpy.measurement.Measurement`
+            Input :math:`H_2` measurements to be fit.
         """
         super().__init__(mol.H2(), measurements)
 
 
 class COExcitationFit(BaseExcitationFit):
     def __init__(self, measurements: Measurement = None):
-        r"""Tool for fitting temperatures, column densities, `A_v` from an :math:`^{12}C^{16}O` excitation diagram. It takes as input a set of :math:`H_2` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
-
+        r"""Tool for fitting temperatures, column densities, :math:`A_v` from an :math:`^{12}C^{16}O` excitation diagram. It takes as input a set of :math:`^{12}CO` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
 
         Often, excitation diagrams show evidence of both "hot" and "cold" gas components, where the cold gas
         dominates the intensity in the low `J` transitions and the hot gas dominates in the high `J` transitions.
@@ -1555,15 +1692,17 @@ class COExcitationFit(BaseExcitationFit):
 
         Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view the results.
 
-        :param measurements: Input :math:`^{12}CO` measurements to be fit.
-        :type measurements: list of :class:`~pdrtpy.measurement.Measurement`.
+        Parameters
+        ----------
+        measurements : list of :class:`~pdrtpy.measurement.Measurement`
+            Input :math:`^{12}CO` measurements to be fit.
         """
         super().__init__(mol.CO(), measurements)
 
 
 class C13OExcitationFit(BaseExcitationFit):
     def __init__(self, measurements: Measurement = None):
-        r"""Tool for fitting temperatures, column densities, `A_v` from an :math:`^{13}C^{16}O` excitation diagram. It takes as input a set of :math:`H_2` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
+        r"""Tool for fitting temperatures, column densities, :math:`A_v` from an :math:`^{13}C^{16}O` excitation diagram. It takes as input a set of :math:`^{13}CO` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
 
         Often, excitation diagrams show evidence of both "hot" and "cold" gas components, where the cold gas
         dominates the intensity in the low :math:`J` transitions and the hot gas dominates in the high :math:`J` transitions.
@@ -1573,15 +1712,17 @@ class C13OExcitationFit(BaseExcitationFit):
 
         Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view the results.
 
-        :param measurements: Input :math:`^{13}CO` measurements to be fit.
-        :type measurements: list of :class:`~pdrtpy.measurement.Measurement`.
+        Parameters
+        ----------
+        measurements : list of :class:`~pdrtpy.measurement.Measurement`
+            Input :math:`^{13}CO` measurements to be fit.
         """
         super().__init__(mol.C13O(), measurements)
 
 
 class CO18ExcitationFit(BaseExcitationFit):
     def __init__(self, measurements: Measurement = None):
-        r"""Tool for fitting temperatures, column densities, `A_v` from an :math:`^{12}C^{18}O` excitation diagram. It takes as input a set of :math:`H_2` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
+        r"""Tool for fitting temperatures, column densities, :math:`A_v` from an :math:`^{12}C^{18}O` excitation diagram. It takes as input a set of :math:`^{12}C^{18}O` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
 
         Often, excitation diagrams show evidence of both "hot" and "cold" gas components, where the cold gas
         dominates the intensity in the low :math:`J` transitions and the hot gas dominates in the high :math:`J` transitions.
@@ -1591,15 +1732,17 @@ class CO18ExcitationFit(BaseExcitationFit):
 
         Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view the results.
 
-        :param measurements: Input :math:`^{12}C^{18}O` measurements to be fit.
-        :type measurements: list of :class:`~pdrtpy.measurement.Measurement`.
+        Parameters
+        ----------
+        measurements : list of :class:`~pdrtpy.measurement.Measurement`
+            Input :math:`^{12}C^{18}O` measurements to be fit.
         """
         super().__init__(mol.CO18(), measurements)
 
 
 class C13O18ExcitationFit(BaseExcitationFit):
     def __init__(self, measurements: Measurement = None):
-        r"""Tool for fitting temperatures, column densities, `A_v` from an :math:`^{13}C^{18}O` excitation diagram. It takes as input a set of :math:`H_2` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
+        r"""Tool for fitting temperatures, column densities, :math:`A_v` from an :math:`^{13}C^{18}O` excitation diagram. It takes as input a set of :math:`^{13}C^{18}O` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
 
         Often, excitation diagrams show evidence of both "hot" and "cold" gas components, where the cold gas
         dominates the intensity in the low :math:`J` transitions and the hot gas dominates in the high :math:`J` transitions.
@@ -1609,21 +1752,25 @@ class C13O18ExcitationFit(BaseExcitationFit):
 
         Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view the results.
 
-        :param measurements: Input :math:`^{13}C^{18}O` measurements to be fit.
-        :type measurements: list of :class:`~pdrtpy.measurement.Measurement`.
+        Parameters
+        ----------
+        measurements : list of :class:`~pdrtpy.measurement.Measurement`
+            Input :math:`^{13}C^{18}O` measurements to be fit.
         """
         super().__init__(mol.CO18(), measurements)
 
 
 class CHplusExcitationFit(BaseExcitationFit):
     def __init__(self, measurements: Measurement = None):
-        r"""Tool for fitting temperatures, column densities, `A_v`, and ortho-to-para ratio(`OPR`) from an :math:`CH^{+}` excitation diagram. It takes as input a set of :math:`CH^{+}` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
+        r"""Tool for fitting temperatures, column densities, :math:`A_v`, and ortho-to-para ratio(`OPR`) from an :math:`CH^{+}` excitation diagram. It takes as input a set of :math:`CH^{+}` rovibrational line observations with errors represented as :class:`~pdrtpy.measurement.Measurement`.
 
         Often, excitation diagrams show evidence of both "hot" and "cold" gas components, where the cold gas dominates the intensity in the low :math:`J` transitions and the hot gas dominates in the high :math:`J` transitions. Given data over several transitions, one can fit for :math:`T_{cold}, T_{hot}, N_{total} = N_{cold}+ N_{hot}`. One needs at least 5 points to fit the temperatures and column densities (slope and intercept :math:`\times 2`), though one could compute (not fit) them with only 4 points.
 
         Once the fit is done, :class:`~pdrtpy.plot.ExcitationPlot` can be used to view the results.
 
-        :param measurements: Input :math:`CH^{+}` measurements to be fit.
-        :type measurements: list of :class:`~pdrtpy.measurement.Measurement`.
+        Parameters
+        ----------
+        measurements : list of :class:`~pdrtpy.measurement.Measurement`
+            Input :math:`CH^{+}` measurements to be fit.
         """
         super().__init__(mol.CHplus(), measurements)

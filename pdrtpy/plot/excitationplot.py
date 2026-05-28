@@ -54,17 +54,28 @@ class ExcitationPlot(PlotBase):
         # @todo position and size might not necessarily match how the fit was done.
         #:type position: tuple or :class:`astropy.coordinates.SkyCoord`
         # or a :class:`~astropy.coordinates.SkyCoord`, which will use the :class:`~astropy.wcs.WCS` of the ::class:`~pdrtpy.measurement.Measurement`s added to this tool.
-        r"""Plot the excitation diagram.  For maps of excitation parameters, a position and optional size are required.  To examine the entire map, use :meth:`explore`.
+        r"""Plot the excitation diagram.
 
-        :param position: The spatial position of excitation diagram.  For spatial averaging this is the cutout array's center with respect to the data array. The position may be specified as an `(x, y)` tuple of pixel coordinates or a SkyCoord coordinate
-        :type position: tuple or :class:`~astropy.coordinates.SkyCoord`
-        :param size: The size of the cutout array along each axis. If size is a scalar number or a scalar :class:`~astropy.units.Quantity`, then a square cutout of size will be created. If `size` has two elements, they should be in `(ny, nx)` order. Scalar numbers in size are assumed to be in units of pixels. `size` can also be a :class:`~astropy.units.Quantity` object or contain :class:`~astropy.units.Quantity` objects. Such :class:`~astropy.units.Quantity` objects must be in pixel or angular units. For all cases, size will be converted to an integer number of pixels, rounding the the nearest integer.  See :class:`~astropy.nddata.utils.Cutout2D`
-        :type size: int, array_like, or :class:`astropy.units.Quantity`
-        :param norm: if True, normalize the column densities by the
-                       statistical weight of the upper state, :math:`g_u`.
-        :type norm: bool
-        :param show_fit: Show the most recent fit done the the associated H2ExcitationFit tool.
-        :type show_fit: bool
+        For maps of excitation parameters, a position and optional size are required.
+        To examine the entire map, use :meth:`explore`.
+
+        Parameters
+        ----------
+        position : tuple or :class:`~astropy.coordinates.SkyCoord`, optional
+            The spatial position of the excitation diagram. For spatial averaging
+            this is the cutout array's center. May be an ``(x, y)`` tuple of pixel
+            coordinates or a :class:`~astropy.coordinates.SkyCoord`.
+        size : int, array_like, or :class:`~astropy.units.Quantity`, optional
+            The size of the cutout array along each axis. If scalar, a square
+            cutout is created. If two elements, they should be in ``(ny, nx)``
+            order. Scalar numbers are assumed to be in pixels. Quantity objects
+            must be in pixel or angular units. See :class:`~astropy.nddata.utils.Cutout2D`.
+        norm : bool, optional
+            If True, normalize the column densities by the statistical weight of
+            the upper state :math:`g_u`. Default: True.
+        show_fit : bool, optional
+            Show the most recent fit from the associated excitation fit tool.
+            Default: False.
         """
         # suppress ridiculous NDDATA warning about units. See issue #163
         log.setLevel("WARNING")
@@ -353,8 +364,10 @@ class ExcitationPlot(PlotBase):
     def temperature(self, component, **kwargs):
         """Plot the temperature of hot or cold gas component.
 
-        :param component: 'hot' or 'cold'
-        :type component: str
+        Parameters
+        ----------
+        component : str
+            ``'hot'`` or ``'cold'``.
         """
         if component not in self._tool.temperature:
             raise KeyError(f"{component} not a valid component. Must be one of {list(self._tool.temperature.keys())}")
@@ -363,9 +376,12 @@ class ExcitationPlot(PlotBase):
     def column_density(self, component, log=True, **kwargs):
         """Plot the column density of hot or cold gas component, or total column density.
 
-        :param component: 'hot', 'cold', or 'total
-        :type component: str
-        :param log: take the log10 of the column density before plotting
+        Parameters
+        ----------
+        component : str
+            ``'hot'``, ``'cold'``, or ``'total'``.
+        log : bool, optional
+            Take the log10 of the column density before plotting. Default: True.
         """
         self._plot(self._tool.colden(component), log=log, **kwargs)
 
@@ -376,19 +392,29 @@ class ExcitationPlot(PlotBase):
         self._plot(self._tool.opr, **kwargs)
 
     def explore(self, data=None, interaction_type="click", **kwargs):
-        r"""Explore the fitted parameters of a map. A user-requested map is displayed in the left panel and in the right panel is the fitted excitation diagram for a point selected by the user.  The user clicks on a point in the left panel and the right panel will update with the excitation diagram for that point.
+        r"""Explore the fitted parameters of a map interactively.
 
-        :param data: A reference image to use for the left panel, e.g. the total column density, the cold temperature, etc.  This should be a reference results in the :class:`~pdrtpy.tool.h2excitation.H2Excitation` tool used for this :class:`~pdrtpy.plot.excitationplot.ExcitationPlot` (e.g., *htool.temperature['cold']*)
-        :type data: :class:`~pdrtpy.measurement.Measurement`
-        :param interaction_type: whether to use mouse click or mouse move to update the right hand panel.   Valid values are 'click' or 'move'.
-        :type interaction_type: str
-        :param \*\*kwargs: Other parameters passed to :meth:`~pdrtpy.plot.excitationplot.ExcitationPlot._plot`, :meth:`~pdrtpy.plot.excitationplot.ExcitationPlot.ex_diagram`, or matplotlib methods.
+        A user-requested map is displayed in the left panel; the right panel shows
+        the fitted excitation diagram for a user-selected point.
 
-            - *units,image, contours, label, title, norm, figsize* -- See the general `Plot Keywords`_ documentation
-            - *show_fit* - show the fit in the excitation diagram, Default: True
-            - *log* - plot the log10 of the image, can be useful for column density,  Default: False
-            - *markersize* - size of the marker displayed where clicked, in points, Default: 20
-            - *fmt* - matplotlib format for the marker, Default:. 'r+'
+        Parameters
+        ----------
+        data : :class:`~pdrtpy.measurement.Measurement`, optional
+            Reference image for the left panel, e.g. total column density or
+            cold temperature from the associated excitation tool
+            (e.g. ``htool.temperature['cold']``).
+        interaction_type : str, optional
+            Whether to update the right panel on mouse ``'click'`` or
+            ``'move'``. Default: ``'click'``.
+        \*\*kwargs
+            Other parameters passed to :meth:`~pdrtpy.plot.excitationplot.ExcitationPlot._plot`,
+            :meth:`~pdrtpy.plot.excitationplot.ExcitationPlot.ex_diagram`, or matplotlib methods.
+
+            - *units, image, contours, label, title, norm, figsize* — see the general `Plot Keywords`_ documentation
+            - *show_fit* — show the fit in the excitation diagram. Default: True
+            - *log* — plot the log10 of the image. Default: False
+            - *markersize* — size of the marker displayed where clicked, in points. Default: 20
+            - *fmt* — matplotlib format for the marker. Default: ``'r+'``
         """
 
         kwargs_opts = {

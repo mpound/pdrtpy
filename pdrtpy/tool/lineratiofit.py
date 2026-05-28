@@ -108,18 +108,23 @@ class _PixelResult:
 
 
 class LineRatioFit(ToolBase):
-    """LineRatioFit is a tool to fit observations of intensity ratios to a set of PDR models. It takes as input a set of observations with errors represented as :class:`~pdrtpy.measurement.Measurement` and  :class:`~pdrtpy.modelset.ModelSet` for the models to which the data will be fitted. The observations should be spectral line or continuum intensities.  They can be spatial maps or single pixel values. They should have the same spatial resolution.
+    """Tool to fit observations of intensity ratios to a set of PDR models.
 
-    The models to be fit are stored as intensity ratios. The input observations will be use to create ratios that correspond to models. From there a minimization fit is done to determine the density and radiation field that best fit the data. At least 3 observations are needed in order to make at least 2 ratios. With fewer ratios, no fitting can be done. More ratios generally means better determined density and radiation field, assuming the data are consistent with each other.
+    Takes as input a set of observations with errors represented as
+    :class:`~pdrtpy.measurement.Measurement` and a
+    :class:`~pdrtpy.modelset.ModelSet` for the models to fit. Observations
+    should be spectral line or continuum intensities, either spatial maps or
+    single pixel values at the same spatial resolution.
 
-    Once the fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view the results.
+    At least 3 observations are needed to make at least 2 ratios. Once the
+    fit is done, :class:`~pdrtpy.plot.LineRatioPlot` can be used to view the results.
 
-
-    :param modelset: The set of PDR models to use for fitting.
-    :type modelset: :class:`~pdrtpy.modelset.ModelSet`
-
-    :param measurements: Input measurements to be fit.
-    :type measurements: list or dict of :class:`~pdrtpy.measurement.Measurement`. If dict, the keys should be the Measurement *identifiers*.
+    Parameters
+    ----------
+    modelset : :class:`~pdrtpy.modelset.ModelSet`
+        The set of PDR models to use for fitting.
+    measurements : list or dict of :class:`~pdrtpy.measurement.Measurement`, optional
+        Input measurements to be fit. If dict, keys should be Measurement identifiers.
     """
 
     def __init__(self, modelset, measurements=None):
@@ -151,9 +156,11 @@ class LineRatioFit(ToolBase):
 
     @property
     def fit_result(self):
-        """The result of the fitting procedure which includes fit statistics, variable values and uncertainties, and correlations between variables.  For each pixel, there will be one instance of :class:`lmfit.minimizer.MinimizerResult`.
+        """The result of the fitting procedure, including fit statistics, variable values and uncertainties, and correlations. One :class:`lmfit.minimizer.MinimizerResult` per pixel.
 
-        :rtype:  :class:`~pdrtpy.tool.FitMap`
+        Returns
+        -------
+        :class:`~pdrtpy.tool.FitMap`
         """
         return self._fitresult
 
@@ -164,9 +171,11 @@ class LineRatioFit(ToolBase):
 
     @property
     def measurements(self):
-        """The stored :class:`measurements <pdrtpy.measurement.Measurement>` as a dictionary with Measurement IDs as keys
+        """The stored measurements as a dictionary with Measurement IDs as keys.
 
-        :rtype: dict of :class:`~pdrtpy.measurement.Measurement`
+        Returns
+        -------
+        dict of :class:`~pdrtpy.measurement.Measurement`
         """
         return self._measurements
 
@@ -174,7 +183,9 @@ class LineRatioFit(ToolBase):
     def measurementIDs(self):
         """The stored measurement IDs, which are strings.
 
-        :rtype: :class:`dict_keys`
+        Returns
+        -------
+        :class:`dict_keys`
         """
 
         if self._measurements is None:
@@ -185,15 +196,19 @@ class LineRatioFit(ToolBase):
     def observed_ratios(self):
         """The list of the observed line ratios that have been input so far.
 
-        :rtype: list of str
+        Returns
+        -------
+        list of str
         """
         return list(self._observedratios.keys())
 
     @property
     def ratiocount(self):
-        """The number of ratios that match models available in the current :class:`~pdrtpy.modelset.ModelSet` given the current set of measurements
+        """The number of ratios that match models available in the current :class:`~pdrtpy.modelset.ModelSet` given the current set of measurements.
 
-        :rtype: int
+        Returns
+        -------
+        int
         """
         # call to  modelset._get_ratio_MA 01938elements is expensive. So set it once for each run.
         if self._ratiocount is None:
@@ -204,7 +219,9 @@ class LineRatioFit(ToolBase):
     def density(self):
         """The computed hydrogen nucleus density value(s).
 
-        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        Returns
+        -------
+        :class:`~pdrtpy.measurement.Measurement`
         """
         return self._density
 
@@ -212,17 +229,26 @@ class LineRatioFit(ToolBase):
     def radiation_field(self):
         """The computed radiation field value(s).
 
-        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        Returns
+        -------
+        :class:`~pdrtpy.measurement.Measurement`
         """
         return self._radiation_field
 
     def chisq(self, min=False):
         r"""The computed chisquare value(s).
 
-        :type min: bool
-        :param min: If `True` return the minimum reduced :math:`\chi^2`.  In the case of map inputs this will be a spatial map of mininum :math:`\chi^2`.  If `False` with map inputs the entire :math:`\chi^2` hypercube is returned.  If `True` with single pixel inputs, a single value is returned.  If `False` with single pixel inputs, :math:`\chi^2` as a function of density and radiation field is returned.
+        Parameters
+        ----------
+        min : bool, optional
+            If True, return the minimum :math:`\chi^2`. For map inputs, returns a
+            spatial map of the minimum; for single-pixel inputs, returns a scalar.
+            If False, returns the full :math:`\chi^2` as a function of density and
+            radiation field. Default: False.
 
-        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        Returns
+        -------
+        :class:`~pdrtpy.measurement.Measurement`
         """
         if min:
             return self._chisq_min
@@ -232,10 +258,17 @@ class LineRatioFit(ToolBase):
     def reduced_chisq(self, min=False):
         r"""The computed reduced chisquare value(s).
 
-        :type min: bool
-        :param min: If `True` return the minimum reduced :math:`\chi_\nu^2`.  In the case of map inputs this will be a spatial map of mininum :math:`\chi_\nu^2`.  If `False` with map inputs the entire :math:`\chi_\nu^2` hypercube is returned.  If `True` with single pixel inputs, a single value is returned.  If `False` with single pixel inputs, :math:`\chi_\nu^2` as a function of density and radiation field is returned.
+        Parameters
+        ----------
+        min : bool, optional
+            If True, return the minimum :math:`\chi_\nu^2`. For map inputs, returns
+            a spatial map of the minimum; for single-pixel inputs, returns a scalar.
+            If False, returns the full :math:`\chi_\nu^2` as a function of density and
+            radiation field. Default: False.
 
-        :rtype: :class:`~pdrtpy.measurement.Measurement`
+        Returns
+        -------
+        :class:`~pdrtpy.measurement.Measurement`
         """
         if min:
             return self._reduced_chisq_min
@@ -243,10 +276,12 @@ class LineRatioFit(ToolBase):
             return self._reduced_chisq
 
     def _init_measurements(self, m):
-        """Initialize the measurements from an input list or dict. If a dict, the dictionary keys must be valid measurement identifiers.
+        """Initialize the measurements from an input list or dict.
 
-        :param m: the input list of Measurements
-        :type m: list, tuple, or dict
+        Parameters
+        ----------
+        m : list, tuple, or dict
+            The input Measurements. If dict, keys must be valid measurement identifiers.
         """
         self._masks = dict()  # need to save these so they can be reset later
         if m is None:
@@ -276,13 +311,16 @@ class LineRatioFit(ToolBase):
         return np.all([m.shape == s1 for m in d.values()])
 
     def _check_header(self, kw, value=NotImplemented):
-        """Check to see if any of the given keyword values differ for
-        the input measurements.
+        """Check to see if any of the given keyword values differ for the input measurements.
 
-        :param kw: the keyword to check
-        :type kw: str
-        :param value: If given and not NotImplemented, then check that all *kw* values of the input measurements requal this value.  The default is the special value NotImplemented rather than None which allows us to check against None if needed.
-        :type kw: any
+        Parameters
+        ----------
+        kw : str
+            The keyword to check.
+        value : any, optional
+            If given and not ``NotImplemented``, check that all *kw* values equal this.
+            The default is ``NotImplemented`` (not ``None``) so that ``None`` can be
+            checked against explicitly.
         """
         d = self._measurements
         fk = utils.firstkey(d)
@@ -322,11 +360,14 @@ class LineRatioFit(ToolBase):
         return self._check_shapes(self._modelratios)
 
     def add_measurement(self, m):
-        r"""Add a Measurement to internal dictionary used to compute ratios. This measurement may be intensity units (erg :math:`{\rm s}^{-1}` :math:`{\rm cm}^{-2}`) or integrated intensity (K km/s).
+        r"""Add a Measurement to the internal dictionary used to compute ratios.
 
-        :param m: a Measurement instance to be added to this tool
-        :type m: :class:`~pdrtpy.measurement.Measurement`.
+        The measurement may be in intensity units (:math:`{\rm erg~s}^{-1}` :math:`{\rm cm}^{-2}`) or integrated intensity (K km/s).
 
+        Parameters
+        ----------
+        m : :class:`~pdrtpy.measurement.Measurement`
+            A Measurement instance to be added to this tool.
         """
         if self._measurements:
             self._measurements[m.id] = m
@@ -337,22 +378,28 @@ class LineRatioFit(ToolBase):
     def remove_measurement(self, id):
         """Delete a measurement from the internal dictionary used to compute ratios.
 
-        :param id: the measurement identifier
-        :type id: str
-        :raises KeyError: if id not in existing Measurements
+        Parameters
+        ----------
+        id : str
+            The measurement identifier.
+
+        Raises
+        ------
+        KeyError
+            If id not in existing Measurements.
         """
         del self._measurements[id]
         self._set_model_files_used()
 
     def read_models(self, unit=u.dimensionless_unscaled):
-        """Given a list of measurement IDs, find and open the FITS files that have matching ratios
-        and populate the _modelratios dictionary.  Uses :class:`pdrtpy.measurement.Measurement` as
-        a storage mechanism.
+        """Given a list of measurement IDs, find and open the FITS files with matching ratios and populate ``_modelratios``.
 
-           :param  m: list of measurement IDS (string)
-           :type m: list
-           :param unit: units of the data
-           :type unit: string or astropy.Unit
+        Uses :class:`pdrtpy.measurement.Measurement` as a storage mechanism.
+
+        Parameters
+        ----------
+        unit : str or :class:`astropy.units.Unit`, optional
+            Units of the data.
         """
         self._modelratios = self._modelset.get_models(self.measurementIDs, model_type="ratio")
         if self.ratiocount < 2:
@@ -389,9 +436,12 @@ class LineRatioFit(ToolBase):
             utils._trim_all_to_H2(self._modelratios)
 
     def _check_compatibility(self):
-        """Check that all Measurements are compatible (beams, coordinate systems, shapes) so that the computation make commence.
+        """Check that all Measurements are compatible (beams, coordinate systems, shapes) so that the computation can commence.
 
-        :raises Exception: if headers and shapes don't match, warns if no beam present
+        Raises
+        ------
+        Exception
+            If headers and shapes don't match; warns if no beam present.
         """
 
         if not self._check_measurement_shapes():
@@ -436,56 +486,46 @@ class LineRatioFit(ToolBase):
         # if not self._check_header("BUNIT") ...
 
     def run(self, **kwargs):
-        """Run the full computation using all the :class:`observations <pdrtpy.measurement.Measurement>` added.   This will
-        check compatibility of input observations (e.g., beam parameters, coordinate types, axes lengths) and
-        raise exceptions if the observations don't match each other.
+        """Run the full computation using all the added observations.
 
-           :param mask: Indicate how to mask image observations (Measurements) before computing the density
-                        and radiation field. Possible values are:
+        Checks compatibility of input observations (beam parameters, coordinate
+        types, axes lengths) and raises exceptions if they don’t match.
 
-             ['mad', multiplier]   - compute standard deviation using median absolute deviation (astropy.mad_std),
-                                     and mask out values between +/- multiplier*mad_std.  Example: ['mad',1.0]
+        Parameters
+        ----------
+        mask : list or None, optional
+            Indicate how to mask image observations before computing density and
+            radiation field. Possible values:
 
-             ['data', (low,high)]  - mask based on data values, mask out data between low and high
+            - ``[‘mad’, multiplier]`` — mask values between +/- multiplier*mad_std
+            - ``[‘data’, (low, high)]`` — mask data values between low and high
+            - ``[‘clip’, (low, high)]`` — mask data values outside [low, high]
+            - ``[‘error’, (low, high)]`` — mask where error pixel is below low or above high
+            - ``None`` — no masking (default)
 
-             ['clip', (low,high)]  - mask based on data values, mask out data below low and above high
+        method : str, optional
+            Fitting method. Default: ``’leastsq’`` (Levenberg-Marquardt). See
+            https://lmfit-py.readthedocs.io/en/latest/fitting.html#fit-methods-table.
+        nan_policy : str, optional
+            Action if fit returns NaN. One of ``’raise’`` (default), ``’propagate’``, ``’omit’``.
+        workers : int or None, optional
+            Worker processes for parallel pixel fitting. ``None`` uses serial fitting.
+            ``-1`` uses all CPUs. Ignored for single-pixel fits, emcee, and when
+            ``joint_fit`` is not None. Default: None.
+        joint_fit : str or None, optional
+            Controls joint pixel fitting:
 
-             ['error', (low,high)] - mask based on uncertainty plane, mask out data where the corresponding error pixel value
-                                     is below low or above high
+            - ``None`` (default): serial or parallel per-pixel fitting.
+            - ``’hybrid’``: joint scipy fit + single-pixel re-fits for boundary pixels. ~3× faster than ``workers=-1``.
+            - ``’fast’``: joint scipy fit only, no post-processing. ~11× faster but ~7–9% accuracy loss near boundaries.
 
-                              None - Don't mask data. This is the default.
+            All joint-fit modes use TRF. Ignored for single-pixel fits and emcee.
 
-           :type mask:  list or None
-           :param method: the fitting method to be used. The default is 'leastsq', which is Levenberg-Marquardt least squares.  For other options see https://lmfit-py.readthedocs.io/en/latest/fitting.html#fit-methods-table
-           :type method: str
-           :param nan_policy: Specifies action if fit returns NaN values. One of:
-                * ’raise’ : a ValueError is raised [Default]
-                * ’propagate’ : the values returned from userfcn are un-altered
-                * ’omit’ : non-finite values are filtered
-           :type nan_policy: str
-           :param workers: Number of worker processes for parallel pixel fitting.
-                           ``None`` (default) uses serial fitting. ``-1`` uses all available
-                           CPUs. A positive integer sets the exact number of workers.
-                           Ignored for single-pixel fits, emcee, and when ``joint_fit`` is not ``None``.
-           :type workers: int or None
-           :param joint_fit: Controls joint pixel fitting.
-
-                * ``None`` (default): serial or parallel per-pixel fitting.
-                * ``'hybrid'``: joint scipy fit for all pixels simultaneously using a
-                  block-diagonal Jacobian sparsity pattern, followed by single-pixel
-                  re-fits for any pixels that did not move from their coarse initial
-                  guess (typically ~10% of pixels that start at model boundaries).
-                  Accurate and ~3× faster than ``workers=-1``.
-                * ``'fast'``: joint scipy fit only, no post-processing.  ~11× faster
-                  than serial but may have ~7–9% typical accuracy loss for pixels
-                  near model boundaries.  Suitable for quick exploration.
-
-                All joint-fit modes force trust-region reflective (TRF) and are
-                ignored for single-pixel fits and emcee.
-           :type joint_fit: str or None
-
-           :raises Exception: if no models match the input observations, observations are not compatible,
-                              or on unrecognized parameters, or NaN encountered.
+        Raises
+        ------
+        Exception
+            If no models match the input observations, observations are incompatible,
+            parameters are unrecognized, or NaN is encountered.
         """
         # @todo global masking for 'data', 'clip', 'error' not entirely useful unless all data/error have same ranges.
         # need something like ['data',['key1':(low,hi), 'key2',(low,hi),...], which is very complicated.
@@ -554,10 +594,14 @@ class LineRatioFit(ToolBase):
             self._measurements[m].mask = deepcopy(self._masks[m])
 
     def _mask_measurements(self, mask):
-        """Set the mask on the measurements based on noise characteristics.  This is so that
-         we don't compute garbage n,G0 where observed ratios are noise divided by noise.
+        """Set the mask on the measurements based on noise characteristics.
 
-        :param mask: Indicate how to mask image observations before computing the density and radiation field. See run()>
+        Prevents computing garbage n,G0 where observed ratios are noise / noise.
+
+        Parameters
+        ----------
+        mask : list or None
+            Indicate how to mask image observations. See :meth:`run` for valid values.
         """
         if mask is None:
             return
@@ -752,12 +796,14 @@ class LineRatioFit(ToolBase):
         self._makehistory(self._reduced_chisq)
 
     def write_chisq(self, chi="chisq.fits", rchi="rchisq.fits", overwrite=True):
-        """Write the chisq and reduced-chisq data to a file
+        """Write the chisq and reduced-chisq data to a file.
 
-        :param chi: FITS file to write the chisq map to.
-        :type  chi: str
-        :param rchi: FITS file to write the reduced chisq map to.
-        :type rchi: str
+        Parameters
+        ----------
+        chi : str, optional
+            FITS file to write the chisq map to. Default: ``"chisq.fits"``.
+        rchi : str, optional
+            FITS file to write the reduced chisq map to. Default: ``"rchisq.fits"``.
         """
         self._chisq.write(chi, overwrite=overwrite, hdu_mask="MASK", output_verify="silentfix")
         self._reduced_chisq.write(rchi, overwrite=overwrite, hdu_mask="MASK", output_verify="silentfix")
@@ -1240,10 +1286,12 @@ class LineRatioFit(ToolBase):
         self._makehistory(self._chisq_min)
 
     def _makehistory(self, image):
-        """Add information to HISTORY keyword indicating how the density and radiation field were computed (measurements given, ratios used)
+        """Add HISTORY keyword indicating how density and radiation field were computed.
 
-        :param image: The image which to add the history to.
-        :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+        Parameters
+        ----------
+        image : :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`
+            The image to which to add the history.
         """
         s = "Measurements provided: " + str(list(self._measurements.keys()))
         utils.history(s, image)
@@ -1253,24 +1301,28 @@ class LineRatioFit(ToolBase):
         utils.dataminmax(image)
 
     def _ratioHeader(self, numerator, denominator, label):
-        """Add the RATIO identifier to the appropriate image
+        """Add the RATIO identifier to the appropriate image.
 
-        :param numerator:  numerator key of the line ratio
-        :type numerator: str
-        :param denominator:  denominator key of the line ratio
-        :type denominator: str
-        :param label:  ratio key indicating which observation image (Measuremnet) to use
-        :type label: str
+        Parameters
+        ----------
+        numerator : str
+            Numerator key of the line ratio.
+        denominator : str
+            Denominator key of the line ratio.
+        label : str
+            Ratio key indicating which observation image (Measurement) to use.
         """
         utils.addkey("RATIO", label, self._observedratios[label])
         utils.dataminmax(self._observedratios[label])
         utils.signature(self._observedratios[label])
 
     def _fixheader(self, image):
-        """Put additional axis and header values into an image
+        """Put additional axis and header values into an image.
 
-        :param image: The image to which to add the header values
-        :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+        Parameters
+        ----------
+        image : :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`
+            The image to which to add the header values.
         """
         if self._modelnaxis == 2:
             naxis = len(image.shape)
@@ -1318,9 +1370,11 @@ class LineRatioFit(ToolBase):
     @property
     def table(self):
         # @TODO: make this work for map data ?
-        r"""Construct the table of input Measurements, and if the fit has been run, the density, radiation field, and :math:`\chi^2` values
+        r"""Construct the table of input Measurements and, if the fit has been run, the density, radiation field, and :math:`\chi^2` values.
 
-        :rtype: :class:`astropy.table.Table`
+        Returns
+        -------
+        :class:`astropy.table.Table`
         """
         v = self._measurements.values()
         # This only works for astropy version >= 4.1

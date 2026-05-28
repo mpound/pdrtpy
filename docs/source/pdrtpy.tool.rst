@@ -33,7 +33,7 @@ The base class of all tools.  Tools have a :meth:`~pdrtpy.tool.toolbase.ToolBase
 Excitation Diagram Fitting
 --------------------------
 
-:class:`~pdrtpy.tool.excitation.H2ExcitationFit` is a tool for fitting temperature, column density, and ortho-to-para ratio in :math:`H_2` excitation diagrams.  A two temperature model is assumed, and the fit will find :math:`T_{hot}, T_{cold}, N_{hot}(H_2), N_{cold}(H_2),` and optionally `A_v` or `OPR`.  The base class :class:`~pdrtpy.tool.excitation.ExcitationFit` can be used to create a tool to fit a different molecule.
+:class:`~pdrtpy.tool.excitation.H2ExcitationFit` is a tool for fitting temperature, column density, visual extinction, and ortho-to-para ratio in :math:`H_2` excitation diagrams.  With a two temperature model assumed, the fit will find :math:`T_{hot}, T_{cold}, N_{hot}(H_2), N_{cold}(H_2),` and optionally :math:`A_v` or :math:`OPR`.  The base class :class:`~pdrtpy.tool.excitation.ExcitationFit` can be used to create a tool to fit a different molecule.  Single temperature fitting is also available.
 
 Similarly, there are tools to fit :math:`^{12}CO, ^{13}CO, ^{12}C^{18}O, ^{13}C^{18}O, {\rm and}~ CH^{+}`.
 
@@ -42,8 +42,8 @@ Similarly, there are tools to fit :math:`^{12}CO, ^{13}CO, ^{12}C^{18}O, ^{13}C^
    :undoc-members:
    :show-inheritance:
 
-LineRatioFit
-------------
+Fitting Line Ratios For Density and Radiation Field
+---------------------------------------------------
 
 :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` is a tool for determining photodissociation region external radiation field and hydrogen nucleus density (commonly given as :math:`G_0` and :math:`n`) from measured spectral line intensity ratios.
 

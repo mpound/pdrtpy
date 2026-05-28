@@ -9,12 +9,18 @@ from pdrtpy.utils.units import draine_unit, get_rad, habing_unit, is_rad
 
 def mask_union(arrays):
     """Return the union mask (logical OR) of the input masked arrays.
-    This is useful when doing arithmetic on images that don't have identical masks
-    and you want the most restrictive mask.
 
-    :param arrays: masked arrays to unionize
-    :type arrays: :class:`numpy.ma.masked_array`
-    :rtype: mask
+    This is useful when doing arithmetic on images that don't have identical
+    masks and you want the most restrictive mask.
+
+    Parameters
+    ----------
+    arrays : :class:`numpy.ma.masked_array`
+        Masked arrays to unionize.
+
+    Returns
+    -------
+    mask
     """
     z = list()
     for m in arrays:
@@ -23,11 +29,19 @@ def mask_union(arrays):
 
 
 def dropaxis(w):
-    """Drop the first single dimension axis from a World Coordiante System.  Returns the modified WCS if it had a single dimension axis or the original WCS if not.
+    """Drop the first single dimension axis from a World Coordinate System.
 
-    :param w: a WCS
-    :type w: :class:`astropy.wcs.WCS`
-    :rtype: :class:`astropy.wcs.WCS`
+    Returns the modified WCS if it had a single dimension axis or the
+    original WCS if not.
+
+    Parameters
+    ----------
+    w : :class:`astropy.wcs.WCS`
+        A WCS.
+
+    Returns
+    -------
+    :class:`astropy.wcs.WCS`
     """
     for i in range(len(w._naxis)):
         if w._naxis[i] == 1:
@@ -36,12 +50,17 @@ def dropaxis(w):
 
 
 def has_single_axis(w):
-    """Check if the input WCS has any single dimension axes
+    """Check if the input WCS has any single dimension axes.
 
-    :param w: a WCS
-    :type w: :class:`astropy.wcs.WCS`
-    :return: True if the input WCS has any single dimension axes, False otherwise
-    :rtype: bool
+    Parameters
+    ----------
+    w : :class:`astropy.wcs.WCS`
+        A WCS.
+
+    Returns
+    -------
+    bool
+        True if the input WCS has any single dimension axes, False otherwise.
     """
     for i in range(len(w._naxis)):
         if w._naxis[i] == 1:
@@ -52,11 +71,16 @@ def has_single_axis(w):
 def squeeze(image):
     """Remove single-dimensional entries from image data and WCS.
 
-    :param image: the image to convert. It must have a :class:`numpy.ndarray` data member and :class:`astropy.units.Unit` unit member.
-    :type image: :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+    Parameters
+    ----------
+    image : :class:`astropy.nddata.CCDData` or :class:`~pdrtpy.measurement.Measurement`
+        The image to convert. It must have a :class:`numpy.ndarray` data member
+        and :class:`astropy.units.Unit` unit member.
 
-    :return: an image with single axes removed
-    :rtype: :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement` as input
+    Returns
+    -------
+    :class:`astropy.nddata.CCDData` or :class:`~pdrtpy.measurement.Measurement`
+        An image with single axes removed (same type as input).
     """
     while has_single_axis(image.wcs):
         image.wcs = dropaxis(image.wcs)
@@ -81,15 +105,25 @@ def squeeze(image):
 
 
 def fliplabel(label):
-    """Given a label that has a numerator and a denominator separated by a '/', return the
-    reciprocal label.  For example, if the input label is '(x+y)/z' return 'z/(x+y)'.  This
-    method simply looks for the '/' and swaps the substrings before and after it.
+    """Given a label with a numerator and denominator separated by ``'/'``, return the reciprocal label.
 
-    :param label: the label to flip
-    :type label: str
-    :return: the reciprocal label
-    :rtype: str
-    :raises ValueError: if the input label has no '/'
+    For example, if the input label is ``'(x+y)/z'`` return ``'z/(x+y)'``. This
+    method simply looks for the ``'/'`` and swaps the substrings before and after it.
+
+    Parameters
+    ----------
+    label : str
+        The label to flip.
+
+    Returns
+    -------
+    str
+        The reciprocal label.
+
+    Raises
+    ------
+    ValueError
+        If the input label has no ``'/'``.
     """
     ii = label.index("/")
     return label[ii + 1 :] + "/" + label[0:ii]
@@ -98,14 +132,20 @@ def fliplabel(label):
 def get_xy_from_wcs(data, quantity=False, linear=False):
     """Get the x,y axis vectors from the WCS of the input image.
 
-    :param data: the input image
-    :type data: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
-    :param quantity: If True, return the arrays as :class:`astropy.units.Quantity`. If False, the returned arrays are :class:`numpy.ndarray`.
-    :type quantity: bool
-    :param linear: If True, returned arrays are in linear space, if False they are in log space.
-    :type linear: bool
-    :return: The axis values as arrays.  Values are center of pixel.
-    :rtype: :class:`numpy.ndarray` or :class:`astropy.units.Quantity`
+    Parameters
+    ----------
+    data : :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`
+        The input image.
+    quantity : bool, optional
+        If True, return the arrays as :class:`astropy.units.Quantity`.
+        If False, return :class:`numpy.ndarray`. Default: False.
+    linear : bool, optional
+        If True, returned arrays are in linear space; if False, in log space. Default: False.
+
+    Returns
+    -------
+    :class:`numpy.ndarray` or :class:`astropy.units.Quantity`
+        The axis values as arrays. Values are center of pixel.
     """
     w = data.wcs
     if w is None:
@@ -153,12 +193,23 @@ def get_xy_from_wcs(data, quantity=False, linear=False):
 def rescale_axis_units(x, from_unit, from_ctype, to_unit, loglabel=True):
     """Rescale axis units and return updated axis values and label.
 
-    :param x: axis values as a Quantity
-    :param from_unit: original unit string
-    :param from_ctype: original CTYPE string
-    :param to_unit: target unit string, or None to keep original
-    :param loglabel: if True, prefix label with 'log(...)'
-    :return: (x, xlabel) tuple
+    Parameters
+    ----------
+    x : :class:`astropy.units.Quantity`
+        Axis values.
+    from_unit : str
+        Original unit string.
+    from_ctype : str
+        Original CTYPE string.
+    to_unit : str or None
+        Target unit string, or None to keep original.
+    loglabel : bool, optional
+        If True, prefix label with ``'log(...)'``. Default: True.
+
+    Returns
+    -------
+    tuple
+        ``(x, xlabel)`` with rescaled axis values and axis label string.
     """
     import astropy.units as u
 

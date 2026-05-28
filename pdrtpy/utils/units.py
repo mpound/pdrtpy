@@ -53,12 +53,18 @@ _rad_title["Mathis"] = "FUV"
 
 def get_rad(key):
     r"""Get radiation field symbol (LaTeX) given radiation field unit.
-    If key is unrecognized, 'FUV Radiation Field' is returned.
 
-    :param key: input field unit name, e.g. 'Habing', 'Draine' or an :class:`astropy.units.Unit`
-    :returns: LaTeX string for the radiation field symbol e.g., :math:`G_0`, :math:`\chi`
-    :type key: str or :class:`astropy.units.Unit`
-    :rtype: str
+    If key is unrecognized, ``'FUV'`` is returned.
+
+    Parameters
+    ----------
+    key : str or :class:`astropy.units.Unit`
+        Input field unit name, e.g. ``'Habing'``, ``'Draine'``.
+
+    Returns
+    -------
+    str
+        LaTeX string for the radiation field symbol, e.g. :math:`G_0`, :math:`\chi`.
     """
     skey = str(key)  # in case the passed key was a Unit
     if skey in _rad_title:
@@ -70,11 +76,17 @@ def get_rad(key):
 def check_units(input_unit, compare_to):
     """Check if the input unit is equivalent to another.
 
-    :param input_unit:  the unit to check.
-    :type input_unit:  :class:`astropy.units.Unit`, :class:`astropy.units.Quantity` or str
-    :param compare_unit:  the unit to check against
-    :type compare_unit:  :class:`astropy.units.Unit`, :class:`astropy.units.Quantity` or str
-    :return: `True` if the input unit is equivalent to compare unit, `False` otherwise
+    Parameters
+    ----------
+    input_unit : :class:`astropy.units.Unit`, :class:`astropy.units.Quantity`, or str
+        The unit to check.
+    compare_to : :class:`astropy.units.Unit`, :class:`astropy.units.Quantity`, or str
+        The unit to check against.
+
+    Returns
+    -------
+    bool
+        True if the input unit is equivalent to compare unit, False otherwise.
     """
     if isinstance(input_unit, u.Unit):
         test_unit = input_unit
@@ -99,19 +111,26 @@ def is_rad(input_unit):
 
 def to(unit, image):
     r"""Convert the image values to another unit.
+
     While generally this is intended for converting radiation field
     strength maps between Habing, Draine, cgs, etc, it will work for
     any image that has a unit member variable. So, e.g., it would work
-    to convert density from :math:`{\rm cm ^{-3}}` to :math:`{\rm m^{-3}}`.
+    to convert density from :math:`{\rm cm^{-3}}` to :math:`{\rm m^{-3}}`.
     If the input image is a :class:`~pdrtpy.measurement.Measurement`, its
     uncertainty will also be converted.
 
-    :param unit: identifying the unit to convert to
-    :type unit: string or `astropy.units.Unit`
-    :param image: the image to convert. It must have a :class:`numpy.ndarray`
-        data member and :class:`astropy.units.Unit` unit member.
-    :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
-    :return: an image with converted values and units
+    Parameters
+    ----------
+    unit : str or :class:`astropy.units.Unit`
+        The unit to convert to.
+    image : :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`
+        The image to convert. It must have a :class:`numpy.ndarray` data member
+        and :class:`astropy.units.Unit` unit member.
+
+    Returns
+    -------
+    :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`
+        An image with converted values and units.
     """
     value = image.unit.to(unit)
     newmap = deepcopy(image)
@@ -130,40 +149,58 @@ def toHabing(image):
 
     between 6eV and 13.6eV (912-2066 :math:`\unicode{xC5}`).  See `Weingartner and Draine 2001, ApJS, 134, 263 <https://ui.adsabs.harvard.edu/abs/2001ApJS..134..263W/abstract>`_, section 4.1
 
-    :param image: the image to convert. It must have a :class:`numpy.ndarray`
-       data member and :class:`astropy.units.Unit` unit member.
-    :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
-    :return: an image with converted values and units
+    Parameters
+    ----------
+    image : :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`
+        The image to convert. It must have a :class:`numpy.ndarray` data member
+        and :class:`astropy.units.Unit` unit member.
+
+    Returns
+    -------
+    :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`
+        An image with converted values and units.
     """
     return to("Habing", image)
 
 
 def toDraine(image):
-    r"""Convert a radiation field strength image to Draine units (\chi).
+    r"""Convert a radiation field strength image to Draine units (:math:`\chi`).
 
     :math:`{\rm 1~Draine = 2.72\times10^{-3}~erg~s^{-1}~cm^{-2}}`
 
     between 6eV and 13.6eV (912-2066 :math:`\unicode{xC5}`).  See `Weingartner and Draine 2001, ApJS, 134, 263 <https://ui.adsabs.harvard.edu/abs/2001ApJS..134..263W/abstract>`_, section 4.1
 
-    :param image: the image to convert. It must have a :class:`numpy.ndarray`
-       data member and :class:`astropy.units.Unit` unit member.
-    :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
-    :return: an image with converted values and units
+    Parameters
+    ----------
+    image : :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`
+        The image to convert. It must have a :class:`numpy.ndarray` data member
+        and :class:`astropy.units.Unit` unit member.
+
+    Returns
+    -------
+    :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`
+        An image with converted values and units.
     """
     return to("Draine", image)
 
 
 def toMathis(image):
-    r"""Convert a radiation field strength image to Mathis units
+    r"""Convert a radiation field strength image to Mathis units.
 
     :math:`{\rm 1~Mathis = 1.81\times10^{-3}~erg~s^{-1}~cm^{-2}}`
 
     between 6eV and 13.6eV (912-2066 :math:`\unicode{xC5}`).  See `Weingartner and Draine 2001, ApJS, 134, 263 <https://ui.adsabs.harvard.edu/abs/2001ApJS..134..263W/abstract>`_, section 4.1
 
-    :param image: the image to convert. It must have a :class:`numpy.ndarray`
-       data member and :class:`astropy.units.Unit` unit member.
-    :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
-    :return: an image with converted values and units
+    Parameters
+    ----------
+    image : :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`
+        The image to convert. It must have a :class:`numpy.ndarray` data member
+        and :class:`astropy.units.Unit` unit member.
+
+    Returns
+    -------
+    :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`
+        An image with converted values and units.
     """
     return to("Mathis", image)
 
@@ -171,17 +208,27 @@ def toMathis(image):
 def tocgs(image):
     r"""Convert a radiation field strength image to :math:`{\rm erg~s^{-1}~cm^{-2}}`.
 
-    :param image: the image to convert. It must have a :class:`numpy.ndarray` data member and :class:`astropy.units.Unit` unit member.
-    :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
-    :return: an image with converted values and units
+    Parameters
+    ----------
+    image : :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`
+        The image to convert. It must have a :class:`numpy.ndarray` data member
+        and :class:`astropy.units.Unit` unit member.
+
+    Returns
+    -------
+    :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`
+        An image with converted values and units.
     """
     return to(_RFS_UNIT_, image)
 
 
 def convert_integrated_intensity(image, wavelength=None):
     r"""Convert integrated intensity from :math:`{\rm K~km~s}^{-1}` to
-    :math:`{\rm erg~s^{-1}~cm^{-2}~sr^{-1}}`, assuming
-    :math:`B_\lambda d\lambda = 2kT/\lambda^3 dV` where :math:`T dV` is the integrated intensity in K km/s and :math:`\lambda` is the wavelength.  The derivation:
+    :math:`{\rm erg~s^{-1}~cm^{-2}~sr^{-1}}`.
+
+    Assumes :math:`B_\lambda d\lambda = 2kT/\lambda^3 dV` where :math:`T dV` is
+    the integrated intensity in K km/s and :math:`\lambda` is the wavelength.
+    The derivation:
 
     .. math::
 
@@ -199,13 +246,23 @@ def convert_integrated_intensity(image, wavelength=None):
 
        B_\lambda d\lambda = 2\times10^5~kT/\lambda^3~dV,
 
-    with :math:`\lambda`  in cm, the factor :math:`10^5` is to convert :math:`dV` in :math:`{\rm km~s}^{-1}` to :math:`{\rm cm~s}^{-1}`.
+    with :math:`\lambda` in cm, the factor :math:`10^5` is to convert :math:`dV`
+    in :math:`{\rm km~s}^{-1}` to :math:`{\rm cm~s}^{-1}`.
 
-    :param image: the image to convert. It must have a :class:`numpy.ndarray` data member and :class:`astropy.units.Unit` unit member or header BUNIT keyword. It's units must be K km/s
-    :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
-    :param wavelength: the wavelength of the observation. The default is to determine wavelength from the image header RESTFREQ keyword
-    :type wavelength: :class:`astropy.units.Quantity`
-    :return: an image with converted values and units
+    Parameters
+    ----------
+    image : :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`
+        The image to convert. It must have a :class:`numpy.ndarray` data member,
+        :class:`astropy.units.Unit` unit member or header BUNIT keyword, and
+        units must be K km/s.
+    wavelength : :class:`astropy.units.Quantity`, optional
+        The wavelength of the observation. The default is to determine wavelength
+        from the image header RESTFREQ keyword.
+
+    Returns
+    -------
+    :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`
+        An image with converted values and units.
     """
     f = image.header.get("RESTFREQ", None)
     rf = getattr(image, "_restfreq", None)
@@ -235,16 +292,24 @@ def convert_integrated_intensity(image, wavelength=None):
 
 
 def convert_if_necessary(image):
-    r"""Helper method to convert integrated intensity units in an
-    image or Measurement from :math:`{\rm K~km~s}^{-1}` to :math:`{\rm
-    erg~s^{-1}~cm^{-2}~sr^{-1}}`. If a conversion is necessary, the
-    :meth:`convert_integrated_intensity` is called.  If not, the image
-    is returned unchanged.
+    r"""Convert integrated intensity units if necessary.
 
-    :param image: the image to convert. It must have a :class:`numpy.ndarray` data member and :class:`astropy.units.Unit` unit member or a header BUNIT keyword. It's units must be :math:`{\rm K~km~s}^{-1}`. It must also have a header RESTFREQ keyword.
-    :type image: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
+    Converts from :math:`{\rm K~km~s}^{-1}` to
+    :math:`{\rm erg~s^{-1}~cm^{-2}~sr^{-1}}` by calling
+    :func:`convert_integrated_intensity`. If no conversion is necessary,
+    the image is returned unchanged.
 
-    :return: an image with converted values and units
+    Parameters
+    ----------
+    image : :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`
+        The image to convert. It must have a :class:`numpy.ndarray` data member,
+        :class:`astropy.units.Unit` unit member or header BUNIT keyword with units
+        :math:`{\rm K~km~s}^{-1}`, and a header RESTFREQ keyword.
+
+    Returns
+    -------
+    :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`
+        An image with converted values and units.
     """
     _u1 = u.Unit(image.header["BUNIT"])
     _u2 = u.Unit("K km s-1")
@@ -257,11 +322,16 @@ def convert_if_necessary(image):
 def float_formatter(quantity, precision):
     """Format a quantity as a LaTeX string with the given number of significant figures.
 
-    :param quantity: the quantity to format
-    :type quantity: :class:`astropy.units.Quantity`
-    :param precision: the number of significant figures
-    :type precision: int
-    :rtype: str
+    Parameters
+    ----------
+    quantity : :class:`astropy.units.Quantity`
+        The quantity to format.
+    precision : int
+        The number of significant figures.
+
+    Returns
+    -------
+    str
     """
     format_spec = f".{precision}g"
     number = Latex.format_exponential_notation(np.squeeze(quantity.value), format_spec=format_spec)

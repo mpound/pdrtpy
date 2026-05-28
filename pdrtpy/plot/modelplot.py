@@ -17,18 +17,24 @@ log.setLevel("WARNING")  # see issue 163
 
 
 class ModelPlot(PlotBase):
-    """ModelPlot is a tool for exploring sets of models.  It can plot individual intensity or ratio models, phase-space diagrams, and optionally overlay observations.   Units are seamlessly transformed, so you can plot in Habing units, Draine units, or any conformable quantity.  ModelPlot does not require model fitting with :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` first.
+    """Tool for exploring sets of models.
 
-    :Keyword Arguments:
+    Can plot individual intensity or ratio models, phase-space diagrams, and
+    optionally overlay observations. Units are seamlessly transformed, so you
+    can plot in Habing units, Draine units, or any conformable quantity.
+    ModelPlot does not require model fitting with
+    :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` first.
 
-    The methods of this class can take a variety of optional keywords.  See the general `Plot Keywords`_ documentation.
+    The methods of this class can take a variety of optional keywords. See the
+    general `Plot Keywords`_ documentation.
     """
 
     def __init__(self, modelset, figure=None, axis=None):
-        """Init method
-
-        :param modelset: The set of models to use in these plots.
-        :type modelset: `~pdrtpy.modelset.ModelSet`
+        """
+        Parameters
+        ----------
+        modelset : :class:`~pdrtpy.modelset.ModelSet`
+            The set of models to use in these plots.
         """
         super().__init__(tool=None)
         self._modelset = modelset
@@ -36,12 +42,16 @@ class ModelPlot(PlotBase):
         self._axis = axis
 
     def plot(self, identifier, **kwargs):
-        """Plot a model intensity or ratio
+        """Plot a model intensity or ratio.
 
-        :param identifier: Identifier tag for the model to plot, e.g., "CII_158","OI_145","CO_43/CO_21']
-        :type identifier: str
+        Parameters
+        ----------
+        identifier : str
+            Identifier tag for the model to plot, e.g., ``"CII_158"``, ``"OI_145"``, ``"CO_43/CO_21"``.
 
-        .. seealso:: :meth:`~pdrtpy.modelset.ModelSet.supported_lines` for a list of available identifer tags
+        See Also
+        --------
+        :meth:`~pdrtpy.modelset.ModelSet.supported_lines` : for a list of available identifier tags.
         """
         kwargs_opts = {"measurements": None}
         kwargs_opts.update(kwargs)
@@ -51,12 +61,16 @@ class ModelPlot(PlotBase):
             self.intensity(identifier, **kwargs_opts)
 
     def ratio(self, identifier, **kwargs):
-        """Plot a model ratio
+        """Plot a model ratio.
 
-        :param identifier: Identifier tag for the model to plot, e.g., "OI_63+CII_158/FIR", "CO_43/CO_21']
-        :type identifier: str
+        Parameters
+        ----------
+        identifier : str
+            Identifier tag for the model to plot, e.g., ``"OI_63+CII_158/FIR"``, ``"CO_43/CO_21"``.
 
-        .. seealso:: :meth:`~pdrtpy.modelset.ModelSet.supported_ratios` for a list of available identifer tags
+        See Also
+        --------
+        :meth:`~pdrtpy.modelset.ModelSet.supported_ratios` : for a list of available identifier tags.
         """
         ms = self._modelset
         model = ms.get_model(identifier)
@@ -102,12 +116,16 @@ class ModelPlot(PlotBase):
             )
 
     def intensity(self, identifier, **kwargs):
-        """Plot a model intensity
+        """Plot a model intensity.
 
-        :param identifier: Identifier tag for the model to plot, e.g., "OI_63", "CII_158", "CO_10"]
-        :type identifier: str
+        Parameters
+        ----------
+        identifier : str
+            Identifier tag for the model to plot, e.g., ``"OI_63"``, ``"CII_158"``, ``"CO_10"``.
 
-        .. seealso::  :meth:`~pdrtpy.modelset.ModelSet.supported_intensities` for a list of available identifer tags
+        See Also
+        --------
+        :meth:`~pdrtpy.modelset.ModelSet.supported_intensities` : for a list of available identifier tags.
         """
         ms = self._modelset
         meas = kwargs.get("measurements", None)
@@ -162,13 +180,19 @@ class ModelPlot(PlotBase):
             )
 
     def overlay(self, measurements, **kwargs):
-        """Overlay one or more single-pixel measurements in the model space :math:`(n,F_{FUV})`.
+        r"""Overlay one or more single-pixel measurements in the model space :math:`(n,F_{FUV})`.
 
-        :param measurements: a list of one or more :class:`~pdrtpy.measurement.Measurement` to overlay.
-        :type measurements: list
-        :param shading: Controls how measurements and errors are drawn.  If ``shading`` is zero, Measurements will be drawn in solid contour for the value and dashed for the +/- errors. If ``shading`` is between 0 and 1, Measurements are drawn with as filled contours representing the size of the errors (see :func:`matplotlib.pyplot.contourf`) with alpha set to the ``shading`` value.  Default value: 0.4
-        :type shading: float
-
+        Parameters
+        ----------
+        measurements : list of :class:`~pdrtpy.measurement.Measurement`
+            A list of one or more Measurements to overlay.
+        shading : float, optional
+            Controls how measurements and errors are drawn. If 0, Measurements
+            will be drawn as solid contours for the value and dashed for the
+            +/- errors. If between 0 and 1, Measurements are drawn as filled
+            contours representing the size of the errors (see
+            :func:`matplotlib.pyplot.contourf`) with alpha set to the
+            ``shading`` value. Default: 0.4.
         """
 
         kwargs_opts = {
@@ -237,16 +261,21 @@ class ModelPlot(PlotBase):
             )
 
     def isoplot(self, identifier, plotnaxis, nax_clip=None, **kwargs):
-        """Plot lines of constant model parameter as a function of the other model parameter and a model intensity or ratio
+        """Plot lines of constant model parameter as a function of the other model parameter and a model intensity or ratio.
 
-        :param identifier: identifier tag for the model to plot, e.g., "OI_63/CO_21" or "CII_158"
-        :type identifier:  str
-        :param plotnaxis: Which NAXIS to use to compute lines of constant value. Since models have two axes, this must be either 1 or 2
-        :type plotnaxis: int
-        :param nax_clip: The range of model parameters on NAXIS{plotnaxis} to show in the plot.  Must be given as a range of astropy quanitities, e.g. [10,1E7]*Unit("cm-3"). Default is None which means plot full range of the parameter.
-        :type nax_clip: array-like, must contain :class:`~astropy.units.Quantity`
-        :param step: Allows skipping of lines of constant value, e.g. plot every `step-th` value. Useful when parameter space is crowded, and a cleaner looking plot is desired.  Default: 1 -- plot every value
-        :type step: int
+        Parameters
+        ----------
+        identifier : str
+            Identifier tag for the model to plot, e.g., ``"OI_63/CO_21"`` or ``"CII_158"``.
+        plotnaxis : int
+            Which NAXIS to use to compute lines of constant value. Since models
+            have two axes, this must be either 1 or 2.
+        nax_clip : array-like of :class:`~astropy.units.Quantity`, optional
+            The range of model parameters on NAXIS{plotnaxis} to show.
+            e.g. ``[10, 1E7]*Unit("cm-3")``. Default: None (full range).
+        step : int, optional
+            Allows skipping lines of constant value, e.g. plot every ``step``-th
+            value. Useful when parameter space is crowded. Default: 1.
         """
         kwargs_opts = {
             "errorbar": False,
@@ -366,54 +395,52 @@ class ModelPlot(PlotBase):
         reciprocal=None,
         **kwargs,
     ):
-        r"""Plot lines of constant density and radiation field on a ratio-ratio, ratio-intensity, or intensity-intensity map
+        r"""Plot lines of constant density and radiation field on a ratio-ratio, ratio-intensity, or intensity-intensity map.
 
-        :param identifiers: list of two identifier tags for the model to plot, e.g., ["OI_63/CO_21", "CII_158"]
-        :type identifiers: list of str
-
-        :param nax1_clip: The range of model densities on NAXIS1 to show
-            in the plot. For most models, NAXIS1 is hydrogen number density
-            :math:`n_H` in :math:`{\rm cm}^{-3}`.  For ionized gas models, it is
-            electron temperature :math:`T_e` in K.  Must be given as a range
-            of astropy quanitities.  Default: [10,1E7]*Unit("cm-3") (if `nax1_clip` set to None).
-        :type nax1_clip: array-like, must contain :class:`~astropy.units.Quantity`
-        :param nax2_clip: The range of model parameters on NAXIS2 to
-            show in the plot.  For most models, NAXIS2 is radiation field
-            intensities in Habing or cgs units.  For ionized gas models, it is
-            electron volume density :math:`n_e`.  Must be given as a range of
-            astropy quantities.  Default: nax1_clip=[10,1E6]*utils.habing_unit (if `nax2_clip` set to None).
-        :type nax2_clip: array-like, must contain :class:`~astropy.units.Quantity`
-        :param reciprocal: Whether or not the plot the reciprocal of the
-            model on each axis.  Given as a pair of booleans.  e.g. [False,True]
-            means don't flip the quantity X axis, but flip quantity the Y axis.
-            i.e. if the model is "CII/OI", and reciprocal=True then the axis
-            will be "OI/CII".  Default: [False, False]
-        :type reciprocal: array-like bool
-
-        The following keywords are supported as \*\*kwargs:
-
-        :param measurements: A list of two :class:`~pdrtpy.measurement.Measurement`, one for each `identifier`, that will be used to plot a data point on the grid. At least two Measurements, one for x and one for y, must be given.  Subsequent Measurements must also be paired since they represent x and y, e.g `[m1x, m1y, m2x, m2y,...]`. Measurement *data* and *uncertainty* members may be arrays.  Default: None
-        :type measurements: array-like of :class:`~pdrtpy.measurment.Measurement`.
-        :param errorbar: Plot error bars when given measurements. Default: True
-        :type errorbar: bool
-        :param fmt: The format to use when plotting Measurement data. There should be one for each pair of Measurements. See :meth:`matplotlib.axes.Axes.plot` for examples. Default is 'sk' for all points.
-        :type fmt: array of str
-        :param label: The label(s) to use the Measurement data legend. There should be one for each pair of Measurements.  Default is 'data' for all points.
-        :type label: array of str
-        :param legend: Draw a legend on the plot. Default: True
-        :type legend: bool
-        :param title: Title to draw on the plot.  Default: None
-        :type title: str
-        :param linewidth: line width
-        :type linewidth: float
-        :param grid: show grid or not, Default: True
-        :type grid: bool
-        :param figsize: Figure dimensions (width, height) in inches. Default: (8,5)
-        :type figsize: 2-tuple of floats
-        :param capsize: end cap length of errorbars if shown, in points. Default: 3.
-        :type capsize: float
-        :param markersize: size of data point marker in points. Default: 8
-        :type markersize: float
+        Parameters
+        ----------
+        identifiers : list of str
+            List of two identifier tags for the model to plot, e.g.,
+            ``["OI_63/CO_21", "CII_158"]``.
+        nax1_clip : array-like of :class:`~astropy.units.Quantity`, optional
+            Range of model densities on NAXIS1 to show. For most models, NAXIS1
+            is hydrogen number density :math:`n_H` in :math:`{\rm cm}^{-3}`.
+            For ionized gas models, it is electron temperature :math:`T_e` in K.
+            Default: ``[10, 1E7]*Unit("cm-3")``.
+        nax2_clip : array-like of :class:`~astropy.units.Quantity`, optional
+            Range of model parameters on NAXIS2. For most models, NAXIS2 is
+            radiation field intensities in Habing or cgs units. For ionized gas
+            models, it is electron volume density :math:`n_e`.
+            Default: ``[10, 1E6]*utils.habing_unit``.
+        reciprocal : array-like of bool, optional
+            Whether to plot the reciprocal of the model on each axis. e.g.
+            ``[False, True]`` means don't flip the X axis but flip the Y axis.
+            Default: ``[False, False]``.
+        measurements : array-like of :class:`~pdrtpy.measurement.Measurement`, optional
+            A list of two Measurements, one per identifier, to plot as data
+            points on the grid. Pairs must be given as ``[m1x, m1y, m2x, m2y, ...]``.
+            Default: None.
+        errorbar : bool, optional
+            Plot error bars when given measurements. Default: True.
+        fmt : array of str, optional
+            Plot format for each Measurement pair. See :meth:`matplotlib.axes.Axes.plot`.
+            Default: ``'sk'`` for all points.
+        label : array of str, optional
+            Legend label(s) for each Measurement pair. Default: ``'data'`` for all.
+        legend : bool, optional
+            Draw a legend on the plot. Default: True.
+        title : str, optional
+            Title to draw on the plot. Default: None.
+        linewidth : float, optional
+            Line width.
+        grid : bool, optional
+            Show grid. Default: True.
+        figsize : 2-tuple of float, optional
+            Figure dimensions (width, height) in inches. Default: ``(8, 5)``.
+        capsize : float, optional
+            End cap length of errorbars in points. Default: 3.
+        markersize : float, optional
+            Size of data point marker in points. Default: 8.
         """
         kwargs_opts = {
             "errorbar": False,
@@ -661,14 +688,19 @@ class ModelPlot(PlotBase):
     def _get_xy_from_wcs(self, data, quantity=False, linear=False):
         """Get the x,y axis vectors from the WCS of the input data.
 
-        :param data: the input image
-        :type data: :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`.
-        :param quantity: If True, return the arrays as :class:`astropy.units.Quantity`. If False, the returned arrays are :class:`numpy.ndarray`.
-        :type quantity: bool
-        :param linear: If True, returned arrays are in linear space, if False they are in log space.
-        :type linear: bool
-        :return: The axis values as arrays.  Values are center of pixel.
-        :rtype: :class:`numpy.ndarray` or :class:`astropy.units.Quantity`
+        Parameters
+        ----------
+        data : :class:`astropy.io.fits.ImageHDU`, :class:`astropy.nddata.CCDData`, or :class:`~pdrtpy.measurement.Measurement`
+            The input image.
+        quantity : bool, optional
+            If True, return arrays as :class:`astropy.units.Quantity`. Default: False.
+        linear : bool, optional
+            If True, return arrays in linear space; if False, in log space. Default: False.
+
+        Returns
+        -------
+        :class:`numpy.ndarray` or :class:`astropy.units.Quantity`
+            The axis values as arrays. Values are center of pixel.
         """
         return utils.get_xy_from_wcs(data, quantity, linear)
 
