@@ -49,7 +49,9 @@ class ModelPlot(PlotBase):
         identifier : str
             Identifier tag for the model to plot, e.g., ``"CII_158"``, ``"OI_145"``, ``"CO_43/CO_21"``.
 
-        .. seealso:: :meth:`~pdrtpy.modelset.ModelSet.supported_lines` for a list of available identifier tags.
+        See Also
+        --------
+        :meth:`~pdrtpy.modelset.ModelSet.supported_lines` : for a list of available identifier tags.
         """
         kwargs_opts = {"measurements": None}
         kwargs_opts.update(kwargs)
@@ -66,7 +68,9 @@ class ModelPlot(PlotBase):
         identifier : str
             Identifier tag for the model to plot, e.g., ``"OI_63+CII_158/FIR"``, ``"CO_43/CO_21"``.
 
-        .. seealso:: :meth:`~pdrtpy.modelset.ModelSet.supported_ratios` for a list of available identifier tags.
+        See Also
+        --------
+        :meth:`~pdrtpy.modelset.ModelSet.supported_ratios` : for a list of available identifier tags.
         """
         ms = self._modelset
         model = ms.get_model(identifier)
@@ -119,7 +123,9 @@ class ModelPlot(PlotBase):
         identifier : str
             Identifier tag for the model to plot, e.g., ``"OI_63"``, ``"CII_158"``, ``"CO_10"``.
 
-        .. seealso:: :meth:`~pdrtpy.modelset.ModelSet.supported_intensities` for a list of available identifier tags.
+        See Also
+        --------
+        :meth:`~pdrtpy.modelset.ModelSet.supported_intensities` : for a list of available identifier tags.
         """
         ms = self._modelset
         meas = kwargs.get("measurements", None)
