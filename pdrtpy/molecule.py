@@ -51,7 +51,7 @@ class BaseMolecule:
 
         Parameters
         ----------
-        temperature :  :class:`astropy.units.quantity.Quantity`
+        temperature :  :class:`~astropy.units.Quantity`
             The excitation temperature(s)
 
         Returns
@@ -70,7 +70,7 @@ class BaseMolecule:
 
         Parameters
         ----------
-        temperature : :class:`astropy.units.quantity.Quantity`
+        temperature : :class:`~astropy.units.Quantity`
             The excitation temperature(s)
 
         Returns
@@ -158,7 +158,7 @@ class BaseMolecule:
 
         Returns
         -------
-        `~astropy.units.quantity.Quantity`
+        `~astropy.units.Quantity`
 
             The spectral line wavelengths
 
@@ -168,7 +168,7 @@ class BaseMolecule:
 
 class H2(BaseMolecule):
     def __init__(self, name="H_2", path="RoueffEtAl.tab", opr=3.0, opr_can_vary=True):
-        """Molecular hydrogen. This uses the `H_2` line calculations from Roueff et al 2019, A&A, 630, 58, Table 2."""
+        """Molecular hydrogen. This uses the :math:`H_2` line calculations from Roueff et al 2019, A&A, 630, 58, Table 2."""
         super().__init__(name=name, path=path, opr=opr, opr_can_vary=True, format="ascii.ipac")
 
     def partition_function(self, temperature: Quantity) -> np.ndarray:
@@ -182,7 +182,7 @@ class H2(BaseMolecule):
 
         Parameters
         ----------
-        temperature  :class:`astropy.units.quantity.Quantity`
+        temperature :  :class:`~astropy.units.Quantity`
             The excitation temperature(s) at which to evaluate the partition function
 
         Returns
@@ -218,7 +218,7 @@ class CO(BaseMolecule):  # 12C16O
 
         Parameters
         ----------
-        temperature  :class:`astropy.units.quantity.Quantity`
+        temperature :  :class:`~astropy.units.Quantity`
             The excitation temperature(s) at which to evaluate the partition function
 
         Returns
@@ -243,7 +243,7 @@ class C13O(BaseMolecule):  # 13CO16O
 
         Parameters
         ----------
-        temperature  :class:`astropy.units.quantity.Quantity`
+        temperature :  :class:`~astropy.units.Quantity`
             The excitation temperature(s) at which to evaluate the partition function
 
         Returns
@@ -262,13 +262,13 @@ class CO18(BaseMolecule):  # 12CO18O
         self._maxQtemp = np.max(self._partfun_data["T"])
 
     def partition_function(self, temperature: Quantity) -> np.ndarray:
-        """Calculate the partition function for C18O at the given temperature using the HITRAN partition function.
+        """Calculate the partition function for :math:`^{12}C^{18}O` at the given temperature using the HITRAN partition function.
         https://hitran.org/data/Q/q28.txt
         The HITRAN function is evaluated at 1K intervals; this function performs a linear interpolation on those data.
 
         Parameters
         ----------
-        temperature  :class:`astropy.units.quantity.Quantity`
+        temperature : :class:`~astropy.units.Quantity`
             The excitation temperature(s) at which to evaluate the partition function
 
         Returns
@@ -293,7 +293,7 @@ class C13O18(BaseMolecule):  # 13C18O
 
         Parameters
         ----------
-        temperature  :class:`astropy.units.quantity.Quantity`
+        temperature : :class:`~astropy.units.Quantity`
             The excitation temperature(s) at which to evaluate the partition function
 
         Returns
@@ -306,25 +306,27 @@ class C13O18(BaseMolecule):  # 13C18O
 
 class CHplus(BaseMolecule):  # CH+
     def __init__(self, name="CH^+", path="CH_p_transition.tab", opr=3.0, opr_can_vary=True):
-        r"""Methyl Cation isotopologue :math:`^{12}C^H^{+}:`. This uses the molecular data from both the Meudon PDR7 code and EXOMOL database"""
+        r"""Methyl Cation isotopologue :math:`^{12}CH^{+}`. This uses the molecular data from both the Meudon PDR7 code and EXOMOL database"""
         super().__init__(name, path, opr, opr_can_vary)
         self._partfun_data = utils.get_table("PartFun_CH_p.tab", format="ascii.ecsv")
         self._maxQtemp = np.max(self._partfun_data["T"])
 
     def partition_function(self, temperature: Quantity) -> np.ndarray:
         r"""
-        Calculate the partition function for $CH^{+}$ at the given temperature using the EXOMOL partition function `(Pearce et al., 2024, MNRAS, 527, 10736)  <https://doi.org/10.1093/mnras/stad3909>`_.
+        Calculate the partition function for :math:`^{12}CH^{+}` at the given temperature using the EXOMOL partition function `(Pearce et al., 2024, MNRAS, 527, 10736)  <https://doi.org/10.1093/mnras/stad3909>`_.
         The EXOMOL function is evaluated at 1K intervals; this function performs a linear interpolation on those data.
 
-        ..note:
+        .. note::
 
-            Per Pearce+2024, "The ExoMol convention, in accordance with HITRAN `(Gamache et al. 2017, J. Quant. Spectrosc. Radiat. Transfer, 203, 70) <https://doi.org/10.1016/j.jqsrt.2017.03.045>`_ , is
-            to provide partition functions that include full atomic nuclear spin degeneracy, $g_{nu}$."  This results in a factor of 2 increase over the
-            partition functions of `Barklem and Collet (2016, A&A,588,A96) <https://doi.org/10.1051/0004-6361/201526961>`_ and of `Godard and Cernicharo (2013) A&A, 550, A8. <https://doi.org/10.1051/0004-6361/201220151>`_ Be aware of this when comparing total column densities with papers that use those partition functions.
+           As described in Pearce+2024, "The ExoMol convention, in accordance with HITRAN `(Gamache et al. 2017, J. Quant. Spectrosc. Radiat. Transfer, 203, 70) <https://doi.org/10.1016/j.jqsrt.2017.03.045>`_ , is
+           to provide partition functions that include full atomic nuclear spin degeneracy, :math:`g_{nu}`."
+
+           This results in a factor of 2 increase over the
+           partition functions of `Barklem and Collet (2016, A&A,588,A96) <https://doi.org/10.1051/0004-6361/201526961>`_ and of `Godard and Cernicharo (2013) A&A, 550, A8. <https://doi.org/10.1051/0004-6361/201220151>`_ Be aware of this when comparing total column densities with papers that use those partition functions.
 
         Parameters
         ----------
-        temperature  :class:`astropy.units.quantity.Quantity`
+        temperature : :class:`~astropy.units.Quantity`
             The excitation temperature(s) at which to evaluate the partition function
 
         Returns

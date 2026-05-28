@@ -56,23 +56,25 @@ class Measurement(CCDData):
     TypeError
         If beam parameters are not Quantities.
 
-    Measurements can also be instantiated by the **read(\\*args, \\**kwargs)**,
-    to create an Measurement instance based on a ``FITS`` file.
-    This method uses :func:`fits_measurement_reader` with the provided
-    parameters.  Example usage:
+    .. note::
 
-    .. code-block:: python
+        Measurements can also be instantiated by the ``read(*args, **kwargs)`` method,
+        to create an Measurement instance based on a ``FITS`` file.
+        This method uses :func:`fits_measurement_reader` with the provided
+        parameters.  Example usage:
 
-       from pdrtpy.measurement import Measurement
+        .. code-block:: python
 
-       my_obs = Measurement.read("file.fits",identifier="CII_158")
-       my_other_obs = Measurement.read("file2.fits",identifier="CO2_1",
-                                        unit="K km/s",
-                                        bmaj=9.3*u.arcsec,
-                                        bmin=14.1*u.arcsec,
-                                        bpa=23.2*u.degrees)
+           from pdrtpy.measurement import Measurement
 
-    By default image axes with only a single dimension are removed on read.  If you do not want this behavior, used `read(squeeze=False)`. See also: :class:`astropy.nddata.CCDData`.
+           my_obs = Measurement.read("file.fits",identifier="CII_158")
+           my_other_obs = Measurement.read("file2.fits",identifier="CO2_1",
+                                            unit="K km/s",
+                                            bmaj=9.3*u.arcsec,
+                                            bmin=14.1*u.arcsec,
+                                            bpa=23.2*u.degrees)
+
+        By default image axes with only a single dimension are removed on read.  If you do not want this behavior, used `read(squeeze=False)`. See also: :class:`astropy.nddata.CCDData`.
     """
 
     def __init__(self, *args, **kwargs):
@@ -143,6 +145,18 @@ class Measurement(CCDData):
         This format allows the resulting file to be read by the underlying
         :class:`~astropy.nddata.CCDData` class.
 
+        Example:
+
+        .. code:: python
+
+           # example with percentage error
+           Measurement.make_measurement("my_infile.fits",error='10%',outfile="my_outfile.fits")
+
+           # example with measurement in units of K km/s and error
+           # indicated by RMS keyword in input file.
+           Measurement.make_measurement("my_infile.fits", error='rms',
+                                        outfile="my_outfile.fits", unit="K km/s",overwrite=True)
+
         Parameters
         ----------
         datafile : str
@@ -172,16 +186,6 @@ class Measurement(CCDData):
         OSError
             If ``overwrite`` is False and the output file exists.
 
-        Example usage:
-
-        .. code-block:: python
-
-            # example with percentage error
-            Measurement.make_measurement("my_infile.fits",error='10%',outfile="my_outfile.fits")
-
-            # example with measurement in units of K km/s and error
-            # indicated by RMS keyword in input file.
-            Measurement.make_measurement("my_infile.fits",error='rms',outfile="my_outfile.fits",unit="K km/s",overwrite=True)
         """
         _data = fits.open(datafile)
         needsclose = False
