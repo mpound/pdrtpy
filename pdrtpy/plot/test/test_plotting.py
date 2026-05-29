@@ -1,4 +1,5 @@
 import pdrtpy.utils as utils
+from astropy.nddata import StdDevUncertainty
 from pdrtpy.measurement import Measurement
 from pdrtpy.modelset import ModelSet
 from pdrtpy.plot.lineratioplot import LineRatioPlot
@@ -49,3 +50,23 @@ class TestPlotBase:
         assert xmax == 80.5
         assert ymin == -0.5
         assert ymax == 138.5
+
+
+class TestShading:
+    # check output now and again to see if matplotlib ever fixed issue 23
+    # (must remove extra axis.contour call in modelplot.py L960)
+    def test_shading_pdf(self, tmp_path):
+        myunit = "erg s-1 cm-2 sr-1"  # default unit for value and error
+        m1 = Measurement(data=3.6e-4, uncertainty=StdDevUncertainty(1.2e-4), identifier="OI_63", unit=myunit)
+        m2 = Measurement(data=1e-6, uncertainty=StdDevUncertainty([3e-7]), identifier="CI_609", unit=myunit)
+        m3 = Measurement(
+            data=26, uncertainty=StdDevUncertainty([5]), identifier="CO_43", restfreq="461.04077 GHz", unit="K km/s"
+        )
+        m4 = Measurement(data=8e-5, uncertainty=StdDevUncertainty([8e-6]), identifier="CII_158", unit=myunit)
+        a = [m1, m2, m3, m4]
+        ms = ModelSet("wk2020", z=1)
+        p = LineRatioFit(ms, measurements=a)
+        p.run()
+        plot = LineRatioPlot(p)
+        plot.overlay_all_ratios()
+        plot.savefig(f"{tmp_path}/test_shading.pdf")
