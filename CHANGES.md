@@ -1,5 +1,43 @@
 ## Change Log
 
+### Release 3.0
+
+#### _Models_
+
+- New models for the Small Magellanic Cloud (z=0.2) including alternate view angles.
+
+- Previous 2006 SMC models deprecated.
+
+#### _Measurement_
+
+- *Measurement.to()* method added to convert units
+
+#### _LineRatioFit_
+
+- significant performance improvement for map data, ~10x via addition of `joint_fit` keyword and parallel workers
+
+#### _Excitation Tool_
+
+- add C18O, 13C18O, CH+ to provided molecules
+- Robust piecewise initialization for first fit guess instead of quick and dirty which could sometimes fail.
+- parallel workers for ~2x performance improvement
+
+#### _Code cleanup, refactoring, etc._
+
+- `pdrutils.py` split into individual modules *utils.fits*, *utils.helpers*, *utils.paths*, *utils.units*, *utils.wcs*. Done in a backwards compatiable way so *import pdrutils as utils* still works.
+- `pdrtpy.plot` module refactored and new tests added
+- `excitation.py` - refactored to remove dead code, dedupe, vectorize
+- all documentation changed to `numpydoc` format
+- benchmark code for performance improvements
+
+#### _Issues_
+
+- Issues  closed
+
+#### _Notebooks_
+
+- blah
+
 ### Release 2.6.4
 
 #### _Models_
