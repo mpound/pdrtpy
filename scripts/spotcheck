@@ -1,6 +1,8 @@
 #!/bin/tcsh
 #  simple FITS file spotcheck script for new models
 
+
+#ds9 --cmap Heat -zscale -zoom 16 -log -tile $file
 foreach file ( $* )
   echo $file
   ds9 -geometry 1500x1500 -cmap Heat -zscale -zoom 16 -log $file
