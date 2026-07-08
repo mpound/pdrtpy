@@ -4,9 +4,9 @@
 
 #### _Models_
 
-- New models for the Small Magellanic Cloud (z=0.2) including alternate view angles.
+- New models for the Small Magellanic Cloud (z=0.2) including alternate view angles i=0 (face-on) to i=75.
 
-- Previous 2006 SMC models deprecated.
+- Previous 2006 SMC models are now deprecated.
 
 #### _Measurement_
 
