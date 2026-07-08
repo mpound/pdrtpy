@@ -29,6 +29,7 @@
 - `excitation.py` - refactored to remove dead code, dedupe, vectorize
 - all documentation changed to `numpydoc` format
 - benchmark code for performance improvements
+- update scripts for verifying and adding new models
 
 #### _Issues_
 

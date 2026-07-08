@@ -49,7 +49,7 @@ Spitzer, STO, and Herschel. Given a set of observations of spectral line or
 continuum intensities, PDR Toolbox can compute best-fit FUV incident
 intensity and cloud density based on our models of PDR emission.
 
-The PDR Toolbox will cover a wide range of spectral lines and metallicities
+The PDR Toolbox covers a wide range of spectral lines and metallicities
 and allows map-based analysis so users can quickly compute spatial
 images of density and radiation field from map data.  We provide Jupyter
 `Example Notebooks`_ for data analysis.  It also can support models from
@@ -67,7 +67,7 @@ excitation rates for |OI| from
 communication) and have included |13C| chemistry along with the
 emitted line intensities for  |13CII| and |13CO|.
 
-We also support fitting of temperatures and column densities of excitation diagrams of |H2|, CO, and |13CO| excitation diagrams.  Users can fit other molecules by providing appropriate transition data.
+We also support fitting of temperatures and column densities of excitation diagrams of |H2|, CO, |13CO|. |C18O|, and |CH+|, in both single pixels and maps.  Users can fit other molecules by providing appropriate transition data.
 
 Up to date documentation can be found at `pdrtpy.readthedocs.io <http://pdrtpy.readthedocs.io/>`_.
 
@@ -95,7 +95,7 @@ Requirements
 
 ``pdrtpy`` requires Python 3 and recent versions of  `astropy <https://astropy.org>`_, `numpy <https://numpy.org>`_, `scipy <https://scipy.org>`_, `lmfit <https://lmfit.github.io/lmfit-py/>`_, and `matplotlib <https://matplotlib.org/>`_. If you want to run the `Example Notebooks`_, you also need `jupyter <https://jupyter.org>`_.
 
-First make sure you are using Python 3.10 or higher:
+First make sure you are using Python 3.11 or higher:
 
 .. code-block:: sh
 
@@ -197,6 +197,8 @@ You may want to use a virtual environment to protect from polluting your daily w
 .. |reg|    unicode:: U+000AE .. REGISTERED SIGN
 .. |13C|    replace:: :sup:`13`\ C
 .. |13CO|   replace:: :sup:`13`\ CO
+.. |C18O| replace:: C\ :sup:`18`\ O
+.. |CH+| replace:: CH\ :sup:`+`
 .. |13CII|  replace:: [\ :sup:`13`\ C II]
 .. |OI|  replace:: [O I]
 .. |CII|  replace:: [C II]
