@@ -1,9 +1,13 @@
 #!/bin/tcsh
 #  simple FITS file spotcheck script for new models
+#  ds9 -geometry 1500x1500 -cmap Heat -zscale -zoom 16 -log $file
 
 
-#ds9 --cmap Heat -zscale -zoom 16 -log -tile $file
-foreach file ( $* )
-  echo $file
-  ds9 -geometry 1500x1500 -cmap Heat -zscale -zoom 16 -log $file
+foreach dir ( losangle* )
+  echo $dir
+  cd $dir
+  ds9 -cmap Heat -zscale -zoom 4 -log -tile *sm.fits
+  echo -n Hit Return for next angle
+  set CR =$<
+  cd ..
 end
