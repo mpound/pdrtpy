@@ -72,6 +72,7 @@
          H200S3            H200S1              H200S3/H200S1          H200S3_H200S1sm       0.2   H$_2$0-0S(3) 9.7 $\mu$m / H$_2$0-0S(1) 17 $\mu$m
          H200S3            H200S2              H200S3/H200S2          H200S3_H200S2sm       0.2   H$_2$0-0S(3) 9.7 $\mu$m / H$_2$0-0S(2) 12.3 $\mu$m
          H221S1            H210S1              H221S1/H210S1          H221S1_H210S1sm       0.2   H$_2$2-1S(1) 2.24 $\mu$m / H$_2$1-0S(1) 2.12 $\mu$m
+         CI_370                 1                    CI_370           CI370sm               0.2   [C I] 370 $\mu$m
          CI_609                 1                    CI_609           CI609sm               0.2   [C I] 609 $\mu$m
         CII_158                 1                   CII_158          CII158sm               0.2   [C II] 158 $\mu$m
           OI_63                 1                     OI_63            OI63sm               0.2   [O I] 63 $\mu$m
