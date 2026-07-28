@@ -2,6 +2,8 @@
 
 import os
 
+import astropy.units as u
+import numpy as np
 import pdrtpy.utils as utils
 import pytest
 from astropy.nddata import StdDevUncertainty
@@ -10,6 +12,9 @@ from pdrtpy.measurement import Measurement
 from pdrtpy.modelset import ModelSet
 from pdrtpy.tool.fitmap import FitMap
 from pdrtpy.tool.lineratiofit import LineRatioFit
+from pdrtpy.utils import habing_unit
+
+_CM3 = u.cm**3  # volume; [n] / _CM3 -> cm^-3, as written in issue #236
 
 # ---------------------------------------------------------------------------
 # Module-scoped fixtures
@@ -367,6 +372,115 @@ class TestRunMasking:
         # Should complete without error (mask is ignored with a warning)
         p.run(mask=["mad", 1.0])
         assert p.density is not None
+
+
+# ---------------------------------------------------------------------------
+# TestRunLimits  (phase-space limiting, issue #236)
+# ---------------------------------------------------------------------------
+
+
+class TestRunLimits:
+    def test_limit_around_best_fit_unchanged(self, single_pixel_fit, wk2020, single_pixel_measurements):
+        """A window that brackets the unrestricted best fit returns the same answer."""
+        n0 = float(single_pixel_fit.density.data.flatten()[0])
+        g0 = float(single_pixel_fit.radiation_field.data.flatten()[0])
+        p = LineRatioFit(wk2020, measurements=list(single_pixel_measurements))
+        p.run(
+            density_range=[n0 / 10, n0 * 10] / _CM3,
+            radiation_field_range=[g0 / 10, g0 * 10] * single_pixel_fit.radiation_field.unit,
+        )
+        assert float(p.density.data.flatten()[0]) == pytest.approx(n0, rel=0.05)
+        assert float(p.radiation_field.data.flatten()[0]) == pytest.approx(g0, rel=0.05)
+
+    def test_density_range_restricts_result(self, single_pixel_fit, wk2020, single_pixel_measurements):
+        """A window excluding the unrestricted minimum forces density into the window."""
+        n0 = float(single_pixel_fit.density.data.flatten()[0])
+        lo = 10 ** (np.log10(n0) + 1.0)
+        hi = 10 ** (np.log10(n0) + 2.0)
+        p = LineRatioFit(wk2020, measurements=list(single_pixel_measurements))
+        p.run(density_range=[lo, hi] / _CM3)
+        n = float(p.density.data.flatten()[0])
+        assert lo <= n <= hi
+        assert n > n0
+
+    def test_radiation_field_upper_limit_in_habing(self, single_pixel_fit, wk2020, single_pixel_measurements):
+        """One-sided upper limit given in Habing units on a cgs-unit model."""
+        rf_unit = single_pixel_fit.radiation_field.unit
+        g0_habing = (float(single_pixel_fit.radiation_field.data.flatten()[0]) * rf_unit).to(habing_unit).value
+        hi = g0_habing / 3.0
+        p = LineRatioFit(wk2020, measurements=list(single_pixel_measurements))
+        # None inside the brackets, unit on the scalar (issue #236 requirement)
+        p.run(radiation_field_range=[None, hi * habing_unit])
+        g = (float(p.radiation_field.data.flatten()[0]) * rf_unit).to(habing_unit).value
+        assert g <= hi * 1.0001
+
+    def test_density_lower_limit_only(self, single_pixel_fit, wk2020, single_pixel_measurements):
+        """One-sided lower limit with None on the upper side."""
+        n0 = float(single_pixel_fit.density.data.flatten()[0])
+        lo = 10 ** (np.log10(n0) + 1.0)
+        p = LineRatioFit(wk2020, measurements=list(single_pixel_measurements))
+        p.run(density_range=[lo / _CM3, None])
+        assert float(p.density.data.flatten()[0]) >= lo
+
+    def test_quantity_array_form_accepted(self, wk2020, single_pixel_measurements):
+        """Both [a, b]*unit and [a/unit, b/unit] forms are accepted."""
+        p = LineRatioFit(wk2020, measurements=list(single_pixel_measurements))
+        p.run(density_range=[1e3, 1e5] / _CM3, radiation_field_range=[10, 1000] * habing_unit)
+        assert p.density is not None
+        assert p.radiation_field is not None
+
+    def test_range_outside_grid_raises(self, wk2020, single_pixel_measurements):
+        p = LineRatioFit(wk2020, measurements=list(single_pixel_measurements))
+        with pytest.raises(ValueError, match=r"does not overlap the model grid"):
+            p.run(density_range=[1e12, 1e13] / _CM3)
+
+    def test_missing_unit_raises(self, wk2020, single_pixel_measurements):
+        p = LineRatioFit(wk2020, measurements=list(single_pixel_measurements))
+        with pytest.raises(ValueError, match=r"astropy Quantities"):
+            p.run(density_range=[None, 1e4])
+
+    def test_wrong_dimension_unit_raises(self, wk2020, single_pixel_measurements):
+        p = LineRatioFit(wk2020, measurements=list(single_pixel_measurements))
+        with pytest.raises(ValueError, match=r"not convertible to model units"):
+            p.run(density_range=[1e3, 1e4] * u.cm)  # length, not number density
+
+    def test_bad_length_raises(self, wk2020, single_pixel_measurements):
+        p = LineRatioFit(wk2020, measurements=list(single_pixel_measurements))
+        with pytest.raises(ValueError, match=r"exactly two elements"):
+            p.run(density_range=[1e3, 1e4, 1e5] / _CM3)
+
+    def test_lower_exceeds_upper_raises(self, wk2020, single_pixel_measurements):
+        p = LineRatioFit(wk2020, measurements=list(single_pixel_measurements))
+        with pytest.raises(ValueError, match=r"lower bound.*exceeds upper bound"):
+            p.run(density_range=[1e5, 1e3] / _CM3)
+
+    def test_map_fit_respects_limits(self, map_fit, smc_ms, map_measurements):
+        """Limits propagate through the default per-pixel map loop.
+
+        The SMC density grid spans 1e2..1e7 cm-3, and the unrestricted fit
+        (map_fit) puts several pixels above 1e5, so [1e3, 1e5] is a genuine
+        restriction. Verify some pixels are out of window unrestricted, and
+        none are once the limit is applied.
+        """
+        lo, hi = 1e3, 1e5
+        base = map_fit.density.data
+        base_finite = base[np.isfinite(base)]
+        assert np.any(base_finite > hi)  # the window actually excludes something
+
+        p = LineRatioFit(smc_ms, measurements=list(map_measurements))
+        p.run(density_range=[lo, hi] / _CM3)
+        finite = p.density.data[np.isfinite(p.density.data)]
+        assert len(finite) > 0
+        assert np.all((finite >= lo * 0.999) & (finite <= hi * 1.001))
+
+    def test_map_fit_joint_respects_limits(self, smc_ms, map_measurements):
+        """Limits also constrain the joint (scipy) fit path (joint_fit='fast')."""
+        lo, hi = 1e3, 1e5
+        p = LineRatioFit(smc_ms, measurements=list(map_measurements))
+        p.run(density_range=[lo, hi] / _CM3, joint_fit="fast")
+        finite = p.density.data[np.isfinite(p.density.data)]
+        assert len(finite) > 0
+        assert np.all((finite >= lo * 0.999) & (finite <= hi * 1.001))
 
 
 # ---------------------------------------------------------------------------
