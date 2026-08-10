@@ -577,9 +577,9 @@ class LineRatioFit(ToolBase):
                 )
 
         # Only allow beam = None if single value measurements.
-        if not utils.is_image(m1):
-            if self._check_header("BMAJ", None) or self._check_header("BMIN", None) or self._check_header("BPA", None):
-                utils.warn(self, "No beam parameters in Measurement headers, assuming they are all equal!")
+        # if not utils.is_image(m1):
+        #    if self._check_header("BMAJ", None) or self._check_header("BMIN", None) or self._check_header("BPA", None):
+        #        utils.warn(self, "No beam parameters in Measurement headers, assuming they are all equal.")
         # if not self._check_header("BUNIT") ...
 
     def run(self, **kwargs):
@@ -1132,6 +1132,7 @@ class LineRatioFit(ToolBase):
                 stuck = np.isclose(joint_result.x[::2], x0[::2], rtol=1e-4, atol=0) & np.isclose(
                     joint_result.x[1::2], x0[1::2], rtol=1e-4, atol=0
                 )
+                print(f"Refitting {len(stuck)} stuck pixels...")
                 for i in np.where(stuck)[0]:
                     j = valid_pixels[i]
                     obs_j = obs_data[:, i]
