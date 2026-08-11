@@ -38,7 +38,7 @@ PhotoDissociation Region Toolbox --- Python
    :target: https://results.pre-commit.ci/latest/github/mpound/pdrtpy/master
    :alt: pre-commit.ci status
 
-``pdrtpy`` is the Python `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/>`_.  The current stable version is 2.6.4
+``pdrtpy`` is the Python `PhotoDissociation Region Toolbox <http://dustem.astro.umd.edu/>`_.  The current stable version is 3.0.1
 
 The PDR Toolbox is a science-enabling tool for the community, designed to
 help astronomers determine the physical parameters of photodissociation
@@ -53,19 +53,25 @@ The PDR Toolbox covers a wide range of spectral lines and metallicities
 and allows map-based analysis so users can quickly compute spatial
 images of density and radiation field from map data.  We provide Jupyter
 `Example Notebooks`_ for data analysis.  It also can support models from
-other PDR codes enabling comparison of derived properties between codes.
+other PDR codes enabling comparison of derived properties between codes. It supports models from
+multiple PDR codes enabling comparison of derived properties between codes.
 
-The underlying PDR model code has improved physics and chemistry. Critical updates include those discussed in
-`Neufeld & Wolfire 2016 <https://ui.adsabs.harvard.edu/abs/2016ApJ...826..183N/abstract>`_, plus photo rates from
-`Heays et al. 2017 <https://ui.adsabs.harvard.edu/abs/2017A%26A...602A.105H/abstract>`_, oxygen chemistry rates from
-`Kovalenko et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018ApJ...856..100K/abstract>`_ and
-`Tran et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018ApJ...854...25T/abstract>`_,
-and carbon chemistry rates from
-`Dagdigian 2019 <https://ui.adsabs.harvard.edu/abs/2019MNRAS.487.3427D/abstract>`_. We have also implemented new collisional
-excitation rates for |OI| from
-`Lique et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018MNRAS.474.2313L/abstract>`_ (and Lique private
-communication) and have included |13C| chemistry along with the
-emitted line intensities for  |13CII| and |13CO|.
+
+We suppoort PDR models from:
+
+* The Wolfire-Kaufman PDR  code which has physics and chemistry updates such as those discussed in
+    `Neufeld & Wolfire 2016 <https://ui.adsabs.harvard.edu/abs/2016ApJ...826..183N/abstract>`_, plus photo rates from
+    `Heays et al. 2017 <https://ui.adsabs.harvard.edu/abs/2017A%26A...602A.105H/abstract>`_, oxygen chemistry rates from
+    `Kovalenko et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018ApJ...856..100K/abstract>`_ and
+    `Tran et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018ApJ...854...25T/abstract>`_,
+    and carbon chemistry rates from
+    `Dagdigian 2019 <https://ui.adsabs.harvard.edu/abs/2019MNRAS.487.3427D/abstract>`_. We have also implemented new collisional
+    excitation rates for |OI| from
+    `Lique et al. 2018 <https://ui.adsabs.harvard.edu/abs/2018MNRAS.474.2313L/abstract>`_ (and Lique private
+    communication) and have included |13C| chemistry along with the
+    emitted line intensities for  |13CII| and |13CO|.
+
+* The `KOSMA-tau code <https://markusroellig.github.io/research/KOSMA-tau/>`_, which supports spherical geometry.
 
 We also support fitting of temperatures and column densities of excitation diagrams of |H2|, CO, |13CO|. |C18O|, and |CH+|, in both single pixels and maps.  Users can fit other molecules by providing appropriate transition data.
 
@@ -93,29 +99,14 @@ Installation
 Requirements
 ^^^^^^^^^^^^
 
-``pdrtpy`` requires Python 3 and recent versions of  `astropy <https://astropy.org>`_, `numpy <https://numpy.org>`_, `scipy <https://scipy.org>`_, `lmfit <https://lmfit.github.io/lmfit-py/>`_, and `matplotlib <https://matplotlib.org/>`_. If you want to run the `Example Notebooks`_, you also need `jupyter <https://jupyter.org>`_.
+``pdrtpy`` requires Python 3.11+ and recent versions of  `astropy <https://astropy.org>`_, `numpy <https://numpy.org>`_, `scipy <https://scipy.org>`_, `lmfit <https://lmfit.github.io/lmfit-py/>`_, and `matplotlib <https://matplotlib.org/>`_. If you want to run the `Example Notebooks`_, you also need `jupyter <https://jupyter.org>`_.
 
-First make sure you are using Python 3.11 or higher:
-
-.. code-block:: sh
-
-   python --version
-
-should show e.g., *3.11.7*.
-
-
-.. Also, make sure *setuptools* is up to date:
-
-.. .. code-block:: sh
-
-..   pip install -U setuptools
 
 Install the package
 ^^^^^^^^^^^^^^^^^^^
 
 With pip
 --------
-Python has numerous ways to install packages; the easiest is with *pip*.
 The code is hosted at the `Python Packaging Index <https://pypi.org/project/pdrtpy/>`_, so you can type:
 
 .. code-block:: sh
@@ -128,7 +119,15 @@ If you do not have permission to install into your Python system package area, y
 
    pip install --user pdrtpy
 
-* For installation from github, see `For Developers`_ below.
+From github
+-----------
+
+.. code-block:: sh
+
+   git clone https://github.com/mpound/pdrtpy
+   cd pdrtpy
+   uv sync
+   uv run ipython
 
 Then go ahead and install the `Example Notebooks`_.
 
@@ -155,6 +154,7 @@ To familiarize yourself with the capabilities of ``pdrtpy``, we suggest you do t
 - `Image Radiation Field and Intensity for Maps <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Make_n_G0_maps.ipynb>`_
 - `Using Alternate Viewing Angle PDR Models to fit emission maps of the Horsehead. <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_EdgeOnModelHorsehead.ipynb>`_
 - `Fitting |H2| Excitation Diagrams <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_H2_Excitation.ipynb>`_
+-  `Fitting |H2| Excitation on Spatial Maps <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_H2_Excitation_Maps.ipynb>`_
 - `Adding Custom Models <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Adding_Models.ipynb>`_
 
 Getting Help & Giving Feedback
@@ -178,21 +178,11 @@ to see the main new features we want to build.  You can help out with those or s
 
 For Developers
 --------------
-If you plan to tinker with the code, you should fork the repo and work on your own fork.  Point your browser to
-`https://github.com/mpound/pdrtpy <https://github.com/mpound/pdrtpy>`_
-and click on *fork* in the upper right corner.   After you have made your changes, create a pull request to merge them into the master branch.
+For developing pdrtpy code, we recommend the use of a python virtual environment. The example above uses `uv <https://docs.astral.sh/uv/>`_. Before installing pdrtpy, developers should install uv following `one of the methods in the uv docs <https://docs.astral.sh/uv/getting-started/installation/>`_. uv is the only tool that can sync the environment to the lockfile, so to install the known working development environment, uv is needed.  If you plan to tinker with the code, you should fork the repo and work on your own fork.     After you have made your changes, create a pull request to merge them into the master branch.
 
-You may want to use a virtual environment to protect from polluting your daily working environment (especially if you have a stable version of `pdrtpy` installed).
 
-.. code-block:: sh
 
-   sudo apt-get install python3-venv
-   python -m venv ~/pdrtpy_venv
-   source ~/pdrtpy_venv/bin/activate[.csh]
-   cd pdrtpy
-   pip install -r requirements.txt
-   pip install -e .
-
+.
 
 .. |reg|    unicode:: U+000AE .. REGISTERED SIGN
 .. |13C|    replace:: :sup:`13`\ C
