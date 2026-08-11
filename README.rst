@@ -14,16 +14,12 @@ PhotoDissociation Region Toolbox --- Python
  :target: http://www.repostatus.org/#active
  :alt: Project Status: Active - The project has reached a stable, usable state and is being actively developed.
 
-.. image:: https://img.shields.io/pypi/pyversions/pdrtpy.svg?style=plastic
- :target: https://img.shields.io/pypi/pyversions/pdrtpy.svg?style=plastic
- :alt: Python version
-
 .. image:: https://img.shields.io/badge/License-GPLv3-blue.svg?style=plastic
  :target: https://www.gnu.org/licenses/gpl-3.0
  :alt: GNU GPL v3 License
 
-.. image:: https://readthedocs.org/projects/pdrtpy/badge/?version=latest&style=plastic
- :target: https://pdrtpy.readthedocs.io/en/latest/?badge=latest
+.. image:: https://readthedocs.org/projects/pdrtpy/badge/?version=stable&style=plastic
+ :target: https://pdrtpy.readthedocs.io/en/stable/
  :alt: Documentation status
 
 .. image:: https://img.shields.io/badge/Contributor%20Covenant-2.1-4baaaa.svg?style=plastic
