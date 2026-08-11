@@ -230,7 +230,7 @@ class TestAJPaperListings:
 
         # Here we will use the Small Magellanic Cloud ModelSet that have Z=0.1
         # These are a limited set of models with just a few lines covered.
-        smc_ms = ModelSet("smc", z=0.1)
+        smc_ms = ModelSet("smc", z=0.2)
         p = LineRatioFit(modelset=smc_ms, measurements=[cii_meas, FIR_meas, oi_meas])
         p.run()
         plot = LineRatioPlot(p)

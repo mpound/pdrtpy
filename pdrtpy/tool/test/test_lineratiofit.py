@@ -30,7 +30,7 @@ def wk2020():
 
 @pytest.fixture(scope="module")
 def smc_ms():
-    return ModelSet("smc", z=0.1)
+    return ModelSet("smc", z=0.2)
 
 
 @pytest.fixture(scope="module")
