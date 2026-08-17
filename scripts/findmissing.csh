@@ -11,7 +11,7 @@ end
     cd ${dir}/${z}
     foreach angle ( losangle=* )
         cd $angle
-        #echo doing $dir/$z/$angle
+        echo doing $dir/$z/$angle
         foreach file ( *sm.fits )
             set basefile = `basename $file`
             set search = ${basefile:r}
