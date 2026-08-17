@@ -45,6 +45,7 @@
 
 - Reorganized `pdrutils.py` into `utils` submodules while preserving backward compatibility ([#204](https://github.com/mpound/pdrtpy/issues/204))
 - Added option to use wavelength on the X-axis of H<sub>2</sub> excitation diagrams ([#176](https://github.com/mpound/pdrtpy/issues/176))
+- Documented FIR wavelength range ([#181](https://github.com/mpound/pdrtpy/issues/181))
 - Converted all code documentation to numpydoc format ([#103](https://github.com/mpound/pdrtpy/issues/103))
 - Verified test suite parallelization across platforms ([#70](https://github.com/mpound/pdrtpy/issues/70))
 - Added `Measurement.to()` method for unit conversion ([#62](https://github.com/mpound/pdrtpy/issues/62))
