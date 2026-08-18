@@ -1,6 +1,6 @@
 ## Change Log
 
-### Release 3.0
+### Release 3.0.1
 
 #### _Models_
 
@@ -8,7 +8,6 @@
 
 - Previous 2006 SMC models are now deprecated.
 
-- Updated WK2020 z=1 models with ...
 
 #### _Measurement_
 
