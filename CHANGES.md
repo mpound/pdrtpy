@@ -1,6 +1,6 @@
 ## Change Log
 
-### Release 3.0
+### Release 3.0.1
 
 #### _Models_
 
@@ -8,7 +8,6 @@
 
 - Previous 2006 SMC models are now deprecated.
 
-- Updated WK2020 z=1 models with ...
 
 #### _Measurement_
 
@@ -26,7 +25,7 @@
 - Added C18O, 13C18O, CH+ to provided molecules
 - Robust piecewise initialization for first fit guess instead of quick and dirty which could sometimes fail.
 - Parallel workers for ~2x performance improvement
--
+
 #### _Notebooks_
 
 - `Image Radiation Field and Density` notebook updated to use new SMC models and to demonstrate use of  `radiation_field_range` and `density_range` keywords `
@@ -45,6 +44,7 @@
 
 - Reorganized `pdrutils.py` into `utils` submodules while preserving backward compatibility ([#204](https://github.com/mpound/pdrtpy/issues/204))
 - Added option to use wavelength on the X-axis of H<sub>2</sub> excitation diagrams ([#176](https://github.com/mpound/pdrtpy/issues/176))
+- Documented FIR wavelength range ([#181](https://github.com/mpound/pdrtpy/issues/181))
 - Converted all code documentation to numpydoc format ([#103](https://github.com/mpound/pdrtpy/issues/103))
 - Verified test suite parallelization across platforms ([#70](https://github.com/mpound/pdrtpy/issues/70))
 - Added `Measurement.to()` method for unit conversion ([#62](https://github.com/mpound/pdrtpy/issues/62))
