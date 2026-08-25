@@ -25,7 +25,7 @@
 - Added C18O, 13C18O, CH+ to provided molecules
 - Robust piecewise initialization for first fit guess instead of quick and dirty which could sometimes fail.
 - Parallel workers for ~2x performance improvement
--
+
 #### _Notebooks_
 
 - `Image Radiation Field and Density` notebook updated to use new SMC models and to demonstrate use of  `radiation_field_range` and `density_range` keywords `
