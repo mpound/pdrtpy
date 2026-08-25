@@ -37,7 +37,7 @@ for d in dirs:
     for a in angmods:
         # for surface temperature, grab the location of the FITS file
         # if it is being copied
-        if "TSAV0P01" in a:
+        if "tsav0p01" in a.lower():
             if args.copyts and "sm.fits" in a:
                 tsfile = a
         else:

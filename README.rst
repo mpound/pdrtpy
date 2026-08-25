@@ -149,8 +149,8 @@ To familiarize yourself with the capabilities of ``pdrtpy``, we suggest you do t
 - `Determining Radiation Field and Intensity <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Find_n_G0_Single_Pixel.ipynb>`_
 - `Image Radiation Field and Intensity for Maps <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Make_n_G0_maps.ipynb>`_
 - `Using Alternate Viewing Angle PDR Models to fit emission maps of the Horsehead. <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_EdgeOnModelHorsehead.ipynb>`_
-- `Fitting |H2| Excitation Diagrams <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_H2_Excitation.ipynb>`_
--  `Fitting |H2| Excitation on Spatial Maps <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_H2_Excitation_Maps.ipynb>`_
+- `Fitting H2 Excitation Diagrams <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_H2_Excitation.ipynb>`_
+-  `Fitting H2 Excitation on Spatial Maps <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_H2_Excitation_Maps.ipynb>`_
 - `Adding Custom Models <https://github.com/mpound/pdrtpy-nb/blob/master/notebooks/PDRT_Example_Adding_Models.ipynb>`_
 
 Getting Help & Giving Feedback
@@ -177,7 +177,6 @@ For Developers
 For developing pdrtpy code, we recommend the use of a python virtual environment. The example above uses `uv <https://docs.astral.sh/uv/>`_. Before installing pdrtpy, developers should install uv following `one of the methods in the uv docs <https://docs.astral.sh/uv/getting-started/installation/>`_. uv is the only tool that can sync the environment to the lockfile, so to install the known working development environment, uv is needed.  If you plan to tinker with the code, you should fork the repo and work on your own fork.     After you have made your changes, create a pull request to merge them into the master branch.
 
 
-
 .
 
 .. |reg|    unicode:: U+000AE .. REGISTERED SIGN
@@ -189,4 +188,4 @@ For developing pdrtpy code, we recommend the use of a python virtual environment
 .. |OI|  replace:: [O I]
 .. |CII|  replace:: [C II]
 .. |H2|  replace:: H\ :sub:`2`
-.. |nu|     unicode:: 0x3bd .. greek nu
+.. |nu|   unicode:: 0x3bd .. greek nu
