@@ -149,9 +149,9 @@ class ModelSet:
         """
         s = f", Z={self.z:2.1f}, losangle={int(self.losangle):d}"
         if self.avlos is not None:
-            s += f", avlos={self.avlos:.4f}"
+            s += f", avlos={self.avlos:.2f}"
         if self.avperp is not None:
-            s += f", avperp={self.avperp:.4f}"
+            s += f", avperp={self.avperp:.2f}"
         return self._tabrow["description"] + s
 
     @property

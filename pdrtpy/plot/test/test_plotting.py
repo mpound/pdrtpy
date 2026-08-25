@@ -32,7 +32,7 @@ class TestPlotBase:
         cii_meas = Measurement.read(cii_combined, identifier="CII_158")
         FIR_meas = Measurement.read(FIR_combined, identifier="FIR")
         oi_meas = Measurement.read(oi_combined, identifier="OI_63")
-        smcmod = ModelSet("smc", z=0.1)
+        smcmod = ModelSet("smc", z=0.2)
         p = LineRatioFit(modelset=smcmod, measurements=[cii_meas, FIR_meas, oi_meas])
         p.run()
         plot = LineRatioPlot(p)

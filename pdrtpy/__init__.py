@@ -1,6 +1,6 @@
 """Top level package for pdrtpy"""
 
-__version__ = "2.7.4"
+__version__ = "3.0.1"
 
 VERSION = __version__
 AUTHORS = "Marc W. Pound, Mark G. Wolfire"

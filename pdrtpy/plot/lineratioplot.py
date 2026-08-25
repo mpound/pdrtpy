@@ -302,7 +302,7 @@ class LineRatioPlot(PlotBase):
 
         kwargs_opts = {
             "units": None,
-            "aspect": "auto",
+            "aspect": "equal",
             "image": False,
             "contours": True,
             "label": True,
@@ -419,6 +419,7 @@ class LineRatioPlot(PlotBase):
         kwargs_opts = {
             "units": None,
             "image": True,
+            "aspect": "equal",
             "colorbar": True,
             "contours": True,
             "colors": ["white"],
