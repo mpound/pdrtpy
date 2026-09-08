@@ -48,9 +48,9 @@ Pyy built once per pixel.  Total complexity O(n) per pixel.
 `run()` now accepts a `workers` keyword (mirrors `LineRatioFit` API):
 
 ```python
-fit.run(components=2, workers=-1)   # all CPUs
-fit.run(components=2, workers=4)    # 4 processes
-fit.run(components=2)               # serial (default)
+fit.run(components=2, workers=-1)  # all CPUs
+fit.run(components=2, workers=4)  # 4 processes
+fit.run(components=2)  # serial (default)
 ```
 
 Implementation uses `ProcessPoolExecutor` with:

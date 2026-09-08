@@ -79,8 +79,7 @@ Four Horsehead Nebula FITS files from `pdrtpy/testdata/`, read with `Measurement
 
 ```python
 self._observedratios_flat = {
-    k: (v.data.flatten(), v.uncertainty.array.flatten())
-    for k, v in self._observedratios.items()
+    k: (v.data.flatten(), v.uncertainty.array.flatten()) for k, v in self._observedratios.items()
 }
 ```
 
@@ -114,9 +113,7 @@ _qq = np.squeeze(np.reshape(residuals, newshape))
 
 # After
 modelpix_exp = modelpix.reshape((-1,) + (1,) * mdata.ndim)
-residuals_arr = ma.masked_invalid(
-    (mdata[np.newaxis, ...] - modelpix_exp) / merror[np.newaxis, ...]
-)
+residuals_arr = ma.masked_invalid((mdata[np.newaxis, ...] - modelpix_exp) / merror[np.newaxis, ...])
 _qq = np.squeeze(np.reshape(residuals_arr, newshape))
 ```
 
@@ -135,6 +132,7 @@ Note: test suite runtime also dropped from 367 s to 143 s.
 ```python
 _worker_model_interps = None  # per-process cache
 
+
 def _init_worker(model_points, model_values):
     """Build RegularGridInterpolators once per worker process."""
     global _worker_model_interps
@@ -143,8 +141,10 @@ def _init_worker(model_points, model_values):
         for pts, vals in zip(model_points, model_values)
     ]
 
-def _fit_pixel_worker(j, obs_data_j, obs_err_j, init_density, init_rf,
-                      minn, maxn, minfuv, maxfuv, nan_policy, minimize_kwargs):
+
+def _fit_pixel_worker(
+    j, obs_data_j, obs_err_j, init_density, init_rf, minn, maxn, minfuv, maxfuv, nan_policy, minimize_kwargs
+):
     """Fit a single pixel in a worker process. Returns (j, MinimizerResult)."""
     ...
 ```
@@ -212,7 +212,7 @@ Fits all N valid pixels in a **single** `scipy.optimize.least_squares` call:
 2. **Vectorized residual** using batched `RegularGridInterpolator` queries:
    ```python
    def _joint_residual(x):
-       pts = np.column_stack([x[::2], x[1::2]])          # (n_valid, 2)
+       pts = np.column_stack([x[::2], x[1::2]])  # (n_valid, 2)
        mvalues = np.array([interp(pts) for interp in interps])  # (n_ratios, n_valid)
        return ((obs_data - mvalues) / obs_err).flatten()  # (n_valid * n_ratios,)
    ```
@@ -220,16 +220,21 @@ Fits all N valid pixels in a **single** `scipy.optimize.least_squares` call:
 3. **Block-diagonal `jac_sparsity`**: pixel `j`'s parameters only affect pixel `j`'s residuals.
    ```python
    from scipy.sparse import lil_matrix
+
    sparsity = lil_matrix((N * n_ratios, 2 * N), dtype=np.int8)
    for j in range(N):
-       sparsity[j*n_ratios:(j+1)*n_ratios, 2*j:2*j+2] = 1
+       sparsity[j * n_ratios : (j + 1) * n_ratios, 2 * j : 2 * j + 2] = 1
    ```
 
 4. **Direct scipy call**:
    ```python
    result = scipy.optimize.least_squares(
-       _joint_residual, x0, bounds=(lb, ub),
-       jac_sparsity=sparsity.tocsr(), tr_solver='lsmr', method='trf',
+       _joint_residual,
+       x0,
+       bounds=(lb, ub),
+       jac_sparsity=sparsity.tocsr(),
+       tr_solver="lsmr",
+       method="trf",
    )
    ```
 
@@ -249,10 +254,10 @@ With ~5200 valid pixels, the global TRF `ftol` is satisfied in ~2 outer iteratio
 
 Extracted from the block-diagonal joint Jacobian:
 ```python
-J_i = jac[i*n_ratios:(i+1)*n_ratios, 2*i:2*i+2]  # (n_ratios, 2)
+J_i = jac[i * n_ratios : (i + 1) * n_ratios, 2 * i : 2 * i + 2]  # (n_ratios, 2)
 cov_i = inv(J_i.T @ J_i)
 stderr_density = sqrt(cov_i[0, 0])
-stderr_rf      = sqrt(cov_i[1, 1])
+stderr_rf = sqrt(cov_i[1, 1])
 ```
 
 ### Support for future regularization
