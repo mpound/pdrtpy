@@ -357,7 +357,7 @@ class Measurement(CCDData):
             equivalencies = []
         return self.convert_unit_to(unit, equivalencies)
 
-    def write(self, filename, **kwd):
+    def write(self, filename, **kwargs):
         """Write this Measurement to a FITS file with value in 1st HDU and error in 2nd HDU.
 
         See :meth:`astropy.nddata.CCDData.write`.
@@ -366,11 +366,11 @@ class Measurement(CCDData):
         ----------
         filename : str
             Name of file.
-        **kwd
+        **kwargs
             All additional keywords are passed to :py:mod:`astropy.io.fits`.
         """
         hdu = self.to_hdu()
-        hdu.writeto(filename, **kwd)
+        hdu.writeto(filename, **kwargs)
 
     def _set_up_for_interp(self, kind="linear"):
         # @TODO this will always return nan if there are nan in the data.
@@ -700,7 +700,7 @@ class Measurement(CCDData):
 
 
 def fits_measurement_reader(
-    filename, hdu=0, unit=None, hdu_mask="MASK", hdu_flags=None, key_uncertainty_type="UTYPE", **kwd
+    filename, hdu=0, unit=None, hdu_mask="MASK", hdu_flags=None, key_uncertainty_type="UTYPE", **kwargs
 ):
     """FITS file reader for Measurement class, called by :meth:`Measurement.read`.
 
@@ -729,7 +729,7 @@ def fits_measurement_reader(
         Currently not implemented. Default: None.
     key_uncertainty_type : str, optional
         Header key name where the uncertainty class name is stored. Default: ``'UTYPE'``.
-    **kwd
+    **kwargs
         Additional keyword parameters passed to the FITS reader in :mod:`astropy.io.fits`.
 
     Raises
@@ -738,14 +738,14 @@ def fits_measurement_reader(
         If the conversion from CCDData to Measurement fails.
     """
 
-    _id = kwd.pop("identifier", "unknown")
-    _title = kwd.pop("title", None)
-    _squeeze = kwd.pop("squeeze", True)
-    _restfreq = kwd.pop("restfreq", None)
+    _id = kwargs.pop("identifier", "unknown")
+    _title = kwargs.pop("title", None)
+    _squeeze = kwargs.pop("squeeze", True)
+    _restfreq = kwargs.pop("restfreq", None)
     # suppress INFO messages about units in FITS file. e.g. useless ones like:
     # "INFO: using the unit erg / (cm2 s sr) passed to the FITS reader instead of the unit erg s-1 cm-2 sr-1 in the FITS file."
     log.setLevel("WARNING")
-    z = CCDData.read(filename, unit=unit)
+    z = CCDData.read(filename, unit=unit, **kwargs)
     if _squeeze:
         z = utils.squeeze(z)
 

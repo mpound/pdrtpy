@@ -153,6 +153,10 @@ class LineRatioFit(ToolBase):
         self._minimizer = None
         self._deltasq = None
         self._ratiocount = None
+        # phase-space limits (issue #236): (lower, upper) in linear model units,
+        # populated by _normalize_phase_space_limits. Default None = unrestricted.
+        self._density_range = None
+        self._radiation_field_range = None
 
     @property
     def fit_result(self):
@@ -435,6 +439,99 @@ class LineRatioFit(ToolBase):
             warnings.warn("Trimming all model grids to match H2 grid: log(n) = 1-5, log(G0) = 1-5", stacklevel=2)
             utils._trim_all_to_H2(self._modelratios)
 
+    def _normalize_phase_space_limits(self, radiation_field_range, density_range):
+        """Normalize and validate user-supplied phase-space limits (issue #236).
+
+        Converts ``radiation_field_range`` and ``density_range`` into
+        ``(lower, upper)`` tuples of plain floats in the model's linear axis
+        units, substituting the model grid extremes for any ``None`` bound.
+        Results are stored in :attr:`_radiation_field_range` and
+        :attr:`_density_range` for use by the coarse grid search and the refine
+        step. Must be called after :meth:`read_models` so that
+        ``density_unit`` / ``radiation_field_unit`` are set.
+
+        Parameters
+        ----------
+        radiation_field_range : :class:`~astropy.units.Quantity`, sequence, or None
+            Allowed radiation field window; see :meth:`run`.
+        density_range : :class:`~astropy.units.Quantity`, sequence, or None
+            Allowed density window; see :meth:`run`.
+
+        Raises
+        ------
+        ValueError
+            If a range is malformed, has incompatible units, or does not
+            overlap the model grid.
+        """
+        fk = utils.firstkey(self._modelratios)
+        # linear (not log) physical axis values with units: x=density, y=radiation field
+        x, y = utils.get_xy_from_wcs(self._modelratios[fk], quantity=True, linear=True)
+        self._density_range = self._normalize_one_range(density_range, x, self.density_unit, "density_range")
+        self._radiation_field_range = self._normalize_one_range(
+            radiation_field_range, y, self.radiation_field_unit, "radiation_field_range"
+        )
+
+    @staticmethod
+    def _normalize_one_range(user_range, axis, unit, name):
+        """Normalize a single phase-space limit to ``(lower, upper)`` floats.
+
+        Parameters
+        ----------
+        user_range : :class:`~astropy.units.Quantity`, sequence, or None
+            The user-supplied range. A length-2 Quantity, or a length-2 sequence
+            whose elements are each ``None`` or a scalar Quantity. ``None`` (or a
+            ``None`` element) means no limit on that side.
+        axis : :class:`~astropy.units.Quantity`
+            The model grid axis values (linear, with units) for this parameter.
+        unit : :class:`~astropy.units.Unit`
+            The model's linear axis unit to convert the bounds into.
+        name : str
+            Keyword name, used in error messages.
+
+        Returns
+        -------
+        tuple of float
+            ``(lower, upper)`` in ``unit``, with grid extremes substituted for
+            unspecified bounds.
+        """
+        grid_min = float(np.min(axis.to(unit).value))
+        grid_max = float(np.max(axis.to(unit).value))
+        if user_range is None:
+            return None  # unrestricted
+        # Extract the two bounds, each a scalar Quantity or None.
+        if isinstance(user_range, u.Quantity):
+            if user_range.isscalar or len(user_range) != 2:
+                raise ValueError(f"{name} must have exactly two elements [lower, upper]")
+            bounds = [user_range[0], user_range[1]]
+        else:
+            try:
+                bounds = list(user_range)
+            except TypeError as err:
+                raise ValueError(f"{name} must be a length-2 Quantity or sequence [lower, upper]") from err
+            if len(bounds) != 2:
+                raise ValueError(f"{name} must have exactly two elements [lower, upper]")
+        limits = [grid_min, grid_max]  # defaults substituted for None bounds
+        for i, b in enumerate(bounds):
+            if b is None:
+                continue
+            if not isinstance(b, u.Quantity):
+                raise ValueError(
+                    f"{name} bounds must be astropy Quantities (with units); got {b!r}. For a one-sided limit put"
+                    " the unit inside the brackets, e.g. [None, 1e4/u.cm**3]."
+                )
+            try:
+                limits[i] = float(b.to(unit).value)
+            except u.UnitConversionError as err:
+                raise ValueError(f"{name} bound {b} is not convertible to model units ({unit})") from err
+        lo, hi = limits
+        if lo > hi:
+            raise ValueError(f"{name} lower bound ({lo}) exceeds upper bound ({hi})")
+        if hi < grid_min or lo > grid_max:
+            raise ValueError(
+                f"{name} [{lo}, {hi}] {unit} does not overlap the model grid coverage [{grid_min}, {grid_max}] {unit}"
+            )
+        return (lo, hi)
+
     def _check_compatibility(self):
         """Check that all Measurements are compatible (beams, coordinate systems, shapes) so that the computation can commence.
 
@@ -480,9 +577,9 @@ class LineRatioFit(ToolBase):
                 )
 
         # Only allow beam = None if single value measurements.
-        if not utils.is_image(m1):
-            if self._check_header("BMAJ", None) or self._check_header("BMIN", None) or self._check_header("BPA", None):
-                utils.warn(self, "No beam parameters in Measurement headers, assuming they are all equal!")
+        # if not utils.is_image(m1):
+        #    if self._check_header("BMAJ", None) or self._check_header("BMIN", None) or self._check_header("BPA", None):
+        #        utils.warn(self, "No beam parameters in Measurement headers, assuming they are all equal.")
         # if not self._check_header("BUNIT") ...
 
     def run(self, **kwargs):
@@ -503,6 +600,21 @@ class LineRatioFit(ToolBase):
             - ``[‘error’, (low, high)]`` — mask where error pixel is below low or above high
             - ``None`` — no masking (default)
 
+        radiation_field_range : :class:`~astropy.units.Quantity` or sequence, optional
+            Restrict the fit to radiation field values within
+            ``[lower, upper]`` (inclusive), excluding unphysical regimes.
+            Accepts either a length-2 :class:`~astropy.units.Quantity`
+            (e.g. ``[100, 1000]*habing_unit``) or a length-2 sequence whose
+            elements are each ``None`` or a scalar
+            :class:`~astropy.units.Quantity` (e.g. ``[None, 1000*habing_unit]``
+            for an upper limit only). ``None`` on a side means no limit there.
+            Note the unit must be *inside* the brackets for a one-sided limit,
+            since ``None*unit`` is not allowed. Default: ``None`` (no restriction).
+        density_range : :class:`~astropy.units.Quantity` or sequence, optional
+            Restrict the fit to density values within ``[lower, upper]``
+            (inclusive). Same accepted forms as ``radiation_field_range``,
+            e.g. ``[1e3, 1e4]/u.cm**3`` or ``[None, 1e4/u.cm**3]``. ``None`` on
+            a side means no limit there. Default: ``None`` (no restriction).
         method : str, optional
             Fitting method. Default: ``’leastsq’`` (Levenberg-Marquardt). See
             https://lmfit-py.readthedocs.io/en/latest/fitting.html#fit-methods-table.
@@ -526,6 +638,10 @@ class LineRatioFit(ToolBase):
         Exception
             If no models match the input observations, observations are incompatible,
             parameters are unrecognized, or NaN is encountered.
+        ValueError
+            If ``radiation_field_range`` or ``density_range`` is malformed, has
+            the wrong units, or specifies a window that does not overlap the
+            model grid.
         """
         # @todo global masking for 'data', 'clip', 'error' not entirely useful unless all data/error have same ranges.
         # need something like ['data',['key1':(low,hi), 'key2',(low,hi),...], which is very complicated.
@@ -535,6 +651,9 @@ class LineRatioFit(ToolBase):
             "method": "leastsq",
             "nan_policy": "raise",
             "refine": True,
+            # phase-space limits (issue #236)
+            "radiation_field_range": None,
+            "density_range": None,
             # for emcee
             "burn": 0,
             "steps": 1000,
@@ -556,6 +675,10 @@ class LineRatioFit(ToolBase):
         self._check_compatibility()
         self._ratiocount = None
         self.read_models()
+        # Normalize and validate user phase-space limits now that model axis
+        # units/extents are known (read_models sets density_unit/radiation_field_unit).
+        # Raises ValueError up front if a range does not overlap the grid.
+        self._normalize_phase_space_limits(kwargs_opts.pop("radiation_field_range"), kwargs_opts.pop("density_range"))
         self._reset_masks()
         self._mask_measurements(kwargs_opts["mask"])
         kwargs_opts.pop("mask")
@@ -864,6 +987,15 @@ class LineRatioFit(ToolBase):
         maxn = x[-1]
         minfuv = y[0]
         maxfuv = y[-1]
+        # Clamp bounds to the user's phase-space window (issue #236). These four
+        # scalars feed the serial, parallel, and joint refine paths, so this
+        # single clamp restricts them all.
+        if self._density_range is not None:
+            minn = max(minn, self._density_range[0])
+            maxn = min(maxn, self._density_range[1])
+        if self._radiation_field_range is not None:
+            minfuv = max(minfuv, self._radiation_field_range[0])
+            maxfuv = min(maxfuv, self._radiation_field_range[1])
         if self._radiation_field is None or self._density is None:
             startn = x[int(len(x) / 2)]
             startfuv = y[int(len(y) / 2)]
@@ -1000,6 +1132,7 @@ class LineRatioFit(ToolBase):
                 stuck = np.isclose(joint_result.x[::2], x0[::2], rtol=1e-4, atol=0) & np.isclose(
                     joint_result.x[1::2], x0[1::2], rtol=1e-4, atol=0
                 )
+                print(f"Refitting {len(stuck)} stuck pixels...")
                 for i in np.where(stuck)[0]:
                     j = valid_pixels[i]
                     obs_j = obs_data[:, i]
@@ -1189,9 +1322,21 @@ class LineRatioFit(ToolBase):
             secondindex = 2
             thirdindex = 3
             fourthindex = 4
-        rchi_min = np.amin(self._reduced_chisq.data, (firstindex, secondindex))
-        chi_min = np.amin(self._chisq.data, (firstindex, secondindex))
-        gnxy = np.where(self._reduced_chisq == rchi_min)
+        # Restrict the coarse grid search to the allowed phase-space window
+        # (issue #236). Out-of-range model cells are set to +inf on local copies
+        # (the stored full chisq cubes are left untouched) so the argmin below
+        # is confined to the physical region. Validation in
+        # _normalize_phase_space_limits guarantees >=1 in-range cell survives.
+        allowed = self._phase_space_grid_mask(self._reduced_chisq.data.ndim, firstindex, secondindex)
+        if allowed is None:
+            masked_rchi = self._reduced_chisq.data
+            masked_chi = self._chisq.data
+        else:
+            masked_rchi = np.where(allowed, self._reduced_chisq.data, np.inf)
+            masked_chi = np.where(allowed, self._chisq.data, np.inf)
+        rchi_min = np.amin(masked_rchi, (firstindex, secondindex))
+        chi_min = np.amin(masked_chi, (firstindex, secondindex))
+        gnxy = np.where(masked_rchi == rchi_min)
         gi = gnxy[firstindex]
         ni = gnxy[secondindex]
         # spatial_idx is which indices are the spatial axes
@@ -1284,6 +1429,49 @@ class LineRatioFit(ToolBase):
         utils.setkey("BUNIT", f"Minimum Reduced Chi-squared (DOF={self._dof:d})", self._reduced_chisq_min)
         self._makehistory(self._reduced_chisq_min)
         self._makehistory(self._chisq_min)
+
+    def _phase_space_grid_mask(self, ndim, firstindex, secondindex):
+        """Boolean mask selecting model grid cells inside the allowed
+        phase-space window (issue #236), or ``None`` if unrestricted.
+
+        The returned array is broadcastable to the chi-squared cube: it is 1
+        along every axis except the radiation-field axis (``firstindex``) and
+        the density axis (``secondindex``).
+
+        Parameters
+        ----------
+        ndim : int
+            Number of dimensions of the chi-squared cube.
+        firstindex : int
+            Cube axis index of the radiation field.
+        secondindex : int
+            Cube axis index of the density.
+
+        Returns
+        -------
+        :class:`numpy.ndarray` of bool or None
+            ``None`` when no phase-space limits are active.
+        """
+        if self._density_range is None and self._radiation_field_range is None:
+            return None
+        fk = utils.firstkey(self._modelratios)
+        # linear physical axis values with units: x=density, y=radiation field
+        x, y = utils.get_xy_from_wcs(self._modelratios[fk], quantity=True, linear=True)
+        xden = x.to(self.density_unit).value  # values along secondindex
+        yrf = y.to(self.radiation_field_unit).value  # values along firstindex
+        den_ok = np.ones(len(xden), dtype=bool)
+        rf_ok = np.ones(len(yrf), dtype=bool)
+        if self._density_range is not None:
+            dlo, dhi = self._density_range
+            den_ok = (xden >= dlo) & (xden <= dhi)
+        if self._radiation_field_range is not None:
+            rlo, rhi = self._radiation_field_range
+            rf_ok = (yrf >= rlo) & (yrf <= rhi)
+        den_shape = [1] * ndim
+        den_shape[secondindex] = len(xden)
+        rf_shape = [1] * ndim
+        rf_shape[firstindex] = len(yrf)
+        return rf_ok.reshape(rf_shape) & den_ok.reshape(den_shape)
 
     def _makehistory(self, image):
         """Add HISTORY keyword indicating how density and radiation field were computed.

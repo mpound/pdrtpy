@@ -26,7 +26,7 @@ element-wise multiplication on a non-square sparse matrix:
 ```python
 # minimizer.py line 1595–1596
 if issparse(ret.jac):
-    hess = (ret.jac.T * ret.jac).toarray()   # BUG: * is element-wise in scipy >= 1.9
+    hess = (ret.jac.T * ret.jac).toarray()  # BUG: * is element-wise in scipy >= 1.9
 ```
 
 `ret.jac` has shape `(m, n)` where `m` = number of residuals and `n` = number of
@@ -50,14 +50,16 @@ from lmfit import Minimizer, Parameters
 x_data = np.array([1.0, 2.0, 3.0, 4.0])
 y_data = np.array([2.1, 4.0, 5.9, 8.1])
 
+
 def residual(params):
-    a = params['a'].value
-    b = params['b'].value
-    return a * x_data + b - y_data   # 4 residuals
+    a = params["a"].value
+    b = params["b"].value
+    return a * x_data + b - y_data  # 4 residuals
+
 
 params = Parameters()
-params.add('a', value=1.0)
-params.add('b', value=0.0)
+params.add("a", value=1.0)
+params.add("b", value=0.0)
 
 # Jacobian sparsity: 4 residuals × 2 parameters, all entries non-zero
 sparsity = lil_matrix((4, 2), dtype=np.int8)
@@ -65,7 +67,7 @@ sparsity[:, :] = 1
 sparsity = sparsity.tocsr()
 
 mini = Minimizer(residual, params)
-result = mini.minimize(method='least_squares', jac_sparsity=sparsity)
+result = mini.minimize(method="least_squares", jac_sparsity=sparsity)
 # ValueError: inconsistent shapes (2, 4) and (4, 2)
 ```
 
@@ -133,11 +135,11 @@ from scipy.optimize import least_squares
 from scipy.sparse import lil_matrix
 import numpy as np
 
-result = least_squares(fun, x0, bounds=bounds, jac_sparsity=sparsity, method='trf')
+result = least_squares(fun, x0, bounds=bounds, jac_sparsity=sparsity, method="trf")
 
 # Manual covariance from Jacobian (works for both sparse and dense)
 J = result.jac
-if hasattr(J, 'toarray'):
+if hasattr(J, "toarray"):
     J = J.toarray()
 try:
     cov = np.linalg.inv(J.T @ J)

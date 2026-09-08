@@ -65,7 +65,7 @@ def map_fit():
     fir_meas = Measurement.read(fir_comb, identifier="FIR")
     oi_meas = Measurement.read(oi_comb, identifier="OI_63")
 
-    smcmod = ModelSet("smc", z=0.1)
+    smcmod = ModelSet("smc", z=0.2)
     p = LineRatioFit(modelset=smcmod, measurements=[cii_meas, fir_meas, oi_meas])
     p.run()
     return p

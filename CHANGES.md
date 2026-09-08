@@ -1,5 +1,58 @@
 ## Change Log
 
+### Release 3.0.1
+
+#### _Models_
+
+- New models for the Small Magellanic Cloud (z=0.2) including alternate view angles i=0 (face-on) to i=75.
+
+- Previous 2006 SMC models are now deprecated.
+
+
+#### _Measurement_
+
+- *Measurement.to()* method added to convert units
+- small bug fixes, dead code removal
+
+#### _LineRatioFit_
+
+- Significant performance improvement for map data, ~10x via addition of `joint_fit` keyword and parallel workers
+- Allow users to limit the model space used during the fit with `radiation_field_range` and `density_range` keywords
+
+#### _Excitation Tool_
+
+
+- Added C18O, 13C18O, CH+ to provided molecules
+- Robust piecewise initialization for first fit guess instead of quick and dirty which could sometimes fail.
+- Parallel workers for ~2x performance improvement
+
+#### _Notebooks_
+
+- `Image Radiation Field and Density` notebook updated to use new SMC models and to demonstrate use of  `radiation_field_range` and `density_range` keywords `
+- `H2 Excitation` notebook split into two notebooks for single pixel and map fitting, respectively.  Map fitting now uses observational data from JWST instead of simulated data.
+
+#### _Code cleanup, refactoring, etc._
+
+- `pdrutils.py` split into individual modules *utils.fits*, *utils.helpers*, *utils.paths*, *utils.units*, *utils.wcs*. Done in a backwards compatiable way so *import pdrutils as utils* still works.
+- `pdrtpy.plot` module refactored and new tests added
+- `excitation.py` - refactored to remove dead code, dedupe, vectorize
+- All documentation changed to `numpydoc` format
+- Benchmark code for performance improvements
+- Update scripts for verifying and adding new models
+
+#### _Issues_
+
+- Reorganized `pdrutils.py` into `utils` submodules while preserving backward compatibility ([#204](https://github.com/mpound/pdrtpy/issues/204))
+- Added option to use wavelength on the X-axis of H<sub>2</sub> excitation diagrams ([#176](https://github.com/mpound/pdrtpy/issues/176))
+- Documented FIR wavelength range ([#181](https://github.com/mpound/pdrtpy/issues/181))
+- Converted all code documentation to numpydoc format ([#103](https://github.com/mpound/pdrtpy/issues/103))
+- Verified test suite parallelization across platforms ([#70](https://github.com/mpound/pdrtpy/issues/70))
+- Added `Measurement.to()` method for unit conversion ([#62](https://github.com/mpound/pdrtpy/issues/62))
+- Fixed weird colorbar spacing in `LineRatioPlot.ratios_on_models` ([#35](https://github.com/mpound/pdrtpy/issues/35))
+- Fixed missing centerlines in `overlay_all_ratios` plot when exported to PDF ([#23](https://github.com/mpound/pdrtpy/issues/23))
+
+
+
 ### Release 2.6.4
 
 #### _Models_
