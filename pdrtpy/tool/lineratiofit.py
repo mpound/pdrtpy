@@ -23,7 +23,7 @@ from scipy.optimize import least_squares as _scipy_least_squares
 
 from pdrtpy.pbar import get_progress_bar
 
-from .. import utils
+from .. import regularization as reg, utils
 from .fitmap import FitMap
 from .toolbase import ToolBase
 
@@ -144,6 +144,8 @@ class LineRatioFit(ToolBase):
         self._likelihood = None
         self._radiation_field = None
         self._density = None
+        self._radiation_field_regularized = None
+        self._density_regularized = None
         self.radiation_field_unit = None
         self.radiation_field_type = None
         self.density_unit = None
@@ -238,6 +240,26 @@ class LineRatioFit(ToolBase):
         :class:`~pdrtpy.measurement.Measurement`
         """
         return self._radiation_field
+
+    @property
+    def density_regularized(self):
+        """The spatially-regularized hydrogen nucleus density map, if :meth:`regularize` has been run.
+
+        Returns
+        -------
+        :class:`~pdrtpy.measurement.Measurement` or None
+        """
+        return self._density_regularized
+
+    @property
+    def radiation_field_regularized(self):
+        """The spatially-regularized radiation field map, if :meth:`regularize` has been run.
+
+        Returns
+        -------
+        :class:`~pdrtpy.measurement.Measurement` or None
+        """
+        return self._radiation_field_regularized
 
     def chisq(self, min=False):
         r"""The computed chisquare value(s).
@@ -930,6 +952,222 @@ class LineRatioFit(ToolBase):
         """
         self._chisq.write(chi, overwrite=overwrite, hdu_mask="MASK", output_verify="silentfix")
         self._reduced_chisq.write(rchi, overwrite=overwrite, hdu_mask="MASK", output_verify="silentfix")
+
+    def _regularization_model_bounds(self):
+        """Linear (density, radiation_field) bounds of the model grid, clamped to
+        the user's phase-space window if one was set — the same bounds
+        :meth:`_refine_density_radiation_field` uses to keep the solver inside the
+        model's interpolation range."""
+        keys = list(self._modelratios.keys())
+        if utils._has_H2(keys):
+            i = next(idx for idx, s in enumerate(keys) if "H2" in s)
+            fk = keys[i]
+        else:
+            fk = keys[0]
+        x, y = utils.get_xy_from_wcs(self._modelratios[fk], linear=True)
+        minn, maxn = x[0], x[-1]
+        minfuv, maxfuv = y[0], y[-1]
+        if self._density_range is not None:
+            minn = max(minn, self._density_range[0])
+            maxn = min(maxn, self._density_range[1])
+        if self._radiation_field_range is not None:
+            minfuv = max(minfuv, self._radiation_field_range[0])
+            maxfuv = min(maxfuv, self._radiation_field_range[1])
+        return minn, maxn, minfuv, maxfuv
+
+    def _build_regularization_context(self, valid_mask):
+        """Precompute the pieces of the data-fidelity term that don't change across
+        proximal-gradient iterations: model interpolators, the flattened,
+        valid-pixel-only observed ratios and errors, and the model's phase-space
+        bounds (queries outside these raise in the interpolator)."""
+        ratio_keys = list(self._modelratios.keys())
+        interps = [self._modelratios[k]._interp_lin for k in ratio_keys]
+        idx = np.where(valid_mask.flatten())[0]
+        obs_data = np.array([self._observedratios_flat[k][0][idx] for k in ratio_keys])
+        obs_err = np.array([self._observedratios_flat[k][1][idx] for k in ratio_keys])
+        minn, maxn, minfuv, maxfuv = self._regularization_model_bounds()
+        return {
+            "interps": interps,
+            "idx": idx,
+            "obs_data": obs_data,
+            "obs_err": obs_err,
+            "shape": valid_mask.shape,
+            "bounds": (minn, maxn, minfuv, maxfuv),
+        }
+
+    @staticmethod
+    def _regularization_chisq_per_pixel(log_n, log_g, ctx):
+        """Per-pixel chi-squared at the given log10(density)/log10(radiation_field)
+        values, evaluated only at the valid-pixel indices in ``ctx``.
+
+        Candidate points are clipped to the model's phase-space bounds before
+        interpolation (rather than raising), so that proximal-gradient
+        iterations that momentarily stray outside the model grid — e.g. while
+        pulling an oscillating pixel back toward its neighbors' consensus near
+        a model-space edge — see a flat (but finite) chi-square there instead
+        of crashing.
+        """
+        minn, maxn, minfuv, maxfuv = ctx["bounds"]
+        n = np.clip(10.0**log_n, minn, maxn)
+        g = np.clip(10.0**log_g, minfuv, maxfuv)
+        pts = np.column_stack([n, g])
+        mvalues = np.array([interp(pts) for interp in ctx["interps"]])
+        resid = (ctx["obs_data"] - mvalues) / ctx["obs_err"]
+        return np.sum(resid**2, axis=0)
+
+    def _regularization_objective(self, maps, ctx):
+        """Data-fidelity term ``0.5 * chisq`` for the proximal-gradient objective."""
+        log_n = maps[0].flatten()[ctx["idx"]]
+        log_g = maps[1].flatten()[ctx["idx"]]
+        return 0.5 * np.sum(self._regularization_chisq_per_pixel(log_n, log_g, ctx))
+
+    def _regularization_gradient(self, maps, ctx, eps=1e-4):
+        """Gradient of :meth:`_regularization_objective`, by central finite
+        differences. The data term is separable per pixel (no cross-pixel terms
+        before the regularization penalty is added), so this is vectorized across
+        all valid pixels at once rather than requiring per-pixel loops."""
+        log_n = maps[0].flatten()[ctx["idx"]]
+        log_g = maps[1].flatten()[ctx["idx"]]
+        chisq = self._regularization_chisq_per_pixel
+        grad_n = (chisq(log_n + eps, log_g, ctx) - chisq(log_n - eps, log_g, ctx)) / (4 * eps)
+        grad_g = (chisq(log_n, log_g + eps, ctx) - chisq(log_n, log_g - eps, ctx)) / (4 * eps)
+
+        shape = ctx["shape"]
+        grad_density_map = np.full(shape, np.nan).flatten()
+        grad_rf_map = np.full(shape, np.nan).flatten()
+        grad_density_map[ctx["idx"]] = grad_n
+        grad_rf_map[ctx["idx"]] = grad_g
+        return [grad_density_map.reshape(shape), grad_rf_map.reshape(shape)]
+
+    def regularize(
+        self,
+        method="tv",
+        lam=0.1,
+        mode="isotropic",
+        connectivity=4,
+        n_iter=50,
+        max_iter=100,
+        tol=1e-6,
+        step0=1.0,
+    ):
+        """Apply spatial-domain regularization to the fitted density and radiation field maps.
+
+        Runs a proximal-gradient (FISTA) optimization, separate from and after
+        the per-pixel fit performed by :meth:`run`, that minimizes
+        ``chi_square(data | params) + lam * R(params)`` where ``R`` is either
+        an isotropic/anisotropic Total Variation penalty (``method="tv"``,
+        recommended) or a Tikhonov (L2) penalty (``method="tikhonov"``,
+        provided for comparison; it tends to blur genuine multi-pixel edges —
+        see ``goals/regularization_design_options.md``). The penalty acts on
+        ``log10(density)``/``log10(radiation_field)`` so that a single ``lam``
+        is scale-free and comparable across the two channels.
+
+        This method requires :meth:`run` to have already been called on a map
+        (not single-pixel or vector) fit; it works after serial, parallel, or
+        joint-fit runs alike, since it never touches the per-pixel solve
+        itself.
+
+        The original, unregularized :attr:`density`/:attr:`radiation_field`
+        are left unchanged; results are stored separately and returned via
+        :attr:`density_regularized`/:attr:`radiation_field_regularized`.
+        Reported uncertainties on the regularized maps are copied from the
+        pre-regularization per-pixel fit and should be treated as an
+        approximate lower bound, not an exact propagated uncertainty for the
+        regularized estimate.
+
+        Parameters
+        ----------
+        method : str, optional
+            ``"tv"`` (default) or ``"tikhonov"``.
+        lam : float, optional
+            Regularization strength. Because the penalty acts in log10-space,
+            this is a "science" parameter, not just a smoothing dial: too
+            large a value can erase real edges only a few pixels wide.
+            Default: 0.1.
+        mode : str, optional
+            For ``method="tv"``: ``"isotropic"`` (default, recommended — avoids
+            staircase artifacts on diagonal edges) or ``"anisotropic"``.
+            Ignored for ``method="tikhonov"``.
+        connectivity : int, optional
+            4 (default) or 8 connectivity for the Tikhonov neighbor graph.
+            Ignored for ``method="tv"`` (which operates on the dense grid
+            directly).
+        n_iter : int, optional
+            Number of inner TV-denoising (Chambolle) iterations per proximal
+            step. Ignored for ``method="tikhonov"``. Default: 50.
+        max_iter : int, optional
+            Maximum number of outer FISTA iterations. Default: 100.
+        tol : float, optional
+            Relative-change convergence tolerance for the outer FISTA loop.
+            Default: 1e-6.
+        step0 : float, optional
+            Initial proximal-gradient step size; backtracking line search
+            shrinks it as needed. Default: 1.0.
+
+        Returns
+        -------
+        tuple of :class:`~pdrtpy.measurement.Measurement`
+            ``(density_regularized, radiation_field_regularized)``.
+
+        Raises
+        ------
+        Exception
+            If :meth:`run` has not been called yet, or the fit has no
+            spatial dimensions (single-pixel or vector fit).
+        ValueError
+            If ``method`` is not one of ``"tv"``/``"tikhonov"``.
+        """
+        if self._density is None or self._radiation_field is None:
+            raise Exception("Must call run() before regularize().")
+        if not self.has_maps:
+            raise Exception(
+                "Spatial regularization requires a map fit; this fit has no spatial dimensions to regularize over."
+            )
+
+        valid_mask = ~np.isnan(self._density.data)
+        if not np.any(valid_mask):
+            raise Exception("No valid pixels to regularize.")
+
+        if method == "tikhonov":
+            regularizer = reg.TikhonovRegularizer(lam=lam, connectivity=connectivity)
+        elif method == "tv":
+            regularizer = reg.TotalVariationRegularizer(lam=lam, mode=mode, n_iter=n_iter)
+        else:
+            raise ValueError(f"Unknown regularization method '{method}'; choose 'tv' or 'tikhonov'.")
+
+        ctx = self._build_regularization_context(valid_mask)
+        x0 = [np.log10(self._density.value), np.log10(self._radiation_field.value)]
+
+        x_final = reg.fista(
+            x0,
+            objective_fn=lambda maps: self._regularization_objective(maps, ctx),
+            grad_fn=lambda maps: self._regularization_gradient(maps, ctx),
+            prox_fn=regularizer.prox,
+            valid_mask=valid_mask,
+            step0=step0,
+            n_iter=max_iter,
+            tol=tol,
+        )
+
+        density_reg = deepcopy(self._density)
+        density_reg.data = np.where(valid_mask, 10.0 ** x_final[0], np.nan)
+        rf_reg = deepcopy(self._radiation_field)
+        rf_reg.data = np.where(valid_mask, 10.0 ** x_final[1], np.nan)
+
+        for image in (density_reg, rf_reg):
+            utils.setkey("REGMETH", method, image)
+            utils.setkey("REGLAM", lam, image)
+            if method == "tv":
+                utils.setkey("REGMODE", mode, image)
+            utils.history(
+                "Spatially regularized (see REGMETH/REGLAM); uncertainty is the "
+                "pre-regularization per-pixel value, treated as approximate.",
+                image,
+            )
+
+        self._density_regularized = density_reg
+        self._radiation_field_regularized = rf_reg
+        return self._density_regularized, self._radiation_field_regularized
 
     @staticmethod
     def _build_joint_params(valid_pixels, dflat, rflat, minn, maxn, minfuv, maxfuv):
