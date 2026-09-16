@@ -24,10 +24,48 @@ class TikhonovRegularizer(Regularizer):
     """
 
     def __init__(self, lam, connectivity=4):
+        """Construct a Tikhonov regularizer.
+
+        Parameters
+        ----------
+        lam : float
+            Regularization strength (see `Regularizer.__init__`).
+        connectivity : int, optional
+            4 (default) or 8 connectivity for the neighbor graph the
+            Laplacian is built from; passed to `~pdrtpy.regularization.base.neighbor_graph`.
+
+        Raises
+        ------
+        ValueError
+            If ``lam`` is negative (raised by the parent `Regularizer`).
+        """
         super().__init__(lam)
         self.connectivity = connectivity
 
     def prox(self, maps, valid_mask, step):
+        """Proximal operator of ``step * lam * sum_edges (x_i - x_j)^2``.
+
+        Solves the sparse linear system ``(I + step*lam*L) x = y`` for each
+        map independently, where ``L`` is the graph Laplacian of the
+        valid-pixel neighbor graph and ``y`` is that map's input values.
+
+        Parameters
+        ----------
+        maps : list of `~numpy.ndarray`
+            One or more independent 2-D parameter maps (same shape).
+        valid_mask : `~numpy.ndarray`
+            2-D boolean array; True where a pixel has a fitted value.
+        step : float
+            The proximal-gradient step size for this iteration.
+
+        Returns
+        -------
+        list of `~numpy.ndarray`
+            The proximally-updated maps, same shapes as the input. Invalid
+            (masked) pixels are copied through unchanged. If there are no
+            valid pixels, no edges (e.g. all pixels isolated), or ``lam=0``,
+            the input maps are returned unchanged (as copies).
+        """
         valid_mask = np.asarray(valid_mask, dtype=bool)
         edges = neighbor_graph(valid_mask, connectivity=self.connectivity)
 

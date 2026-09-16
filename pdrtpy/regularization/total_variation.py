@@ -19,7 +19,25 @@ from .base import Regularizer
 
 
 def _forward_diff_x(u, mask):
-    """Forward difference along columns, zeroed wherever either endpoint is invalid."""
+    """Forward difference of a 2-D array along columns (the x/horizontal axis).
+
+    ``gx[i, j] = u[i, j+1] - u[i, j]`` wherever both ``mask[i, j]`` and
+    ``mask[i, j+1]`` are True; zero everywhere else (the last column, and
+    any location where either endpoint is invalid), which treats an invalid
+    neighbor exactly like a grid boundary — no flux crosses it.
+
+    Parameters
+    ----------
+    u : `~numpy.ndarray`
+        2-D array to differentiate.
+    mask : `~numpy.ndarray`
+        2-D boolean array, same shape as ``u``; True where a pixel is valid.
+
+    Returns
+    -------
+    `~numpy.ndarray`
+        The forward difference along columns, same shape as ``u``.
+    """
     gx = np.zeros_like(u)
     valid_edge = mask[:, :-1] & mask[:, 1:]
     gx[:, :-1][valid_edge] = (u[:, 1:] - u[:, :-1])[valid_edge]
@@ -27,7 +45,25 @@ def _forward_diff_x(u, mask):
 
 
 def _forward_diff_y(u, mask):
-    """Forward difference along rows, zeroed wherever either endpoint is invalid."""
+    """Forward difference of a 2-D array along rows (the y/vertical axis).
+
+    ``gy[i, j] = u[i+1, j] - u[i, j]`` wherever both ``mask[i, j]`` and
+    ``mask[i+1, j]`` are True; zero everywhere else (the last row, and any
+    location where either endpoint is invalid) — see `_forward_diff_x` for
+    the boundary-handling rationale, which is identical here.
+
+    Parameters
+    ----------
+    u : `~numpy.ndarray`
+        2-D array to differentiate.
+    mask : `~numpy.ndarray`
+        2-D boolean array, same shape as ``u``; True where a pixel is valid.
+
+    Returns
+    -------
+    `~numpy.ndarray`
+        The forward difference along rows, same shape as ``u``.
+    """
     gy = np.zeros_like(u)
     valid_edge = mask[:-1, :] & mask[1:, :]
     gy[:-1, :][valid_edge] = (u[1:, :] - u[:-1, :])[valid_edge]
@@ -35,7 +71,32 @@ def _forward_diff_y(u, mask):
 
 
 def _divergence(p1, p2, mask):
-    """Discrete adjoint of (_forward_diff_x, _forward_diff_y), zero-padded at borders."""
+    """Discrete divergence of a 2-D vector field, the adjoint of
+    (`_forward_diff_x`, `_forward_diff_y`).
+
+    Implements ``div = -(forward_diff)^T`` under the standard convention
+    ``<grad u, p> = -<u, div p>``, so that the Chambolle dual-ascent
+    iteration in `TotalVariationRegularizer._denoise_one` can use ``div``
+    directly (see the derivation noted in that method). Invalid pixels are
+    zeroed in the output, matching how `_forward_diff_x`/`_forward_diff_y`
+    treat them as flux-free boundaries.
+
+    Parameters
+    ----------
+    p1 : `~numpy.ndarray`
+        x-component (column-direction) of the dual field.
+    p2 : `~numpy.ndarray`
+        y-component (row-direction) of the dual field, same shape as ``p1``.
+    mask : `~numpy.ndarray`
+        2-D boolean array, same shape as ``p1``/``p2``; True where a pixel
+        is valid.
+
+    Returns
+    -------
+    `~numpy.ndarray`
+        The divergence field, same shape as ``p1``/``p2``, zero at invalid
+        pixels.
+    """
     div = np.array(p1, copy=True)
     div[:, 1:] -= p1[:, :-1]
     div += p2
@@ -67,6 +128,28 @@ class TotalVariationRegularizer(Regularizer):
     """
 
     def __init__(self, lam, mode="isotropic", n_iter=50, tau=0.125):
+        """Construct a Total Variation regularizer.
+
+        Parameters
+        ----------
+        lam : float
+            Regularization strength (see `Regularizer.__init__`).
+        mode : str, optional
+            ``"isotropic"`` (default) or ``"anisotropic"`` — see the class
+            docstring above.
+        n_iter : int, optional
+            Number of Chambolle dual-ascent iterations per call to `prox`.
+            Default: 50.
+        tau : float, optional
+            Dual step size; must satisfy ``tau <= 0.25`` for stability of
+            the 2-D scheme. Default: 0.125.
+
+        Raises
+        ------
+        ValueError
+            If ``lam`` is negative (raised by the parent `Regularizer`), or
+            if ``mode`` is not ``"isotropic"`` or ``"anisotropic"``.
+        """
         super().__init__(lam)
         if mode not in ("isotropic", "anisotropic"):
             raise ValueError("mode must be 'isotropic' or 'anisotropic'")
@@ -75,11 +158,56 @@ class TotalVariationRegularizer(Regularizer):
         self.tau = tau
 
     def prox(self, maps, valid_mask, step):
+        """Proximal operator of ``step * lam * TV(.)``, applied independently to each map.
+
+        Parameters
+        ----------
+        maps : list of `~numpy.ndarray`
+            One or more independent 2-D parameter maps (same shape).
+        valid_mask : `~numpy.ndarray`
+            2-D boolean array; True where a pixel has a fitted value.
+        step : float
+            The proximal-gradient step size for this iteration.
+
+        Returns
+        -------
+        list of `~numpy.ndarray`
+            The TV-denoised maps, same shapes as the input. Invalid
+            (masked) pixels are copied through unchanged.
+        """
         valid_mask = np.asarray(valid_mask, dtype=bool)
         theta = step * self.lam
         return [self._denoise_one(np.asarray(m, dtype=float), valid_mask, theta) for m in maps]
 
     def _denoise_one(self, m, valid_mask, theta):
+        """Run Chambolle's dual-ascent TV-denoising iteration on a single map.
+
+        Solves ``x* = argmin_x 0.5*||x - m||^2 + theta*TV(x)`` (restricted to
+        ``valid_mask``) via the dual variable :math:`p = (p_1, p_2)`:
+        :math:`p^* = \\mathrm{argmin}_{|p|\\le 1} \\|\\mathrm{div}(p) + m/\\theta\\|^2`,
+        found by `self.n_iter` projected-gradient-ascent steps of size
+        `self.tau`, then :math:`x^* = m + \\theta\\,\\mathrm{div}(p^*)`. See
+        ``docs/chambolle.md`` for a plain-language walkthrough of the
+        dual-projection idea.
+
+        Parameters
+        ----------
+        m : `~numpy.ndarray`
+            2-D map to denoise.
+        valid_mask : `~numpy.ndarray`
+            2-D boolean array, same shape as ``m``; True where a pixel is
+            valid. Invalid pixels are excluded from the dual iteration and
+            copied through unchanged in the output.
+        theta : float
+            Effective regularization strength for this call, i.e.
+            ``step * self.lam`` from `prox`. If ``theta <= 0``, the input is
+            returned unchanged (a copy).
+
+        Returns
+        -------
+        `~numpy.ndarray`
+            The denoised map, same shape as ``m``.
+        """
         if theta <= 0:
             return np.array(m, copy=True)
 

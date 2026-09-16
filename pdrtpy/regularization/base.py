@@ -29,6 +29,11 @@ def neighbor_graph(valid_mask, connectivity=4):
         Each edge is ``((r1, c1), (r2, c2))``. An edge is never created if
         either endpoint is invalid, so masked/NaN regions never propagate
         smoothing across a gap, and there is no wraparound at map borders.
+
+    Raises
+    ------
+    ValueError
+        If ``connectivity`` is not 4 or 8.
     """
     if connectivity not in (4, 8):
         raise ValueError("connectivity must be 4 or 8")
@@ -65,6 +70,20 @@ class Regularizer(ABC):
     """
 
     def __init__(self, lam):
+        """Store the regularization strength shared by all subclasses.
+
+        Parameters
+        ----------
+        lam : float
+            Regularization strength (often written :math:`\\lambda`). Must be
+            non-negative; ``lam=0`` disables the penalty entirely (`prox`
+            becomes the identity).
+
+        Raises
+        ------
+        ValueError
+            If ``lam`` is negative.
+        """
         if lam < 0:
             raise ValueError("lam (regularization strength) must be non-negative")
         self.lam = lam
@@ -143,6 +162,12 @@ def fista(
     -------
     list of `~numpy.ndarray`
         The final parameter maps.
+
+    Notes
+    -----
+    See ``docs/ista.md`` for a plain-language walkthrough of the shrinkage/
+    thresholding idea this generalizes (ISTA/FISTA use a proximal step in
+    place of ISTA's simple shrinkage-thresholding operator).
     """
     x = [np.array(m, dtype=float, copy=True) for m in x0]
     y = [m.copy() for m in x]

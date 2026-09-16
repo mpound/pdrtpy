@@ -954,10 +954,22 @@ class LineRatioFit(ToolBase):
         self._reduced_chisq.write(rchi, overwrite=overwrite, hdu_mask="MASK", output_verify="silentfix")
 
     def _regularization_model_bounds(self):
-        """Linear (density, radiation_field) bounds of the model grid, clamped to
-        the user's phase-space window if one was set — the same bounds
-        :meth:`_refine_density_radiation_field` uses to keep the solver inside the
-        model's interpolation range."""
+        """Linear (density, radiation_field) bounds of the model grid.
+
+        Clamped to the user's phase-space window if one was set via
+        ``density_range``/``radiation_field_range`` in :meth:`run` — the same
+        bounds :meth:`_refine_density_radiation_field` uses to keep the
+        solver inside the model's interpolation range. Used by
+        :meth:`_build_regularization_context` to clip candidate points
+        during :meth:`regularize` so the model interpolators never raise on
+        an out-of-bounds query.
+
+        Returns
+        -------
+        tuple of float
+            ``(minn, maxn, minfuv, maxfuv)`` — the linear-space lower/upper
+            bounds on density and radiation field, respectively.
+        """
         keys = list(self._modelratios.keys())
         if utils._has_H2(keys):
             i = next(idx for idx, s in enumerate(keys) if "H2" in s)
@@ -976,10 +988,32 @@ class LineRatioFit(ToolBase):
         return minn, maxn, minfuv, maxfuv
 
     def _build_regularization_context(self, valid_mask):
-        """Precompute the pieces of the data-fidelity term that don't change across
-        proximal-gradient iterations: model interpolators, the flattened,
-        valid-pixel-only observed ratios and errors, and the model's phase-space
-        bounds (queries outside these raise in the interpolator)."""
+        """Precompute the data-fidelity pieces that don't change across
+        :meth:`regularize`'s proximal-gradient iterations: model
+        interpolators, the flattened, valid-pixel-only observed ratios and
+        errors, and the model's phase-space bounds (queries outside these
+        raise in the interpolator, so they must be clipped on every use, not
+        just once here).
+
+        Parameters
+        ----------
+        valid_mask : `~numpy.ndarray`
+            2-D boolean array; True where a pixel has a fitted
+            density/radiation_field value to regularize.
+
+        Returns
+        -------
+        dict
+            Keys: ``"interps"`` (list of model ratio interpolators),
+            ``"idx"`` (flat indices of the valid pixels), ``"obs_data"``/
+            ``"obs_err"`` (observed ratio values/errors at those indices,
+            one row per ratio), ``"shape"`` (the 2-D map shape), and
+            ``"bounds"`` (the ``(minn, maxn, minfuv, maxfuv)`` tuple from
+            :meth:`_regularization_model_bounds`). Passed to
+            :meth:`_regularization_chisq_per_pixel`,
+            :meth:`_regularization_objective`, and
+            :meth:`_regularization_gradient`.
+        """
         ratio_keys = list(self._modelratios.keys())
         interps = [self._modelratios[k]._interp_lin for k in ratio_keys]
         idx = np.where(valid_mask.flatten())[0]
@@ -997,15 +1031,30 @@ class LineRatioFit(ToolBase):
 
     @staticmethod
     def _regularization_chisq_per_pixel(log_n, log_g, ctx):
-        """Per-pixel chi-squared at the given log10(density)/log10(radiation_field)
-        values, evaluated only at the valid-pixel indices in ``ctx``.
+        """Per-pixel chi-squared at given log10(density)/log10(radiation_field) values.
 
-        Candidate points are clipped to the model's phase-space bounds before
-        interpolation (rather than raising), so that proximal-gradient
-        iterations that momentarily stray outside the model grid — e.g. while
-        pulling an oscillating pixel back toward its neighbors' consensus near
-        a model-space edge — see a flat (but finite) chi-square there instead
-        of crashing.
+        Evaluated only at the valid-pixel indices in ``ctx`` (i.e. ``log_n``
+        and ``log_g`` are already the flattened, valid-pixel-only arrays, not
+        full 2-D maps). Candidate points are clipped to the model's
+        phase-space bounds before interpolation (rather than raising), so
+        that proximal-gradient iterations that momentarily stray outside the
+        model grid — e.g. while pulling an oscillating pixel back toward its
+        neighbors' consensus near a model-space edge — see a flat (but
+        finite) chi-square there instead of crashing.
+
+        Parameters
+        ----------
+        log_n : `~numpy.ndarray`
+            log10(density) at each valid pixel, shape ``(n_valid,)``.
+        log_g : `~numpy.ndarray`
+            log10(radiation_field) at each valid pixel, shape ``(n_valid,)``.
+        ctx : dict
+            Context dict from :meth:`_build_regularization_context`.
+
+        Returns
+        -------
+        `~numpy.ndarray`
+            Chi-squared at each valid pixel, shape ``(n_valid,)``.
         """
         minn, maxn, minfuv, maxfuv = ctx["bounds"]
         n = np.clip(10.0**log_n, minn, maxn)
@@ -1016,16 +1065,54 @@ class LineRatioFit(ToolBase):
         return np.sum(resid**2, axis=0)
 
     def _regularization_objective(self, maps, ctx):
-        """Data-fidelity term ``0.5 * chisq`` for the proximal-gradient objective."""
+        """Data-fidelity term ``0.5 * chisq`` for the proximal-gradient objective.
+
+        This is the ``objective_fn`` passed to
+        :func:`~pdrtpy.regularization.base.fista` from :meth:`regularize`.
+
+        Parameters
+        ----------
+        maps : list of `~numpy.ndarray`
+            ``[log10(density) map, log10(radiation_field) map]``, each a
+            full 2-D map (only the entries at ``ctx["idx"]`` are used).
+        ctx : dict
+            Context dict from :meth:`_build_regularization_context`.
+
+        Returns
+        -------
+        float
+            ``0.5 * sum(chisq)`` over all valid pixels.
+        """
         log_n = maps[0].flatten()[ctx["idx"]]
         log_g = maps[1].flatten()[ctx["idx"]]
         return 0.5 * np.sum(self._regularization_chisq_per_pixel(log_n, log_g, ctx))
 
     def _regularization_gradient(self, maps, ctx, eps=1e-4):
-        """Gradient of :meth:`_regularization_objective`, by central finite
-        differences. The data term is separable per pixel (no cross-pixel terms
-        before the regularization penalty is added), so this is vectorized across
-        all valid pixels at once rather than requiring per-pixel loops."""
+        """Gradient of :meth:`_regularization_objective`, by central finite differences.
+
+        The data term is separable per pixel (no cross-pixel terms before the
+        regularization penalty is added), so this is vectorized across all
+        valid pixels at once rather than requiring per-pixel loops. This is
+        the ``grad_fn`` passed to :func:`~pdrtpy.regularization.base.fista`
+        from :meth:`regularize`.
+
+        Parameters
+        ----------
+        maps : list of `~numpy.ndarray`
+            ``[log10(density) map, log10(radiation_field) map]``, each a
+            full 2-D map (only the entries at ``ctx["idx"]`` are used).
+        ctx : dict
+            Context dict from :meth:`_build_regularization_context`.
+        eps : float, optional
+            Finite-difference step size in log10-space. Default: 1e-4.
+
+        Returns
+        -------
+        list of `~numpy.ndarray`
+            ``[grad_density_map, grad_rf_map]``, each a full 2-D map with
+            ``NaN`` at invalid pixels and the finite-difference gradient of
+            :meth:`_regularization_objective` at valid ones.
+        """
         log_n = maps[0].flatten()[ctx["idx"]]
         log_g = maps[1].flatten()[ctx["idx"]]
         chisq = self._regularization_chisq_per_pixel
