@@ -45,9 +45,14 @@ class TikhonovRegularizer(Regularizer):
     def prox(self, maps, valid_mask, step):
         """Proximal operator of ``step * lam * sum_edges (x_i - x_j)^2``.
 
-        Solves the sparse linear system ``(I + step*lam*L) x = y`` for each
-        map independently, where ``L`` is the graph Laplacian of the
-        valid-pixel neighbor graph and ``y`` is that map's input values.
+        Solves the sparse linear system ``(I + L_theta) x = y`` for each map
+        independently, where ``L_theta`` is the graph Laplacian of the
+        valid-pixel neighbor graph, weighted per edge by
+        ``theta_edge = 0.5*(theta_i + theta_j)`` — the average of the two
+        endpoint pixels' own ``theta = step*lam`` — and ``y`` is that map's
+        input values. When ``step`` is a single scalar shared by every
+        pixel, every edge weight reduces to that one ``theta`` and this is
+        exactly the original, unweighted-Laplacian formula.
 
         Parameters
         ----------
@@ -55,8 +60,11 @@ class TikhonovRegularizer(Regularizer):
             One or more independent 2-D parameter maps (same shape).
         valid_mask : `~numpy.ndarray`
             2-D boolean array; True where a pixel has a fitted value.
-        step : float
-            The proximal-gradient step size for this iteration.
+        step : float or `~numpy.ndarray`
+            The proximal-gradient step size for this iteration — a single
+            value shared by every pixel, or a 2-D array (same shape as
+            ``valid_mask``) giving each pixel its own step (see
+            `~pdrtpy.regularization.base.fista`'s ``step_mode="per_pixel"``).
 
         Returns
         -------
@@ -73,26 +81,29 @@ class TikhonovRegularizer(Regularizer):
         n_valid = int(np.count_nonzero(valid_mask))
         idx[valid_mask] = np.arange(n_valid)
 
-        out = []
         if n_valid == 0 or not edges or self.lam == 0:
             return [np.array(m, dtype=float, copy=True) for m in maps]
+
+        theta_field = np.asarray(step, dtype=float) * self.lam
+        theta_node = np.full(n_valid, float(theta_field)) if theta_field.ndim == 0 else theta_field[valid_mask]
 
         rows, cols, data = [], [], []
         deg = np.zeros(n_valid)
         for (r1, c1), (r2, c2) in edges:
             i, j = idx[r1, c1], idx[r2, c2]
+            theta_edge = 0.5 * (theta_node[i] + theta_node[j])
             rows += [i, j]
             cols += [j, i]
-            data += [-1.0, -1.0]
-            deg[i] += 1
-            deg[j] += 1
+            data += [-theta_edge, -theta_edge]
+            deg[i] += theta_edge
+            deg[j] += theta_edge
         rows += list(range(n_valid))
         cols += list(range(n_valid))
         data += list(deg)
-        laplacian = sparse.csr_matrix((data, (rows, cols)), shape=(n_valid, n_valid))
-        theta = step * self.lam
-        system = (sparse.identity(n_valid, format="csc") + theta * laplacian).tocsc()
+        weighted_laplacian = sparse.csr_matrix((data, (rows, cols)), shape=(n_valid, n_valid))
+        system = (sparse.identity(n_valid, format="csc") + weighted_laplacian).tocsc()
 
+        out = []
         for m in maps:
             m = np.asarray(m, dtype=float)
             y = m[valid_mask]

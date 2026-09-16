@@ -166,8 +166,11 @@ class TotalVariationRegularizer(Regularizer):
             One or more independent 2-D parameter maps (same shape).
         valid_mask : `~numpy.ndarray`
             2-D boolean array; True where a pixel has a fitted value.
-        step : float
-            The proximal-gradient step size for this iteration.
+        step : float or `~numpy.ndarray`
+            The proximal-gradient step size for this iteration — a single
+            value shared by every pixel, or a 2-D array (same shape as
+            ``valid_mask``) giving each pixel its own step (see
+            `~pdrtpy.regularization.base.fista`'s ``step_mode="per_pixel"``).
 
         Returns
         -------
@@ -176,7 +179,9 @@ class TotalVariationRegularizer(Regularizer):
             (masked) pixels are copied through unchanged.
         """
         valid_mask = np.asarray(valid_mask, dtype=bool)
-        theta = step * self.lam
+        theta = np.asarray(step, dtype=float) * self.lam
+        if theta.ndim == 0:
+            theta = np.full(valid_mask.shape, float(theta))
         return [self._denoise_one(np.asarray(m, dtype=float), valid_mask, theta) for m in maps]
 
     def _denoise_one(self, m, valid_mask, theta):
@@ -190,6 +195,17 @@ class TotalVariationRegularizer(Regularizer):
         ``docs/chambolle.md`` for a plain-language walkthrough of the
         dual-projection idea.
 
+        ``theta`` may vary per pixel (spatially-varying regularization
+        strength): it enters every formula above elementwise (``m/theta``,
+        ``theta*div(p*)``), which is the standard generalization used for
+        locally-adaptive TV denoising in the literature. Physically, a
+        pixel with a small local ``theta`` (e.g. one with a large FISTA
+        step penalty because its data-fidelity gradient is locally steep)
+        is pulled less strongly toward its neighbors' consensus per call;
+        it still gets there over more outer `~pdrtpy.regularization.base.fista`
+        iterations, rather than dragging every other pixel's ``theta`` down
+        to match it the way a single shared scalar ``theta`` would.
+
         Parameters
         ----------
         m : `~numpy.ndarray`
@@ -198,18 +214,22 @@ class TotalVariationRegularizer(Regularizer):
             2-D boolean array, same shape as ``m``; True where a pixel is
             valid. Invalid pixels are excluded from the dual iteration and
             copied through unchanged in the output.
-        theta : float
+        theta : `~numpy.ndarray`
             Effective regularization strength for this call, i.e.
-            ``step * self.lam`` from `prox`. If ``theta <= 0``, the input is
-            returned unchanged (a copy).
+            ``step * self.lam`` from `prox`, already broadcast to a 2-D
+            array the same shape as ``m``. Pixels where ``theta <= 0`` are
+            treated as invalid (returned unchanged), same as a masked pixel.
 
         Returns
         -------
         `~numpy.ndarray`
             The denoised map, same shape as ``m``.
         """
-        if theta <= 0:
+        active = valid_mask & (theta > 0)
+        if not np.any(active):
             return np.array(m, copy=True)
+        # Avoid division by zero at inactive pixels; their result is discarded below.
+        theta_safe = np.where(theta > 0, theta, 1.0)
 
         y = np.where(valid_mask, m, 0.0)
         p1 = np.zeros_like(y)
@@ -221,7 +241,7 @@ class TotalVariationRegularizer(Regularizer):
         # derivation assumes, i.e. <grad u, p> = -<u, div p>.)
         for _ in range(self.n_iter):
             div_p = _divergence(p1, p2, valid_mask)
-            w = div_p + y / theta
+            w = div_p + y / theta_safe
             gx = _forward_diff_x(w, valid_mask)
             gy = _forward_diff_y(w, valid_mask)
             p1c = p1 + self.tau * gx
@@ -234,7 +254,7 @@ class TotalVariationRegularizer(Regularizer):
                 p2 = p2c / np.maximum(1.0, np.abs(p2c))
 
         div_p = _divergence(p1, p2, valid_mask)
-        x = y + theta * div_p
+        x = y + theta_safe * div_p
         out = np.array(m, copy=True)
-        out[valid_mask] = x[valid_mask]
+        out[active] = x[active]
         return out

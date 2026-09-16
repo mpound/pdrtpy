@@ -1065,10 +1065,14 @@ class LineRatioFit(ToolBase):
         return np.sum(resid**2, axis=0)
 
     def _regularization_objective(self, maps, ctx):
-        """Data-fidelity term ``0.5 * chisq`` for the proximal-gradient objective.
+        """Per-pixel data-fidelity term ``0.5 * chisq`` for the proximal-gradient objective.
 
         This is the ``objective_fn`` passed to
         :func:`~pdrtpy.regularization.base.fista` from :meth:`regularize`.
+        It returns a **per-pixel** array (not a single scalar) so that
+        `~pdrtpy.regularization.base.fista`'s ``step_mode="per_pixel"`` can
+        check the descent condition independently at every pixel, rather
+        than a single condition aggregated over the whole map.
 
         Parameters
         ----------
@@ -1080,12 +1084,19 @@ class LineRatioFit(ToolBase):
 
         Returns
         -------
-        float
-            ``0.5 * sum(chisq)`` over all valid pixels.
+        `~numpy.ndarray`
+            ``0.5 * chisq`` at each pixel, shape ``ctx["shape"]``, with
+            ``NaN`` at invalid pixels (never read by `fista`, which always
+            indexes this array with the same ``valid_mask``).
         """
         log_n = maps[0].flatten()[ctx["idx"]]
         log_g = maps[1].flatten()[ctx["idx"]]
-        return 0.5 * np.sum(self._regularization_chisq_per_pixel(log_n, log_g, ctx))
+        chisq = 0.5 * self._regularization_chisq_per_pixel(log_n, log_g, ctx)
+
+        shape = ctx["shape"]
+        obj_map = np.full(shape, np.nan).flatten()
+        obj_map[ctx["idx"]] = chisq
+        return obj_map.reshape(shape)
 
     def _regularization_gradient(self, maps, ctx, eps=1e-4):
         """Gradient of :meth:`_regularization_objective`, by central finite differences.
@@ -1126,6 +1137,52 @@ class LineRatioFit(ToolBase):
         grad_rf_map[ctx["idx"]] = grad_g
         return [grad_density_map.reshape(shape), grad_rf_map.reshape(shape)]
 
+    @staticmethod
+    def _regularization_bounded_prox(regularizer, ctx):
+        """Wrap a `~pdrtpy.regularization.base.Regularizer.prox` call so its
+        output is projected back onto the model's log10-space phase-space
+        bounds.
+
+        Without this, a pixel whose iterate drifts outside the clipped
+        interpolation range (see :meth:`_regularization_chisq_per_pixel`)
+        sees an **exactly zero** data-fidelity gradient there (both
+        finite-difference perturbations land on the same clipped value),
+        removing all restoring force from the data term. Combined with
+        FISTA's momentum term, an under-constrained pixel can then drift
+        arbitrarily far outside the physically supported range over many
+        outer iterations, with only the regularizer's proximal pull acting
+        on it — which was observed in practice (density values drifting
+        multiple orders of magnitude beyond the model grid) once per-pixel
+        stepping stopped artificially throttling that drift to an
+        imperceptible pace. Projecting the iterate back into bounds after
+        every proximal step keeps it in the region where the data-fidelity
+        gradient is meaningful, so this cannot happen.
+
+        Parameters
+        ----------
+        regularizer : `~pdrtpy.regularization.base.Regularizer`
+            The regularizer whose `~pdrtpy.regularization.base.Regularizer.prox`
+            method is being wrapped.
+        ctx : dict
+            Context dict from :meth:`_build_regularization_context` (used
+            for its ``"bounds"`` entry).
+
+        Returns
+        -------
+        callable
+            ``bounded_prox(maps, valid_mask, step) -> list of ndarray``,
+            suitable to pass as :func:`~pdrtpy.regularization.base.fista`'s
+            ``prox_fn``.
+        """
+        minn, maxn, minfuv, maxfuv = ctx["bounds"]
+        log_bounds = ((np.log10(minn), np.log10(maxn)), (np.log10(minfuv), np.log10(maxfuv)))
+
+        def bounded_prox(maps, mask, step):
+            raw = regularizer.prox(maps, mask, step)
+            return [np.where(mask, np.clip(arr, lo, hi), arr) for arr, (lo, hi) in zip(raw, log_bounds, strict=True)]
+
+        return bounded_prox
+
     def regularize(
         self,
         method="tv",
@@ -1136,6 +1193,7 @@ class LineRatioFit(ToolBase):
         max_iter=100,
         tol=1e-6,
         step0=1.0,
+        step_mode="per_pixel",
     ):
         """Apply spatial-domain regularization to the fitted density and radiation field maps.
 
@@ -1147,7 +1205,12 @@ class LineRatioFit(ToolBase):
         provided for comparison; it tends to blur genuine multi-pixel edges —
         see ``goals/regularization_design_options.md``). The penalty acts on
         ``log10(density)``/``log10(radiation_field)`` so that a single ``lam``
-        is scale-free and comparable across the two channels.
+        is scale-free and comparable across the two channels. After every
+        proximal step the iterate is projected back onto the model's
+        log10-space phase-space bounds (see
+        :meth:`_regularization_bounded_prox`) so that a weakly-constrained
+        pixel cannot drift outside the range where the data-fidelity
+        gradient is meaningful.
 
         This method requires :meth:`run` to have already been called on a map
         (not single-pixel or vector) fit; it works after serial, parallel, or
@@ -1190,6 +1253,16 @@ class LineRatioFit(ToolBase):
         step0 : float, optional
             Initial proximal-gradient step size; backtracking line search
             shrinks it as needed. Default: 1.0.
+        step_mode : str, optional
+            ``"per_pixel"`` (default) or ``"global"``, passed to
+            :func:`~pdrtpy.regularization.base.fista`. Per-pixel stepping
+            avoids a small number of pixels near a degenerate solution
+            boundary — exactly the pixels this method exists to fix —
+            throttling the step size (and therefore the effective
+            regularization strength) for the entire map; see that
+            function's Notes for the full explanation and the real-map
+            case that motivated it. ``"global"`` is kept for comparison/
+            debugging and for maps known to be well-conditioned everywhere.
 
         Returns
         -------
@@ -1202,7 +1275,8 @@ class LineRatioFit(ToolBase):
             If :meth:`run` has not been called yet, or the fit has no
             spatial dimensions (single-pixel or vector fit).
         ValueError
-            If ``method`` is not one of ``"tv"``/``"tikhonov"``.
+            If ``method`` is not one of ``"tv"``/``"tikhonov"``, or
+            ``step_mode`` is not one of ``"per_pixel"``/``"global"``.
         """
         if self._density is None or self._radiation_field is None:
             raise Exception("Must call run() before regularize().")
@@ -1229,11 +1303,12 @@ class LineRatioFit(ToolBase):
             x0,
             objective_fn=lambda maps: self._regularization_objective(maps, ctx),
             grad_fn=lambda maps: self._regularization_gradient(maps, ctx),
-            prox_fn=regularizer.prox,
+            prox_fn=self._regularization_bounded_prox(regularizer, ctx),
             valid_mask=valid_mask,
             step0=step0,
             n_iter=max_iter,
             tol=tol,
+            step_mode=step_mode,
         )
 
         density_reg = deepcopy(self._density)

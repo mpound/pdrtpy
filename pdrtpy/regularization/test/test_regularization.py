@@ -170,6 +170,37 @@ class TestTikhonovRegularizer:
         out = reg.prox([m], mask, step=1.0)[0]
         assert out[3, 3] < 5.0
 
+    def test_uniform_step_array_matches_scalar_step(self):
+        """A per-pixel step array that is uniform everywhere must give the
+        same result as passing the equivalent scalar step directly.
+
+        This is the backward-compatibility guarantee behind the per-pixel
+        step generalization: the weighted graph Laplacian built from a
+        constant ``theta`` field reduces to the original unweighted-Laplacian
+        formula (see `TikhonovRegularizer.prox`).
+        """
+        m = np.zeros((6, 6))
+        m[3, 3] = 5.0
+        mask = np.ones((6, 6), dtype=bool)
+        reg = TikhonovRegularizer(lam=2.0)
+        out_scalar = reg.prox([m], mask, step=0.5)[0]
+        out_array = reg.prox([m], mask, step=np.full((6, 6), 0.5))[0]
+        assert np.allclose(out_scalar, out_array)
+
+    def test_smaller_step_gives_less_correction_at_that_pixel(self):
+        """A pixel with a much smaller per-pixel step should be pulled less
+        far from its original value than the same pixel would be under a
+        uniformly large step, all else equal."""
+        m = np.zeros((6, 6))
+        m[3, 3] = 5.0
+        mask = np.ones((6, 6), dtype=bool)
+        reg = TikhonovRegularizer(lam=1.0)
+        step_small_at_spike = np.ones((6, 6))
+        step_small_at_spike[3, 3] = 1e-4
+        out_uniform = reg.prox([m], mask, step=1.0)[0]
+        out_mixed = reg.prox([m], mask, step=step_small_at_spike)[0]
+        assert abs(out_mixed[3, 3] - 5.0) < abs(out_uniform[3, 3] - 5.0)
+
 
 # ──────────────────────────────────────────────────────────────
 # TotalVariationRegularizer — the core scientific claim
@@ -263,6 +294,36 @@ class TestTotalVariationRegularizer:
         jump_tik = out_tik[5, 5] - out_tik[5, 4]
         assert jump_tv > jump_tik
 
+    def test_uniform_step_array_matches_scalar_step(self):
+        """A per-pixel step array that is uniform everywhere must give the
+        same result as passing the equivalent scalar step directly — the
+        backward-compatibility guarantee behind the per-pixel step
+        generalization (``theta`` enters every formula elementwise, so a
+        constant array is indistinguishable from the original scalar)."""
+        m = np.zeros((6, 6))
+        m[3, 3] = 5.0
+        mask = np.ones((6, 6), dtype=bool)
+        reg = TotalVariationRegularizer(lam=2.0, n_iter=100)
+        out_scalar = reg.prox([m], mask, step=0.5)[0]
+        out_array = reg.prox([m], mask, step=np.full((6, 6), 0.5))[0]
+        assert np.allclose(out_scalar, out_array)
+
+    def test_smaller_step_gives_less_correction_at_that_pixel(self):
+        """A pixel with a much smaller per-pixel step should be pulled less
+        far from its original value than the same pixel would be under a
+        uniformly large step, all else equal — this is the mechanism that
+        lets a stiff pixel take a smaller, safer step without throttling
+        its well-behaved neighbors' regularization strength."""
+        m = np.zeros((6, 6))
+        m[3, 3] = 5.0
+        mask = np.ones((6, 6), dtype=bool)
+        reg = TotalVariationRegularizer(lam=1.0, n_iter=100)
+        step_small_at_spike = np.ones((6, 6))
+        step_small_at_spike[3, 3] = 1e-4
+        out_uniform = reg.prox([m], mask, step=1.0)[0]
+        out_mixed = reg.prox([m], mask, step=step_small_at_spike)[0]
+        assert abs(out_mixed[3, 3] - 5.0) < abs(out_uniform[3, 3] - 5.0)
+
     def test_anisotropic_and_isotropic_both_smooth_a_spike(self):
         """Both TV modes must reduce an isolated spike's magnitude.
 
@@ -307,7 +368,7 @@ class TestFista:
         reg = TotalVariationRegularizer(lam=0.5, mode="isotropic", n_iter=100)
 
         def objective_fn(maps):
-            """Data-fidelity term ``0.5*||maps[0]-y||^2`` for this test's toy problem.
+            """Per-pixel data-fidelity term ``0.5*(maps[0]-y)^2`` for this test's toy problem.
 
             Parameters
             ----------
@@ -316,10 +377,10 @@ class TestFista:
 
             Returns
             -------
-            float
-                The objective value.
+            `~numpy.ndarray`
+                The per-pixel objective value, same shape as ``maps[0]``.
             """
-            return 0.5 * np.sum((maps[0] - y) ** 2)
+            return 0.5 * (maps[0] - y) ** 2
 
         def grad_fn(maps):
             """Gradient of `objective_fn` with respect to ``maps[0]``.
@@ -357,7 +418,7 @@ class TestFista:
         reg = TotalVariationRegularizer(lam=1.0, n_iter=100)
 
         def objective_fn(maps):
-            """Sum of the two independent maps' data-fidelity terms.
+            """Per-pixel sum of the two independent maps' data-fidelity terms.
 
             Parameters
             ----------
@@ -366,10 +427,11 @@ class TestFista:
 
             Returns
             -------
-            float
-                The combined objective value.
+            `~numpy.ndarray`
+                The per-pixel combined objective value, same shape as
+                ``maps[0]``/``maps[1]``.
             """
-            return 0.5 * np.sum((maps[0] - y1) ** 2) + 0.5 * np.sum((maps[1] - y2) ** 2)
+            return 0.5 * (maps[0] - y1) ** 2 + 0.5 * (maps[1] - y2) ** 2
 
         def grad_fn(maps):
             """Gradient of `objective_fn` with respect to each map.
@@ -389,3 +451,69 @@ class TestFista:
         out = fista([y1.copy(), y2.copy()], objective_fn, grad_fn, reg.prox, mask, n_iter=100)
         assert out[0][3, 3] < 5.0
         assert out[1][2, 2] > -5.0  # pulled up toward 0, i.e. |value| shrinks
+
+    def test_invalid_step_mode_raises(self):
+        """Any ``step_mode`` other than ``"per_pixel"``/``"global"`` must raise ``ValueError``."""
+        mask = np.ones((3, 3), dtype=bool)
+        with pytest.raises(ValueError):
+            fista(
+                [np.zeros((3, 3))],
+                lambda maps: np.zeros((3, 3)),
+                lambda maps: [np.zeros((3, 3))],
+                lambda maps, valid_mask, step: maps,
+                mask,
+                step_mode="bogus",
+            )
+
+    def test_per_pixel_step_avoids_global_throttling(self):
+        """The regression test for the real bug this feature fixes.
+
+        One pixel has a data-fidelity term with a locally very steep
+        gradient (curvature ``1e6``, versus ``1`` everywhere else) — a
+        stand-in for a pixel sitting near a degenerate solution boundary
+        in a real map fit. With ``step_mode="global"``, a single shared
+        step must satisfy the descent condition for that one stiff pixel,
+        so it collapses to roughly ``1/1e6`` and every other, well-behaved
+        pixel is forced to creep along at that same tiny pace — after 20
+        iterations they have barely moved from their start. With
+        ``step_mode="per_pixel"``, only the stiff pixel gets a tiny step;
+        the well-behaved pixels take a full-size step and land on the
+        answer immediately. This reproduces, in miniature, what was
+        observed on a real (density, radiation_field) map fit with two
+        competing solutions: the shared global step collapsed by ~4 orders
+        of magnitude within the first two FISTA iterations and never
+        recovered, making the solver far weaker than the requested
+        ``lam`` suggested.
+        """
+        shape = (5, 5)
+        mask = np.ones(shape, dtype=bool)
+        target = np.full(shape, 5.0)
+        curvature = np.ones(shape)
+        curvature[2, 2] = 1e6
+
+        def objective_fn(maps):
+            return 0.5 * curvature * (maps[0] - target) ** 2
+
+        def grad_fn(maps):
+            return [curvature * (maps[0] - target)]
+
+        # lam=0 makes the proximal step the identity, isolating the FISTA
+        # step-size behavior from any regularization effect.
+        identity_reg = TotalVariationRegularizer(lam=0.0)
+        x0 = [np.zeros(shape)]
+
+        out_global = fista(
+            x0, objective_fn, grad_fn, identity_reg.prox, mask, step0=1.0, n_iter=20, tol=0.0, step_mode="global"
+        )[0]
+        out_per_pixel = fista(
+            x0, objective_fn, grad_fn, identity_reg.prox, mask, step0=1.0, n_iter=20, tol=0.0, step_mode="per_pixel"
+        )[0]
+
+        well_behaved = np.ones(shape, dtype=bool)
+        well_behaved[2, 2] = False
+
+        err_global = np.abs(out_global[well_behaved] - 5.0).mean()
+        err_per_pixel = np.abs(out_per_pixel[well_behaved] - 5.0).mean()
+
+        assert err_per_pixel < 0.01  # per-pixel: well-behaved pixels converge essentially exactly
+        assert err_global > 4.0  # global: well-behaved pixels are throttled, barely moved from 0

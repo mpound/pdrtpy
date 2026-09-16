@@ -98,8 +98,11 @@ class Regularizer(ABC):
             One or more independent 2-D parameter maps (same shape).
         valid_mask : `~numpy.ndarray`
             2-D boolean array; True where a pixel has a fitted value.
-        step : float
-            The proximal-gradient step size for this iteration.
+        step : float or `~numpy.ndarray`
+            The proximal-gradient step size for this iteration — either a
+            single value shared by every pixel, or a 2-D array (same shape
+            as ``valid_mask``) giving each pixel its own step, as produced
+            by `fista` in ``step_mode="per_pixel"``.
 
         Returns
         -------
@@ -120,6 +123,7 @@ def fista(
     tol=1e-6,
     beta=0.5,
     max_backtrack=40,
+    step_mode="per_pixel",
 ):
     """Proximal-gradient Fast Iterative Shrinkage-Thresholding Algorithm
     (FISTA) solver with backtracking line search.
@@ -136,10 +140,15 @@ def fista(
     x0 : list of `~numpy.ndarray`
         Initial parameter maps.
     objective_fn : callable
-        ``objective_fn(maps) -> float``, the smooth data-fidelity term.
+        ``objective_fn(maps) -> ndarray``, the smooth data-fidelity term
+        evaluated **per pixel** (same shape as each map in ``maps``, not a
+        single scalar) — required so that ``step_mode="per_pixel"`` can
+        check the descent condition independently at every pixel. Entries
+        outside ``valid_mask`` are never read and may hold any value
+        (``NaN`` is fine).
     grad_fn : callable
         ``grad_fn(maps) -> list of ndarray``, gradient of ``objective_fn``
-        with respect to each map.
+        with respect to each map (already per-pixel, unchanged from before).
     prox_fn : callable
         ``prox_fn(maps, valid_mask, step) -> list of ndarray``.
     valid_mask : `~numpy.ndarray`
@@ -159,11 +168,22 @@ def fista(
         iteration before backtracking is (re-)applied — see Notes.
     max_backtrack : int
         Maximum number of step-size halvings per outer iteration.
+    step_mode : str, optional
+        ``"per_pixel"`` (default) or ``"global"`` — see Notes for why
+        per-pixel is the default and when ``"global"`` might still be
+        useful (e.g. comparison/debugging, or a map known to be
+        well-conditioned everywhere where the per-pixel bookkeeping is
+        pure overhead).
 
     Returns
     -------
     list of `~numpy.ndarray`
         The final parameter maps.
+
+    Raises
+    ------
+    ValueError
+        If ``step_mode`` is not ``"per_pixel"`` or ``"global"``.
 
     Notes
     -----
@@ -171,45 +191,78 @@ def fista(
     thresholding idea this generalizes (ISTA/FISTA use a proximal step in
     place of ISTA's simple shrinkage-thresholding operator).
 
-    A single step size is shared by every pixel in the map. On a map with
-    spatially heterogeneous curvature — e.g. most pixels well-constrained
-    but a few sitting near a degenerate boundary between two competing
-    solutions, where the data-fidelity gradient is locally very steep —
-    backtracking can be forced to shrink the step drastically to satisfy
-    the descent condition for those few pixels. If the step were only ever
-    allowed to shrink (never grow back), one such iteration would permanently
-    cripple the step size — and therefore the effective regularization
-    strength ``step * lam`` — for the rest of the run, silently making the
-    solver far weaker than the requested ``lam`` would suggest. To avoid
-    this, each outer iteration starts by growing the previous step by
-    ``1/beta`` (capped at ``step0``) *before* backtracking is applied, per
-    standard practice for backtracking line search in proximal-gradient
-    methods (Beck & Teboulle 2009) — so the step can recover once the
-    iterate moves away from a locally stiff region, rather than staying
-    throttled by whichever pixel was worst-behaved earliest in the run.
+    **Why per-pixel stepping is the default.** A map can have spatially
+    heterogeneous curvature — e.g. most pixels well-constrained but a few
+    sitting near a degenerate boundary between two competing solutions,
+    where the data-fidelity gradient is locally very steep. With
+    ``step_mode="global"``, a single step is shared by every pixel, and
+    backtracking must shrink it until the descent condition holds
+    *everywhere* — so a handful of stiff pixels throttle the step (and
+    therefore the effective regularization strength ``step * lam``) for
+    the entire map, even though the other 99% of pixels could have taken a
+    much larger, more productive step. This was observed in practice on a
+    real map with two competing (density, radiation_field) solutions: the
+    shared step collapsed by roughly four orders of magnitude within the
+    first two iterations and never recovered, making the solver far
+    weaker than the requested ``lam`` would suggest — restarting the
+    global step's growth each iteration alone did not fix this, because
+    the same pixels are stiff on every iteration, not just transiently.
+    ``step_mode="per_pixel"`` fixes this by tracking a separate step per
+    pixel and checking the descent condition independently at each one
+    (only possible because ``objective_fn``/``grad_fn`` are already
+    pixel-separable — there are no cross-pixel terms in the data-fidelity
+    objective before the regularizer's proximal step is applied): stiff
+    pixels keep taking small, cautious steps while well-behaved pixels
+    proceed at full speed, so the bulk of the map converges normally
+    instead of being held back by the worst pixel in it. The stiff pixels
+    themselves may still need more iterations (or a larger ``lam``) to
+    fully resolve — this fixes the "everyone is throttled" failure mode,
+    not the underlying difficulty of the degenerate pixels themselves.
+
+    In both modes, each outer iteration starts by growing the previous
+    step by ``1/beta`` (capped at ``step0``) *before* backtracking is
+    applied, per standard practice for backtracking line search in
+    proximal-gradient methods (Beck & Teboulle 2009), so a step that was
+    forced down by a transient difficulty can recover once the iterate
+    moves past it.
     """
+    if step_mode not in ("per_pixel", "global"):
+        raise ValueError("step_mode must be 'per_pixel' or 'global'")
+
     x = [np.array(m, dtype=float, copy=True) for m in x0]
     y = [m.copy() for m in x]
     t = 1.0
-    step = step0
+    step = np.full(valid_mask.shape, float(step0)) if step_mode == "per_pixel" else float(step0)
 
     for _ in range(n_iter):
-        step = min(step / beta, step0)
-        fy = objective_fn(y)
+        step = np.minimum(step / beta, step0) if step_mode == "per_pixel" else min(step / beta, step0)
+        fy_arr = objective_fn(y)
         grads = grad_fn(y)
         x_new = None
         for _ in range(max_backtrack):
             z = [yi - step * gi for yi, gi in zip(y, grads, strict=True)]
             x_new = prox_fn(z, valid_mask, step)
             diff = [xn - yi for xn, yi in zip(x_new, y, strict=True)]
-            lin = sum(np.nansum(gi[valid_mask] * di[valid_mask]) for gi, di in zip(grads, diff, strict=True))
-            quad = sum(np.nansum(di[valid_mask] ** 2) for di in diff) / (2 * step)
-            f_new = objective_fn(x_new)
-            if f_new <= fy + lin + quad + 1e-12:
-                break
-            step *= beta
+            lin = sum(gi * di for gi, di in zip(grads, diff, strict=True))
+            quad = sum(di**2 for di in diff) / (2 * step)
+            f_new_arr = objective_fn(x_new)
+
+            if step_mode == "per_pixel":
+                ok = f_new_arr <= fy_arr + lin + quad + 1e-12
+                fail = valid_mask & ~ok
+                if not np.any(fail):
+                    break
+                step = np.where(fail, step * beta, step)
+            else:
+                fy = float(np.nansum(fy_arr[valid_mask]))
+                f_new = float(np.nansum(f_new_arr[valid_mask]))
+                lin_sum = float(np.nansum(lin[valid_mask]))
+                quad_sum = float(np.nansum(quad[valid_mask]))
+                if f_new <= fy + lin_sum + quad_sum + 1e-12:
+                    break
+                step *= beta
         else:
-            # No backtrack succeeded; accept the smallest step tried.
+            # No backtrack succeeded; accept the smallest step(s) tried.
             pass
 
         t_new = (1 + np.sqrt(1 + 4 * t * t)) / 2
