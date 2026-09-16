@@ -10,6 +10,7 @@ Module Descriptions and APIs
    pdrtpy.modelset
    pdrtpy.molecule
    pdrtpy.plot
+   pdrtpy.regularization
    pdrtpy.tool
    pdrtpy.utils
 
