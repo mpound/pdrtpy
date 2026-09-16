@@ -102,7 +102,8 @@ def fista(
     beta=0.5,
     max_backtrack=40,
 ):
-    """Proximal-gradient (FISTA) solver with backtracking line search.
+    """Proximal-gradient Fast Iterative Shrinkage-Thresholding Algorithm
+    (FISTA) solver with backtracking line search.
 
     Minimizes ``objective_fn(maps) + R(maps)`` where ``R``'s proximal
     operator is supplied as ``prox_fn``. Only the smooth term
