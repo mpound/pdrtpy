@@ -145,16 +145,18 @@ def fista(
     valid_mask : `~numpy.ndarray`
         2-D boolean array shared by all maps.
     step0 : float
-        Initial step size; backtracking only ever shrinks it, and the
-        shrunk value carries forward into the next outer iteration (it is
-        not reset to ``step0`` every iteration).
+        Initial step size, and the ceiling `step` is allowed to grow back
+        toward between outer iterations (see ``beta`` below) — it is never
+        exceeded, even if backtracking would otherwise accept a larger step.
     n_iter : int
         Maximum number of outer (FISTA) iterations.
     tol : float
         Stop early once the relative change in the parameter maps (over
         valid pixels) between iterations drops below this value.
     beta : float
-        Backtracking shrink factor, ``0 < beta < 1``.
+        Backtracking shrink factor, ``0 < beta < 1``. Also used, as
+        ``1/beta``, to grow the step back up at the start of each outer
+        iteration before backtracking is (re-)applied — see Notes.
     max_backtrack : int
         Maximum number of step-size halvings per outer iteration.
 
@@ -168,6 +170,23 @@ def fista(
     See ``docs/ista.md`` for a plain-language walkthrough of the shrinkage/
     thresholding idea this generalizes (ISTA/FISTA use a proximal step in
     place of ISTA's simple shrinkage-thresholding operator).
+
+    A single step size is shared by every pixel in the map. On a map with
+    spatially heterogeneous curvature — e.g. most pixels well-constrained
+    but a few sitting near a degenerate boundary between two competing
+    solutions, where the data-fidelity gradient is locally very steep —
+    backtracking can be forced to shrink the step drastically to satisfy
+    the descent condition for those few pixels. If the step were only ever
+    allowed to shrink (never grow back), one such iteration would permanently
+    cripple the step size — and therefore the effective regularization
+    strength ``step * lam`` — for the rest of the run, silently making the
+    solver far weaker than the requested ``lam`` would suggest. To avoid
+    this, each outer iteration starts by growing the previous step by
+    ``1/beta`` (capped at ``step0``) *before* backtracking is applied, per
+    standard practice for backtracking line search in proximal-gradient
+    methods (Beck & Teboulle 2009) — so the step can recover once the
+    iterate moves away from a locally stiff region, rather than staying
+    throttled by whichever pixel was worst-behaved earliest in the run.
     """
     x = [np.array(m, dtype=float, copy=True) for m in x0]
     y = [m.copy() for m in x]
@@ -175,6 +194,7 @@ def fista(
     step = step0
 
     for _ in range(n_iter):
+        step = min(step / beta, step0)
         fy = objective_fn(y)
         grads = grad_fn(y)
         x_new = None
