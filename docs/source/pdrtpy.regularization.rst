@@ -21,7 +21,7 @@ Two penalty types are provided:
   the recommended default) penalizes the *absolute* difference between neighboring
   pixels. Because this cost does not grow faster for a sharp jump than for the same
   jump spread over many pixels, it suppresses isolated single-pixel oscillation while
-  leaving genuine, spatially-coherent edges largely intact. See ``docs/chambolle.md``
+  leaving genuine, spatially-coherent edges largely intact. See :doc:`chambolle`
   for a plain-language walkthrough of the dual-projection algorithm used internally.
 - **Tikhonov** (:class:`~pdrtpy.regularization.tikhonov.TikhonovRegularizer`) penalizes
   the *squared* difference between neighbors. It is retained for comparison but not
@@ -30,7 +30,7 @@ Two penalty types are provided:
 
 Both are solved via a shared proximal-gradient (:func:`~pdrtpy.regularization.base.fista`)
 driver — the Fast Iterative Shrinkage-Thresholding Algorithm, with backtracking line
-search. See ``docs/ista.md`` for a plain-language introduction to the shrinkage/
+search. See :doc:`ista` for a plain-language introduction to the shrinkage/
 thresholding idea this generalizes.
 
 See ``goals/regularization_design_options.md`` in the repository for the full design

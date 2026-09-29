@@ -193,7 +193,7 @@ class TotalVariationRegularizer(Regularizer):
         :math:`p^* = \\mathrm{argmin}_{|p|\\le 1} \\|\\mathrm{div}(p) + m/\\theta\\|^2`,
         found by `self.n_iter` projected-gradient-ascent steps of size
         `self.tau`, then :math:`x^* = m + \\theta\\,\\mathrm{div}(p^*)`. See
-        ``docs/chambolle.md`` for a plain-language walkthrough of the
+        :doc:`/chambolle` for a plain-language walkthrough of the
         dual-projection idea.
 
         ``theta`` may vary per pixel (spatially-varying regularization

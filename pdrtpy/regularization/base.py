@@ -189,7 +189,7 @@ def fista(
 
     Notes
     -----
-    See ``docs/ista.md`` for a plain-language walkthrough of the shrinkage/
+    See :doc:`/ista` for a plain-language walkthrough of the shrinkage/
     thresholding idea this generalizes (ISTA/FISTA use a proximal step in
     place of ISTA's simple shrinkage-thresholding operator).
 

@@ -14,6 +14,18 @@ Module Descriptions and APIs
    pdrtpy.tool
    pdrtpy.utils
 
+Background Reading
+===================
+
+Plain-language walkthroughs of the algorithms behind
+:mod:`~pdrtpy.regularization`.
+
+.. toctree::
+   :maxdepth: 1
+
+   ista
+   chambolle
+
 Indices
 =======
 
