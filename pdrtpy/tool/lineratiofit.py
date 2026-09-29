@@ -1193,7 +1193,7 @@ class LineRatioFit(ToolBase):
         max_iter=100,
         tol=1e-6,
         step0=1.0,
-        step_mode="per_pixel",
+        step_mode="global",
     ):
         """Apply spatial-domain regularization to the fitted density and radiation field maps.
 
@@ -1254,15 +1254,17 @@ class LineRatioFit(ToolBase):
             Initial proximal-gradient step size; backtracking line search
             shrinks it as needed. Default: 1.0.
         step_mode : str, optional
-            ``"per_pixel"`` (default) or ``"global"``, passed to
-            :func:`~pdrtpy.regularization.base.fista`. Per-pixel stepping
+            ``"global"`` (default) or ``"per_pixel"``, passed to
+            :func:`~pdrtpy.regularization.base.fista`. ``"per_pixel"``
             avoids a small number of pixels near a degenerate solution
-            boundary — exactly the pixels this method exists to fix —
-            throttling the step size (and therefore the effective
-            regularization strength) for the entire map; see that
-            function's Notes for the full explanation and the real-map
-            case that motivated it. ``"global"`` is kept for comparison/
-            debugging and for maps known to be well-conditioned everywhere.
+            boundary throttling the step size for the entire map, but is
+            currently EXPERIMENTAL and unsafe at the larger ``lam`` values
+            real degenerate data (e.g. two near-equal-χ² solutions) tends
+            to need — it can diverge rather than converge. See
+            :func:`~pdrtpy.regularization.base.fista`'s Notes for the full
+            explanation, and ``goals/synthetic_regularization_test_findings.md``
+            for the reproducible case this was found on. Use ``"global"``
+            unless actively developing/testing ``"per_pixel"``.
 
         Returns
         -------

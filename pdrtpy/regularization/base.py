@@ -100,9 +100,11 @@ class Regularizer(ABC):
             2-D boolean array; True where a pixel has a fitted value.
         step : float or `~numpy.ndarray`
             The proximal-gradient step size for this iteration — either a
-            single value shared by every pixel, or a 2-D array (same shape
-            as ``valid_mask``) giving each pixel its own step, as produced
-            by `fista` in ``step_mode="per_pixel"``.
+            single value shared by every pixel (the default,
+            ``step_mode="global"``, from `fista`), or a 2-D array (same
+            shape as ``valid_mask``) giving each pixel its own step
+            (``step_mode="per_pixel"``, currently experimental — see
+            `fista`'s Notes).
 
         Returns
         -------
@@ -123,7 +125,7 @@ def fista(
     tol=1e-6,
     beta=0.5,
     max_backtrack=40,
-    step_mode="per_pixel",
+    step_mode="global",
 ):
     """Proximal-gradient Fast Iterative Shrinkage-Thresholding Algorithm
     (FISTA) solver with backtracking line search.
@@ -169,11 +171,10 @@ def fista(
     max_backtrack : int
         Maximum number of step-size halvings per outer iteration.
     step_mode : str, optional
-        ``"per_pixel"`` (default) or ``"global"`` — see Notes for why
-        per-pixel is the default and when ``"global"`` might still be
-        useful (e.g. comparison/debugging, or a map known to be
-        well-conditioned everywhere where the per-pixel bookkeeping is
-        pure overhead).
+        ``"global"`` (default) or ``"per_pixel"`` — see Notes. ``"per_pixel"``
+        is EXPERIMENTAL and currently unsafe at the λ values real degenerate
+        data tends to need (see Notes) — it is kept available for further
+        development, not as a drop-in replacement for ``"global"``.
 
     Returns
     -------
@@ -191,7 +192,7 @@ def fista(
     thresholding idea this generalizes (ISTA/FISTA use a proximal step in
     place of ISTA's simple shrinkage-thresholding operator).
 
-    **Why per-pixel stepping is the default.** A map can have spatially
+    **Why ``"global"`` is the default.** A map can have spatially
     heterogeneous curvature — e.g. most pixels well-constrained but a few
     sitting near a degenerate boundary between two competing solutions,
     where the data-fidelity gradient is locally very steep. With
@@ -204,20 +205,36 @@ def fista(
     real map with two competing (density, radiation_field) solutions: the
     shared step collapsed by roughly four orders of magnitude within the
     first two iterations and never recovered, making the solver far
-    weaker than the requested ``lam`` would suggest — restarting the
-    global step's growth each iteration alone did not fix this, because
-    the same pixels are stiff on every iteration, not just transiently.
-    ``step_mode="per_pixel"`` fixes this by tracking a separate step per
-    pixel and checking the descent condition independently at each one
-    (only possible because ``objective_fn``/``grad_fn`` are already
-    pixel-separable — there are no cross-pixel terms in the data-fidelity
-    objective before the regularizer's proximal step is applied): stiff
-    pixels keep taking small, cautious steps while well-behaved pixels
-    proceed at full speed, so the bulk of the map converges normally
-    instead of being held back by the worst pixel in it. The stiff pixels
-    themselves may still need more iterations (or a larger ``lam``) to
-    fully resolve — this fixes the "everyone is throttled" failure mode,
-    not the underlying difficulty of the degenerate pixels themselves.
+    weaker than the requested ``lam`` would suggest. Despite this known
+    weakness, ``"global"`` is the safer default: it degrades gracefully
+    (a low but stable, non-diverging correction) rather than failing
+    catastrophically, which is what the alternative currently does — see
+    below.
+
+    ``step_mode="per_pixel"`` was added to fix the throttling weakness
+    above by tracking a separate step per pixel and checking the descent
+    condition independently at each one (only possible because
+    ``objective_fn``/``grad_fn`` are already pixel-separable — there are
+    no cross-pixel terms in the data-fidelity objective before the
+    regularizer's proximal step is applied). It does fix that weakness at
+    small-to-moderate ``lam``. **However, it is currently unsafe at the
+    larger ``lam`` values real degenerate data tends to need**
+    (``goals/synthetic_regularization_test_findings.md`` documents a
+    reproducible case where ``"per_pixel"`` diverges by nearly 900% of the
+    needed correction at ``lam=80``, while ``"global"`` on the identical
+    problem stays stable and monotonic across the same λ range). The
+    mechanism: `prox_fn` (e.g. the Chambolle TV solve in
+    `~pdrtpy.regularization.total_variation.TotalVariationRegularizer`) is
+    **not separable across pixels** — one badly-behaved pixel's trial
+    point can distort the *joint* proximal solution for its neighbors too,
+    not just its own update — but the per-pixel descent check only ever
+    evaluates each pixel's own smooth-term validity, so a neighbor
+    contaminated this way isn't caught. `"per_pixel"` is kept available
+    for further development (a trust region on the actual per-iteration
+    displacement, or a monotone-FISTA-style check on the full composite
+    objective, are both plausible fixes not yet implemented) but should
+    not be used in place of `"global"` until that is resolved and
+    re-verified.
 
     In both modes, each outer iteration starts by growing the previous
     step by ``1/beta`` (capped at ``step0``) *before* backtracking is
