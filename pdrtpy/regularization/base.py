@@ -133,9 +133,10 @@ def fista(
     Minimizes ``objective_fn(maps) + R(maps)`` where ``R``'s proximal
     operator is supplied as ``prox_fn``. Only the smooth term
     (``objective_fn``/``grad_fn``) is checked in the backtracking line
-    search, per Beck & Teboulle (2009) — the composite objective is not
-    evaluated at every backtrack step, since the prox step already accounts
-    for ``R`` exactly.
+    search, per `Beck & Teboulle (2009)
+    <https://ieeexplore.ieee.org/document/4959678>`_ — the composite
+    objective is not evaluated at every backtrack step, since the prox step
+    already accounts for ``R`` exactly.
 
     Parameters
     ----------
@@ -239,7 +240,8 @@ def fista(
     In both modes, each outer iteration starts by growing the previous
     step by ``1/beta`` (capped at ``step0``) *before* backtracking is
     applied, per standard practice for backtracking line search in
-    proximal-gradient methods (Beck & Teboulle 2009), so a step that was
+    proximal-gradient methods (`Beck & Teboulle 2009
+    <https://ieeexplore.ieee.org/document/4959678>`__), so a step that was
     forced down by a transient difficulty can recover once the iterate
     moves past it.
     """
