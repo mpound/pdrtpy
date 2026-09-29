@@ -10,8 +10,21 @@ Module Descriptions and APIs
    pdrtpy.modelset
    pdrtpy.molecule
    pdrtpy.plot
+   pdrtpy.regularization
    pdrtpy.tool
    pdrtpy.utils
+
+Background Reading
+===================
+
+Plain-language walkthroughs of the algorithms behind
+:mod:`~pdrtpy.regularization`.
+
+.. toctree::
+   :maxdepth: 1
+
+   ista
+   chambolle
 
 Indices
 =======

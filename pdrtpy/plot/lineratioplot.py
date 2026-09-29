@@ -114,8 +114,14 @@ class LineRatioPlot(PlotBase):
         kwargs_opts.update(kwargs)
         self._plot(data=self._tool._observedratios[id], **kwargs_opts)
 
-    def density(self, **kwargs):
-        """Plot the hydrogen nucleus volume density map that was computed by :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool. Default units: cm :math:`^{-3}`"""
+    def density(self, regularized: bool = False, **kwargs):
+        """Plot the hydrogen nucleus volume density map that was computed by :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool. Default units: cm :math:`^{-3}`
+
+        Parameters
+        ----------
+        regularized: bool
+            If True, plot the regularized density. Has no effect for single-pixel fits. See :meth:`~pdrtpy.lineratiofit.LineRatioFit.regularize`.
+        """
         kwargs_opts = {
             "units": "cm^-3",
             "aspect": "equal",
@@ -134,13 +140,25 @@ class LineRatioPlot(PlotBase):
         if self._tool._density.shape == (1,) or self._tool.has_vectors:
             return utils.to(kwargs_opts["units"], self._tool._density)
 
+        if regularized:
+            if self._tool._density_regularized is None:
+                raise ValueError("The line ratio fits must be regularized first. See LineRatioFit.regularize()")
+            plot_map = self._tool._density_regularized
+        else:
+            plot_map = self._tool._density
+
         tunit = u.Unit(kwargs_opts["units"])
         if kwargs_opts["title"] is None:
             kwargs_opts["title"] = rf"n [{tunit:latex_inline}]"
-        self._plot(self._tool._density, **kwargs_opts)
+        self._plot(plot_map, **kwargs_opts)
 
-    def radiation_field(self, **kwargs):
-        """Plot the radiation field map that was computed by :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool. Default units: Habing."""
+    def radiation_field(self, regularized: bool = False, **kwargs):
+        """Plot the radiation field map that was computed by :class:`~pdrtpy.tool.lineratiofit.LineRatioFit` tool. Default units: Habing.
+        Parameters
+        ----------
+        regularized: bool
+            If True, plot the regularized radiation field. Has no effect for single-pixel fits. See :meth:`~pdrtpy.lineratiofit.LineRatioFit.regularize`.
+        """
 
         kwargs_opts = {
             "units": "Habing",
@@ -159,12 +177,19 @@ class LineRatioPlot(PlotBase):
         if self._tool.radiation_field.shape == (1,) or self._tool.has_vectors:
             return utils.to(kwargs_opts["units"], self._tool.radiation_field)
 
+        if regularized:
+            if self._tool._radiation_field_regularized is None:
+                raise ValueError("The line ratio fits must be regularized first. See LineRatioFit.regularize()")
+            plot_map = self._tool._radiation_field_regularized
+        else:
+            plot_map = self._tool._radiation_field
+
         if kwargs_opts["title"] is None:
             rad_title = utils.get_rad(kwargs_opts["units"])
             tunit = u.Unit(kwargs_opts["units"])
             kwargs_opts["title"] = rf"{rad_title} [{tunit:latex_inline}]"
 
-        self._plot(self._tool.radiation_field, **kwargs_opts)
+        self._plot(plot_map, **kwargs_opts)
 
     def _plot_chisq_impl(self, data_fn, title, min_val, label_sym, kwargs):
         """Shared implementation for chisq() and reduced_chisq().
