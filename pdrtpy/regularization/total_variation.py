@@ -7,10 +7,11 @@ pixel or spread over many, so it suppresses isolated pixel-to-pixel
 oscillation without blurring a genuine multi-pixel edge (e.g. an ionization
 front).
 
-Implements Chambolle's (2004) dual-projection algorithm, in-house rather than
-via ``scikit-image`` so that invalid/masked pixels can be handled exactly
-(treated the same as a grid boundary — zero flux across them) instead of
-requiring a dense rectangular image with no masking support.
+Implements `Chambolle's (2004) <https://doi.org/10.1023/B:JMIV.0000011325.36760.1e>`_
+dual-projection algorithm, in-house rather than via ``scikit-image`` so that
+invalid/masked pixels can be handled exactly (treated the same as a grid
+boundary — zero flux across them) instead of requiring a dense rectangular
+image with no masking support.
 """
 
 import numpy as np
