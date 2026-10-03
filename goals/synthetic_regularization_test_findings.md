@@ -96,11 +96,14 @@ than anything about the test map's construction.
 
 ## Status
 
-**Blocked** on the solver instability found while validating sub-attempt 2b (see
-below) — no synthetic map result can be trusted until `regularize()`'s behavior across
-the λ range needed to see a real effect is understood. Resume this task once that's
-resolved; the reusable pieces above should make the next attempt much faster than this
-one.
+**Resolved (2026-10-01).** Was blocked on the solver instability found while validating
+sub-attempt 2b (see below); PR #252 reverted the default to `step_mode="global"` and
+merged to master, which stabilized things enough to complete this task — see "Resolved"
+section near the end for the final map design and test suite
+(`pdrtpy/tool/test/test_lineratiofit_regularize_synthetic.py`).
+`step_mode="per_pixel"` itself is still unfixed (see "Concrete next steps" at the end)
+but is no longer blocking this task, since `"global"` is sufficient for a clean
+demonstration.
 
 ## Instability trace (2026-09-28): root cause identified
 
@@ -200,9 +203,39 @@ available but documented as needing that fix before it's safe to use at the λ v
 real degenerate data (N22) requires. Layering a third fix on top of `per_pixel` without
 first re-establishing a stable, understood baseline would repeat the same mistake.
 
-## Concrete next steps (not yet attempted)
+## Resolved (2026-10-01): synthetic map demonstrated successfully, on `step_mode="global"`
 
-- Revert `regularize()`'s and `fista()`'s default `step_mode` to `"global"`.
+With `step_mode` reverted to `"global"` (PR #252, merged to master), resumed on branch
+`synthetic-regularization-maps`. Built the final version of the Attempt 2 map (15×15,
+`wk2020`, `_BRANCH_A=(1e4, 0.032)` background + `_BRANCH_B=(1e6, 1.0)` 5×5 block + 10
+scattered single-line (`CO_43`, `n_sigma=2.5`) noise outliers) and found one more
+construction bug before it worked cleanly: **the scattered-pixel placement didn't
+exclude the block's footprint**, so one "scattered" coordinate landed inside the block,
+got overwritten with Branch-B truth, then *also* got the extra outlier perturbation on
+top of that — landing far from either population and dragging the whole map's shared
+`step` down with it (global mode's step is shared, so one contaminated pixel throttles
+everyone). Excluding the block (plus a 1-pixel margin) from scattered-coordinate
+placement fixed it immediately.
+
+With that fixed, a λ scan on the corrected map (λ=20/30/50, `max_iter=300`) gave a clean,
+monotonic result up to λ≈30: mean scattered-pixel error 0.099→0.065 dex (34-36%
+reduction, *every* scattered pixel individually improved, not just the mean), block
+change only 0.04-0.06 dex (negligible against its ~2 dex separation from the
+background). At λ=50 the correction stopped improving while the block started eroding
+(0.196 dex) — confirming λ≈20-30 is the right operating point for this map, consistent
+with `global` mode's known plateau behavior (it saturates rather than diverging).
+
+**Final test suite:** `pdrtpy/tool/test/test_lineratiofit_regularize_synthetic.py` (6
+tests, ~17-19s total, deterministic with a fixed RNG seed) — sanity checks that the
+synthetic map was built as intended (background self-recovers, scattered pixels are
+modest not catastrophic outliers, block recovers its own truth), then the actual claims:
+scattered outliers move substantially and uniformly closer to truth after
+`regularize(method="tv", lam=25, max_iter=300)`, the block is preserved (not eroded),
+and no `density_range`/`radiation_field_range` is used anywhere in the module. This is
+the ground-truth-based, no-restriction-needed demonstration the original task asked for.
+
+## Concrete next steps for `step_mode="per_pixel"` (still not attempted)
+
 - Clamp the per-outer-iteration proximal displacement (a trust region on `‖x_new - y‖`
   directly, not just on the per-pixel `step` used to build the trial point `z`), so a
   single bad pixel's contribution to the joint TV solve can't produce an
