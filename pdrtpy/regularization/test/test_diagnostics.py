@@ -78,3 +78,23 @@ def test_format_summary_mentions_counts():
     text = format_summary(s, "density")
     assert "density" in text
     assert "2 of 4" in text
+
+
+def test_sigma_counts_changes_beyond_uncertainty():
+    before = np.full(4, 10.0)
+    after = 10.0 * 10 ** np.array([0.0, 0.05, 0.2, -0.2])
+    sigma_dex = 0.1
+    sigma = np.full(4, 10.0 * np.log(10.0) * sigma_dex)
+    s = change_summary(before, after, threshold=0.01, sigma=sigma)
+    assert s["n_sigma_valid"] == 4
+    assert s["n_beyond_sigma"] == 2
+
+
+def test_sigma_unusable_pixels_skipped_and_none_without_sigma():
+    before = np.full(3, 10.0)
+    after = np.full(3, 100.0)
+    s = change_summary(before, after, sigma=np.array([1.0, np.nan, 0.0]))
+    assert s["n_sigma_valid"] == 1
+    assert change_summary(before, after)["n_beyond_sigma"] is None
+    with pytest.raises(ValueError):
+        change_summary(before, after, sigma=np.ones(2))

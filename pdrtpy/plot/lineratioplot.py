@@ -191,7 +191,7 @@ class LineRatioPlot(PlotBase):
 
         self._plot(plot_map, **kwargs_opts)
 
-    def regularization_histogram(self, quantity="both", bins=50, threshold=0.01, **kwargs):
+    def regularization_histogram(self, quantity="both", bins=50, threshold=0.0625, **kwargs):
         r"""Plot a histogram of the per-pixel change produced by regularization.
 
         The change is ``log10(regularized) - log10(original)`` in dex. The
@@ -207,7 +207,7 @@ class LineRatioPlot(PlotBase):
         bins : int or sequence, optional
             Histogram bins, passed to `~matplotlib.axes.Axes.hist`. Default: 50.
         threshold : float, optional
-            Absolute change in dex to mark and count as changed. Default: 0.01.
+            Absolute change in dex to mark and count as changed. Default: 0.0625.
         \**kwargs
             Additional keywords passed to `~matplotlib.axes.Axes.hist`.
 

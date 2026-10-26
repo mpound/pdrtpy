@@ -1340,7 +1340,9 @@ class LineRatioFit(ToolBase):
         if verbose:
             report = self.regularization_report(verbose=False)
             parts = [
-                f"{name} {s['n_changed']}/{s['n_valid']} pixels (max {s['max_abs']:.2g} dex)"
+                f"{name} {s['n_changed']}/{s['n_valid']} pixels"
+                + ("" if s["n_beyond_sigma"] is None else f", {s['n_beyond_sigma']} >1 sigma")
+                + f" (max {s['max_abs']:.2g} dex)"
                 for name, s in report.items()
             ]
             print(
@@ -1349,7 +1351,7 @@ class LineRatioFit(ToolBase):
             )
         return self._density_regularized, self._radiation_field_regularized
 
-    def regularization_report(self, threshold=0.01, verbose=True):
+    def regularization_report(self, threshold=0.0625, verbose=True):
         """Report how many pixels were changed by :meth:`regularize`, and by how much.
 
         The change at each pixel is ``log10(regularized) - log10(original)``
@@ -1360,7 +1362,9 @@ class LineRatioFit(ToolBase):
         ----------
         threshold : float, optional
             Minimum absolute change in dex for a pixel to count as changed.
-            Default: 0.01 (about a 2.3% change).
+            Default: 0.0625 (half the 0.125 dex model grid step). The number
+            of pixels changing by more than their own 1-sigma uncertainty is
+            reported as well, as ``n_beyond_sigma``.
         verbose : bool, optional
             If True, print a brief text report. Default: True.
 
@@ -1381,16 +1385,14 @@ class LineRatioFit(ToolBase):
             raise Exception("Must call regularize() before regularization_report().")
 
         valid_mask = ~np.isnan(self._density.data)
+
+        def _summary(before, after):
+            sigma = None if before.uncertainty is None else before.uncertainty.array
+            return reg.change_summary(before.data, after.data, threshold=threshold, valid_mask=valid_mask, sigma=sigma)
+
         report = {
-            "density": reg.change_summary(
-                self._density.data, self._density_regularized.data, threshold=threshold, valid_mask=valid_mask
-            ),
-            "radiation_field": reg.change_summary(
-                self._radiation_field.data,
-                self._radiation_field_regularized.data,
-                threshold=threshold,
-                valid_mask=valid_mask,
-            ),
+            "density": _summary(self._density, self._density_regularized),
+            "radiation_field": _summary(self._radiation_field, self._radiation_field_regularized),
         }
         if verbose:
             for name, summary in report.items():
