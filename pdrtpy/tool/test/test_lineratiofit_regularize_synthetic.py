@@ -350,3 +350,13 @@ class TestRegularizeSyntheticMap:
         p, _ = synthetic_fit
         assert p._density_range is None
         assert p._radiation_field_range is None
+
+
+class TestSyntheticRegularizationReport:
+    """The report should account for at least the deliberately-perturbed pixels."""
+
+    def test_report_counts_at_least_the_planted_outliers(self, synthetic_fit, synthetic_regularized):
+        p, scattered_coords = synthetic_fit
+        report = p.regularization_report(threshold=0.05, verbose=False)
+        assert report["density"]["n_changed"] >= len(scattered_coords)
+        assert report["density"]["max_abs"] > 0.05

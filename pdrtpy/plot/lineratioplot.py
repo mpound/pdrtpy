@@ -191,6 +191,55 @@ class LineRatioPlot(PlotBase):
 
         self._plot(plot_map, **kwargs_opts)
 
+    def regularization_histogram(self, quantity="both", bins=50, threshold=0.0625, **kwargs):
+        r"""Plot a histogram of the per-pixel change produced by regularization.
+
+        The change is ``log10(regularized) - log10(original)`` in dex. The
+        counting threshold used by
+        :meth:`~pdrtpy.tool.lineratiofit.LineRatioFit.regularization_report`
+        is marked with dashed lines.
+
+        The default threshold is set to 0.0625 which is half the step
+        size of the model space.
+
+        Parameters
+        ----------
+        quantity : str, optional
+            ``"density"``, ``"radiation_field"`` or ``"both"`` (default; two
+            side-by-side panels).
+        bins : int or sequence, optional
+            Histogram bins, passed to `~matplotlib.axes.Axes.hist`. Default: 50.
+        threshold : float, optional
+            Absolute change in dex to mark and count as changed. Default: 0.0625.
+        \**kwargs
+            Additional keywords passed to `~matplotlib.axes.Axes.hist`.
+
+        Raises
+        ------
+        ValueError
+            If the fit has not been regularized, or ``quantity`` is not one of
+            the allowed values.
+        """
+        if quantity not in ("density", "radiation_field", "both"):
+            raise ValueError("quantity must be 'density', 'radiation_field' or 'both'.")
+        if self._tool._density_regularized is None or self._tool._radiation_field_regularized is None:
+            raise ValueError("The line ratio fits must be regularized first. See LineRatioFit.regularize()")
+
+        report = self._tool.regularization_report(threshold=threshold, verbose=False)
+        names = ["density", "radiation_field"] if quantity == "both" else [quantity]
+        labels = {"density": "density", "radiation_field": "radiation field"}
+
+        self._figure, axes = self._plt.subplots(1, len(names), figsize=(5 * len(names), 4), squeeze=False)
+        self._axis = axes[0]
+        for ax, name in zip(self._axis, names, strict=True):
+            summary = report[name]
+            ax.hist(summary["delta"], bins=bins, **kwargs)
+            for sign in (-1, 1):
+                ax.axvline(sign * threshold, color="k", linestyle="--", linewidth=1.0)
+            ax.set_xlabel(rf"$\Delta\log_{{10}}$ {labels[name]} [dex]")
+            ax.set_ylabel("pixels")
+            ax.set_title(f"{summary['n_changed']} of {summary['n_valid']} changed (>{threshold:g} dex)")
+
     def _plot_chisq_impl(self, data_fn, title, min_val, label_sym, kwargs):
         """Shared implementation for chisq() and reduced_chisq().
 
