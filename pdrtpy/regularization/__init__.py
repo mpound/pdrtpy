@@ -7,10 +7,13 @@ See ``goals/regularization_design_options.md`` for the design rationale.
 """
 
 from .base import Regularizer, fista, neighbor_graph
+from .diagnostics import change_summary, format_summary
 from .tikhonov import TikhonovRegularizer
 from .total_variation import TotalVariationRegularizer
 
 __all__ = [
+    "change_summary",
+    "format_summary",
     "Regularizer",
     "neighbor_graph",
     "fista",

@@ -1194,6 +1194,7 @@ class LineRatioFit(ToolBase):
         tol=1e-6,
         step0=1.0,
         step_mode="global",
+        verbose=True,
     ):
         """Apply spatial-domain regularization to the fitted density and radiation field maps.
 
@@ -1265,6 +1266,10 @@ class LineRatioFit(ToolBase):
             explanation, and ``goals/synthetic_regularization_test_findings.md``
             for the reproducible case this was found on. Use ``"global"``
             unless actively developing/testing ``"per_pixel"``.
+        verbose : bool, optional
+            If True (default), print a one-line summary of how many pixels
+            were changed and by how much. See :meth:`regularization_report`
+            for the detailed report.
 
         Returns
         -------
@@ -1331,7 +1336,66 @@ class LineRatioFit(ToolBase):
 
         self._density_regularized = density_reg
         self._radiation_field_regularized = rf_reg
+
+        if verbose:
+            report = self.regularization_report(verbose=False)
+            parts = [
+                f"{name} {s['n_changed']}/{s['n_valid']} pixels (max {s['max_abs']:.2g} dex)"
+                for name, s in report.items()
+            ]
+            print(
+                f"Regularization ({method}, lam={lam:g}) changed by >{report['density']['threshold']:g} dex: "
+                + "; ".join(parts)
+            )
         return self._density_regularized, self._radiation_field_regularized
+
+    def regularization_report(self, threshold=0.01, verbose=True):
+        """Report how many pixels were changed by :meth:`regularize`, and by how much.
+
+        The change at each pixel is ``log10(regularized) - log10(original)``
+        in dex, computed separately for density and radiation field. A pixel
+        counts as changed when its absolute change exceeds ``threshold``.
+
+        Parameters
+        ----------
+        threshold : float, optional
+            Minimum absolute change in dex for a pixel to count as changed.
+            Default: 0.01 (about a 2.3% change).
+        verbose : bool, optional
+            If True, print a brief text report. Default: True.
+
+        Returns
+        -------
+        dict
+            ``{"density": summary, "radiation_field": summary}`` where each
+            summary is the dictionary returned by
+            :func:`~pdrtpy.regularization.diagnostics.change_summary`
+            (including the signed per-pixel ``delta`` array).
+
+        Raises
+        ------
+        Exception
+            If :meth:`regularize` has not been called yet.
+        """
+        if self._density_regularized is None or self._radiation_field_regularized is None:
+            raise Exception("Must call regularize() before regularization_report().")
+
+        valid_mask = ~np.isnan(self._density.data)
+        report = {
+            "density": reg.change_summary(
+                self._density.data, self._density_regularized.data, threshold=threshold, valid_mask=valid_mask
+            ),
+            "radiation_field": reg.change_summary(
+                self._radiation_field.data,
+                self._radiation_field_regularized.data,
+                threshold=threshold,
+                valid_mask=valid_mask,
+            ),
+        }
+        if verbose:
+            for name, summary in report.items():
+                print(reg.format_summary(summary, name))
+        return report
 
     @staticmethod
     def _build_joint_params(valid_pixels, dflat, rflat, minn, maxn, minfuv, maxfuv):
