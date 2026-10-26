@@ -199,6 +199,9 @@ class LineRatioPlot(PlotBase):
         :meth:`~pdrtpy.tool.lineratiofit.LineRatioFit.regularization_report`
         is marked with dashed lines.
 
+        The default threshold is set to 0.0625 which is half the step
+        size of the model space.
+
         Parameters
         ----------
         quantity : str, optional

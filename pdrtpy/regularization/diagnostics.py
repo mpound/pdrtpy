@@ -21,6 +21,9 @@ def change_summary(before, after, threshold=0.0625, valid_mask=None, sigma=None)
     that are NaN, non-positive, or infinite in either map, or are False in
     ``valid_mask``, are excluded from all statistics.
 
+    The default threshold is set to 0.0625 which is half the step
+    size of the model space.
+
     If ``sigma`` is given, the number of pixels whose change exceeds their own
     1-sigma uncertainty (converted to dex as ``sigma / (ln(10) * before)``) is
     also counted. This is the more physically meaningful measure of a
