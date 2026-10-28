@@ -154,3 +154,50 @@ class TestRegularizeBehavior:
         dreg, rreg = map_fit.regularize(method="tikhonov", lam=0.2, max_iter=30)
         assert np.all(np.isfinite(dreg.data[~np.isnan(dreg.data)]))
         assert np.all(np.isfinite(rreg.data[~np.isnan(rreg.data)]))
+
+
+# ---------------------------------------------------------------------------
+# regularization_report
+# ---------------------------------------------------------------------------
+
+
+class TestRegularizationReport:
+    def test_raises_before_regularize(self, map_fit):
+        with pytest.raises(Exception):
+            map_fit.regularization_report()
+
+    def test_report_keys_and_counts(self, map_fit):
+        map_fit.regularize(method="tv", lam=0.3, max_iter=30)
+        report = map_fit.regularization_report(verbose=False)
+        assert set(report) == {"density", "radiation_field"}
+        n_valid = int(np.count_nonzero(~np.isnan(map_fit.density.data)))
+        for summary in report.values():
+            assert summary["n_valid"] == n_valid
+            assert 0 <= summary["n_changed"] <= n_valid
+            assert summary["max_abs"] >= summary["median_abs"] >= 0
+
+    def test_larger_threshold_counts_fewer_pixels(self, map_fit):
+        map_fit.regularize(method="tv", lam=0.3, max_iter=30)
+        loose = map_fit.regularization_report(threshold=1e-4, verbose=False)
+        strict = map_fit.regularization_report(threshold=0.5, verbose=False)
+        assert strict["density"]["n_changed"] <= loose["density"]["n_changed"]
+
+    def test_verbose_prints(self, map_fit, capsys):
+        map_fit.regularize(method="tv", lam=0.3, max_iter=30)
+        map_fit.regularization_report()
+        out = capsys.readouterr().out
+        assert "density" in out
+        assert "radiation_field" in out
+
+
+class TestRegularizeSummaryLine:
+    def test_prints_one_line_by_default(self, map_fit, capsys):
+        map_fit.regularize(method="tv", lam=0.3, max_iter=20)
+        lines = [ln for ln in capsys.readouterr().out.splitlines() if ln.startswith("Regularization")]
+        assert len(lines) == 1
+        assert "density" in lines[0]
+        assert "radiation_field" in lines[0]
+
+    def test_verbose_false_is_silent(self, map_fit, capsys):
+        map_fit.regularize(method="tv", lam=0.3, max_iter=20, verbose=False)
+        assert capsys.readouterr().out == ""
