@@ -940,18 +940,46 @@ class LineRatioFit(ToolBase):
         self._makehistory(self._chisq)
         self._makehistory(self._reduced_chisq)
 
-    def write_chisq(self, chi="chisq.fits", rchi="rchisq.fits", overwrite=True):
-        """Write the chisq and reduced-chisq data to a file.
+    def write_chisq(self, chi="chisq.fits", rchi="rchisq.fits", overwrite=True, full=None):
+        r"""Write the chisq and reduced-chisq data to FITS files.
+
+        For map or vector inputs, the default is to write the minimum :math:`\chi^2`
+        and :math:`\chi_\nu^2` at each pixel, which have the same shape and WCS as
+        the input data.  For single-pixel inputs, the default is to write the full
+        :math:`\chi^2` and :math:`\chi_\nu^2` surfaces as a function of radiation
+        field and density.
 
         Parameters
         ----------
         chi : str, optional
-            FITS file to write the chisq map to. Default: ``"chisq.fits"``.
+            FITS file to write the chisq data to. Default: ``"chisq.fits"``.
         rchi : str, optional
-            FITS file to write the reduced chisq map to. Default: ``"rchisq.fits"``.
+            FITS file to write the reduced chisq data to. Default: ``"rchisq.fits"``.
+        overwrite : bool, optional
+            If True, overwrite existing files. Default: True.
+        full : bool or None, optional
+            If True, write the full :math:`\chi^2` over the model grid. For map inputs this
+            is a 4-D cube with axes (radiation field, density, y, x) in numpy order.
+            If False, write the minimum :math:`\chi^2` at each pixel. If None (default),
+            use False for map or vector inputs and True for single-pixel inputs.
         """
-        self._chisq.write(chi, overwrite=overwrite, hdu_mask="MASK", output_verify="silentfix")
-        self._reduced_chisq.write(rchi, overwrite=overwrite, hdu_mask="MASK", output_verify="silentfix")
+        if full is None:
+            full = not (self.has_maps or self.has_vectors)
+        if full:
+            self._chisq.write(chi, overwrite=overwrite, hdu_mask="MASK", output_verify="silentfix")
+            self._reduced_chisq.write(rchi, overwrite=overwrite, hdu_mask="MASK", output_verify="silentfix")
+            return
+        for m, f in ((self._chisq_min, chi), (self._reduced_chisq_min, rchi)):
+            # The min chisq maps carry a placeholder uncertainty, so don't write it.
+            hdu = m.to_hdu(hdu_mask="MASK", hdu_uncertainty=None)
+            hdr = hdu[0].header
+            # BUNIT holds a description, not a unit; move it to a COMMENT so the file reads back.
+            # RATIO/DATAMIN/DATAMAX are inherited from the observed ratio and are wrong here.
+            hdr.add_comment(str(hdr.get("BUNIT", "")))
+            hdr["BUNIT"] = ""
+            for k in ("RATIO", "DATAMIN", "DATAMAX"):
+                hdr.remove(k, ignore_missing=True)
+            hdu.writeto(f, overwrite=overwrite, output_verify="silentfix")
 
     def _regularization_model_bounds(self):
         """Linear (density, radiation_field) bounds of the model grid.
