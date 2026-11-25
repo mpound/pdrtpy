@@ -307,6 +307,44 @@ class TestWriteChisq:
         with fits.open(rchi_file) as hdul:
             assert len(hdul) >= 1
 
+    def test_write_chisq_single_pixel_default_is_surface(self, single_pixel_fit, tmp_path):
+        from astropy.io import fits
+
+        chi_file = str(tmp_path / "chisq_sp.fits")
+        rchi_file = str(tmp_path / "rchisq_sp.fits")
+        single_pixel_fit.write_chisq(chi=chi_file, rchi=rchi_file)
+        expected = single_pixel_fit.chisq().shape
+        assert len(expected) == 2
+        for f in (chi_file, rchi_file):
+            assert fits.getdata(f).shape == expected
+
+    def test_write_chisq_map_default_matches_data(self, map_fit, map_measurements, tmp_path):
+        from astropy.io import fits
+        from astropy.nddata import CCDData
+
+        chi_file = str(tmp_path / "chisq_map.fits")
+        rchi_file = str(tmp_path / "rchisq_map.fits")
+        map_fit.write_chisq(chi=chi_file, rchi=rchi_file)
+        shape = map_measurements[0].shape
+        for f, m in ((chi_file, map_fit.chisq(min=True)), (rchi_file, map_fit.reduced_chisq(min=True))):
+            with fits.open(f) as hdul:
+                assert hdul[0].data.shape == shape
+                assert hdul[0].header["CTYPE1"].startswith("RA")
+                assert "UNCERT" not in [h.name for h in hdul]
+            np.testing.assert_array_equal(fits.getdata(f), m.data)
+            # file must read back as CCDData without an explicit unit
+            assert CCDData.read(f).shape == shape
+
+    def test_write_chisq_map_full_is_cube(self, map_fit, map_measurements, tmp_path):
+        from astropy.io import fits
+
+        chi_file = str(tmp_path / "chisq_full.fits")
+        rchi_file = str(tmp_path / "rchisq_full.fits")
+        map_fit.write_chisq(chi=chi_file, rchi=rchi_file, full=True)
+        shape = fits.getdata(chi_file).shape
+        assert len(shape) == 4
+        assert shape[2:] == map_measurements[0].shape
+
 
 # ---------------------------------------------------------------------------
 # TestRunVariants
