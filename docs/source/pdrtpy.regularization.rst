@@ -59,6 +59,7 @@ Total Variation Regularization
    :members:
    :undoc-members:
    :show-inheritance:
+   :special-members: _divergence, _denoise_one
 
 Tikhonov Regularization
 ------------------------
